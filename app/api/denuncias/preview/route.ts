@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
     // Generar PDF
     const pdfBuffer = generarPDF(999, denunciante, datosDenuncia)
 
-    return new NextResponse(pdfBuffer, {
+    return new Response(new Uint8Array(pdfBuffer), {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': 'inline; filename="vista_previa.pdf"',

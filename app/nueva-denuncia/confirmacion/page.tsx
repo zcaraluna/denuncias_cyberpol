@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 
 interface DenunciaInfo {
   id: number
@@ -13,13 +13,35 @@ interface DenunciaInfo {
   tipoHecho: string
 }
 
-export default function ConfirmacionPage() {
+interface Usuario {
+  id: number
+  nombre: string
+  apellido: string
+  grado: string
+  oficina: string
+  rol: string
+}
+
+function ConfirmacionPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [denuncia, setDenuncia] = useState<DenunciaInfo | null>(null)
+  const [usuario, setUsuario] = useState<Usuario | null>(null)
   const [loading, setLoading] = useState(true)
   const [mostrarModal, setMostrarModal] = useState(false)
   const [tipoPapelSeleccionado, setTipoPapelSeleccionado] = useState<'oficio' | 'a4'>('oficio')
+
+  useEffect(() => {
+    const usuarioStr = sessionStorage.getItem('usuario')
+    if (usuarioStr) {
+      try {
+        const usuarioData = JSON.parse(usuarioStr)
+        setUsuario(usuarioData)
+      } catch (error) {
+        console.error('Error parsing usuario:', error)
+      }
+    }
+  }, [])
 
   useEffect(() => {
     const id = searchParams.get('id')
@@ -72,8 +94,8 @@ export default function ConfirmacionPage() {
   }
 
   const handleConfirmarDescarga = () => {
-    if (denuncia) {
-      window.open(`/api/denuncias/pdf/${denuncia.id}?tipo=${tipoPapelSeleccionado}`, '_blank')
+    if (denuncia && usuario) {
+      window.open(`/api/denuncias/pdf/${denuncia.id}?tipo=${tipoPapelSeleccionado}&usuario_id=${usuario.id}`, '_blank')
       setMostrarModal(false)
     }
   }
@@ -253,6 +275,18 @@ export default function ConfirmacionPage() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function ConfirmacionPageWrapper() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-xl">Cargando...</div>
+      </div>
+    }>
+      <ConfirmacionPage />
+    </Suspense>
   )
 }
 

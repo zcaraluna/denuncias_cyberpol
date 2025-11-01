@@ -61,29 +61,40 @@ async function initDatabase() {
     
     console.log('Base de datos inicializada correctamente')
     
-    // Crear un usuario de ejemplo si no existe
+    // Crear usuarios de ejemplo si no existen
     const bcrypt = require('bcryptjs')
     const hashedPassword = await bcrypt.hash('admin123', 10)
     
-    try {
-      await pool.query(
-        `INSERT INTO usuarios (usuario, contraseña, nombre, apellido, grado, oficina)
-         VALUES ($1, $2, $3, $4, $5, $6)
-         ON CONFLICT (usuario) DO NOTHING`,
-        ['admin', hashedPassword, 'Administrador', 'Sistema', 'Comisario', 'Asunción']
-      )
-      console.log('Usuario de ejemplo creado: admin / admin123')
-    } catch (error) {
-      if (error.code !== '23505') { // 23505 es unique_violation
-        throw error
+    const usuariosEjemplo = [
+      { usuario: 'superadmin', nombre: 'Super', apellido: 'Administrador', grado: 'Superintendente', oficina: 'Asunción', rol: 'superadmin' },
+      { usuario: 'admin', nombre: 'Administrador', apellido: 'Sistema', grado: 'Comisario', oficina: 'Asunción', rol: 'admin' },
+      { usuario: 'operador', nombre: 'Operador', apellido: 'Test', grado: 'Inspector', oficina: 'Asunción', rol: 'operador' },
+      { usuario: 'supervisor', nombre: 'Supervisor', apellido: 'Test', grado: 'Subcomisario', oficina: 'Asunción', rol: 'supervisor' }
+    ]
+    
+    for (const userData of usuariosEjemplo) {
+      try {
+        await pool.query(
+          `INSERT INTO usuarios (usuario, contraseña, nombre, apellido, grado, oficina, rol)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)
+           ON CONFLICT (usuario) DO NOTHING`,
+          [userData.usuario, hashedPassword, userData.nombre, userData.apellido, userData.grado, userData.oficina, userData.rol]
+        )
+      } catch (error) {
+        if (error.code !== '23505') { // 23505 es unique_violation
+          console.error(`Error creando usuario ${userData.usuario}:`, error.message)
+        }
       }
-      console.log('Usuario de ejemplo ya existe')
     }
     
+    console.log('Usuarios de ejemplo creados')
+    
     console.log('\n✅ ¡Base de datos inicializada exitosamente!')
-    console.log('\nCredenciales de acceso:')
-    console.log('   Usuario: admin')
-    console.log('   Contraseña: admin123')
+    console.log('\nCredenciales de acceso (todos con contraseña: admin123):')
+    console.log('   Superadmin: superadmin')
+    console.log('   Admin: admin')
+    console.log('   Operador: operador')
+    console.log('   Supervisor: supervisor')
     console.log('\nAhora puedes ejecutar: npm run dev\n')
     
     await pool.end()

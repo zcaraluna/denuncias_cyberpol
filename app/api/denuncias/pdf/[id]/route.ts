@@ -19,13 +19,14 @@ export async function GET(
     const { id: idStr } = await params
     const id = parseInt(idStr)
 
-    // Obtener parámetro de tipo de papel
+    // Obtener parámetros
     const searchParams = request.nextUrl.searchParams
     const tipoPapel = (searchParams.get('tipo') === 'a4' ? 'a4' : 'oficio') as 'oficio' | 'a4'
+    const usuarioIdActual = searchParams.get('usuario_id')
 
     // Obtener datos de la denuncia
     const denunciaResult = await pool.query(
-      `SELECT d.*, den.nombres as nombres_denunciante, den.cedula, den.nacionalidad, 
+      `SELECT d.*, den.nombres as nombres_denunciante, den.cedula, den.tipo_documento, den.nacionalidad, 
               den.estado_civil, den.edad, den.fecha_nacimiento, den.lugar_nacimiento, 
               den.telefono, den.profesion,
               sa.autor_conocido, sa.nombre_autor, sa.cedula_autor, sa.domicilio_autor,
@@ -53,7 +54,7 @@ export async function GET(
     // Preparar datos para el PDF
     const denunciante: Denunciante = {
       'Nombres y Apellidos': row.nombres_denunciante,
-      'Tipo de Documento': 'Cédula de Identidad Paraguaya', // Por defecto
+      'Tipo de Documento': row.tipo_documento || 'Cédula de Identidad Paraguaya',
       'Cédula de Identidad': row.cedula,
       'Número de Documento': row.cedula,
       'Nacionalidad': row.nacionalidad,
@@ -63,6 +64,25 @@ export async function GET(
       'Lugar de Nacimiento': row.lugar_nacimiento,
       'Número de Teléfono': row.telefono,
       'Profesión': row.profesion,
+    }
+
+    // Verificar si el usuario que descarga es diferente del que tomó la denuncia
+    const esOperadorAutorizado = usuarioIdActual && row.usuario_id && usuarioIdActual !== row.usuario_id.toString()
+    
+    // Si es un operador autorizado diferente, obtener sus datos
+    let operadorAutorizado = null
+    if (esOperadorAutorizado && usuarioIdActual) {
+      const usuarioResult = await pool.query(
+        'SELECT nombre, apellido, grado FROM usuarios WHERE id = $1',
+        [usuarioIdActual]
+      )
+      if (usuarioResult.rows.length > 0) {
+        const usuario = usuarioResult.rows[0]
+        operadorAutorizado = {
+          grado: usuario.grado,
+          nombre: `${usuario.nombre} ${usuario.apellido}`
+        }
+      }
     }
 
     const datosDenuncia: DatosDenuncia = {
@@ -94,12 +114,14 @@ export async function GET(
       lugar_nacimiento_autor: row.lugar_nacimiento_autor,
       telefono_autor: row.telefono_autor,
       profesion_autor: row.profesion_autor,
+      operador_autorizado: operadorAutorizado || undefined,
+      es_operador_autorizado: esOperadorAutorizado
     }
 
     // Generar PDF
     const pdfBuffer = generarPDF(row.orden, denunciante, datosDenuncia)
 
-    return new NextResponse(pdfBuffer, {
+    return new Response(new Uint8Array(pdfBuffer), {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="denuncia_${row.orden}_${año}.pdf"`,

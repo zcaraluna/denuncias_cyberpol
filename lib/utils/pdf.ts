@@ -61,6 +61,12 @@ export interface DatosDenuncia {
   lugar_nacimiento_autor?: string | null
   telefono_autor?: string | null
   profesion_autor?: string | null
+  // Para firma dinámica
+  operador_autorizado?: {
+    grado: string
+    nombre: string
+  }
+  es_operador_autorizado?: boolean
 }
 
 function agregarEncabezado(doc: jsPDF, titulo: string, anchoPagina: number) {
@@ -287,19 +293,31 @@ export function generarPDF(
   const yFirmas = yActual + 20
   doc.setFont('helvetica', 'normal')
 
-  // Firma izquierda - Interviniente
+  // Firma izquierda - Interviniente o Operador Autorizado
   doc.setLineWidth(0.5)
   doc.line(30, yFirmas, 66, yFirmas)
   doc.setFontSize(10)
   doc.setFont('helvetica', 'normal')
-  doc.text(datosDenuncia.nombre_operador.toUpperCase(), 48, yFirmas + 7, {
+  
+  // Determinar qué información mostrar
+  let nombreMostrar = datosDenuncia.nombre_operador
+  let gradoMostrar = datosDenuncia.grado_operador
+  let etiquetaMostrar = 'INTERVINIENTE'
+  
+  if (datosDenuncia.es_operador_autorizado && datosDenuncia.operador_autorizado) {
+    nombreMostrar = `${datosDenuncia.operador_autorizado.nombre}`
+    gradoMostrar = datosDenuncia.operador_autorizado.grado
+    etiquetaMostrar = 'OPERADOR AUTORIZADO'
+  }
+  
+  doc.text(nombreMostrar.toUpperCase(), 48, yFirmas + 7, {
     align: 'center',
   })
-  doc.text(datosDenuncia.grado_operador.toUpperCase(), 48, yFirmas + 12, {
+  doc.text(gradoMostrar.toUpperCase(), 48, yFirmas + 12, {
     align: 'center',
   })
   doc.setFont('helvetica', 'bold')
-  doc.text('INTERVINIENTE', 48, yFirmas + 17, { align: 'center' })
+  doc.text(etiquetaMostrar, 48, yFirmas + 17, { align: 'center' })
 
   // Centro - Hash
   doc.setFontSize(8)

@@ -7,8 +7,10 @@ CREATE TABLE IF NOT EXISTS usuarios (
     apellido VARCHAR(100) NOT NULL,
     grado VARCHAR(50) NOT NULL,
     oficina VARCHAR(100) NOT NULL,
+    rol VARCHAR(50) DEFAULT 'operador',
     activo BOOLEAN DEFAULT true,
-    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT check_rol CHECK (rol IN ('superadmin', 'admin', 'operador', 'supervisor'))
 );
 
 -- Tabla de denunciantes
@@ -16,6 +18,7 @@ CREATE TABLE IF NOT EXISTS denunciantes (
     id SERIAL PRIMARY KEY,
     nombres VARCHAR(200) NOT NULL,
     cedula VARCHAR(50) UNIQUE NOT NULL,
+    tipo_documento VARCHAR(100),
     domicilio TEXT,
     nacionalidad VARCHAR(100),
     estado_civil VARCHAR(50),
@@ -31,14 +34,14 @@ CREATE TABLE IF NOT EXISTS denunciantes (
 CREATE TABLE IF NOT EXISTS denuncias (
     id SERIAL PRIMARY KEY,
     denunciante_id INTEGER REFERENCES denunciantes(id) ON DELETE CASCADE,
-    fecha_denuncia DATE NOT NULL,
-    hora_denuncia VARCHAR(10) NOT NULL,
-    fecha_hecho DATE NOT NULL,
-    hora_hecho VARCHAR(10) NOT NULL,
-    tipo_denuncia VARCHAR(200) NOT NULL,
+    fecha_denuncia DATE,
+    hora_denuncia VARCHAR(10),
+    fecha_hecho DATE,
+    hora_hecho VARCHAR(10),
+    tipo_denuncia VARCHAR(200),
     otro_tipo VARCHAR(200),
-    relato TEXT NOT NULL,
-    lugar_hecho TEXT NOT NULL,
+    relato TEXT,
+    lugar_hecho TEXT,
     latitud DECIMAL(10, 8),
     longitud DECIMAL(11, 8),
     orden INTEGER NOT NULL,
@@ -51,7 +54,15 @@ CREATE TABLE IF NOT EXISTS denuncias (
     moneda VARCHAR(50),
     hash VARCHAR(50) UNIQUE NOT NULL,
     pdf BYTEA,
-    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    estado VARCHAR(20) DEFAULT 'completada',
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT check_estado CHECK (estado IN ('borrador', 'completada')),
+    CONSTRAINT check_completada CHECK (
+        (estado = 'completada' AND fecha_denuncia IS NOT NULL AND hora_denuncia IS NOT NULL AND 
+         fecha_hecho IS NOT NULL AND hora_hecho IS NOT NULL AND tipo_denuncia IS NOT NULL AND 
+         relato IS NOT NULL AND lugar_hecho IS NOT NULL) 
+        OR estado = 'borrador'
+    )
 );
 
 -- Tabla de supuestos autores
@@ -90,10 +101,20 @@ CREATE TABLE IF NOT EXISTS historial_denuncias (
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Tabla de visitas a denuncias
+CREATE TABLE IF NOT EXISTS visitas_denuncias (
+    id SERIAL PRIMARY KEY,
+    denuncia_id INTEGER REFERENCES denuncias(id) ON DELETE CASCADE,
+    usuario_id INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
+    fecha_visita TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Índices para mejorar rendimiento
 CREATE INDEX IF NOT EXISTS idx_denuncias_fecha ON denuncias(fecha_denuncia);
 CREATE INDEX IF NOT EXISTS idx_denuncias_orden ON denuncias(orden);
 CREATE INDEX IF NOT EXISTS idx_denuncias_hash ON denuncias(hash);
 CREATE INDEX IF NOT EXISTS idx_denunciantes_cedula ON denunciantes(cedula);
 CREATE INDEX IF NOT EXISTS idx_supuestos_autores_denuncia ON supuestos_autores(denuncia_id);
+CREATE INDEX IF NOT EXISTS idx_visitas_denuncia ON visitas_denuncias(denuncia_id);
+CREATE INDEX IF NOT EXISTS idx_visitas_usuario ON visitas_denuncias(usuario_id);
 

@@ -18,6 +18,7 @@ const denuncianteSchema = z.object({
   numeroDocumento: z.string().min(1, 'Este campo es obligatorio'),
   nacionalidad: z.string().min(1, 'Este campo es obligatorio'),
   fechaNacimiento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato YYYY-MM-DD'),
+  edad: z.string().optional(),
   lugarNacimiento: z.string().min(1, 'Este campo es obligatorio'),
   estadoCivil: z.string().min(1, 'Este campo es obligatorio'),
   telefono: z.string().min(1, 'Este campo es obligatorio'),
@@ -41,6 +42,7 @@ interface Usuario {
   apellido: string
   grado: string
   oficina: string
+  rol: string
 }
 
 export default function NuevaDenunciaPage() {
@@ -51,6 +53,9 @@ export default function NuevaDenunciaPage() {
   const [coordenadas, setCoordenadas] = useState<{ lat: number; lng: number } | null>(null)
   const [mostrarMapa, setMostrarMapa] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [guardandoBorrador, setGuardandoBorrador] = useState(false)
+  const [borradorId, setBorradorId] = useState<number | null>(null)
+  const [mostrarModalBorrador, setMostrarModalBorrador] = useState(false)
   const [infoAdicionalLista, setInfoAdicionalLista] = useState<Array<{
     telefonosInvolucrados: string
     numeroCuenta: string
@@ -157,7 +162,7 @@ export default function NuevaDenunciaPage() {
     watch: watchDenunciante,
     setValue: setValueDenunciante,
     control: controlDenunciante,
-  } = useForm({
+  } = useForm<z.infer<typeof denuncianteSchema>>({
     resolver: zodResolver(denuncianteSchema),
     defaultValues: {
       nacionalidad: 'PARAGUAYA',
@@ -211,7 +216,8 @@ export default function NuevaDenunciaPage() {
     formState: { errors: errorsDenuncia },
     watch: watchDenuncia,
     control: controlDenuncia,
-  } = useForm({
+    setValue: setValueDenuncia,
+  } = useForm<z.infer<typeof denunciaSchema>>({
     resolver: zodResolver(denunciaSchema),
   })
 
@@ -224,9 +230,122 @@ export default function NuevaDenunciaPage() {
     watch: watchAutor,
     control: controlAutor,
     setValue: setValueAutor,
-  } = useForm()
+  } = useForm<any>()
 
   const fechaNacimientoAutor = watchAutor('fechaNacimiento')
+
+  const calcularEdad = (fechaNac: string): string => {
+    try {
+      const [año, mes, dia] = fechaNac.split('-') // Formato YYYY-MM-DD
+      const fecha = new Date(parseInt(año), parseInt(mes) - 1, parseInt(dia))
+      const hoy = new Date()
+      let edad = hoy.getFullYear() - fecha.getFullYear()
+      const mesDiff = hoy.getMonth() - fecha.getMonth()
+      if (mesDiff < 0 || (mesDiff === 0 && hoy.getDate() < fecha.getDate())) {
+        edad--
+      }
+      return edad.toString()
+    } catch {
+      return ''
+    }
+  }
+
+  const obtenerFechaHoraActual = async () => {
+    try {
+      const response = await fetch('/api/utils/fecha-hora')
+      const data = await response.json()
+      return data
+    } catch (error) {
+      const now = new Date()
+      return {
+        fecha: now.toLocaleDateString('es-PY', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'America/Asuncion' }),
+        hora: now.toLocaleTimeString('es-PY', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Asuncion' }),
+      }
+    }
+  }
+
+  const cargarBorrador = async (id: number) => {
+    try {
+      const response = await fetch(`/api/denuncias/ver/${id}`)
+      if (!response.ok) return
+      
+      const data = await response.json()
+      setBorradorId(data.id)
+      
+      // Cargar datos del denunciante
+      if (data.nombres_denunciante) {
+        setValueDenunciante('nombres', data.nombres_denunciante)
+        setValueDenunciante('tipoDocumento', data.tipo_documento || 'Cédula de Identidad Paraguaya')
+        setValueDenunciante('numeroDocumento', data.cedula)
+        setValueDenunciante('nacionalidad', data.nacionalidad)
+        setValueDenunciante('estadoCivil', data.estado_civil)
+        setValueDenunciante('edad', data.edad?.toString())
+        // Formatear fecha de nacimiento al formato YYYY-MM-DD
+        if (data.fecha_nacimiento) {
+          const fechaNac = new Date(data.fecha_nacimiento)
+          const fechaFormateada = fechaNac.toISOString().split('T')[0]
+          setValueDenunciante('fechaNacimiento', fechaFormateada)
+        }
+        setValueDenunciante('lugarNacimiento', data.lugar_nacimiento)
+        setValueDenunciante('telefono', data.telefono)
+        if (data.profesion) setValueDenunciante('profesion', data.profesion)
+      }
+      
+      // Cargar datos de la denuncia
+      if (data.fecha_hecho) {
+        // Formatear fecha del hecho al formato YYYY-MM-DD
+        const fechaHecho = new Date(data.fecha_hecho)
+        const fechaHechoFormateada = fechaHecho.toISOString().split('T')[0]
+        setValueDenuncia('fechaHecho', fechaHechoFormateada)
+        setValueDenuncia('horaHecho', data.hora_hecho)
+        setValueDenuncia('tipoDenuncia', data.tipo_denuncia === 'OTRO' ? 'Otro (Especificar)' : data.tipo_denuncia)
+        if (data.otro_tipo) setValueDenuncia('otroTipo', data.otro_tipo)
+        setValueDenuncia('lugarHecho', data.lugar_hecho)
+        setValueDenuncia('relato', data.relato)
+        if (data.monto_dano) setValueDenuncia('montoDano', data.monto_dano.toString())
+        if (data.moneda) setValueDenuncia('moneda', data.moneda)
+        if (data.latitud && data.longitud) {
+          setCoordenadas({ lat: parseFloat(data.latitud), lng: parseFloat(data.longitud) })
+        }
+      }
+      
+      // Cargar datos del autor
+      if (data.supuestos_autores && data.supuestos_autores.length > 0) {
+          const primerAutor = data.supuestos_autores.find((a: any) => a.autor_conocido === 'Conocido')
+          if (primerAutor) {
+            setAutorConocido('Conocido')
+            setValueAutor('nombre', primerAutor.nombre_autor)
+            setValueAutor('cedula', primerAutor.cedula_autor)
+            setValueAutor('domicilio', primerAutor.domicilio_autor)
+            setValueAutor('nacionalidad', primerAutor.nacionalidad_autor)
+            setValueAutor('estadoCivil', primerAutor.estado_civil_autor)
+            setValueAutor('edad', primerAutor.edad_autor?.toString())
+            // Formatear fecha de nacimiento del autor al formato YYYY-MM-DD
+            if (primerAutor.fecha_nacimiento_autor) {
+              const fechaNacAutor = new Date(primerAutor.fecha_nacimiento_autor)
+              const fechaFormateadaAutor = fechaNacAutor.toISOString().split('T')[0]
+              setValueAutor('fechaNacimiento', fechaFormateadaAutor)
+            }
+            setValueAutor('lugarNacimiento', primerAutor.lugar_nacimiento_autor)
+            setValueAutor('telefono', primerAutor.telefono_autor)
+            setValueAutor('profesion', primerAutor.profesion_autor)
+          }
+        
+        // Cargar información adicional
+        const infoAdicional = data.supuestos_autores.filter((a: any) => a.autor_conocido === 'Desconocido')
+        if (infoAdicional.length > 0) {
+          setInfoAdicionalLista(infoAdicional.map((a: any) => ({
+            telefonosInvolucrados: a.telefonos_involucrados || '',
+            numeroCuenta: a.numero_cuenta_beneficiaria || '',
+            nombreCuenta: a.nombre_cuenta_beneficiaria || '',
+            entidadBancaria: a.entidad_bancaria || ''
+          })))
+        }
+      }
+    } catch (error) {
+      console.error('Error cargando borrador:', error)
+    }
+  }
 
   useEffect(() => {
     if (fechaNacimientoAutor) {
@@ -245,24 +364,17 @@ export default function NuevaDenunciaPage() {
     try {
       const usuarioData = JSON.parse(usuarioStr)
       setUsuario(usuarioData)
+
+      // Verificar si hay un borrador para continuar
+      const borradorId = sessionStorage.getItem('borradorId')
+      if (borradorId) {
+        cargarBorrador(parseInt(borradorId))
+        sessionStorage.removeItem('borradorId')
+      }
     } catch (error) {
       router.push('/')
     }
   }, [router])
-
-  const obtenerFechaHoraActual = async () => {
-    try {
-      const response = await fetch('/api/utils/fecha-hora')
-      const data = await response.json()
-      return data
-    } catch (error) {
-      const now = new Date()
-      return {
-        fecha: now.toLocaleDateString('es-PY', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'America/Asuncion' }),
-        hora: now.toLocaleTimeString('es-PY', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Asuncion' }),
-      }
-    }
-  }
 
   const onDenuncianteSubmit = (data: any) => {
     setPaso(2)
@@ -390,10 +502,6 @@ export default function NuevaDenunciaPage() {
     setLoading(true)
 
     try {
-      // Obtener fecha y hora actual
-      const { fecha, hora } = await obtenerFechaHoraActual()
-      const fechaActual = fecha.split('/').reverse().join('-')
-      
       const denuncianteData = watchDenunciante()
       const autorData = watchAutor()
       const denunciaData = watchDenuncia()
@@ -409,7 +517,9 @@ export default function NuevaDenunciaPage() {
       }
 
       // Preparar datos para enviar (todos en mayúsculas)
+      // La fecha y hora se generan en el servidor para evitar manipulación
       const payload = {
+        borradorId: borradorId || null,
         denunciante: {
           nombres: denuncianteData.nombres?.toUpperCase() || '',
           tipoDocumento: denuncianteData.tipoDocumento || '',
@@ -423,8 +533,6 @@ export default function NuevaDenunciaPage() {
           edad: denuncianteData.edad || calcularEdad(denuncianteData.fechaNacimiento),
         },
         denuncia: {
-          fechaDenuncia: fechaActual,
-          horaDenuncia: hora,
           fechaHecho: fechaHecho,
           horaHecho: denunciaData.horaHecho,
           tipoDenuncia: denunciaData.tipoDenuncia === 'Otro (Especificar)' ? 'OTRO' : denunciaData.tipoDenuncia,
@@ -482,20 +590,112 @@ export default function NuevaDenunciaPage() {
     }
   }
 
-  const calcularEdad = (fechaNac: string): string => {
+  const guardarBorrador = async () => {
+    if (!usuario) return
+
+    setGuardandoBorrador(true)
+
     try {
-      const [año, mes, dia] = fechaNac.split('-') // Formato YYYY-MM-DD
-      const fecha = new Date(parseInt(año), parseInt(mes) - 1, parseInt(dia))
-      const hoy = new Date()
-      let edad = hoy.getFullYear() - fecha.getFullYear()
-      const mesDiff = hoy.getMonth() - fecha.getMonth()
-      if (mesDiff < 0 || (mesDiff === 0 && hoy.getDate() < fecha.getDate())) {
-        edad--
+      // Obtener fecha y hora actual
+      const { fecha, hora } = await obtenerFechaHoraActual()
+      const fechaActual = fecha.split('/').reverse().join('-')
+      
+      const denuncianteData = watchDenunciante()
+      const autorData = watchAutor()
+      const denunciaData = watchDenuncia()
+      
+      // Convertir fecha de hecho si viene en formato YYYY-MM-DD
+      let fechaHecho = denunciaData.fechaHecho
+      if (fechaHecho && fechaHecho.includes('-')) {
+        // Ya está en formato YYYY-MM-DD
+      } else if (fechaHecho && fechaHecho.includes('/')) {
+        // Convertir de DD/MM/YYYY a YYYY-MM-DD
+        const [dia, mes, año] = fechaHecho.split('/')
+        fechaHecho = `${año}-${mes}-${dia}`
       }
-      return edad.toString()
-    } catch {
-      return ''
+
+      // Preparar datos para enviar
+      const payload = {
+        denunciante: {
+          nombres: denuncianteData.nombres?.toUpperCase() || '',
+          tipoDocumento: denuncianteData.tipoDocumento || '',
+          numeroDocumento: denuncianteData.numeroDocumento?.toUpperCase() || '',
+          nacionalidad: denuncianteData.nacionalidad?.toUpperCase() || '',
+          estadoCivil: denuncianteData.estadoCivil?.toUpperCase() || '',
+          fechaNacimiento: denuncianteData.fechaNacimiento || '',
+          lugarNacimiento: denuncianteData.lugarNacimiento?.toUpperCase() || '',
+          telefono: denuncianteData.telefono?.toUpperCase() || '',
+          profesion: denuncianteData.profesion?.toUpperCase() || null,
+          edad: denuncianteData.edad || (denuncianteData.fechaNacimiento ? calcularEdad(denuncianteData.fechaNacimiento) : ''),
+        },
+        denuncia: {
+          fechaDenuncia: fechaActual,
+          horaDenuncia: hora,
+          fechaHecho: fechaHecho || '',
+          horaHecho: denunciaData.horaHecho || '',
+          tipoDenuncia: denunciaData.tipoDenuncia === 'Otro (Especificar)' ? 'OTRO' : denunciaData.tipoDenuncia || '',
+          otroTipo: denunciaData.tipoDenuncia === 'Otro (Especificar)' ? denunciaData.otroTipo?.toUpperCase() : null,
+          lugarHecho: denunciaData.lugarHecho?.toUpperCase() || '',
+          relato: denunciaData.relato || '',
+          montoDano: denunciaData.montoDano ? parseInt(denunciaData.montoDano.replace(/\./g, '')) : null,
+          moneda: denunciaData.moneda || null,
+          latitud: coordenadas?.lat || null,
+          longitud: coordenadas?.lng || null,
+        },
+        autor: {
+          conocido: autorConocido,
+          ...(autorConocido === 'Conocido' && {
+            nombre: autorData.nombre?.toUpperCase() || null,
+            cedula: autorData.cedula?.toUpperCase() || null,
+            domicilio: autorData.domicilio?.toUpperCase() || null,
+            nacionalidad: autorData.nacionalidad?.toUpperCase() || null,
+            estadoCivil: autorData.estadoCivil?.toUpperCase() || null,
+            edad: autorData.edad || null,
+            fechaNacimiento: autorData.fechaNacimiento || null,
+            lugarNacimiento: autorData.lugarNacimiento?.toUpperCase() || null,
+            telefono: autorData.telefono?.toUpperCase() || null,
+            profesion: autorData.profesion?.toUpperCase() || null,
+          }),
+        },
+        infoAdicional: infoAdicionalLista.map(info => ({
+          telefonosInvolucrados: info.telefonosInvolucrados || null,
+          numeroCuenta: info.numeroCuenta || null,
+          nombreCuenta: info.nombreCuenta || null,
+          entidadBancaria: info.entidadBancaria || null,
+        })),
+        usuarioId: usuario.id,
+        borradorId: borradorId,
+      }
+
+      const response = await fetch('/api/denuncias/borrador', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+
+      if (!response.ok) {
+        throw new Error('Error al guardar borrador')
+      }
+
+      const result = await response.json()
+      setBorradorId(result.id)
+      
+      setMostrarModalBorrador(true)
+    } catch (error) {
+      console.error('Error:', error)
+      alert('Error al guardar borrador. Por favor, intente nuevamente.')
+    } finally {
+      setGuardandoBorrador(false)
     }
+  }
+
+  const irAlInicio = () => {
+    setMostrarModalBorrador(false)
+    router.push('/dashboard')
+  }
+
+  const permanecerEnPagina = () => {
+    setMostrarModalBorrador(false)
   }
 
 
@@ -829,7 +1029,15 @@ export default function NuevaDenunciaPage() {
               </div>
             </div>
 
-            <div className="mt-8 flex justify-end">
+            <div className="mt-8 flex justify-between">
+              <button
+                type="button"
+                onClick={guardarBorrador}
+                disabled={guardandoBorrador}
+                className="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {guardandoBorrador ? 'Guardando...' : 'Guardar Borrador'}
+              </button>
               <button
                 type="submit"
                 className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
@@ -934,14 +1142,15 @@ export default function NuevaDenunciaPage() {
                       name="nacionalidad"
                       control={controlAutor}
                       render={({ field }) => {
-                        const currentValue = field.value || 'PARAGUAYA'
+                        const currentValue = field.value || null
                         return (
                           <Select
                             options={nacionalidades.map((nac) => ({ value: nac, label: nac }))}
-                            value={nacionalidades.find((nac) => nac === currentValue) ? { value: currentValue, label: currentValue } : { value: 'PARAGUAYA', label: 'PARAGUAYA' }}
+                            value={currentValue && nacionalidades.find((nac) => nac === currentValue) ? { value: currentValue, label: currentValue } : null}
                             onChange={(option) => {
-                              field.onChange(option?.value || 'PARAGUAYA')
+                              field.onChange(option?.value || null)
                             }}
+                            isClearable
                             isSearchable
                             placeholder="Buscar nacionalidad..."
                             className="text-sm"
@@ -1217,13 +1426,23 @@ export default function NuevaDenunciaPage() {
             </div>
 
             <div className="mt-8 flex justify-between">
-              <button
-                type="button"
-                onClick={() => setPaso(1)}
-                className="px-6 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
-              >
-                Anterior
-              </button>
+              <div className="flex gap-4">
+                <button
+                  type="button"
+                  onClick={guardarBorrador}
+                  disabled={guardandoBorrador}
+                  className="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {guardandoBorrador ? 'Guardando...' : 'Guardar Borrador'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPaso(1)}
+                  className="px-6 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                >
+                  Anterior
+                </button>
+              </div>
               <button
                 type="submit"
                 className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
@@ -1406,13 +1625,23 @@ export default function NuevaDenunciaPage() {
             </div>
 
             <div className="mt-8 flex justify-between">
-              <button
-                type="button"
-                onClick={() => setPaso(2)}
-                className="px-6 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
-              >
-                Anterior
-              </button>
+              <div className="flex gap-4">
+                <button
+                  type="button"
+                  onClick={guardarBorrador}
+                  disabled={guardandoBorrador || loading}
+                  className="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {guardandoBorrador ? 'Guardando...' : 'Guardar Borrador'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPaso(2)}
+                  className="px-6 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                >
+                  Anterior
+                </button>
+              </div>
               <div className="flex gap-4">
                 {/* <button
                   type="button"
@@ -1424,7 +1653,7 @@ export default function NuevaDenunciaPage() {
                 </button> */}
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || guardandoBorrador}
                   className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? 'Guardando...' : 'Finalizar'}
@@ -1443,6 +1672,33 @@ export default function NuevaDenunciaPage() {
           }}
           onClose={() => setMostrarMapa(false)}
         />
+      )}
+
+      {/* Modal de confirmación después de guardar borrador */}
+      {mostrarModalBorrador && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full mx-4">
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Borrador Guardado</h3>
+            <p className="text-gray-600 mb-6">
+              El borrador ha sido guardado exitosamente.
+            </p>
+
+            <div className="flex gap-4">
+              <button
+                onClick={permanecerEnPagina}
+                className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 font-medium"
+              >
+                Continuar Editando
+              </button>
+              <button
+                onClick={irAlInicio}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-medium"
+              >
+                Ir al Inicio
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

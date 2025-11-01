@@ -8,6 +8,7 @@ export interface Usuario {
   apellido: string;
   grado: string;
   oficina: string;
+  rol: string;
 }
 
 export async function verificarCredenciales(
@@ -16,7 +17,7 @@ export async function verificarCredenciales(
 ): Promise<Usuario | null> {
   try {
     const result = await pool.query(
-      'SELECT id, usuario, contraseña, nombre, apellido, grado, oficina, activo FROM usuarios WHERE usuario = $1',
+      'SELECT id, usuario, contraseña, nombre, apellido, grado, oficina, rol, activo FROM usuarios WHERE usuario = $1',
       [usuario]
     );
 
@@ -43,6 +44,7 @@ export async function verificarCredenciales(
       apellido: user.apellido,
       grado: user.grado,
       oficina: user.oficina,
+      rol: user.rol,
     };
   } catch (error) {
     console.error('Error verificando credenciales:', error);
@@ -56,14 +58,15 @@ export async function crearUsuario(
   nombre: string,
   apellido: string,
   grado: string,
-  oficina: string
+  oficina: string,
+  rol: string = 'operador'
 ): Promise<boolean> {
   try {
     const hashedPassword = await bcrypt.hash(contraseña, 10);
     
     await pool.query(
-      'INSERT INTO usuarios (usuario, contraseña, nombre, apellido, grado, oficina) VALUES ($1, $2, $3, $4, $5, $6)',
-      [usuario, hashedPassword, nombre, apellido, grado, oficina]
+      'INSERT INTO usuarios (usuario, contraseña, nombre, apellido, grado, oficina, rol) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+      [usuario, hashedPassword, nombre, apellido, grado, oficina, rol]
     );
 
     return true;

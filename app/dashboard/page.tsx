@@ -11,6 +11,7 @@ interface Usuario {
   apellido: string
   grado: string
   oficina: string
+  rol: string
 }
 
 export default function DashboardPage() {
@@ -110,12 +111,12 @@ export default function DashboardPage() {
           </Link>
 
           <Link
-            href="/historial"
+            href="/mis-denuncias"
             className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition cursor-pointer border-2 border-transparent hover:border-blue-500"
           >
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-800">
-                Historial
+                Mis Denuncias
               </h3>
               <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
                 <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -124,7 +125,70 @@ export default function DashboardPage() {
               </div>
             </div>
             <p className="text-gray-600 text-sm">
-              Ver historial de denuncias
+              Ver mis denuncias y borradores
+            </p>
+          </Link>
+
+          {(usuario.rol === 'admin' || usuario.rol === 'superadmin') && (
+            <>
+              <Link
+                href="/gestion-usuarios"
+                className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition cursor-pointer border-2 border-transparent hover:border-orange-500"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    Gestión de Usuarios
+                  </h3>
+                  <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                    <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                  </div>
+                </div>
+                <p className="text-gray-600 text-sm">
+                  Administrar usuarios del sistema
+                </p>
+              </Link>
+              
+              <Link
+                href="/log-visitas"
+                className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition cursor-pointer border-2 border-transparent hover:border-indigo-500"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    Log de Visitas
+                  </h3>
+                  <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center">
+                    <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                </div>
+                <p className="text-gray-600 text-sm">
+                  Ver registro de consultas a denuncias
+                </p>
+              </Link>
+            </>
+          )}
+
+          <Link
+            href="/denuncias"
+            className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition cursor-pointer border-2 border-transparent hover:border-purple-500"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-800">
+                Denuncias
+              </h3>
+              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                </svg>
+              </div>
+            </div>
+            <p className="text-gray-600 text-sm">
+              {usuario.rol === 'admin' || usuario.rol === 'superadmin' 
+                ? 'Ver todas las denuncias del sistema'
+                : 'Buscar denuncia por hash'}
             </p>
           </Link>
 
