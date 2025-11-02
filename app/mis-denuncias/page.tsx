@@ -51,7 +51,7 @@ export default function MisDenunciasPage() {
     if (!usuario) return
     
     try {
-      const response = await fetch(`/api/denuncias/mias?usuario_id=${usuario.id}`)
+      const response = await fetch(`/api/denuncias/mias?usuario_id=${usuario.id}`, { cache: 'no-store' })
       if (!response.ok) throw new Error('Error al cargar denuncias')
       
       const data = await response.json()

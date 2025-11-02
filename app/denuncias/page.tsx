@@ -95,7 +95,7 @@ export default function DenunciasPage() {
     setMostrarResultadosCedula(false)
 
     try {
-      const response = await fetch(`/api/denuncias/buscar/${hashBusqueda.trim()}`)
+      const response = await fetch(`/api/denuncias/buscar/${hashBusqueda.trim()}`, { cache: 'no-store' })
       if (!response.ok) throw new Error('Denuncia no encontrada')
       
       const data = await response.json()
@@ -117,7 +117,7 @@ export default function DenunciasPage() {
     setMostrarResultadosCedula(false)
 
     try {
-      const response = await fetch(`/api/denuncias/buscar-cedula/${cedulaBusqueda.trim()}`)
+      const response = await fetch(`/api/denuncias/buscar-cedula/${cedulaBusqueda.trim()}`, { cache: 'no-store' })
       if (!response.ok) throw new Error('No se encontraron denuncias')
       
       const data = await response.json()

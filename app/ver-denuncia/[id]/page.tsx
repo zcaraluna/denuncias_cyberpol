@@ -107,7 +107,7 @@ export default function VerDenunciaPage({ params }: { params: Promise<{ id: stri
     if (!denunciaId || !usuario) return
     
     try {
-      const response = await fetch(`/api/denuncias/ver/${denunciaId}`)
+      const response = await fetch(`/api/denuncias/ver/${denunciaId}`, { cache: 'no-store' })
       if (!response.ok) throw new Error('Error al cargar denuncia')
       
       const data = await response.json()

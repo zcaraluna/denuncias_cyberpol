@@ -266,7 +266,7 @@ export default function NuevaDenunciaPage() {
 
   const cargarBorrador = async (id: number) => {
     try {
-      const response = await fetch(`/api/denuncias/ver/${id}`)
+      const response = await fetch(`/api/denuncias/ver/${id}`, { cache: 'no-store' })
       if (!response.ok) return
       
       const data = await response.json()

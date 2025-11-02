@@ -54,7 +54,7 @@ function ConfirmacionPage() {
     // Obtener información de la denuncia
     const fetchDenuncia = async () => {
       try {
-        const response = await fetch(`/api/denuncias/${id}`)
+        const response = await fetch(`/api/denuncias/${id}`, { cache: 'no-store' })
         if (!response.ok) {
           throw new Error('Denuncia no encontrada')
         }

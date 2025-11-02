@@ -84,9 +84,9 @@ export default function PerfilUsuarioPage({ params }: { params: Promise<{ id: st
     const cargarDatos = async () => {
       try {
         const [usuarioResponse, visitasResponse, denunciasTomadasResponse] = await Promise.all([
-          fetch(`/api/usuarios/${usuarioId}`),
-          fetch(`/api/log-visitas/usuario/${usuarioId}`),
-          fetch(`/api/denuncias/usuario/${usuarioId}`)
+          fetch(`/api/usuarios/${usuarioId}`, { cache: 'no-store' }),
+          fetch(`/api/log-visitas/usuario/${usuarioId}`, { cache: 'no-store' }),
+          fetch(`/api/denuncias/usuario/${usuarioId}`, { cache: 'no-store' })
         ])
 
         if (!usuarioResponse.ok) throw new Error('Error al cargar usuario')
