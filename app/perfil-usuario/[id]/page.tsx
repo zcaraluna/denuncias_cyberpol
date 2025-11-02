@@ -124,8 +124,7 @@ export default function PerfilUsuarioPage({ params }: { params: Promise<{ id: st
       day: '2-digit',
       hour: '2-digit',
       minute: '2-digit',
-      second: '2-digit',
-      timeZone: 'America/Asuncion'
+      second: '2-digit'
     })
   }
 
@@ -381,7 +380,7 @@ export default function PerfilUsuarioPage({ params }: { params: Promise<{ id: st
                               {denuncia.tipo_hecho}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {new Date(denuncia.fecha_denuncia + 'T' + denuncia.hora_denuncia).toLocaleString('es-PY', { timeZone: 'America/Asuncion', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                              {new Date(denuncia.fecha_denuncia).toLocaleDateString('es-ES')} {denuncia.hora_denuncia}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                               <Link

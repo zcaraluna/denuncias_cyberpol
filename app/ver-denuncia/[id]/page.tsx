@@ -282,7 +282,7 @@ export default function VerDenunciaPage({ params }: { params: Promise<{ id: stri
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-600">Fecha de Nacimiento</p>
-                  <p className="text-base text-gray-900">{new Date(denuncia.fecha_nacimiento).toLocaleDateString('es-PY', { timeZone: 'America/Asuncion' })}</p>
+                  <p className="text-base text-gray-900">{new Date(denuncia.fecha_nacimiento).toLocaleDateString('es-ES')}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-600">Edad</p>
@@ -329,7 +329,7 @@ export default function VerDenunciaPage({ params }: { params: Promise<{ id: stri
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-600">Fecha del Hecho</p>
-                  <p className="text-base text-gray-900">{new Date(denuncia.fecha_hecho + 'T' + denuncia.hora_hecho).toLocaleString('es-PY', { timeZone: 'America/Asuncion', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                  <p className="text-base text-gray-900">{new Date(denuncia.fecha_hecho).toLocaleDateString('es-ES')} {denuncia.hora_hecho}</p>
                 </div>
                 <div className="col-span-2">
                   <p className="text-sm font-medium text-gray-600">Lugar del Hecho</p>
@@ -404,7 +404,7 @@ export default function VerDenunciaPage({ params }: { params: Promise<{ id: stri
                           {autor.fecha_nacimiento_autor && (
                             <div>
                               <p className="text-sm font-medium text-gray-600">Fecha de Nacimiento</p>
-                              <p className="text-base text-gray-900">{new Date(autor.fecha_nacimiento_autor).toLocaleDateString('es-PY', { timeZone: 'America/Asuncion' })}</p>
+                              <p className="text-base text-gray-900">{new Date(autor.fecha_nacimiento_autor).toLocaleDateString('es-ES')}</p>
                             </div>
                           )}
                           {autor.lugar_nacimiento_autor && (
