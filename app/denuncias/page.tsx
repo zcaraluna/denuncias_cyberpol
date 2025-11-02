@@ -225,7 +225,7 @@ export default function DenunciasPage() {
                             {denuncia.tipo_hecho}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {new Date(denuncia.fecha_denuncia).toLocaleDateString('es-ES')} {denuncia.hora_denuncia}
+                            {new Date(denuncia.fecha_denuncia + 'T' + denuncia.hora_denuncia).toLocaleString('es-PY', { timeZone: 'America/Asuncion', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
@@ -354,7 +354,7 @@ export default function DenunciasPage() {
                             {denuncia.tipo_hecho}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {new Date(denuncia.fecha_denuncia).toLocaleDateString('es-ES')} {denuncia.hora_denuncia}
+                            {new Date(denuncia.fecha_denuncia + 'T' + denuncia.hora_denuncia).toLocaleString('es-PY', { timeZone: 'America/Asuncion', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <button
