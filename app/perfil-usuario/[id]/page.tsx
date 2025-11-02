@@ -117,6 +117,7 @@ export default function PerfilUsuarioPage({ params }: { params: Promise<{ id: st
   }
 
   const formatearFecha = (fecha: string) => {
+    // PostgreSQL retorna timestamps en UTC, convertir a America/Asuncion
     const date = new Date(fecha)
     return date.toLocaleString('es-ES', {
       year: 'numeric',
@@ -124,7 +125,8 @@ export default function PerfilUsuarioPage({ params }: { params: Promise<{ id: st
       day: '2-digit',
       hour: '2-digit',
       minute: '2-digit',
-      second: '2-digit'
+      second: '2-digit',
+      timeZone: 'America/Asuncion'
     })
   }
 
