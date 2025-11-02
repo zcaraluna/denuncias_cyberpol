@@ -338,3 +338,322 @@ export function generarPDF(
 
   return Buffer.from(doc.output('arraybuffer'))
 }
+
+export function generarPDFFormato2(
+  numeroOrden: number,
+  denunciante: Denunciante,
+  datosDenuncia: DatosDenuncia
+): Buffer {
+  // Determinar el tamaño de papel (A4: 210x297mm, Oficio: 216x330mm)
+  const formatoPapel = datosDenuncia.tipo_papel === 'a4' ? [210, 297] : [216, 330]
+  
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: formatoPapel as [number, number],
+  })
+
+  const año = datosDenuncia.fecha_denuncia.split('-')[0]
+  const titulo = `ACTA DE DENUNCIA Nº ${numeroOrden}/${año}`
+
+  const fechaDenuncia = formatDate(datosDenuncia.fecha_denuncia)
+  const fechaNacimiento = formatDate(denunciante['Fecha de Nacimiento'])
+  const fechaHecho = formatDate(datosDenuncia.fecha_hecho)
+
+  // Agregar encabezado en la primera página
+  agregarEncabezado(doc, titulo, formatoPapel[0])
+
+  // Aviso legal
+  doc.setFontSize(8)
+  doc.setFont('helvetica', 'italic')
+  const aviso =
+    'LA PRESENTE ACTA SE REALIZA CONFORME A LOS SIGUIENTES: ARTÍCULO 284. "DENUNCIA", ARTÍCULO 285. "FORMA Y CONTENIDO", ARTÍCULO 289. "DENUNCIA ANTE LA POLICÍA" DE LA LEY 1286/98 "CODIGO PROCESAL PENAL".'
+  doc.text(aviso, 30, 78, { align: 'justify', maxWidth: 156 })
+
+  // Iniciar contenido después del aviso legal
+  let yPos = 88
+  
+  // Función auxiliar para dibujar una tabla
+  const dibujarTabla = (titulo: string, filas: Array<{label: string, valor: string}>, yPosInicial: number): number => {
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'bold')
+    doc.text(titulo, 30, yPosInicial)
+    
+    let yActual = yPosInicial + 8
+    
+    // Dibujar línea superior debajo del título
+    doc.setLineWidth(0.5)
+    doc.line(30, yActual, 186, yActual)
+    yActual += 5
+    
+    doc.setFontSize(9)
+    
+    for (let i = 0; i < filas.length; i++) {
+      const fila = filas[i]
+      
+      // Verificar si necesitamos nueva página
+      if (yActual > formatoPapel[1] - 50) {
+        doc.addPage()
+        agregarEncabezado(doc, titulo, formatoPapel[0])
+        yActual = 80
+        doc.setFontSize(9)
+      }
+      
+      // Dibujar label y valor en la misma línea
+      doc.setFont('helvetica', 'bold')
+      const textoCompleto = `${fila.label} ${fila.valor}`
+      const anchoTotal = formatoPapel[0] - 60
+      const splitTexto = doc.splitTextToSize(textoCompleto, anchoTotal)
+      
+      // Dibujar primero el label (para que quede en negrita), luego el valor
+      let xPos = 30
+      
+      // Dibujar label en negrita
+      doc.setFont('helvetica', 'bold')
+      const labelAncho = doc.getTextWidth(fila.label)
+      const maxAnchoFila = anchoTotal
+      
+      // Si el label cabe en una línea, lo dibujamos directamente
+      if (labelAncho <= maxAnchoFila) {
+        doc.text(fila.label, xPos, yActual)
+        xPos += labelAncho + 2
+      } else {
+        // Si el label es muy largo, lo dividimos
+        const labelSplit = doc.splitTextToSize(fila.label, maxAnchoFila)
+        doc.text(labelSplit, xPos, yActual, { maxWidth: maxAnchoFila })
+        const alturaLabel = labelSplit.length * 5
+        yActual += alturaLabel
+        xPos = 30
+      }
+      
+      // Dibujar valor en texto normal
+      doc.setFont('helvetica', 'normal')
+      const anchoDisponible = maxAnchoFila - (xPos - 30)
+      const valorSplit = doc.splitTextToSize(fila.valor, anchoDisponible)
+      const alturaValor = valorSplit.length * 5
+      
+      // Si el valor tiene múltiples líneas, ajustar la posición Y
+      if (valorSplit.length > 1) {
+        doc.text(valorSplit, xPos, yActual, { maxWidth: anchoDisponible })
+        yActual += alturaValor
+      } else {
+        doc.text(valorSplit[0], xPos, yActual)
+        yActual += 5
+      }
+      
+      // Dibujar línea separadora horizontal debajo de cada fila
+      doc.setLineWidth(0.3)
+      doc.line(30, yActual, 186, yActual)
+      yActual += 3
+    }
+    
+    yActual += 5
+    
+    return yActual
+  }
+
+  // PRIMERA SECCIÓN: Datos de la denuncia
+  const datosDenunciaFilas = [
+    { label: 'Fecha:', valor: fechaDenuncia },
+    { label: 'Hora:', valor: datosDenuncia.hora_denuncia },
+    { label: 'Personal encargado de recibir la denuncia:', valor: `${datosDenuncia.grado_operador.toUpperCase()} ${datosDenuncia.nombre_operador.toUpperCase()}` }
+  ]
+  yPos = dibujarTabla('DATOS DE LA DENUNCIA', datosDenunciaFilas, yPos)
+
+  // Verificar si necesitamos nueva página
+  if (yPos > formatoPapel[1] - 50) {
+    doc.addPage()
+    agregarEncabezado(doc, titulo, formatoPapel[0])
+    yPos = 80
+  }
+
+  // SEGUNDA SECCIÓN: Datos del denunciante
+  const datosDenuncianteFilas = [
+    { label: 'Nombres y Apellidos:', valor: denunciante['Nombres y Apellidos'].toUpperCase() },
+    ...(denunciante['Tipo de Documento'] ? [{ label: 'Tipo de Documento:', valor: denunciante['Tipo de Documento'] }] : []),
+    { label: denunciante['Tipo de Documento'] ? 'Número de Documento:' : 'Cédula de Identidad N°.:', valor: (denunciante['Número de Documento'] || denunciante['Cédula de Identidad']).toUpperCase() },
+    { label: 'Nacionalidad:', valor: denunciante['Nacionalidad'].toUpperCase() },
+    { label: 'Estado civil:', valor: denunciante['Estado Civil'].toUpperCase() },
+    { label: 'Edad:', valor: `${denunciante['Edad']} años` },
+    { label: 'Fecha de Nacimiento:', valor: fechaNacimiento },
+    { label: 'Lugar de nacimiento:', valor: denunciante['Lugar de Nacimiento'].toUpperCase() },
+    ...(denunciante['Profesión'] ? [{ label: 'Profesión:', valor: denunciante['Profesión'].toUpperCase() }] : []),
+    { label: 'Número de Teléfono:', valor: denunciante['Número de Teléfono'].toUpperCase() }
+  ]
+  yPos = dibujarTabla('DATOS DEL DENUNCIANTE', datosDenuncianteFilas, yPos)
+
+  // Verificar si necesitamos nueva página
+  if (yPos > formatoPapel[1] - 50) {
+    doc.addPage()
+    agregarEncabezado(doc, titulo, formatoPapel[0])
+    yPos = 80
+  }
+
+  // TERCERA SECCIÓN: Datos del supuesto autor
+  let datosAutorFilas: Array<{label: string, valor: string}> = []
+  
+  if (datosDenuncia.nombre_autor) {
+    datosAutorFilas = [
+      { label: 'Nombre:', valor: datosDenuncia.nombre_autor.toUpperCase() },
+      ...(datosDenuncia.cedula_autor ? [{ label: 'Cédula de Identidad N°.:', valor: datosDenuncia.cedula_autor.toUpperCase() }] : []),
+      ...(datosDenuncia.domicilio_autor ? [{ label: 'Domicilio Particular:', valor: datosDenuncia.domicilio_autor.toUpperCase() }] : []),
+      ...(datosDenuncia.nacionalidad_autor ? [{ label: 'Nacionalidad:', valor: datosDenuncia.nacionalidad_autor.toUpperCase() }] : []),
+      ...(datosDenuncia.estado_civil_autor ? [{ label: 'Estado civil:', valor: datosDenuncia.estado_civil_autor.toUpperCase() }] : []),
+      ...(datosDenuncia.edad_autor ? [{ label: 'Edad:', valor: `${datosDenuncia.edad_autor} años` }] : []),
+      ...(datosDenuncia.fecha_nacimiento_autor ? [{ label: 'Fecha de Nacimiento:', valor: formatDate(datosDenuncia.fecha_nacimiento_autor) }] : []),
+      ...(datosDenuncia.lugar_nacimiento_autor ? [{ label: 'Lugar de nacimiento:', valor: datosDenuncia.lugar_nacimiento_autor.toUpperCase() }] : []),
+      ...(datosDenuncia.telefono_autor ? [{ label: 'Número de Teléfono:', valor: datosDenuncia.telefono_autor.toUpperCase() }] : []),
+      ...(datosDenuncia.profesion_autor ? [{ label: 'Profesión:', valor: datosDenuncia.profesion_autor.toUpperCase() }] : [])
+    ]
+  } else {
+    datosAutorFilas = [
+      { label: '', valor: 'SUPUESTO AUTOR DESCONOCIDO' }
+    ]
+  }
+  
+  yPos = dibujarTabla('DATOS DEL SUPUESTO AUTOR', datosAutorFilas, yPos)
+
+  // Verificar si necesitamos nueva página
+  if (yPos > formatoPapel[1] - 50) {
+    doc.addPage()
+    agregarEncabezado(doc, titulo, formatoPapel[0])
+    yPos = 80
+  }
+
+  // CUARTA SECCIÓN: Tiempo y lugar donde ocurrió el supuesto hecho
+  let tiempoLugarFilas: Array<{label: string, valor: string}> = [
+    { label: 'Fecha del hecho:', valor: fechaHecho },
+    { label: 'Hora del hecho:', valor: datosDenuncia.hora_hecho },
+    { label: 'Lugar del hecho:', valor: datosDenuncia.lugar_hecho.toUpperCase() }
+  ]
+  
+  if (datosDenuncia.latitud && datosDenuncia.longitud) {
+    const lat = typeof datosDenuncia.latitud === 'number' ? datosDenuncia.latitud : parseFloat(String(datosDenuncia.latitud))
+    const lng = typeof datosDenuncia.longitud === 'number' ? datosDenuncia.longitud : parseFloat(String(datosDenuncia.longitud))
+    tiempoLugarFilas.push({ label: 'Coordenadas GPS:', valor: `${lat.toFixed(6)}, ${lng.toFixed(6)}` })
+  }
+  
+  yPos = dibujarTabla('TIEMPO Y LUGAR DONDE OCURRIÓ EL SUPUESTO HECHO', tiempoLugarFilas, yPos)
+
+  // Verificar si necesitamos nueva página
+  if (yPos > formatoPapel[1] - 50) {
+    doc.addPage()
+    agregarEncabezado(doc, titulo, formatoPapel[0])
+    yPos = 80
+  }
+
+  // QUINTA SECCIÓN: Relato del hecho
+  doc.setFontSize(10)
+  doc.setFont('helvetica', 'bold')
+  doc.text('RELATO DEL HECHO', 30, yPos)
+  yPos += 8
+  
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(9)
+  const splitRelato = doc.splitTextToSize(datosDenuncia.relato, 156)
+  
+  // Escribir el relato con manejo de páginas
+  let textoRelato = splitRelato
+  let yActual = yPos
+  const alturaLinea = 5
+  const alturaMaximaIntermedia = formatoPapel[1] - 5
+  const alturaMaximaUltima = formatoPapel[1] - 50
+
+  while (textoRelato.length > 0) {
+    const espacioParaUltimaDesdeInicio = alturaMaximaUltima - 80
+    const lineasQueCabenUltimaDesdeInicio = Math.floor(espacioParaUltimaDesdeInicio / alturaLinea)
+    
+    const seraUltimaPagina = textoRelato.length <= lineasQueCabenUltimaDesdeInicio
+    
+    const alturaMaxima = seraUltimaPagina ? alturaMaximaUltima : alturaMaximaIntermedia
+    const espacioRestante = alturaMaxima - yActual
+
+    const lineasDisponibles = Math.floor(espacioRestante / alturaLinea)
+
+    if (lineasDisponibles <= 0) {
+      doc.addPage()
+      agregarEncabezado(doc, titulo, formatoPapel[0])
+      doc.setFontSize(9)
+      doc.setFont('helvetica', 'normal')
+      yActual = 80
+      continue
+    } else {
+      const lineasAEscribir = Math.min(lineasDisponibles, textoRelato.length)
+      const lineasPagina = textoRelato.slice(0, lineasAEscribir)
+      textoRelato = textoRelato.slice(lineasAEscribir)
+
+      doc.text(lineasPagina, 30, yActual, { align: 'justify', maxWidth: 156 })
+      
+      yActual += lineasPagina.length * alturaLinea
+
+      if (textoRelato.length > 0) {
+        doc.addPage()
+        agregarEncabezado(doc, titulo, formatoPapel[0])
+        doc.setFontSize(9)
+        doc.setFont('helvetica', 'normal')
+        yActual = 80
+      }
+    }
+  }
+
+  // SEXTA SECCIÓN: Cierre de la denuncia y firmas
+  const yFirmas = yActual + 15
+  
+  doc.setFontSize(10)
+  doc.setFont('helvetica', 'bold')
+  doc.text('CIERRE DE LA DENUNCIA Y FIRMAS', 30, yFirmas)
+  
+  // Texto de cierre
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(9)
+  const cierreTexto = 'NO HABIENDO NADA MÁS QUE AGREGAR SE DA POR TERMINADA EL ACTA, PREVIA LECTURA Y RATIFICACIÓN DE SU CONTENIDO, FIRMANDO AL PIE EL DENUNCIANTE Y EL INTERVINIENTE, EN 3 (TRES) COPIAS DEL MISMO TENOR Y EFECTO. LA PERSONA RECURRENTE ES INFORMADA SOBRE: ARTÍCULO 289.- "DENUNCIA FALSA"; ARTÍCULO 242.- "TESTIMONIO FALSO"; ARTÍCULO 243.- "DECLARACIÓN FALSA".'
+  const splitCierre = doc.splitTextToSize(cierreTexto, 156)
+  doc.text(splitCierre, 30, yFirmas + 10, { align: 'justify', maxWidth: 156 })
+  
+  const yFirmasFinal = yFirmas + 10 + splitCierre.length * 5 + 15
+
+  // Agregar firmas en la última página
+  doc.setFont('helvetica', 'normal')
+  doc.setLineWidth(0.5)
+  doc.line(30, yFirmasFinal, 66, yFirmasFinal)
+  doc.setFontSize(10)
+  
+  // Determinar qué información mostrar
+  let nombreMostrar = datosDenuncia.nombre_operador
+  let gradoMostrar = datosDenuncia.grado_operador
+  let etiquetaMostrar = 'INTERVINIENTE'
+  
+  if (datosDenuncia.es_operador_autorizado && datosDenuncia.operador_autorizado) {
+    nombreMostrar = `${datosDenuncia.operador_autorizado.nombre}`
+    gradoMostrar = datosDenuncia.operador_autorizado.grado
+    etiquetaMostrar = 'OPERADOR AUTORIZADO'
+  }
+  
+  doc.text(nombreMostrar.toUpperCase(), 48, yFirmasFinal + 7, {
+    align: 'center',
+  })
+  doc.text(gradoMostrar.toUpperCase(), 48, yFirmasFinal + 12, {
+    align: 'center',
+  })
+  doc.setFont('helvetica', 'bold')
+  doc.text(etiquetaMostrar, 48, yFirmasFinal + 17, { align: 'center' })
+
+  // Centro - Hash
+  doc.setFontSize(8)
+  doc.setFont('helvetica', 'bold')
+  doc.text(datosDenuncia.hash, 108, yFirmasFinal + 7, { align: 'center' })
+
+  // Firma derecha - Denunciante
+  const docDenunciante = `NUMERO DE DOC.: ${denunciante['Número de Documento'] || denunciante['Cédula de Identidad']}`
+  doc.line(150, yFirmasFinal, 186, yFirmasFinal)
+  doc.setFontSize(10)
+  doc.setFont('helvetica', 'normal')
+  doc.text(denunciante['Nombres y Apellidos'].toUpperCase(), 168, yFirmasFinal + 7, {
+    align: 'center',
+  })
+  doc.text(docDenunciante, 168, yFirmasFinal + 12, { align: 'center' })
+  doc.setFont('helvetica', 'bold')
+  doc.text('DENUNCIANTE', 168, yFirmasFinal + 17, { align: 'center' })
+
+  return Buffer.from(doc.output('arraybuffer'))
+}

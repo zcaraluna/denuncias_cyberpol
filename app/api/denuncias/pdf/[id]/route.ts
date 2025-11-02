@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/lib/db'
-import { generarPDF, Denunciante, DatosDenuncia } from '@/lib/utils/pdf'
+import { generarPDF, generarPDFFormato2, Denunciante, DatosDenuncia } from '@/lib/utils/pdf'
 
 // Función auxiliar para convertir fechas
 const formatDate = (date: any): string => {
@@ -23,6 +23,7 @@ export async function GET(
     const searchParams = request.nextUrl.searchParams
     const tipoPapel = (searchParams.get('tipo') === 'a4' ? 'a4' : 'oficio') as 'oficio' | 'a4'
     const usuarioIdActual = searchParams.get('usuario_id')
+    const formato = parseInt(searchParams.get('formato') || '1') // Por defecto formato 1
 
     // Obtener datos de la denuncia
     const denunciaResult = await pool.query(
@@ -118,8 +119,10 @@ export async function GET(
       es_operador_autorizado: esOperadorAutorizado
     }
 
-    // Generar PDF
-    const pdfBuffer = generarPDF(row.orden, denunciante, datosDenuncia)
+    // Generar PDF según el formato seleccionado
+    const pdfBuffer = formato === 2 
+      ? generarPDFFormato2(row.orden, denunciante, datosDenuncia)
+      : generarPDF(row.orden, denunciante, datosDenuncia)
 
     return new Response(new Uint8Array(pdfBuffer), {
       headers: {

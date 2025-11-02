@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { generarPDF, Denunciante, DatosDenuncia } from '@/lib/utils/pdf'
+import { generarPDF, generarPDFFormato2, Denunciante, DatosDenuncia } from '@/lib/utils/pdf'
 
 // Función auxiliar para convertir fechas
 const formatDate = (date: any): string => {
@@ -22,6 +22,7 @@ function generarHash(): string {
 export async function POST(request: NextRequest) {
   try {
     const data = await request.json()
+    const formato = data.formato ? parseInt(data.formato) : 1 // Por defecto formato 1
 
     const denunciante: Denunciante = {
       'Nombres y Apellidos': data.denunciante.nombres,
@@ -68,8 +69,10 @@ export async function POST(request: NextRequest) {
       profesion_autor: data.autor.conocido === 'Conocido' ? data.autor.profesion : null,
     }
 
-    // Generar PDF
-    const pdfBuffer = generarPDF(999, denunciante, datosDenuncia)
+    // Generar PDF según el formato seleccionado
+    const pdfBuffer = formato === 2 
+      ? generarPDFFormato2(999, denunciante, datosDenuncia)
+      : generarPDF(999, denunciante, datosDenuncia)
 
     return new Response(new Uint8Array(pdfBuffer), {
       headers: {
