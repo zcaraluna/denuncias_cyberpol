@@ -23,7 +23,21 @@ export async function GET(request: NextRequest) {
       LIMIT 1000`
     )
 
-    return NextResponse.json(result.rows)
+    // Corregir las fechas restando 3 horas para ajustar la zona horaria del VPS
+    const visitasCorregidas = result.rows.map((visita: any) => {
+      if (visita.fecha_visita) {
+        const fecha = new Date(visita.fecha_visita)
+        // Restar 3 horas (10800000 milisegundos)
+        const fechaCorregida = new Date(fecha.getTime() - 3 * 60 * 60 * 1000)
+        return {
+          ...visita,
+          fecha_visita: fechaCorregida.toISOString()
+        }
+      }
+      return visita
+    })
+
+    return NextResponse.json(visitasCorregidas)
   } catch (error) {
     console.error('Error obteniendo log de visitas:', error)
     return NextResponse.json(

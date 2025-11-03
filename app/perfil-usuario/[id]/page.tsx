@@ -117,22 +117,9 @@ export default function PerfilUsuarioPage({ params }: { params: Promise<{ id: st
   }
 
   const formatearFecha = (fecha: string) => {
-    // Crear objeto Date desde la fecha
-    let date: Date
-    // Detectar si la fecha tiene información de zona horaria (Z, +HH:MM, -HH:MM)
-    const tieneZonaHoraria = fecha.includes('Z') || /[-+]\d{2}:?\d{2}$/.test(fecha)
-    
-    if (tieneZonaHoraria) {
-      date = new Date(fecha)
-    } else {
-      // Si no tiene zona horaria, tratar como UTC
-      date = new Date(fecha + 'Z')
-    }
-    
-    // Restar 3 horas (10800000 milisegundos) para corregir el desfase del VPS
-    const fechaCorregida = new Date(date.getTime() - 3 * 60 * 60 * 1000)
-    
-    return fechaCorregida.toLocaleString('es-ES', {
+    // La fecha ya viene corregida desde el servidor (con 3 horas restadas)
+    const date = new Date(fecha)
+    return date.toLocaleString('es-ES', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
