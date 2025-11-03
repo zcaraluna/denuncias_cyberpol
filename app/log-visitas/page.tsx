@@ -79,7 +79,7 @@ export default function LogVisitasPage() {
   }
 
   const formatearFecha = (fecha: string) => {
-    // PostgreSQL retorna timestamps en UTC, convertir a America/Asuncion
+    // fecha ya viene en local desde PostgreSQL, solo formatear
     const date = new Date(fecha)
     return date.toLocaleString('es-ES', {
       year: 'numeric',
@@ -87,8 +87,7 @@ export default function LogVisitasPage() {
       day: '2-digit',
       hour: '2-digit',
       minute: '2-digit',
-      second: '2-digit',
-      timeZone: 'America/Asuncion'
+      second: '2-digit'
     })
   }
 
