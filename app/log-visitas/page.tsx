@@ -79,27 +79,28 @@ export default function LogVisitasPage() {
   }
 
   const formatearFecha = (fecha: string) => {
-    // Si la fecha viene sin zona horaria, tratarla como UTC y convertir a Paraguay
+    // Crear objeto Date desde la fecha
     let date: Date
     // Detectar si la fecha tiene información de zona horaria (Z, +HH:MM, -HH:MM)
     const tieneZonaHoraria = fecha.includes('Z') || /[-+]\d{2}:?\d{2}$/.test(fecha)
     
     if (tieneZonaHoraria) {
-      // Ya tiene información de zona horaria
       date = new Date(fecha)
     } else {
-      // No tiene zona horaria, asumir que viene en UTC desde PostgreSQL (VPS típicamente en UTC)
-      // y convertir a hora de Paraguay
+      // Si no tiene zona horaria, tratar como UTC
       date = new Date(fecha + 'Z')
     }
-    return date.toLocaleString('es-ES', {
+    
+    // Restar 3 horas (10800000 milisegundos) para corregir el desfase del VPS
+    const fechaCorregida = new Date(date.getTime() - 3 * 60 * 60 * 1000)
+    
+    return fechaCorregida.toLocaleString('es-ES', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
       hour: '2-digit',
       minute: '2-digit',
-      second: '2-digit',
-      timeZone: 'America/Asuncion'
+      second: '2-digit'
     })
   }
 
