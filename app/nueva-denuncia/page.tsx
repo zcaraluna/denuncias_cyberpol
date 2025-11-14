@@ -312,6 +312,9 @@ export default function NuevaDenunciaPage() {
   }>({})
   const [denunciantes, setDenunciantes] = useState<DenuncianteEnLista[]>([])
   const [denuncianteEnEdicionId, setDenuncianteEnEdicionId] = useState<string | null>(null)
+  const [mostrarModalVistaPrevia, setMostrarModalVistaPrevia] = useState(false)
+  const [textoVistaPrevia, setTextoVistaPrevia] = useState<string>('')
+  const [generandoVistaPrevia, setGenerandoVistaPrevia] = useState(false)
 
   const tiposDenuncia = [
     'Estafa',
@@ -1643,6 +1646,113 @@ export default function NuevaDenunciaPage() {
       alert('Error al generar la vista previa. Por favor, intente nuevamente.')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const generarVistaPrevia = async () => {
+    if (!usuario) return
+
+    if (denunciantes.length === 0) {
+      alert('Debes agregar al menos un denunciante antes de completar la denuncia.')
+      setPaso(1)
+      return
+    }
+
+    const denunciantePrincipal = obtenerDenunciantePrincipal()
+    if (!denunciantePrincipal) {
+      alert('Debes registrar un denunciante principal antes de completar la denuncia.')
+      setPaso(1)
+      return
+    }
+
+    setGenerandoVistaPrevia(true)
+
+    try {
+      const autorData = watchAutor()
+      const denunciaData = watchDenuncia()
+
+      let fechaHecho = denunciaData.fechaHecho || ''
+      if (fechaHecho.includes('/')) {
+        const [dia, mes, año] = fechaHecho.split('/')
+        fechaHecho = `${año}-${mes}-${dia}`
+      }
+
+      const denunciantePayload = construirDenunciantePayload(denunciantePrincipal)
+      const coleccionDenunciantes = construirColeccionDenunciantesPayload(denunciantes)
+
+      const hoy = new Date()
+      const fechaDenuncia = hoy.toISOString().split('T')[0]
+      const horaDenuncia = `${String(hoy.getHours()).padStart(2, '0')}:${String(hoy.getMinutes()).padStart(2, '0')}`
+
+      const payload = {
+        borradorId: borradorId || null,
+        denunciante: denunciantePayload,
+        denunciantes: coleccionDenunciantes,
+        denunciantePrincipalId: denunciantePrincipal.id,
+        denunciantesAdicionales: coleccionDenunciantes.filter(
+          (denunciante) => denunciante.id !== denunciantePrincipal.id
+        ),
+        denuncia: {
+          fechaDenuncia: fechaDenuncia,
+          horaDenuncia: horaDenuncia,
+          fechaHecho: fechaHecho,
+          horaHecho: denunciaData.horaHecho,
+          usarRango: denunciaData.usarRango || false,
+          fechaHechoFin: denunciaData.fechaHechoFin || null,
+          horaHechoFin: denunciaData.horaHechoFin || null,
+          tipoDenuncia: denunciaData.tipoDenuncia === 'Otro (Especificar)' ? 'OTRO' : denunciaData.tipoDenuncia,
+          otroTipo: denunciaData.tipoDenuncia === 'Otro (Especificar)' ? denunciaData.otroTipo?.toUpperCase() : null,
+          lugarHecho: construirDomicilio(denunciaData.lugarHechoDepartamento, denunciaData.lugarHechoCiudad, denunciaData.lugarHechoCalles)?.toUpperCase() || denunciaData.lugarHecho?.toUpperCase() || '',
+          relato: denunciaData.relato || '',
+          montoDano: denunciaData.montoDano ? parseInt(denunciaData.montoDano.replace(/\./g, '')) : null,
+          moneda: denunciaData.moneda || null,
+          latitud: coordenadas?.lat || null,
+          longitud: coordenadas?.lng || null,
+        },
+        autor: {
+          conocido: autorConocido,
+          ...(autorConocido === 'Conocido' && {
+            nombre: autorData.nombre?.toUpperCase() || null,
+            cedula: autorData.cedula?.toUpperCase() || null,
+            domicilio: construirDomicilio(autorData.departamento, autorData.ciudad, autorData.calles) || null,
+            nacionalidad: autorData.nacionalidad?.toUpperCase() || null,
+            estadoCivil: autorData.estadoCivil?.toUpperCase() || null,
+            edad: autorData.edad || null,
+            fechaNacimiento: autorData.fechaNacimiento || null,
+            lugarNacimiento: autorData.lugarNacimiento?.toUpperCase() || null,
+            telefono: autorData.telefono?.toUpperCase() || null,
+            profesion: autorData.profesion?.toUpperCase() || null,
+          }),
+        },
+        descripcionFisica: autorConocido === 'Desconocido' 
+          ? (Object.keys(descripcionFisica).length > 0 ? JSON.stringify(descripcionFisica) : null)
+          : null,
+        operador: {
+          nombre: usuario.nombre,
+          apellido: usuario.apellido,
+          grado: usuario.grado,
+          oficina: usuario.oficina,
+        },
+      }
+
+      const response = await fetch('/api/denuncias/preview-texto', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+
+      if (!response.ok) {
+        throw new Error('Error al generar la vista previa')
+      }
+
+      const result = await response.json()
+      setTextoVistaPrevia(result.texto)
+      setMostrarModalVistaPrevia(true)
+    } catch (error) {
+      console.error('Error:', error)
+      alert('Error al generar la vista previa. Por favor, intente nuevamente.')
+    } finally {
+      setGenerandoVistaPrevia(false)
     }
   }
 
@@ -3798,11 +3908,12 @@ export default function NuevaDenunciaPage() {
                   {loading ? 'Generando...' : 'Vista Previa'}
                 </button> */}
                 <button
-                  type="submit"
-                  disabled={loading || guardandoBorrador}
+                  type="button"
+                  onClick={generarVistaPrevia}
+                  disabled={generandoVistaPrevia || guardandoBorrador}
                   className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {loading ? 'Guardando...' : 'Finalizar'}
+                  {generandoVistaPrevia ? 'Generando vista previa...' : 'Finalizar'}
                 </button>
               </div>
             </div>
@@ -3841,6 +3952,77 @@ export default function NuevaDenunciaPage() {
                 className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-medium"
               >
                 Ir al Inicio
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de vista previa antes de finalizar */}
+      {mostrarModalVistaPrevia && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[95vh] flex flex-col overflow-hidden border border-gray-200">
+            {/* Header con gradiente */}
+            <div className="flex justify-between items-center px-8 py-6 bg-gradient-to-r from-blue-600 to-indigo-700 border-b border-blue-500">
+              <div>
+                <h3 className="text-2xl font-bold text-white mb-1">Vista Previa de la Denuncia</h3>
+                <p className="text-sm text-blue-100">Revise el contenido antes de finalizar</p>
+              </div>
+              <button
+                onClick={() => setMostrarModalVistaPrevia(false)}
+                className="text-white hover:bg-white/20 rounded-full p-2 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-200"
+                aria-label="Cerrar"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            {/* Contenido con scroll */}
+            <div className="flex-1 overflow-y-auto bg-gradient-to-br from-gray-50 to-gray-100">
+              <div className="p-8">
+                <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-10 max-w-4xl mx-auto">
+                  <div className="prose prose-lg max-w-none font-lato" style={{ fontFamily: 'var(--font-lato), Lato, sans-serif' }}>
+                    <div 
+                      className="text-[15px] text-gray-900 leading-[1.8] tracking-wide antialiased font-lato"
+                      style={{ fontFamily: 'var(--font-lato), Lato, sans-serif' }}
+                      dangerouslySetInnerHTML={{ __html: textoVistaPrevia.replace(/\n/g, '<br />') }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Footer con botones */}
+            <div className="flex gap-4 px-8 py-6 bg-white border-t border-gray-200 rounded-b-2xl">
+              <button
+                onClick={() => setMostrarModalVistaPrevia(false)}
+                className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 font-semibold transition-all duration-200 shadow-sm hover:shadow"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={async () => {
+                  setMostrarModalVistaPrevia(false)
+                  const denunciaData = watchDenuncia()
+                  // Llamar directamente a onDenunciaSubmit
+                  await onDenunciaSubmit(denunciaData)
+                }}
+                disabled={loading}
+                className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:transform-none"
+              >
+                {loading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Guardando...
+                  </span>
+                ) : (
+                  'Confirmar y Finalizar'
+                )}
               </button>
             </div>
           </div>

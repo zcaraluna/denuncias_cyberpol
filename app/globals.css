@@ -26,6 +26,12 @@ body {
     rgb(var(--background-start-rgb));
 }
 
+/* Estilos para el modal de vista previa */
+.font-lato strong {
+  font-weight: 700;
+  color: #1f2937;
+}
+
 /* Estilos para inputs */
 input, textarea, select {
   color: #000 !important;
