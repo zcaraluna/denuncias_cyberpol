@@ -589,8 +589,11 @@ export function generarPDF(
   const alturaLineaRelato = 6
   // Altura máxima para páginas intermedias (usar casi todo el espacio, solo 5mm de margen)
   const alturaMaximaIntermedia = formatoPapel[1] - 5
-  // Altura máxima para la última página (dejar 50mm para firmas)
-  const alturaMaximaUltima = formatoPapel[1] - 50
+  // Altura máxima para la última página (dejar espacio suficiente para firmas: ~65mm para A4, ~75mm para Oficio)
+  // Las firmas necesitan: línea (yFirmas) + nombre (yFirmas + 7) + documento (yFirmas + 12) + etiqueta (yFirmas + 17) + margen
+  // Total aprox: 20mm para contenido + 10mm de espacio antes + 5mm margen final = ~35mm mínimo, pero usamos más por seguridad
+  const espacioReservadoFirmas = formatoPapel[1] === 297 ? 65 : 75 // 65mm para A4, 75mm para Oficio
+  const alturaMaximaUltima = formatoPapel[1] - espacioReservadoFirmas
 
   while (textoRestante.length > 0) {
     // Calcular cuántas líneas caben en la última página desde el inicio de página nueva
@@ -637,8 +640,29 @@ export function generarPDF(
     }
   }
 
+  // Verificar si hay espacio suficiente para las firmas en la página actual
+  // Las firmas realmente necesitan: línea (yFirmas) + nombre (yFirmas + 7) + documento (yFirmas + 12) + etiqueta (yFirmas + 17) + margen final
+  // Total: aproximadamente 17mm para el contenido + 5mm de margen inferior = ~22mm, pero calculamos con más precisión
+  const alturaPagina = formatoPapel[1]
+  const espacioParaFirmas = yActual + 1 // Espacio mínimo (1mm) antes de la línea de firma
+  const alturaFirmas = 17 // Desde la línea hasta la etiqueta (yFirmas + 17)
+  const margenInferior = 5 // Margen inferior mínimo
+  const alturaNecesariaTotal = alturaFirmas + margenInferior // ~22mm total
+  const yFirmasNecesaria = espacioParaFirmas + alturaFirmas
+  const espacioDisponible = alturaPagina - yActual
+  
+  // Si no hay suficiente espacio para las firmas completas (incluyendo margen), crear una nueva página
+  if (yFirmasNecesaria + margenInferior > alturaPagina) {
+    doc.addPage()
+    agregarEncabezado(doc, titulo, formatoPapel[0])
+    yActual = 80
+  }
+  
   // Agregar firmas en la última página
-  const yFirmas = yActual + 20
+  // Calcular la posición máxima para las firmas (asegurando que quepan completas)
+  const yFirmasMaxima = alturaPagina - alturaFirmas - margenInferior
+  const yFirmas = Math.min(yActual + 1, yFirmasMaxima) // Mínimo espacio posible (1mm) para acercar las firmas al máximo
+  
   doc.setFont('helvetica', 'normal')
 
   // Firma izquierda - Interviniente o Operador Autorizado
