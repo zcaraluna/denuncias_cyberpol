@@ -30,7 +30,6 @@ function ConfirmacionPage() {
   const [loading, setLoading] = useState(true)
   const [mostrarModal, setMostrarModal] = useState(false)
   const [tipoPapelSeleccionado, setTipoPapelSeleccionado] = useState<'oficio' | 'a4'>('oficio')
-  const [formatoSeleccionado, setFormatoSeleccionado] = useState<1 | 2>(1)
 
   useEffect(() => {
     const usuarioStr = sessionStorage.getItem('usuario')
@@ -96,7 +95,7 @@ function ConfirmacionPage() {
 
   const handleConfirmarDescarga = () => {
     if (denuncia && usuario) {
-      window.open(`/api/denuncias/pdf/${denuncia.id}?tipo=${tipoPapelSeleccionado}&usuario_id=${usuario.id}&formato=${formatoSeleccionado}`, '_blank')
+      window.open(`/api/denuncias/pdf/${denuncia.id}?tipo=${tipoPapelSeleccionado}&usuario_id=${usuario.id}`, '_blank')
       setMostrarModal(false)
     }
   }
@@ -225,42 +224,9 @@ function ConfirmacionPage() {
               Seleccionar Formato
             </h3>
             <p className="text-gray-600 mb-6">
-              Elija el formato de denuncia y el tamaño de papel para la impresión:
+              Elija el tamaño de papel para la impresión:
             </p>
             
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-3">Formato de Denuncia</label>
-              <div className="space-y-3">
-                <label className="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition">
-                  <input
-                    type="radio"
-                    value="1"
-                    checked={formatoSeleccionado === 1}
-                    onChange={() => setFormatoSeleccionado(1)}
-                    className="w-5 h-5 text-blue-600 focus:ring-blue-500"
-                  />
-                  <div className="ml-3">
-                    <p className="font-medium text-gray-900">Formato 1 (Narrativo)</p>
-                    <p className="text-sm text-gray-600">Formato tradicional con párrafos narrativos</p>
-                  </div>
-                </label>
-                
-                <label className="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition">
-                  <input
-                    type="radio"
-                    value="2"
-                    checked={formatoSeleccionado === 2}
-                    onChange={() => setFormatoSeleccionado(2)}
-                    className="w-5 h-5 text-blue-600 focus:ring-blue-500"
-                  />
-                  <div className="ml-3">
-                    <p className="font-medium text-gray-900">Formato 2 (Secciones)</p>
-                    <p className="text-sm text-gray-600">Formato estructurado por secciones</p>
-                  </div>
-                </label>
-              </div>
-            </div>
-
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-3">Formato de Papel</label>
               <div className="space-y-3">

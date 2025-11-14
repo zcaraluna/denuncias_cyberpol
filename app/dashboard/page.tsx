@@ -192,7 +192,10 @@ export default function DashboardPage() {
             </p>
           </Link>
 
-          <div className="bg-white rounded-lg shadow-md p-6 border-2 border-transparent">
+          <Link
+            href="/reportes"
+            className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition cursor-pointer border-2 border-transparent hover:border-purple-500"
+          >
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-800">
                 Reportes
@@ -206,7 +209,7 @@ export default function DashboardPage() {
             <p className="text-gray-600 text-sm">
               Generar reportes y estadísticas
             </p>
-          </div>
+          </Link>
         </div>
       </main>
     </div>

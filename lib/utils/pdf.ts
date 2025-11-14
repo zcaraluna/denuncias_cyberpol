@@ -29,7 +29,33 @@ export interface Denunciante {
   'Fecha de Nacimiento': string
   'Lugar de Nacimiento': string
   'Número de Teléfono': string
+  'Domicilio': string | null
+  'Correo Electrónico': string | null
   'Profesión': string | null
+}
+
+export type RolInvolucrado = 'principal' | 'co-denunciante' | 'abogado'
+
+export interface DenuncianteInvolucrado {
+  rol: RolInvolucrado
+  nombres: string
+  tipoDocumento?: string | null
+  numeroDocumento?: string | null
+  telefono?: string | null
+  correo?: string | null
+  profesion?: string | null
+  matricula?: string | null
+  representaA?: string | null
+  domicilio?: string | null
+  nacionalidad?: string | null
+  estadoCivil?: string | null
+  edad?: string | null
+  fechaNacimiento?: string | null
+  lugarNacimiento?: string | null
+  conCartaPoder?: boolean | null
+  cartaPoderFecha?: string | null
+  cartaPoderNumero?: string | null
+  cartaPoderNotario?: string | null
 }
 
 export interface DatosDenuncia {
@@ -37,6 +63,8 @@ export interface DatosDenuncia {
   hora_denuncia: string
   fecha_hecho: string
   hora_hecho: string
+  fecha_hecho_fin?: string | null
+  hora_hecho_fin?: string | null
   tipo_denuncia: string
   otro_tipo?: string | null
   lugar_hecho: string
@@ -61,12 +89,211 @@ export interface DatosDenuncia {
   lugar_nacimiento_autor?: string | null
   telefono_autor?: string | null
   profesion_autor?: string | null
+  descripcion_fisica?: string | null
   // Para firma dinámica
   operador_autorizado?: {
     grado: string
     nombre: string
   }
   es_operador_autorizado?: boolean
+  involucrados?: DenuncianteInvolucrado[]
+}
+
+const formatearDocumento = (tipo?: string | null, numero?: string | null) => {
+  const tipoLimpio = tipo ? tipo.trim() : ''
+  const numeroLimpio = numero ? numero.trim() : ''
+  if (!tipoLimpio && !numeroLimpio) return null
+  if (tipoLimpio && numeroLimpio) return `${tipoLimpio} ${numeroLimpio.toUpperCase()}`
+  return tipoLimpio || numeroLimpio.toUpperCase()
+}
+
+const unirConY = (partes: string[]): string => {
+  if (partes.length === 0) return ''
+  if (partes.length === 1) return partes[0]
+  const ultima = partes[partes.length - 1]
+  const restantes = partes.slice(0, -1)
+  return `${restantes.join(', ')}, y ${ultima}`
+}
+
+const obtenerDatosAbogado = (item: DenuncianteInvolucrado) => {
+  const nombre = item.nombres ? item.nombres.toUpperCase() : 'NOMBRE NO ESPECIFICADO'
+  const documento = formatearDocumento(item.tipoDocumento, item.numeroDocumento)
+  const matricula = item.matricula ? item.matricula.toUpperCase() : 'SIN MATRÍCULA REGISTRADA'
+  const telefono = item.telefono ? item.telefono.toUpperCase() : 'SIN TELÉFONO REGISTRADO'
+  const correo = item.correo ? item.correo : 'SIN CORREO REGISTRADO'
+  return { nombre, documento, matricula, telefono, correo }
+}
+
+const describirAbogadoIntro = (item: DenuncianteInvolucrado) => {
+  const { nombre, documento, matricula, telefono, correo } = obtenerDatosAbogado(item)
+  const partes: string[] = []
+  if (documento) partes.push(`con ${documento}`)
+  partes.push(`Matrícula Profesional Nº ${matricula}`)
+  partes.push(`teléfono ${telefono}`)
+  partes.push(`correo electrónico ${correo}`)
+  return `${nombre}, ${unirConY(partes)}`
+}
+
+// Función para generar texto de descripción física a partir de objeto JSON
+const generarTextoDescripcionFisica = (desc: any): string => {
+  const partes: string[] = []
+  
+  // 1. Constitución física - títulos en minúsculas, valores en mayúsculas
+  const constitucion: string[] = []
+  if (desc.altura) {
+    const alturaMayus = desc.altura.toUpperCase()
+    constitucion.push(`altura ${alturaMayus}`)
+  }
+  if (desc.complexion) {
+    const complexionMayus = desc.complexion.toUpperCase()
+    constitucion.push(`complexión ${complexionMayus}`)
+  }
+  if (desc.postura) {
+    const posturaMayus = desc.postura.toUpperCase()
+    constitucion.push(`postura ${posturaMayus}`)
+  }
+  if (constitucion.length > 0) {
+    partes.push(`constitución física: ${constitucion.join(', ')}`)
+  }
+  
+  // 2. Forma del rostro
+  if (desc.formaRostro) {
+    partes.push(`forma del rostro: ${desc.formaRostro.toUpperCase()}`)
+  }
+  
+  // 3. Piel
+  const piel: string[] = []
+  if (desc.tonoPiel) piel.push(`tono ${desc.tonoPiel.toUpperCase()}`)
+  if (desc.texturaPiel) piel.push(`textura ${desc.texturaPiel.toUpperCase()}`)
+  if (piel.length > 0) {
+    partes.push(`piel: ${piel.join(', ')}`)
+  }
+  
+  // 4. Cabello
+  const cabello: string[] = []
+  if (desc.colorCabello) {
+    if (desc.colorCabello === 'Teñido' && desc.cabelloTeñido) {
+      cabello.push(`color teñido (${desc.cabelloTeñido.toUpperCase()})`)
+    } else {
+      cabello.push(`color ${desc.colorCabello.toUpperCase()}`)
+    }
+  }
+  if (desc.longitudCabello) cabello.push(`longitud ${desc.longitudCabello.toUpperCase()}`)
+  if (desc.texturaCabello) cabello.push(`textura ${desc.texturaCabello.toUpperCase()}`)
+  if (desc.peinado) cabello.push(`peinado ${desc.peinado.toUpperCase()}`)
+  if (cabello.length > 0) {
+    partes.push(`cabello: ${cabello.join(', ')}`)
+  }
+  
+  // 5. Ojos
+  const ojos: string[] = []
+  if (desc.formaOjos) ojos.push(`forma ${desc.formaOjos.toUpperCase()}`)
+  if (desc.colorOjos) ojos.push(`color ${desc.colorOjos.toUpperCase()}`)
+  if (desc.caracteristicasOjos && Array.isArray(desc.caracteristicasOjos) && desc.caracteristicasOjos.length > 0) {
+    ojos.push(desc.caracteristicasOjos.map((c: string) => c.toUpperCase()).join(', '))
+  }
+  if (ojos.length > 0) {
+    partes.push(`ojos: ${ojos.join(', ')}`)
+  }
+  
+  // 6. Otros rasgos distintivos
+  if (desc.otrosRasgos && Array.isArray(desc.otrosRasgos) && desc.otrosRasgos.length > 0) {
+    partes.push(`otros rasgos distintivos: ${desc.otrosRasgos.map((r: string) => r.toUpperCase()).join(', ')}`)
+  }
+  
+  // 7. Detalles adicionales (texto libre)
+  if (desc.detallesAdicionales && desc.detallesAdicionales.trim() !== '') {
+    partes.push(`detalles adicionales: ${desc.detallesAdicionales.trim().toUpperCase()}`)
+  }
+  
+  return partes.join(', ') + '.'
+}
+
+const describirCartaPoder = (item: DenuncianteInvolucrado) => {
+  if (!item.conCartaPoder) return null
+  const partes: string[] = []
+  if (item.cartaPoderFecha) {
+    let fechaFormateada: string
+    const fechaStr = String(item.cartaPoderFecha)
+    
+    // Si contiene 'T' (formato ISO completo), extraer solo la fecha
+    if (fechaStr.includes('T')) {
+      fechaFormateada = formatDate(fechaStr.split('T')[0])
+    } 
+    // Si es formato YYYY-MM-DD, formatear directamente
+    else if (/^\d{4}-\d{2}-\d{2}$/.test(fechaStr)) {
+      fechaFormateada = formatDate(fechaStr)
+    }
+    // Si parece un objeto Date convertido a string (contiene "GMT" o días de la semana), intentar parsear
+    else if (fechaStr.includes('GMT') || /^[A-Z][a-z]{2}\s/.test(fechaStr)) {
+      try {
+        const fecha = new Date(fechaStr)
+        if (!isNaN(fecha.getTime())) {
+          const año = fecha.getFullYear()
+          const mes = String(fecha.getMonth() + 1).padStart(2, '0')
+          const dia = String(fecha.getDate()).padStart(2, '0')
+          fechaFormateada = `${dia}/${mes}/${año}`
+        } else {
+          fechaFormateada = fechaStr
+        }
+      } catch {
+        fechaFormateada = fechaStr
+      }
+    }
+    // Si no coincide con ningún patrón, intentar usar formatDate directamente
+    else {
+      try {
+        fechaFormateada = formatDate(fechaStr)
+      } catch {
+        fechaFormateada = fechaStr
+      }
+    }
+    partes.push(`otorgada en fecha ${fechaFormateada}`)
+  }
+  if (item.cartaPoderNotario) partes.push(`ante el notario ${item.cartaPoderNotario.toUpperCase()}`)
+  return partes.length > 0 ? `con carta poder ${partes.join(', ')}` : 'con carta poder'
+}
+
+const describirCoDenunciante = (item: DenuncianteInvolucrado) => {
+  const partes: string[] = []
+  const documento = formatearDocumento(item.tipoDocumento, item.numeroDocumento)
+  if (documento) partes.push(documento)
+  if (item.domicilio) partes.push(`DOMICILIO: ${item.domicilio}`)
+  if (item.profesion) partes.push(`PROFESIÓN: ${item.profesion.toUpperCase()}`)
+  if (item.telefono) partes.push(`TEL.: ${item.telefono.toUpperCase()}`)
+  if (item.correo) partes.push(`CORREO: ${item.correo}`)
+  return `${item.nombres.toUpperCase()}${partes.length ? ` (${partes.join(', ')})` : ''}`
+}
+
+const describirAbogado = (item: DenuncianteInvolucrado) => {
+  const { nombre, documento, matricula, telefono, correo } = obtenerDatosAbogado(item)
+  const partes: string[] = []
+  if (documento) partes.push(documento)
+  partes.push(`MATRÍCULA PROFESIONAL Nº ${matricula}`)
+  partes.push(`TEL.: ${telefono}`)
+  partes.push(`CORREO: ${correo}`)
+  let texto = nombre
+  if (partes.length) {
+    texto += ` (${partes.join(', ')})`
+  }
+  if (item.representaA) {
+    texto += ` - Patrocina a ${item.representaA.toUpperCase()}`
+  }
+  return texto
+}
+
+const describirCoDenuncianteIntro = (item: DenuncianteInvolucrado) => {
+  const documento = formatearDocumento(item.tipoDocumento, item.numeroDocumento) ?? 'DOCUMENTO NO ESPECIFICADO'
+  const nacionalidad = item.nacionalidad ? item.nacionalidad.toUpperCase() : 'NO ESPECIFICADA'
+  const estadoCivil = item.estadoCivil ? item.estadoCivil.toUpperCase() : 'NO ESPECIFICADO'
+  const edad = item.edad ? `${item.edad} años` : 'EDAD NO ESPECIFICADA'
+  const fechaNacimiento = item.fechaNacimiento ? formatDate(item.fechaNacimiento) : 'FECHA NO ESPECIFICADA'
+  const lugarNacimiento = item.lugarNacimiento ? item.lugarNacimiento.toUpperCase() : 'LUGAR NO ESPECIFICADO'
+  const domicilio = item.domicilio ? item.domicilio : 'DOMICILIO NO ESPECIFICADO'
+  const telefono = item.telefono ? item.telefono.toUpperCase() : 'SIN TELÉFONO REGISTRADO'
+  const correo = item.correo ? item.correo : 'SIN CORREO REGISTRADO'
+
+  return `${item.nombres.toUpperCase()}, con ${documento}, de nacionalidad ${nacionalidad}, estado civil ${estadoCivil}, ${edad}, fecha de nacimiento ${fechaNacimiento}, en ${lugarNacimiento}, domiciliado en ${domicilio}, teléfono ${telefono}, correo electrónico ${correo}`
 }
 
 function agregarEncabezado(doc: jsPDF, titulo: string, anchoPagina: number) {
@@ -142,6 +369,14 @@ export function generarPDF(
   const fechaDenuncia = formatDate(datosDenuncia.fecha_denuncia)
   const fechaNacimiento = formatDate(denunciante['Fecha de Nacimiento'])
   const fechaHecho = formatDate(datosDenuncia.fecha_hecho)
+  const tieneRango = datosDenuncia.fecha_hecho_fin && datosDenuncia.hora_hecho_fin
+  const fechaHechoFin = tieneRango && datosDenuncia.fecha_hecho_fin ? formatDate(datosDenuncia.fecha_hecho_fin) : null
+  const involucrados = (datosDenuncia.involucrados || []).filter(
+    (involucrado) => involucrado.rol !== 'principal'
+  )
+  const coDenunciantes = involucrados.filter((involucrado) => involucrado.rol === 'co-denunciante')
+  const abogados = involucrados.filter((involucrado) => involucrado.rol === 'abogado')
+  const abogadoConCartaPoder = abogados.find((abogado) => Boolean(abogado.conCartaPoder) === true)
 
   // Agregar encabezado en la primera página
   agregarEncabezado(doc, titulo, formatoPapel[0])
@@ -156,13 +391,72 @@ export function generarPDF(
   // Primer párrafo
   doc.setFontSize(12)
   doc.setFont('helvetica', 'normal')
-  const parrafo1 = `En la Sala de Denuncias de la Dirección Contra Hechos Punibles Económicos y Financieros, Oficina ${datosDenuncia.oficina.toUpperCase()}, en fecha ${fechaDenuncia} siendo las ${datosDenuncia.hora_denuncia}, ante mí ${datosDenuncia.grado_operador.toUpperCase()} ${datosDenuncia.nombre_operador.toUpperCase()}, concurre ${denunciante['Nombres y Apellidos'].toUpperCase()}, con ${denunciante['Tipo de Documento'] || 'Cédula de Identidad Paraguaya'} número ${(denunciante['Número de Documento'] || denunciante['Cédula de Identidad']).toUpperCase()}, de nacionalidad ${denunciante['Nacionalidad'].toUpperCase()}, estado civil ${denunciante['Estado Civil'].toUpperCase()}, ${denunciante['Edad']} años de edad, fecha de nacimiento ${fechaNacimiento}, en ${denunciante['Lugar de Nacimiento'].toUpperCase()}, número de teléfono ${denunciante['Número de Teléfono'].toUpperCase()}${denunciante['Profesión'] ? `, de profesión ${denunciante['Profesión'].toUpperCase()}` : ''}, y expone cuanto sigue:`
   
-  const splitParrafo1 = doc.splitTextToSize(parrafo1, 156)
-  doc.text(splitParrafo1, 30, 90, { align: 'justify', maxWidth: 156 })
+  let parrafoIntroduccion = ''
+  
+  // Caso especial: Abogado con carta poder (el abogado es quien concurre)
+  if (abogadoConCartaPoder) {
+    const { nombre, documento, matricula, telefono, correo } = obtenerDatosAbogado(abogadoConCartaPoder)
+    const cartaPoderTexto = describirCartaPoder(abogadoConCartaPoder) || 'con carta poder'
+    
+    parrafoIntroduccion = `En la Sala de Denuncias de la Dirección Contra Hechos Punibles Económicos y Financieros, Oficina ${datosDenuncia.oficina.toUpperCase()}, en fecha ${fechaDenuncia} siendo las ${datosDenuncia.hora_denuncia}, ante mí ${datosDenuncia.grado_operador.toUpperCase()} ${datosDenuncia.nombre_operador.toUpperCase()}, concurre ${nombre}, ${documento ? `con ${documento}` : ''}, Matrícula Profesional Nº ${matricula}, teléfono ${telefono}${correo ? `, correo electrónico ${correo}` : ''}, ${cartaPoderTexto}, en representación de ${denunciante['Nombres y Apellidos'].toUpperCase()}, con ${denunciante['Tipo de Documento'] || 'Cédula de Identidad Paraguaya'} número ${(denunciante['Número de Documento'] || denunciante['Cédula de Identidad']).toUpperCase()}, de nacionalidad ${denunciante['Nacionalidad'].toUpperCase()}, estado civil ${denunciante['Estado Civil'].toUpperCase()}, ${denunciante['Edad']} años de edad, fecha de nacimiento ${fechaNacimiento}, en ${denunciante['Lugar de Nacimiento'].toUpperCase()}${denunciante['Domicilio'] ? `, domiciliado en ${denunciante['Domicilio']}` : ''}`
+    
+    if (coDenunciantes.length > 0) {
+      const listadoCo = coDenunciantes.map(describirCoDenuncianteIntro).join('; ')
+      parrafoIntroduccion += ` y de ${coDenunciantes.length > 1 ? 'los co-denunciantes' : 'el co-denunciante'} ${listadoCo}`
+    }
+    
+    parrafoIntroduccion += ', y expone cuanto sigue:'
+  } else {
+    // Caso normal: Denunciante presente (con o sin abogado acompañante)
+    const telefonoPrincipal =
+      denunciante['Número de Teléfono'] && denunciante['Número de Teléfono'].trim() !== ''
+        ? denunciante['Número de Teléfono'].toUpperCase()
+        : 'SIN TELÉFONO REGISTRADO'
+    const correoPrincipal =
+      denunciante['Correo Electrónico'] && denunciante['Correo Electrónico'].trim() !== ''
+        ? denunciante['Correo Electrónico']
+        : null
+
+    parrafoIntroduccion = `En la Sala de Denuncias de la Dirección Contra Hechos Punibles Económicos y Financieros, Oficina ${datosDenuncia.oficina.toUpperCase()}, en fecha ${fechaDenuncia} siendo las ${datosDenuncia.hora_denuncia}, ante mí ${datosDenuncia.grado_operador.toUpperCase()} ${datosDenuncia.nombre_operador.toUpperCase()}, concurre ${denunciante['Nombres y Apellidos'].toUpperCase()}, con ${denunciante['Tipo de Documento'] || 'Cédula de Identidad Paraguaya'} número ${(denunciante['Número de Documento'] || denunciante['Cédula de Identidad']).toUpperCase()}, de nacionalidad ${denunciante['Nacionalidad'].toUpperCase()}, estado civil ${denunciante['Estado Civil'].toUpperCase()}, ${denunciante['Edad']} años de edad, fecha de nacimiento ${fechaNacimiento}, en ${denunciante['Lugar de Nacimiento'].toUpperCase()}${denunciante['Domicilio'] ? `, domiciliado en ${denunciante['Domicilio']}` : ''}, teléfono ${telefonoPrincipal}`
+    if (correoPrincipal) {
+      parrafoIntroduccion += `, correo electrónico ${correoPrincipal}`
+    }
+
+    if (coDenunciantes.length > 0) {
+      const listadoCo = coDenunciantes.map(describirCoDenuncianteIntro).join('; ')
+      const acompanado =
+        coDenunciantes.length > 1 ? 'acompañados por' : 'acompañado por'
+      parrafoIntroduccion += `, ${acompanado} ${listadoCo}`
+    }
+
+    if (abogados.length > 0) {
+      const listadoAbogados = abogados.map(describirAbogadoIntro).join('; ')
+      const sujetoAsistido = coDenunciantes.length > 0 ? 'asistidos' : 'asistido'
+      const posesivo = abogados.length > 1 ? 'sus representantes legales' : 'su representante legal'
+      const relativo = abogados.length > 1 ? 'quienes' : 'quien'
+      const pronombre = coDenunciantes.length > 0 ? 'los' : 'lo'
+      parrafoIntroduccion += `, ${sujetoAsistido} por ${posesivo} ${listadoAbogados}, ${relativo} ${pronombre} patrocina en el presente acto`
+    }
+
+    parrafoIntroduccion += coDenunciantes.length > 0 ? ', y exponen cuanto sigue:' : ', y expone cuanto sigue:'
+  }
+
+  const alturaLinea = 5
+  let yActualIntroduccion = 90
+  const parrafosIntro = [parrafoIntroduccion]
+  parrafosIntro.forEach((parrafo, index) => {
+    if (index > 0) {
+      yActualIntroduccion += alturaLinea
+    }
+    const lineas = doc.splitTextToSize(parrafo, 156)
+    doc.text(lineas, 30, yActualIntroduccion, { align: 'justify', maxWidth: 156 })
+    yActualIntroduccion += lineas.length * alturaLinea
+  })
 
   // Segundo párrafo
-  let parrafo2 = `Que por la presente viene a realizar una denuncia sobre un supuesto hecho de ${datosDenuncia.tipo_denuncia.toUpperCase()}`
+  const hayCoDenunciantes = coDenunciantes.length > 0
+  let parrafo2 = `Que por la presente ${hayCoDenunciantes ? 'vienen' : 'viene'} a realizar una denuncia sobre un supuesto hecho de ${datosDenuncia.tipo_denuncia.toUpperCase()}`
   if (
     datosDenuncia.tipo_denuncia.toUpperCase() === 'OTRO' &&
     datosDenuncia.otro_tipo
@@ -172,7 +466,12 @@ export function generarPDF(
       `OTRO (${datosDenuncia.otro_tipo.toUpperCase()})`
     )
   }
-  parrafo2 += `, ocurrido en fecha ${fechaHecho} siendo las ${datosDenuncia.hora_hecho} aproximadamente, en la dirección ${datosDenuncia.lugar_hecho.toUpperCase()}`
+  // Formatear fecha/hora del hecho (única o rango)
+  if (tieneRango && fechaHechoFin) {
+    parrafo2 += `, ocurrido entre las ${datosDenuncia.hora_hecho} horas del ${fechaHecho} y las ${datosDenuncia.hora_hecho_fin} horas del ${fechaHechoFin}, en la dirección ${datosDenuncia.lugar_hecho.toUpperCase()}`
+  } else {
+    parrafo2 += `, ocurrido en fecha ${fechaHecho} siendo las ${datosDenuncia.hora_hecho} aproximadamente, en la dirección ${datosDenuncia.lugar_hecho.toUpperCase()}`
+  }
 
   if (datosDenuncia.nombre_autor) {
     const detallesAutor = []
@@ -218,27 +517,49 @@ export function generarPDF(
       parrafo2 += '.'
     }
   } else {
-    parrafo2 +=
-      ', siendo el supuesto autor una persona DESCONOCIDA por la persona denunciante.'
+    parrafo2 += ', siendo el supuesto autor una persona DESCONOCIDA por la persona denunciante'
+    if (datosDenuncia.descripcion_fisica && datosDenuncia.descripcion_fisica.trim() !== '') {
+      try {
+        // Intentar parsear como JSON
+        const descFisicaObj = JSON.parse(datosDenuncia.descripcion_fisica)
+        const textoDesc = generarTextoDescripcionFisica(descFisicaObj)
+        if (textoDesc.trim() !== '') {
+          parrafo2 += `, a quien describe físicamente de la siguiente manera: ${textoDesc}`
+        } else {
+          parrafo2 += '.'
+        }
+      } catch {
+        // Si no es JSON, usar como texto plano (legacy)
+        parrafo2 += `, a quien describe físicamente de la siguiente manera: ${datosDenuncia.descripcion_fisica.toUpperCase()}.`
+      }
+    } else {
+      parrafo2 += '.'
+    }
   }
 
-  const yParrafo2 = 90 + splitParrafo1.length * 5
+  const yParrafo2 = yActualIntroduccion
   const splitParrafo2 = doc.splitTextToSize(parrafo2, 156)
   doc.text(splitParrafo2, 30, yParrafo2, { align: 'justify', maxWidth: 156 })
 
   // Relato
-  const yRelato = yParrafo2 + splitParrafo2.length * 5
+  const yRelato = yParrafo2 + splitParrafo2.length * alturaLinea
   doc.setFont('helvetica', 'normal')
   doc.text('De acuerdo a los hechos que se describen a continuación:', 30, yRelato)
   
-  const relato = `${datosDenuncia.relato}\nNO HABIENDO NADA MÁS QUE AGREGAR SE DA POR TERMINADA EL ACTA, PREVIA LECTURA Y RATIFICACIÓN DE SU CONTENIDO, FIRMANDO AL PIE EL DENUNCIANTE Y EL INTERVINIENTE, EN 3 (TRES) COPIAS DEL MISMO TENOR Y EFECTO. LA PERSONA RECURRENTE ES INFORMADA SOBRE: ARTÍCULO 289.- "DENUNCIA FALSA"; ARTÍCULO 242.- "TESTIMONIO FALSO"; ARTÍCULO 243.- "DECLARACIÓN FALSA".`
+  const textoFirmas = coDenunciantes.length > 0
+    ? 'FIRMANDO AL PIE LOS DENUNCIANTES Y EL INTERVINIENTE'
+    : 'FIRMANDO AL PIE EL DENUNCIANTE Y EL INTERVINIENTE'
+  const textoPersonas = coDenunciantes.length > 0
+    ? 'LAS PERSONAS RECURRENTES SON INFORMADAS'
+    : 'LA PERSONA RECURRENTE ES INFORMADA'
+  const relato = `${datosDenuncia.relato}\nNO HABIENDO NADA MÁS QUE AGREGAR SE DA POR TERMINADA EL ACTA, PREVIA LECTURA Y RATIFICACIÓN DE SU CONTENIDO, ${textoFirmas}, EN 3 (TRES) COPIAS DEL MISMO TENOR Y EFECTO. ${textoPersonas} SOBRE: ARTÍCULO 289.- "DENUNCIA FALSA"; ARTÍCULO 242.- "TESTIMONIO FALSO"; ARTÍCULO 243.- "DECLARACIÓN FALSA".`
   doc.setFont('helvetica', 'italic')
   const splitRelato = doc.splitTextToSize(relato, 156)
   
   // Escribir el texto del relato con manejo de páginas
   let yActual = yRelato + 5
   let textoRestante = splitRelato
-  const alturaLinea = 6
+  const alturaLineaRelato = 6
   // Altura máxima para páginas intermedias (usar casi todo el espacio, solo 5mm de margen)
   const alturaMaximaIntermedia = formatoPapel[1] - 5
   // Altura máxima para la última página (dejar 50mm para firmas)
@@ -247,7 +568,7 @@ export function generarPDF(
   while (textoRestante.length > 0) {
     // Calcular cuántas líneas caben en la última página desde el inicio de página nueva
     const espacioParaUltimaDesdeInicio = alturaMaximaUltima - 80
-    const lineasQueCabenUltimaDesdeInicio = Math.floor(espacioParaUltimaDesdeInicio / alturaLinea)
+    const lineasQueCabenUltimaDesdeInicio = Math.floor(espacioParaUltimaDesdeInicio / alturaLineaRelato)
     
     // Determinar si esta será la última página
     const seraUltimaPagina = textoRestante.length <= lineasQueCabenUltimaDesdeInicio
@@ -257,7 +578,7 @@ export function generarPDF(
     const espacioRestante = alturaMaxima - yActual
 
     // Calcular cuántas líneas caben
-    const lineasDisponibles = Math.floor(espacioRestante / alturaLinea)
+    const lineasDisponibles = Math.floor(espacioRestante / alturaLineaRelato)
 
     if (lineasDisponibles <= 0) {
       // No cabe ni una línea, crear nueva página y continuar bucle
@@ -276,7 +597,7 @@ export function generarPDF(
       doc.text(lineasPagina, 30, yActual, { align: 'justify', maxWidth: 156 })
       
       // Calcular nueva posición Y
-      yActual += lineasPagina.length * alturaLinea
+      yActual += lineasPagina.length * alturaLineaRelato
 
       // Si quedan líneas, crear nueva página y continuar bucle
       if (textoRestante.length > 0) {
@@ -359,6 +680,8 @@ export function generarPDFFormato2(
   const fechaDenuncia = formatDate(datosDenuncia.fecha_denuncia)
   const fechaNacimiento = formatDate(denunciante['Fecha de Nacimiento'])
   const fechaHecho = formatDate(datosDenuncia.fecha_hecho)
+  const tieneRango = datosDenuncia.fecha_hecho_fin && datosDenuncia.hora_hecho_fin
+  const fechaHechoFin = tieneRango && datosDenuncia.fecha_hecho_fin ? formatDate(datosDenuncia.fecha_hecho_fin) : null
 
   // Agregar encabezado en la primera página
   agregarEncabezado(doc, titulo, formatoPapel[0])
@@ -477,8 +800,10 @@ export function generarPDFFormato2(
     { label: 'Edad:', valor: `${denunciante['Edad']} años` },
     { label: 'Fecha de Nacimiento:', valor: fechaNacimiento },
     { label: 'Lugar de nacimiento:', valor: denunciante['Lugar de Nacimiento'].toUpperCase() },
+    ...(denunciante['Domicilio'] ? [{ label: 'Domicilio:', valor: denunciante['Domicilio']!.toUpperCase() }] : []),
     ...(denunciante['Profesión'] ? [{ label: 'Profesión:', valor: denunciante['Profesión'].toUpperCase() }] : []),
-    { label: 'Número de Teléfono:', valor: denunciante['Número de Teléfono'].toUpperCase() }
+    { label: 'Número de Teléfono:', valor: denunciante['Número de Teléfono'].toUpperCase() },
+    ...(denunciante['Correo Electrónico'] ? [{ label: 'Correo electrónico:', valor: denunciante['Correo Electrónico']! }] : []),
   ]
   yPos = dibujarTabla('DATOS DEL DENUNCIANTE', datosDenuncianteFilas, yPos)
 
@@ -487,6 +812,43 @@ export function generarPDFFormato2(
     doc.addPage()
     agregarEncabezado(doc, titulo, formatoPapel[0])
     yPos = 80
+  }
+
+  const involucradosDatos = (datosDenuncia.involucrados || []).filter(
+    (involucrado) => involucrado.rol !== 'principal'
+  )
+  const coDenunciantes = involucradosDatos.filter((involucrado) => involucrado.rol === 'co-denunciante')
+  const abogados = involucradosDatos.filter((involucrado) => involucrado.rol === 'abogado')
+
+  if (coDenunciantes.length > 0) {
+    const coFilas = coDenunciantes.map((item, index) => ({
+      label:
+        coDenunciantes.length > 1
+          ? `Co-denunciante ${index + 1}:`
+          : 'Co-denunciante:',
+      valor: describirCoDenunciante(item),
+    }))
+    yPos = dibujarTabla('CO-DENUNCIANTES', coFilas, yPos)
+
+    if (yPos > formatoPapel[1] - 50) {
+      doc.addPage()
+      agregarEncabezado(doc, titulo, formatoPapel[0])
+      yPos = 80
+    }
+  }
+
+  if (abogados.length > 0) {
+    const abogadosFilas = abogados.map((item, index) => ({
+      label: abogados.length > 1 ? `Abogado/a ${index + 1}:` : 'Abogado/a:',
+      valor: describirAbogado(item),
+    }))
+    yPos = dibujarTabla('REPRESENTANTES LEGALES', abogadosFilas, yPos)
+
+    if (yPos > formatoPapel[1] - 50) {
+      doc.addPage()
+      agregarEncabezado(doc, titulo, formatoPapel[0])
+      yPos = 80
+    }
   }
 
   // TERCERA SECCIÓN: Datos del supuesto autor
@@ -522,8 +884,18 @@ export function generarPDFFormato2(
 
   // CUARTA SECCIÓN: Tiempo y lugar donde ocurrió el supuesto hecho
   let tiempoLugarFilas: Array<{label: string, valor: string}> = [
-    { label: 'Fecha del hecho:', valor: fechaHecho },
-    { label: 'Hora del hecho:', valor: datosDenuncia.hora_hecho },
+    { 
+      label: 'Fecha del hecho:', 
+      valor: tieneRango && fechaHechoFin 
+        ? `Entre ${fechaHecho} y ${fechaHechoFin}`
+        : fechaHecho 
+    },
+    { 
+      label: 'Hora del hecho:', 
+      valor: tieneRango && datosDenuncia.hora_hecho_fin
+        ? `Entre ${datosDenuncia.hora_hecho} y ${datosDenuncia.hora_hecho_fin}`
+        : datosDenuncia.hora_hecho 
+    },
     { label: 'Lugar del hecho:', valor: datosDenuncia.lugar_hecho.toUpperCase() }
   ]
   

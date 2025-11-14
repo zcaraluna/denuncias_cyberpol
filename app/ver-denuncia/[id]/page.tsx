@@ -14,7 +14,9 @@ interface DenunciaCompleta {
   edad: number
   fecha_nacimiento: string
   lugar_nacimiento: string
+  domicilio: string | null
   telefono: string
+  correo: string | null
   profesion: string
   fecha_denuncia: string
   hora_denuncia: string
@@ -69,7 +71,6 @@ export default function VerDenunciaPage({ params }: { params: Promise<{ id: stri
   const [loading, setLoading] = useState(true)
   const [mostrarModalPDF, setMostrarModalPDF] = useState(false)
   const [tipoPapelSeleccionado, setTipoPapelSeleccionado] = useState<'oficio' | 'a4'>('oficio')
-  const [formatoSeleccionado, setFormatoSeleccionado] = useState<1 | 2>(1)
   const [denunciaId, setDenunciaId] = useState<string>('')
   const [mostrarModalEliminar, setMostrarModalEliminar] = useState(false)
   const [eliminando, setEliminando] = useState(false)
@@ -149,7 +150,7 @@ export default function VerDenunciaPage({ params }: { params: Promise<{ id: stri
 
   const descargarPDF = () => {
     if (!usuario) return
-    window.open(`/api/denuncias/pdf/${denunciaId}?tipo=${tipoPapelSeleccionado}&usuario_id=${usuario.id}&formato=${formatoSeleccionado}`, '_blank')
+    window.open(`/api/denuncias/pdf/${denunciaId}?tipo=${tipoPapelSeleccionado}&usuario_id=${usuario.id}`, '_blank')
     setMostrarModalPDF(false)
   }
 
@@ -292,6 +293,12 @@ export default function VerDenunciaPage({ params }: { params: Promise<{ id: stri
                   <p className="text-sm font-medium text-gray-600">Lugar de Nacimiento</p>
                   <p className="text-base text-gray-900">{denuncia.lugar_nacimiento}</p>
                 </div>
+                {denuncia.domicilio && (
+                  <div className="col-span-2">
+                    <p className="text-sm font-medium text-gray-600">Domicilio</p>
+                    <p className="text-base text-gray-900">{denuncia.domicilio}</p>
+                  </div>
+                )}
                 <div>
                   <p className="text-sm font-medium text-gray-600">Estado Civil</p>
                   <p className="text-base text-gray-900">{denuncia.estado_civil}</p>
@@ -300,6 +307,12 @@ export default function VerDenunciaPage({ params }: { params: Promise<{ id: stri
                   <p className="text-sm font-medium text-gray-600">Teléfono</p>
                   <p className="text-base text-gray-900">{denuncia.telefono}</p>
                 </div>
+                {denuncia.correo && (
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Correo Electrónico</p>
+                    <p className="text-base text-gray-900">{denuncia.correo}</p>
+                  </div>
+                )}
                 {denuncia.profesion && (
                   <div>
                     <p className="text-sm font-medium text-gray-600">Profesión</p>
@@ -468,40 +481,7 @@ export default function VerDenunciaPage({ params }: { params: Promise<{ id: stri
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full mx-4">
             <h3 className="text-xl font-bold text-gray-900 mb-4">Seleccionar Formato de Papel</h3>
-            <p className="text-gray-600 mb-6">Elija el formato de papel y el formato de denuncia para la impresión</p>
-
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-3">Formato de Denuncia</label>
-              <div className="space-y-3">
-                <label className="flex items-center p-4 border-2 border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition">
-                  <input
-                    type="radio"
-                    value="1"
-                    checked={formatoSeleccionado === 1}
-                    onChange={() => setFormatoSeleccionado(1)}
-                    className="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500"
-                  />
-                  <div>
-                    <div className="font-medium text-gray-900">Formato 1 (Narrativo)</div>
-                    <div className="text-sm text-gray-500">Formato tradicional con párrafos narrativos</div>
-                  </div>
-                </label>
-
-                <label className="flex items-center p-4 border-2 border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition">
-                  <input
-                    type="radio"
-                    value="2"
-                    checked={formatoSeleccionado === 2}
-                    onChange={() => setFormatoSeleccionado(2)}
-                    className="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500"
-                  />
-                  <div>
-                    <div className="font-medium text-gray-900">Formato 2 (Secciones)</div>
-                    <div className="text-sm text-gray-500">Formato estructurado por secciones</div>
-                  </div>
-                </label>
-              </div>
-            </div>
+            <p className="text-gray-600 mb-6">Elija el formato de papel para la impresión</p>
 
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-3">Formato de Papel</label>

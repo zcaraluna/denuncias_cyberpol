@@ -23,17 +23,15 @@ export async function GET(
     const searchParams = request.nextUrl.searchParams
     const tipoPapel = (searchParams.get('tipo') === 'a4' ? 'a4' : 'oficio') as 'oficio' | 'a4'
     const usuarioIdActual = searchParams.get('usuario_id')
-    const formato = parseInt(searchParams.get('formato') || '1') // Por defecto formato 1
 
     // Obtener datos de la denuncia
     const denunciaResult = await pool.query(
       `SELECT d.*, den.nombres as nombres_denunciante, den.cedula, den.tipo_documento, den.nacionalidad, 
-              den.estado_civil, den.edad, den.fecha_nacimiento, den.lugar_nacimiento, 
-              den.telefono, den.profesion,
+              den.estado_civil, den.edad, den.fecha_nacimiento, den.lugar_nacimiento, den.domicilio, den.telefono, den.correo, den.profesion,
               sa.autor_conocido, sa.nombre_autor, sa.cedula_autor, sa.domicilio_autor,
               sa.nacionalidad_autor, sa.estado_civil_autor, sa.edad_autor, 
               sa.fecha_nacimiento_autor, sa.lugar_nacimiento_autor, sa.telefono_autor, 
-              sa.profesion_autor
+              sa.profesion_autor, sa.descripcion_fisica
        FROM denuncias d
        JOIN denunciantes den ON d.denunciante_id = den.id
        LEFT JOIN supuestos_autores sa ON d.id = sa.denuncia_id
@@ -60,10 +58,12 @@ export async function GET(
       'Número de Documento': row.cedula,
       'Nacionalidad': row.nacionalidad,
       'Estado Civil': row.estado_civil,
-      'Edad': row.edad.toString(),
+      'Edad': row.edad ? row.edad.toString() : '',
       'Fecha de Nacimiento': formatDate(row.fecha_nacimiento),
       'Lugar de Nacimiento': row.lugar_nacimiento,
       'Número de Teléfono': row.telefono,
+      'Domicilio': row.domicilio,
+      'Correo Electrónico': row.correo,
       'Profesión': row.profesion,
     }
 
@@ -86,11 +86,82 @@ export async function GET(
       }
     }
 
+    const involucradosResult = await pool.query(
+      `SELECT 
+        di.rol,
+        di.representa_denunciante_id,
+        di.denunciante_id,
+        di.con_carta_poder,
+        di.carta_poder_fecha,
+        di.carta_poder_numero,
+        di.carta_poder_notario,
+        den.nombres,
+        den.cedula,
+        den.tipo_documento,
+        den.nacionalidad,
+        den.estado_civil,
+        den.edad,
+        den.fecha_nacimiento,
+        den.lugar_nacimiento,
+        den.telefono,
+        den.correo,
+        den.profesion,
+        den.matricula,
+        den.domicilio
+      FROM denuncias_involucrados di
+      INNER JOIN denunciantes den ON den.id = di.denunciante_id
+      WHERE di.denuncia_id = $1
+      ORDER BY 
+        CASE 
+          WHEN di.rol = 'principal' THEN 0
+          WHEN di.rol = 'co-denunciante' THEN 1
+          ELSE 2
+        END,
+        di.id`,
+      [id]
+    )
+
+    const mapIdToNombre = new Map<number, string>()
+    mapIdToNombre.set(row.denunciante_id, row.nombres_denunciante)
+    involucradosResult.rows.forEach((involucrado) => {
+      mapIdToNombre.set(involucrado.denunciante_id, involucrado.nombres)
+    })
+
+    const involucrados = involucradosResult.rows
+      .filter(
+        (involucrado) =>
+          !(involucrado.rol === 'principal' && involucrado.denunciante_id === row.denunciante_id)
+      )
+      .map((involucrado) => ({
+        rol: involucrado.rol,
+        nombres: involucrado.nombres,
+        tipoDocumento: involucrado.tipo_documento,
+        numeroDocumento: involucrado.cedula,
+        telefono: involucrado.telefono,
+        correo: involucrado.correo,
+        profesion: involucrado.profesion,
+        matricula: involucrado.matricula,
+        nacionalidad: involucrado.nacionalidad,
+        estadoCivil: involucrado.estado_civil,
+        edad: involucrado.edad ? involucrado.edad.toString() : null,
+        fechaNacimiento: formatDate(involucrado.fecha_nacimiento),
+        lugarNacimiento: involucrado.lugar_nacimiento,
+        domicilio: involucrado.domicilio,
+        representaA: involucrado.representa_denunciante_id
+          ? mapIdToNombre.get(involucrado.representa_denunciante_id) || null
+          : null,
+        conCartaPoder: Boolean(involucrado.con_carta_poder),
+        cartaPoderFecha: involucrado.carta_poder_fecha ? formatDate(involucrado.carta_poder_fecha) : null,
+        cartaPoderNotario: involucrado.carta_poder_notario || null,
+      }))
+
     const datosDenuncia: DatosDenuncia = {
       fecha_denuncia: fechaDenuncia,
       hora_denuncia: row.hora_denuncia,
       fecha_hecho: formatDate(row.fecha_hecho),
       hora_hecho: row.hora_hecho,
+      fecha_hecho_fin: row.fecha_hecho_fin ? formatDate(row.fecha_hecho_fin) : null,
+      hora_hecho_fin: row.hora_hecho_fin || null,
       tipo_denuncia: row.tipo_denuncia,
       otro_tipo: row.otro_tipo,
       lugar_hecho: row.lugar_hecho,
@@ -115,14 +186,14 @@ export async function GET(
       lugar_nacimiento_autor: row.lugar_nacimiento_autor,
       telefono_autor: row.telefono_autor,
       profesion_autor: row.profesion_autor,
+      descripcion_fisica: row.descripcion_fisica || null,
       operador_autorizado: operadorAutorizado || undefined,
-      es_operador_autorizado: esOperadorAutorizado
+      es_operador_autorizado: esOperadorAutorizado,
+      involucrados,
     }
 
     // Generar PDF según el formato seleccionado
-    const pdfBuffer = formato === 2 
-      ? generarPDFFormato2(row.orden, denunciante, datosDenuncia)
-      : generarPDF(row.orden, denunciante, datosDenuncia)
+    const pdfBuffer = generarPDF(row.orden, denunciante, datosDenuncia)
 
     return new Response(new Uint8Array(pdfBuffer), {
       headers: {

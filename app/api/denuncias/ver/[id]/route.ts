@@ -21,8 +21,11 @@ export async function GET(
         den.edad,
         den.fecha_nacimiento,
         den.lugar_nacimiento,
+        den.domicilio,
         den.telefono,
-        den.profesion
+        den.correo,
+        den.profesion,
+        den.matricula
       FROM denuncias d
       INNER JOIN denunciantes den ON d.denunciante_id = den.id
       WHERE d.id = $1`,
@@ -44,6 +47,37 @@ export async function GET(
       [id]
     )
 
+    const involucradosResult = await pool.query(
+      `SELECT 
+        di.id,
+        di.rol,
+        di.representa_denunciante_id,
+        di.con_carta_poder,
+        di.carta_poder_fecha,
+        di.carta_poder_numero,
+        di.carta_poder_notario,
+        den.id as denunciante_id,
+        den.nombres,
+        den.cedula,
+        den.tipo_documento,
+        den.nacionalidad,
+        den.estado_civil,
+        den.edad,
+        den.fecha_nacimiento,
+        den.lugar_nacimiento,
+        den.domicilio,
+        den.telefono,
+        den.correo,
+        den.profesion
+      FROM denuncias_involucrados di
+      INNER JOIN denunciantes den ON den.id = di.denunciante_id
+      WHERE di.denuncia_id = $1
+      ORDER BY 
+        CASE WHEN di.rol = 'principal' THEN 0 ELSE 1 END,
+        di.id`,
+      [id]
+    )
+
     // Construir el objeto de respuesta
     const response = {
       id: denuncia.id,
@@ -55,12 +89,17 @@ export async function GET(
       edad: denuncia.edad,
       fecha_nacimiento: denuncia.fecha_nacimiento,
       lugar_nacimiento: denuncia.lugar_nacimiento,
+      domicilio: denuncia.domicilio,
       telefono: denuncia.telefono,
+      correo: denuncia.correo,
       profesion: denuncia.profesion,
+      matricula: denuncia.matricula,
       fecha_denuncia: denuncia.fecha_denuncia,
       hora_denuncia: denuncia.hora_denuncia,
       fecha_hecho: denuncia.fecha_hecho,
       hora_hecho: denuncia.hora_hecho,
+      fecha_hecho_fin: denuncia.fecha_hecho_fin || null,
+      hora_hecho_fin: denuncia.hora_hecho_fin || null,
       tipo_denuncia: denuncia.tipo_denuncia,
       otro_tipo: denuncia.otro_tipo,
       relato: denuncia.relato,
@@ -75,7 +114,8 @@ export async function GET(
       moneda: denuncia.moneda,
       hash: denuncia.hash,
       estado: denuncia.estado,
-      supuestos_autores: autoresResult.rows
+      supuestos_autores: autoresResult.rows,
+      denunciantes_involucrados: involucradosResult.rows
     }
 
     return NextResponse.json(response)
@@ -87,4 +127,3 @@ export async function GET(
     )
   }
 }
-

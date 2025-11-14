@@ -1,39 +1,168 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import dynamic from 'next/dynamic'
 import Select from 'react-select'
+import { departamentosParaguay } from '@/lib/data/departamentos'
 
 // Importar el mapa dinámicamente (solo en cliente)
 const MapSelector = dynamic(() => import('@/components/MapSelector'), { ssr: false })
 
 // Esquemas de validación
-const denuncianteSchema = z.object({
-  nombres: z.string().min(1, 'Este campo es obligatorio'),
-  tipoDocumento: z.string().min(1, 'Debe seleccionar un tipo de documento'),
-  numeroDocumento: z.string().min(1, 'Este campo es obligatorio'),
-  nacionalidad: z.string().min(1, 'Este campo es obligatorio'),
-  fechaNacimiento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato YYYY-MM-DD'),
-  edad: z.string().optional(),
-  lugarNacimiento: z.string().min(1, 'Este campo es obligatorio'),
-  estadoCivil: z.string().min(1, 'Este campo es obligatorio'),
-  telefono: z.string().min(1, 'Este campo es obligatorio'),
-  profesion: z.string().optional(),
-})
+const ROLES_DENUNCIANTE = ['principal', 'co-denunciante', 'abogado'] as const
+type RolDenunciante = (typeof ROLES_DENUNCIANTE)[number]
+
+const denuncianteSchema = z
+  .object({
+    nombres: z.string().optional(),
+    tipoDocumento: z.string().optional(),
+    numeroDocumento: z.string().optional(),
+    nacionalidad: z.string().optional(),
+    fechaNacimiento: z.string().optional(),
+    edad: z.string().optional(),
+    lugarNacimiento: z.string().optional(),
+    estadoCivil: z.string().optional(),
+    telefono: z.string().optional(),
+    correo: z.string().optional(),
+    departamento: z.string().optional(),
+    ciudad: z.string().optional(),
+    calles: z.string().optional(),
+    profesion: z.string().optional(),
+    matricula: z.string().optional(),
+    rol: z.enum(ROLES_DENUNCIANTE),
+    representaA: z.string().optional().nullable(),
+    conCartaPoder: z.boolean().optional(),
+    cartaPoderFecha: z.string().optional(),
+    cartaPoderNumero: z.string().optional(),
+    cartaPoderNotario: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    const esAbogado = data.rol === 'abogado'
+    const validarCorreo = (valor?: string | null) => {
+      if (!valor) return false
+      const trimmed = valor.trim()
+      if (!trimmed) return false
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)
+    }
+
+    const requiereValor = (condicion: boolean, path: string[], mensaje: string) => {
+      if (!condicion) {
+        ctx.addIssue({
+          path,
+          code: z.ZodIssueCode.custom,
+          message: mensaje,
+        })
+      }
+    }
+
+    if (esAbogado) {
+      requiereValor(Boolean(data.nombres?.trim()), ['nombres'], 'Ingrese el nombre completo del abogado')
+      requiereValor(Boolean(data.tipoDocumento?.trim()), ['tipoDocumento'], 'Debe seleccionar un tipo de documento')
+      requiereValor(Boolean(data.numeroDocumento?.trim()), ['numeroDocumento'], 'Ingrese el número de documento')
+      requiereValor(Boolean(data.matricula?.trim()), ['matricula'], 'Ingrese la matrícula del abogado')
+      requiereValor(Boolean(data.telefono?.trim()), ['telefono'], 'Ingrese el número de teléfono')
+      if (data.correo && data.correo.trim() && !validarCorreo(data.correo)) {
+        ctx.addIssue({
+          path: ['correo'],
+          code: z.ZodIssueCode.custom,
+          message: 'Ingrese un correo válido',
+        })
+      }
+      if (data.conCartaPoder) {
+        const fechaValida = data.cartaPoderFecha ? /^\d{4}-\d{2}-\d{2}$/.test(data.cartaPoderFecha) : false
+        requiereValor(fechaValida, ['cartaPoderFecha'], 'Ingrese la fecha de la carta poder (formato YYYY-MM-DD)')
+        requiereValor(Boolean(data.cartaPoderNotario?.trim()), ['cartaPoderNotario'], 'Ingrese el nombre del notario')
+      }
+    } else {
+      const fechaValida = data.fechaNacimiento ? /^\d{4}-\d{2}-\d{2}$/.test(data.fechaNacimiento) : false
+      requiereValor(Boolean(data.nombres?.trim()), ['nombres'], 'Este campo es obligatorio')
+      requiereValor(Boolean(data.tipoDocumento?.trim()), ['tipoDocumento'], 'Debe seleccionar un tipo de documento')
+      requiereValor(Boolean(data.numeroDocumento?.trim()), ['numeroDocumento'], 'Este campo es obligatorio')
+      requiereValor(Boolean(data.nacionalidad?.trim()), ['nacionalidad'], 'Seleccione una nacionalidad')
+      requiereValor(fechaValida, ['fechaNacimiento'], 'Formato YYYY-MM-DD')
+      requiereValor(Boolean(data.lugarNacimiento?.trim()), ['lugarNacimiento'], 'Este campo es obligatorio')
+      requiereValor(Boolean(data.estadoCivil?.trim()), ['estadoCivil'], 'Este campo es obligatorio')
+      requiereValor(Boolean(data.telefono?.trim()), ['telefono'], 'Este campo es obligatorio')
+      if (data.correo && data.correo.trim() && !validarCorreo(data.correo)) {
+        ctx.addIssue({
+          path: ['correo'],
+          code: z.ZodIssueCode.custom,
+          message: 'Ingrese un correo válido',
+        })
+      }
+      requiereValor(Boolean(data.departamento?.trim()), ['departamento'], 'Seleccione un departamento')
+      requiereValor(Boolean(data.ciudad?.trim()), ['ciudad'], 'Seleccione una ciudad')
+      requiereValor(Boolean(data.calles?.trim()), ['calles'], 'Ingrese las calles o dirección')
+    }
+  })
+
+type DenuncianteFormValues = z.infer<typeof denuncianteSchema>
+
+interface DenuncianteEnLista extends DenuncianteFormValues {
+  id: string
+}
+
+const valoresInicialesDenunciante: DenuncianteFormValues = {
+  nombres: '',
+  tipoDocumento: '',
+  numeroDocumento: '',
+  nacionalidad: 'PARAGUAYA',
+  fechaNacimiento: '',
+  edad: '',
+  lugarNacimiento: '',
+  estadoCivil: '',
+  telefono: '',
+  correo: '',
+  departamento: '',
+  ciudad: '',
+  calles: '',
+  profesion: '',
+  matricula: '',
+  rol: 'principal',
+  representaA: null,
+  conCartaPoder: false,
+  cartaPoderFecha: '',
+  cartaPoderNumero: '',
+  cartaPoderNotario: '',
+}
 
 const denunciaSchema = z.object({
   fechaHecho: z.string().min(1, 'Fecha requerida'),
   horaHecho: z.string().regex(/^\d{2}:\d{2}$/, 'Formato HH:MM'),
+  usarRango: z.boolean().optional(),
+  fechaHechoFin: z.string().optional(),
+  horaHechoFin: z.string().optional(),
   tipoDenuncia: z.string().min(1, 'Debe seleccionar un tipo'),
   otroTipo: z.string().optional(),
   lugarHecho: z.string().min(1, 'Este campo es obligatorio'),
+  lugarHechoDepartamento: z.string().optional(),
+  lugarHechoCiudad: z.string().optional(),
+  lugarHechoCalles: z.string().optional(),
   relato: z.string().min(10, 'El relato debe tener al menos 10 caracteres'),
   montoDano: z.string().optional(),
   moneda: z.string().optional(),
+}).superRefine((data, ctx) => {
+  // Si se usa rango, validar que fecha y hora de fin estén presentes
+  if (data.usarRango) {
+    if (!data.fechaHechoFin || data.fechaHechoFin.trim() === '') {
+      ctx.addIssue({
+        path: ['fechaHechoFin'],
+        code: z.ZodIssueCode.custom,
+        message: 'La fecha de fin es requerida cuando se usa un rango',
+      })
+    }
+    if (!data.horaHechoFin || !/^\d{2}:\d{2}$/.test(data.horaHechoFin)) {
+      ctx.addIssue({
+        path: ['horaHechoFin'],
+        code: z.ZodIssueCode.custom,
+        message: 'La hora de fin es requerida y debe estar en formato HH:MM',
+      })
+    }
+  }
 })
 
 interface Usuario {
@@ -43,6 +172,113 @@ interface Usuario {
   grado: string
   oficina: string
   rol: string
+}
+
+// Función para generar datos aleatorios (SOLO PARA PRUEBAS)
+const generarDatosAleatorios = (
+  rol: 'principal' | 'co-denunciante' | 'abogado',
+  departamentos: typeof departamentosParaguay
+): Partial<DenuncianteFormValues> => {
+  const nombresAleatorios = [
+    'Juan', 'María', 'Carlos', 'Ana', 'Pedro', 'Laura', 'Luis', 'Carmen',
+    'Roberto', 'Patricia', 'Miguel', 'Sofía', 'José', 'Elena', 'Francisco', 'Lucía'
+  ]
+  const apellidosAleatorios = [
+    'García', 'López', 'Martínez', 'González', 'Rodríguez', 'Fernández',
+    'Sánchez', 'Ramírez', 'Torres', 'Morales', 'Jiménez', 'Hernández',
+    'Díaz', 'Cruz', 'Ortiz', 'Vargas', 'Mendoza', 'Romero'
+  ]
+  const lugaresNacimiento = [
+    'ASUNCIÓN', 'CIUDAD DEL ESTE', 'ENCARNACIÓN', 'SAN LORENZO', 'LUQUE',
+    'CAPIATÁ', 'LAMBARÉ', 'FERNANDO DE LA MORA', 'LIMPIEO', 'ÑEMBY',
+    'PEDRO JUAN CABALLERO', 'VILLA HAYES', 'CONCEPCIÓN', 'VILLARRICA'
+  ]
+  const profesiones = [
+    'COMERCIANTE', 'DOCENTE', 'EMPLEADO', 'PROFESIONAL', 'ESTUDIANTE',
+    'OBRERO', 'AGRICULTOR', 'JUBILADO', 'FUNCIONARIO PÚBLICO', 'INDEPENDIENTE'
+  ]
+  const callesAleatorias = [
+    'AVENIDA MARISCAL LÓPEZ 123', 'CALLE PARAGUARI 456', 'RUTA 2 KM 12',
+    'CALLE ESTRELLA 789', 'AVENIDA ESPAÑA 321', 'CALLE CHACO 654',
+    'RUTA 1 KM 8', 'AVENIDA FÉLIX BOGADO 987'
+  ]
+
+  const nombre = nombresAleatorios[Math.floor(Math.random() * nombresAleatorios.length)]
+  const apellido1 = apellidosAleatorios[Math.floor(Math.random() * apellidosAleatorios.length)]
+  const apellido2 = apellidosAleatorios[Math.floor(Math.random() * apellidosAleatorios.length)]
+  const nombresCompletos = `${nombre} ${apellido1} ${apellido2}`.toUpperCase()
+
+  // Generar fecha de nacimiento (entre 25 y 65 años)
+  const edad = Math.floor(Math.random() * 40) + 25
+  const añoNacimiento = new Date().getFullYear() - edad
+  const mesNacimiento = String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')
+  const diaNacimiento = String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')
+  const fechaNacimiento = `${añoNacimiento}-${mesNacimiento}-${diaNacimiento}`
+
+  // Seleccionar departamento y ciudad aleatorios
+  const departamentoAleatorio = departamentos[Math.floor(Math.random() * departamentos.length)]
+  const ciudadAleatoria =
+    departamentoAleatorio.ciudades[Math.floor(Math.random() * departamentoAleatorio.ciudades.length)]
+
+  if (rol === 'abogado') {
+    const tiposDocumento = ['Cédula de Identidad Paraguaya', 'Documento de origen', 'Pasaporte']
+    const tipoDoc = tiposDocumento[Math.floor(Math.random() * tiposDocumento.length)]
+    const numeroDoc =
+      tipoDoc === 'Pasaporte' || tipoDoc === 'Documento de origen'
+        ? Math.random().toString(36).substring(2, 10).toUpperCase()
+        : Math.floor(Math.random() * 9999999) + 1000000 + ''
+    const matricula = Math.floor(Math.random() * 99999) + 10000 + ''
+    const telefono = `098${Math.floor(Math.random() * 10000000)}`
+    const correo = `abogado${Math.floor(Math.random() * 1000)}@ejemplo.com`
+
+    return {
+      rol: 'abogado',
+      nombres: nombresCompletos,
+      tipoDocumento: tipoDoc,
+      numeroDocumento: numeroDoc,
+      telefono,
+      correo,
+      matricula,
+      conCartaPoder: Math.random() > 0.5,
+      cartaPoderFecha: Math.random() > 0.5 ? fechaNacimiento : '',
+      cartaPoderNotario: Math.random() > 0.5 ? 'DR. JUAN PÉREZ GARCÍA' : '',
+      representaA: null,
+    }
+  }
+
+  // Para denunciante principal o co-denunciante
+  const tiposDocumento = ['Cédula de Identidad Paraguaya', 'Documento de origen', 'Pasaporte']
+  const tipoDoc = tiposDocumento[Math.floor(Math.random() * tiposDocumento.length)]
+  const numeroDoc =
+    tipoDoc === 'Pasaporte' || tipoDoc === 'Documento de origen'
+      ? Math.random().toString(36).substring(2, 10).toUpperCase()
+      : Math.floor(Math.random() * 9999999) + 1000000 + ''
+  const nacionalidades = ['PARAGUAYA', 'ARGENTINA', 'BRASILEÑA', 'BOLIVIANA']
+  const estadosCiviles = ['Soltero/a', 'Casado/a', 'Viudo/a', 'Divorciado/a']
+  const telefono = `098${Math.floor(Math.random() * 10000000)}`
+  const correo = `denunciante${Math.floor(Math.random() * 1000)}@ejemplo.com`
+
+  return {
+    rol,
+    nombres: nombresCompletos,
+    tipoDocumento: tipoDoc,
+    numeroDocumento: numeroDoc,
+    nacionalidad: nacionalidades[Math.floor(Math.random() * nacionalidades.length)],
+    fechaNacimiento,
+    edad: edad.toString(),
+    lugarNacimiento: lugaresNacimiento[Math.floor(Math.random() * lugaresNacimiento.length)],
+    estadoCivil: estadosCiviles[Math.floor(Math.random() * estadosCiviles.length)],
+    telefono,
+    correo,
+    departamento: departamentoAleatorio.nombre,
+    ciudad: ciudadAleatoria,
+    calles: callesAleatorias[Math.floor(Math.random() * callesAleatorias.length)],
+    profesion: profesiones[Math.floor(Math.random() * profesiones.length)],
+    representaA: null,
+    conCartaPoder: false,
+    cartaPoderFecha: '',
+    cartaPoderNotario: '',
+  }
 }
 
 export default function NuevaDenunciaPage() {
@@ -56,12 +292,26 @@ export default function NuevaDenunciaPage() {
   const [guardandoBorrador, setGuardandoBorrador] = useState(false)
   const [borradorId, setBorradorId] = useState<number | null>(null)
   const [mostrarModalBorrador, setMostrarModalBorrador] = useState(false)
-  const [infoAdicionalLista, setInfoAdicionalLista] = useState<Array<{
-    telefonosInvolucrados: string
-    numeroCuenta: string
-    nombreCuenta: string
-    entidadBancaria: string
-  }>>([])
+  const [descripcionFisica, setDescripcionFisica] = useState<{
+    altura?: string
+    complexion?: string
+    postura?: string
+    formaRostro?: string
+    tonoPiel?: string
+    texturaPiel?: string
+    colorCabello?: string
+    longitudCabello?: string
+    texturaCabello?: string
+    peinado?: string
+    formaOjos?: string
+    colorOjos?: string
+    caracteristicasOjos?: string[]
+    otrosRasgos?: string[]
+    cabelloTeñido?: string
+    detallesAdicionales?: string
+  }>({})
+  const [denunciantes, setDenunciantes] = useState<DenuncianteEnLista[]>([])
+  const [denuncianteEnEdicionId, setDenuncianteEnEdicionId] = useState<string | null>(null)
 
   const tiposDenuncia = [
     'Estafa',
@@ -92,6 +342,131 @@ export default function NuevaDenunciaPage() {
     'GNB Paraguay',
     'Visión Banco',
     'Ueno Bank'
+  ]
+
+  // Opciones para descripción física
+  const opcionesAltura = [
+    'Muy baja (≤ 1.50 m)',
+    'Baja (1.51–1.64 m)',
+    'Promedio (1.65–1.75 m)',
+    'Alta (1.76–1.85 m)',
+    'Muy alta (≥ 1.86 m)'
+  ]
+
+  const opcionesComplexion = [
+    'Delgada',
+    'Atlética',
+    'Robusta',
+    'Musculosa',
+    'Normal/Promedio',
+    'Voluminosa'
+  ]
+
+  const opcionesPostura = [
+    'Erguida',
+    'Relajada',
+    'Encogida',
+    'Elegante',
+    'Pesada'
+  ]
+
+  const opcionesFormaRostro = [
+    'Ovalado',
+    'Redondo',
+    'Cuadrado',
+    'Rectangular',
+    'Triangular',
+    'Diamante'
+  ]
+
+  const opcionesTonoPiel = [
+    'Muy clara',
+    'Clara',
+    'Trigueña / Oliva',
+    'Morena',
+    'Muy morena',
+    'Oscura'
+  ]
+
+  const opcionesTexturaPiel = [
+    'Lisa',
+    'Rugosa',
+    'Con pecas',
+    'Con arrugas',
+    'Con cicatrices visibles',
+    'Con lunares'
+  ]
+
+  const opcionesColorCabello = [
+    'Negro',
+    'Castaño oscuro',
+    'Castaño claro',
+    'Rubio oscuro',
+    'Rubio claro',
+    'Pelirrojo',
+    'Canoso',
+    'Teñido'
+  ]
+
+  const opcionesLongitudCabello = [
+    'Muy corto',
+    'Corto',
+    'Medio',
+    'Largo',
+    'Muy largo'
+  ]
+
+  const opcionesTexturaCabello = [
+    'Liso',
+    'Ondulado',
+    'Rizado',
+    'Afro'
+  ]
+
+  const opcionesPeinado = [
+    'Suelto',
+    'Recogido',
+    'Moño',
+    'Trenza',
+    'Corte militar',
+    'Flequillo'
+  ]
+
+  const opcionesFormaOjos = [
+    'Almendrados',
+    'Redondos',
+    'Rasgados',
+    'Profundos',
+    'Grandes',
+    'Pequeños'
+  ]
+
+  const opcionesColorOjos = [
+    'Negros',
+    'Cafés',
+    'Verdes',
+    'Azules',
+    'Grises',
+    'Avellana',
+    'Otros'
+  ]
+
+  const opcionesCaracteristicasOjos = [
+    'Ojeras',
+    'Pestañas largas',
+    'Pestañas cortas',
+    'Cejas gruesas',
+    'Cejas delgadas'
+  ]
+
+  const opcionesOtrosRasgos = [
+    'Tatuajes',
+    'Cicatrices',
+    'Piercings',
+    'Barba/bigote',
+    'Lentes',
+    'Hoyuelos',
+    'Manera de caminar'
   ]
 
   const nacionalidades = [
@@ -153,7 +528,118 @@ export default function NuevaDenunciaPage() {
     'OTRA'
   ]
 
-  const estadosCiviles = ['SOLTERO', 'CASADO', 'VIUDO']
+  const estadosCiviles = ['Soltero/a', 'Casado/a', 'Viudo/a', 'Divorciado/a', 'Concubinato']
+
+  const DOMICILIO_REGEX_NUEVO = /DEPARTAMENTO\s+DE\s+([A-ZÁÉÍÓÚÑ\s]+?)(?:,\s*CIUDAD\s+DE\s+([A-ZÁÉÍÓÚÑ\s]+?))?(?:,\s*(.*))?\.?$/i
+  const DOMICILIO_REGEX_ANTERIOR = /DEPARTAMENTO\s*\{([^}]+)\}\s*,\s*CIUDAD DE\s*\{([^}]+)\}\s*,\s*\{([^}]+)\}/i
+
+  const construirDomicilio = (departamento?: string, ciudad?: string, calles?: string) => {
+    const partes: string[] = []
+    const dep = departamento ? departamento.toUpperCase() : ''
+    const city = ciudad ? ciudad.toUpperCase() : ''
+
+    if (dep) {
+      if (dep === 'ASUNCIÓN') {
+        // omit departamento, será tratado como ciudad capital
+      } else if (dep === 'CENTRAL') {
+        partes.push('departamento CENTRAL')
+      } else {
+        partes.push(`departamento de ${dep}`)
+      }
+    }
+    if (city) {
+      if (dep === 'CENTRAL') {
+        partes.push(`ciudad de ${city}`)
+      } else if (dep === 'ASUNCIÓN') {
+        partes.push(`ciudad de ${city}`)
+      } else {
+        partes.push(`ciudad de ${city}`)
+      }
+    }
+    if (calles) {
+      partes.push(calles.toUpperCase())
+    }
+    if (partes.length === 0) return ''
+    return partes.join(', ')
+  }
+
+  // Función para generar el texto de descripción física a partir de los valores seleccionados
+  const generarTextoDescripcionFisica = (desc: typeof descripcionFisica): string => {
+    const partes: string[] = []
+    
+    // 1. Constitución física
+    const constitucion: string[] = []
+    if (desc.altura) constitucion.push(`altura ${desc.altura}`)
+    if (desc.complexion) constitucion.push(`complexión ${desc.complexion}`)
+    if (desc.postura) constitucion.push(`postura ${desc.postura}`)
+    if (constitucion.length > 0) partes.push(`Constitución física: ${constitucion.join(', ')}.`)
+    
+    // 2. Forma del rostro
+    if (desc.formaRostro) partes.push(`Forma del rostro: ${desc.formaRostro}.`)
+    
+    // 3. Piel
+    const piel: string[] = []
+    if (desc.tonoPiel) piel.push(`tono ${desc.tonoPiel}`)
+    if (desc.texturaPiel) piel.push(`textura ${desc.texturaPiel}`)
+    if (piel.length > 0) partes.push(`Piel: ${piel.join(', ')}.`)
+    
+    // 4. Cabello
+    const cabello: string[] = []
+    if (desc.colorCabello) {
+      if (desc.colorCabello === 'Teñido' && desc.cabelloTeñido) {
+        cabello.push(`color teñido (${desc.cabelloTeñido})`)
+      } else {
+        cabello.push(`color ${desc.colorCabello}`)
+      }
+    }
+    if (desc.longitudCabello) cabello.push(`longitud ${desc.longitudCabello}`)
+    if (desc.texturaCabello) cabello.push(`textura ${desc.texturaCabello}`)
+    if (desc.peinado) cabello.push(`peinado ${desc.peinado}`)
+    if (cabello.length > 0) partes.push(`Cabello: ${cabello.join(', ')}.`)
+    
+    // 5. Ojos
+    const ojos: string[] = []
+    if (desc.formaOjos) ojos.push(`forma ${desc.formaOjos}`)
+    if (desc.colorOjos) ojos.push(`color ${desc.colorOjos}`)
+    if (desc.caracteristicasOjos && desc.caracteristicasOjos.length > 0) {
+      ojos.push(desc.caracteristicasOjos.join(', '))
+    }
+    if (ojos.length > 0) partes.push(`Ojos: ${ojos.join(', ')}.`)
+    
+    // 6. Otros rasgos distintivos
+    if (desc.otrosRasgos && desc.otrosRasgos.length > 0) {
+      partes.push(`Otros rasgos distintivos: ${desc.otrosRasgos.join(', ')}.`)
+    }
+    
+    return partes.join(' ')
+  }
+
+  const descomponerDomicilio = (domicilio: string | null | undefined) => {
+    if (!domicilio) return { departamento: '', ciudad: '', calles: '' }
+
+    const matchNuevo = DOMICILIO_REGEX_NUEVO.exec(domicilio)
+    if (matchNuevo) {
+      const departamento = (matchNuevo[1] || '').trim().toUpperCase()
+      const ciudad = (matchNuevo[2] || '').trim().toUpperCase()
+      const calles = (matchNuevo[3] || '').replace(/\.$/, '').trim().toUpperCase()
+      return {
+        departamento,
+        ciudad,
+        calles,
+      }
+    }
+
+    const matchAnterior = DOMICILIO_REGEX_ANTERIOR.exec(domicilio)
+    if (matchAnterior) {
+      return {
+        departamento: matchAnterior[1].trim().toUpperCase(),
+        ciudad: matchAnterior[2].trim().toUpperCase(),
+        calles: matchAnterior[3].trim().toUpperCase(),
+      }
+    }
+
+    return { departamento: '', ciudad: '', calles: domicilio.replace(/\.$/, '').trim().toUpperCase() }
+  }
 
   const {
     register: registerDenunciante,
@@ -162,14 +648,70 @@ export default function NuevaDenunciaPage() {
     watch: watchDenunciante,
     setValue: setValueDenunciante,
     control: controlDenunciante,
+    reset: resetDenunciante,
+    getValues: getValuesDenunciante,
   } = useForm<z.infer<typeof denuncianteSchema>>({
     resolver: zodResolver(denuncianteSchema),
     defaultValues: {
-      nacionalidad: 'PARAGUAYA',
+      ...valoresInicialesDenunciante,
     },
   })
 
   const tipoDocumento = watchDenunciante('tipoDocumento')
+  const departamentoSeleccionado = watchDenunciante('departamento')
+  const ciudadSeleccionada = watchDenunciante('ciudad')
+  const rolSeleccionado = watchDenunciante('rol')
+  const matriculaActual = watchDenunciante('matricula')
+
+  const principalActual = obtenerDenunciantePrincipal()
+
+  const denunciantesOrdenados = useMemo(() => {
+    const copia = [...denunciantes]
+    return copia.sort((a, b) => {
+      if (a.rol === 'principal' && b.rol !== 'principal') return -1
+      if (b.rol === 'principal' && a.rol !== 'principal') return 1
+      return 0
+    })
+  }, [denunciantes])
+
+  const existePrincipalRegistrado = useMemo(
+    () =>
+      denunciantes.some(
+        (denunciante) => denunciante.rol === 'principal' && denunciante.id !== denuncianteEnEdicionId
+      ),
+    [denunciantes, denuncianteEnEdicionId]
+  )
+
+  const registroDenuncianteEnEdicion = obtenerDenunciantePorId(denuncianteEnEdicionId)
+  const esAbogado = rolSeleccionado === 'abogado'
+
+  const esFormularioDenuncianteVacio = (data: DenuncianteFormValues) => {
+    const camposRelevantes: Array<string | null | undefined> = [
+      data.nombres,
+      data.tipoDocumento,
+      data.numeroDocumento,
+      data.fechaNacimiento,
+      data.lugarNacimiento,
+      data.estadoCivil,
+      data.telefono,
+      data.correo,
+      data.departamento,
+      data.ciudad,
+      data.calles,
+      data.profesion,
+      data.matricula,
+    ]
+
+    const nacionalidadDistintaPorDefecto =
+      data.nacionalidad && data.nacionalidad.trim() !== '' && data.nacionalidad.trim().toUpperCase() !== 'PARAGUAYA'
+
+    const hayDatoRelevante =
+      camposRelevantes.some((campo) => typeof campo === 'string' && campo.trim() !== '') || nacionalidadDistintaPorDefecto
+
+    const onlyRepresentaA = !hayDatoRelevante && !!data.representaA && data.rol === 'abogado'
+
+    return !hayDatoRelevante && !onlyRepresentaA
+  }
 
   // Establecer PARAGUAYA como valor por defecto
   useEffect(() => {
@@ -178,6 +720,239 @@ export default function NuevaDenunciaPage() {
       setValueDenunciante('nacionalidad', 'PARAGUAYA')
     }
   }, [setValueDenunciante, watchDenunciante])
+
+  useEffect(() => {
+    const coActuales = denunciantes.filter((denunciante) => denunciante.rol === 'co-denunciante')
+    if (coActuales.length >= 2 && rolSeleccionado === 'co-denunciante') {
+      setValueDenunciante('rol', 'abogado')
+    }
+  }, [denunciantes, rolSeleccionado, setValueDenunciante])
+
+  // Función para completar automáticamente el formulario con datos aleatorios (SOLO PARA PRUEBAS)
+  const completarFormularioAutomatico = () => {
+    const rolActual = watchDenunciante('rol') || 'principal'
+    const datos = generarDatosAleatorios(rolActual as 'principal' | 'co-denunciante' | 'abogado', departamentosParaguay)
+    
+    // Completar todos los campos con los datos aleatorios
+    Object.entries(datos).forEach(([key, value]) => {
+      if (value !== null && value !== undefined) {
+        setValueDenunciante(key as keyof DenuncianteFormValues, value as any)
+      }
+    })
+    
+    // Calcular edad si hay fecha de nacimiento
+    if (datos.fechaNacimiento && !esAbogado) {
+      const edadCalculada = calcularEdad(datos.fechaNacimiento)
+      setValueDenunciante('edad', edadCalculada)
+    }
+  }
+
+  // Función para completar automáticamente los datos del autor conocido (SOLO PARA PRUEBAS)
+  const completarAutorAutomatico = () => {
+    const nombresAleatorios = [
+      'Juan', 'María', 'Carlos', 'Ana', 'Pedro', 'Laura', 'Luis', 'Carmen',
+      'Roberto', 'Patricia', 'Miguel', 'Sofía', 'José', 'Elena', 'Francisco', 'Lucía'
+    ]
+    const apellidosAleatorios = [
+      'García', 'López', 'Martínez', 'González', 'Rodríguez', 'Fernández',
+      'Sánchez', 'Ramírez', 'Torres', 'Morales', 'Jiménez', 'Hernández',
+      'Díaz', 'Cruz', 'Ortiz', 'Vargas', 'Mendoza', 'Romero'
+    ]
+    const lugaresNacimiento = [
+      'ASUNCIÓN', 'CIUDAD DEL ESTE', 'ENCARNACIÓN', 'SAN LORENZO', 'LUQUE',
+      'CAPIATÁ', 'LAMBARÉ', 'FERNANDO DE LA MORA', 'LIMPIEO', 'ÑEMBY',
+      'PEDRO JUAN CABALLERO', 'VILLA HAYES', 'CONCEPCIÓN', 'VILLARRICA'
+    ]
+    const callesAleatorias = [
+      'AVENIDA MARISCAL LÓPEZ 123', 'CALLE PARAGUARI 456', 'RUTA 2 KM 12',
+      'CALLE ESTRELLA 789', 'AVENIDA ESPAÑA 321', 'CALLE CHACO 654',
+      'RUTA 1 KM 8', 'AVENIDA FÉLIX BOGADO 987'
+    ]
+
+    const nombre = nombresAleatorios[Math.floor(Math.random() * nombresAleatorios.length)]
+    const apellido1 = apellidosAleatorios[Math.floor(Math.random() * apellidosAleatorios.length)]
+    const apellido2 = apellidosAleatorios[Math.floor(Math.random() * apellidosAleatorios.length)]
+    const nombresCompletos = `${nombre} ${apellido1} ${apellido2}`.toUpperCase()
+
+    // Generar fecha de nacimiento (entre 25 y 65 años)
+    const edad = Math.floor(Math.random() * 40) + 25
+    const añoNacimiento = new Date().getFullYear() - edad
+    const mesNacimiento = String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')
+    const diaNacimiento = String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')
+    const fechaNacimiento = `${añoNacimiento}-${mesNacimiento}-${diaNacimiento}`
+
+    const nacionalidades = ['PARAGUAYA', 'ARGENTINA', 'BRASILEÑA', 'BOLIVIANA']
+    const estadosCiviles = ['Soltero/a', 'Casado/a', 'Viudo/a', 'Divorciado/a']
+    const profesiones = [
+      'COMERCIANTE', 'DOCENTE', 'EMPLEADO', 'PROFESIONAL', 'ESTUDIANTE',
+      'OBRERO', 'AGRICULTOR', 'JUBILADO', 'FUNCIONARIO PÚBLICO', 'INDEPENDIENTE'
+    ]
+    const telefono = `098${Math.floor(Math.random() * 10000000)}`
+    const cedula = Math.floor(Math.random() * 9999999) + 1000000 + ''
+
+    // Completar campos
+    setValueAutor('nombre', nombresCompletos)
+    setValueAutor('cedula', cedula)
+    // Seleccionar departamento y ciudad aleatorios
+    const departamentoAleatorio = departamentosParaguay[Math.floor(Math.random() * departamentosParaguay.length)]
+    const ciudadAleatoria =
+      departamentoAleatorio.ciudades[Math.floor(Math.random() * departamentoAleatorio.ciudades.length)]
+    
+    setValueAutor('departamento', departamentoAleatorio.nombre)
+    setValueAutor('ciudad', ciudadAleatoria)
+    setValueAutor('calles', callesAleatorias[Math.floor(Math.random() * callesAleatorias.length)])
+    setValueAutor('nacionalidad', nacionalidades[Math.floor(Math.random() * nacionalidades.length)])
+    setValueAutor('estadoCivil', estadosCiviles[Math.floor(Math.random() * estadosCiviles.length)])
+    setValueAutor('fechaNacimiento', fechaNacimiento)
+    setValueAutor('lugarNacimiento', lugaresNacimiento[Math.floor(Math.random() * lugaresNacimiento.length)])
+    setValueAutor('telefono', telefono)
+    setValueAutor('profesion', profesiones[Math.floor(Math.random() * profesiones.length)])
+
+    // Calcular edad automáticamente
+    const edadCalculada = calcularEdad(fechaNacimiento)
+    setValueAutor('edad', edadCalculada)
+  }
+
+  useEffect(() => {
+    if (rolSeleccionado !== 'abogado' && matriculaActual && matriculaActual.trim() !== '') {
+      setValueDenunciante('matricula', '')
+    }
+  }, [rolSeleccionado, matriculaActual, setValueDenunciante])
+
+  const generarIdDenunciante = () => {
+    if (typeof window !== 'undefined' && window.crypto && 'randomUUID' in window.crypto) {
+      return window.crypto.randomUUID()
+    }
+    return `den-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+  }
+
+  function obtenerDenunciantePrincipal(lista: DenuncianteEnLista[] = denunciantes) {
+    return lista.find((denunciante) => denunciante.rol === 'principal') || null
+  }
+
+  const obtenerRolSugerido = (lista: DenuncianteEnLista[] = denunciantes): RolDenunciante =>
+    lista.some((denunciante) => denunciante.rol === 'principal') ? 'co-denunciante' : 'principal'
+
+  const resetFormularioDenunciante = (rolPorDefecto: RolDenunciante = obtenerRolSugerido()) => {
+    resetDenunciante({
+      ...valoresInicialesDenunciante,
+      rol: rolPorDefecto,
+      representaA: null,
+    })
+  }
+
+  function obtenerDenunciantePorId(id?: string | null) {
+    if (!id) return null
+    return denunciantes.find((denunciante) => denunciante.id === id) || null
+  }
+
+  const guardarDenuncianteEnLista = (
+    data: DenuncianteFormValues,
+    opciones: { mantenerFormulario?: boolean } = {}
+  ): DenuncianteEnLista[] | null => {
+    if (data.rol !== 'principal' && esFormularioDenuncianteVacio(data)) {
+      if (!opciones.mantenerFormulario) {
+        resetFormularioDenunciante(obtenerRolSugerido())
+      }
+      return denunciantes
+    }
+
+    const registro: DenuncianteEnLista = {
+      id: denuncianteEnEdicionId ?? generarIdDenunciante(),
+      ...data,
+      representaA: null,
+    }
+
+    const listaSinActual = denunciantes.filter((denunciante) => denunciante.id !== registro.id)
+
+    if (registro.rol === 'principal' && listaSinActual.some((denunciante) => denunciante.rol === 'principal')) {
+      alert('Ya existe un denunciante principal. Edite el registro existente si desea modificarlo.')
+      return null
+    }
+
+    if (registro.rol === 'abogado') {
+      const principalTarget = obtenerDenunciantePrincipal(listaSinActual)
+      if (!principalTarget) {
+        alert('Debes registrar un denunciante principal antes de agregar un abogado.')
+        return null
+      }
+      registro.representaA = principalTarget.id
+    }
+
+    if (registro.rol === 'co-denunciante') {
+      const coDenunciantesExistentes = listaSinActual.filter((denunciante) => denunciante.rol === 'co-denunciante')
+      if (coDenunciantesExistentes.length >= 2) {
+        alert('Solo se permiten hasta dos co-denunciantes en la denuncia.')
+        return null
+      }
+    }
+
+    const nuevaLista = [...listaSinActual, registro]
+
+    if (!nuevaLista.some((denunciante) => denunciante.rol === 'principal')) {
+      alert('Debe existir al menos un denunciante principal.')
+      return null
+    }
+
+    setDenunciantes(nuevaLista)
+    setDenuncianteEnEdicionId(null)
+
+    if (!opciones.mantenerFormulario) {
+      resetFormularioDenunciante(obtenerRolSugerido(nuevaLista))
+    }
+
+    return nuevaLista
+  }
+
+  const manejarAgregarDenunciante = () => {
+    handleSubmitDenunciante((datos) => {
+      guardarDenuncianteEnLista(datos)
+    })()
+  }
+
+  const manejarCancelarEdicion = () => {
+    setDenuncianteEnEdicionId(null)
+    resetFormularioDenunciante()
+  }
+
+  const manejarEditarDenunciante = (id: string) => {
+    const registro = denunciantes.find((denunciante) => denunciante.id === id)
+    if (!registro) return
+    setDenuncianteEnEdicionId(id)
+    const { id: _id, ...resto } = registro
+    resetDenunciante({
+      ...resto,
+      representaA: registro.rol === 'abogado' ? registro.representaA : null,
+    })
+  }
+
+  const manejarEliminarDenunciante = (id: string) => {
+    let listaActualizada = denunciantes.filter((denunciante) => denunciante.id !== id)
+    const abogadosDependientes = listaActualizada.filter(
+      (denunciante) => denunciante.rol === 'abogado' && denunciante.representaA === id
+    )
+
+    if (abogadosDependientes.length > 0) {
+      alert('También se eliminarán los abogados vinculados a la persona seleccionada.')
+      listaActualizada = listaActualizada.filter(
+        (denunciante) => !(denunciante.rol === 'abogado' && denunciante.representaA === id)
+      )
+    }
+
+    if (listaActualizada.length === 0) {
+      resetFormularioDenunciante('principal')
+    } else {
+      const nuevoRol = obtenerRolSugerido(listaActualizada)
+      if (denuncianteEnEdicionId === id || abogadosDependientes.some((abogado) => abogado.id === denuncianteEnEdicionId)) {
+        resetFormularioDenunciante(nuevoRol)
+        setDenuncianteEnEdicionId(null)
+      }
+    }
+    setDenunciantes(listaActualizada)
+    if (listaActualizada.length > 0 && !listaActualizada.some((denunciante) => denunciante.rol === 'principal')) {
+      alert('Recuerda asignar un nuevo denunciante principal antes de continuar con la denuncia.')
+    }
+  }
 
   // Función para convertir a mayúsculas automáticamente
   const convertirAMayusculas = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -222,6 +997,48 @@ export default function NuevaDenunciaPage() {
   })
 
   const tipoDenuncia = watchDenuncia('tipoDenuncia')
+  const usarRango = watchDenuncia('usarRango')
+  const lugarHechoDepartamento = watchDenuncia('lugarHechoDepartamento')
+  const lugarHechoCiudad = watchDenuncia('lugarHechoCiudad')
+
+  // Opciones de departamento y ciudad para lugar del hecho
+  const lugarHechoDepartamentoOptions = useMemo(
+    () => departamentosParaguay.map((dep) => ({ value: dep.nombre, label: dep.nombre })),
+    []
+  )
+
+  const lugarHechoCiudadOptions = useMemo(() => {
+    if (!lugarHechoDepartamento) return []
+    const departamento = departamentosParaguay.find((dep) => dep.nombre === lugarHechoDepartamento)
+    if (!departamento) return []
+    return departamento.ciudades.map((ciudad) => ({ value: ciudad, label: ciudad }))
+  }, [lugarHechoDepartamento])
+
+  const departamentoOptions = useMemo(
+    () => departamentosParaguay.map((dep) => ({ value: dep.nombre, label: dep.nombre })),
+    []
+  )
+
+  const ciudadOptions = useMemo(() => {
+    if (!departamentoSeleccionado) return []
+    const departamento = departamentosParaguay.find((dep) => dep.nombre === departamentoSeleccionado)
+    if (!departamento) return []
+    return departamento.ciudades.map((ciudad) => ({ value: ciudad, label: ciudad }))
+  }, [departamentoSeleccionado])
+
+  useEffect(() => {
+    if (!departamentoSeleccionado) {
+      if (ciudadSeleccionada) {
+        setValueDenunciante('ciudad', '')
+      }
+      return
+    }
+
+    const departamento = departamentosParaguay.find((dep) => dep.nombre === departamentoSeleccionado)
+    if (departamento && ciudadSeleccionada && !departamento.ciudades.includes(ciudadSeleccionada)) {
+      setValueDenunciante('ciudad', '')
+    }
+  }, [departamentoSeleccionado, ciudadSeleccionada, setValueDenunciante])
 
   const {
     register: registerAutor,
@@ -233,6 +1050,62 @@ export default function NuevaDenunciaPage() {
   } = useForm<any>()
 
   const fechaNacimientoAutor = watchAutor('fechaNacimiento')
+  const departamentoAutor = watchAutor('departamento')
+  const ciudadAutor = watchAutor('ciudad')
+  
+  // Opciones de departamento y ciudad para el autor
+  const departamentoAutorOptions = useMemo(
+    () => departamentosParaguay.map((dep) => ({ value: dep.nombre, label: dep.nombre })),
+    []
+  )
+  
+  const ciudadAutorOptions = useMemo(() => {
+    if (!departamentoAutor) return []
+    const departamento = departamentosParaguay.find((dep) => dep.nombre === departamentoAutor)
+    if (!departamento) return []
+    return departamento.ciudades.map((ciudad) => ({ value: ciudad, label: ciudad }))
+  }, [departamentoAutor])
+
+  // Efecto para manejar cambio de departamento del autor
+  useEffect(() => {
+    if (!departamentoAutor) {
+      if (ciudadAutor) {
+        setValueAutor('ciudad', '')
+      }
+      return
+    }
+
+    const departamento = departamentosParaguay.find((dep) => dep.nombre === departamentoAutor)
+    if (departamento && ciudadAutor && !departamento.ciudades.includes(ciudadAutor)) {
+      setValueAutor('ciudad', '')
+    }
+  }, [departamentoAutor, ciudadAutor, setValueAutor])
+
+  // Efecto para manejar cambio de departamento del lugar del hecho
+  useEffect(() => {
+    if (!lugarHechoDepartamento) {
+      if (lugarHechoCiudad) {
+        setValueDenuncia('lugarHechoCiudad', '')
+      }
+      return
+    }
+
+    const departamento = departamentosParaguay.find((dep) => dep.nombre === lugarHechoDepartamento)
+    if (departamento && lugarHechoCiudad && !departamento.ciudades.includes(lugarHechoCiudad)) {
+      setValueDenuncia('lugarHechoCiudad', '')
+    }
+  }, [lugarHechoDepartamento, lugarHechoCiudad, setValueDenuncia])
+
+  // Efecto para construir lugarHecho automáticamente cuando cambian los campos
+  useEffect(() => {
+    const dep = watchDenuncia('lugarHechoDepartamento')
+    const ciu = watchDenuncia('lugarHechoCiudad')
+    const call = watchDenuncia('lugarHechoCalles')
+    const lugarHechoConstruido = construirDomicilio(dep, ciu, call)
+    if (lugarHechoConstruido) {
+      setValueDenuncia('lugarHecho', lugarHechoConstruido, { shouldValidate: false })
+    }
+  }, [lugarHechoDepartamento, lugarHechoCiudad, watchDenuncia('lugarHechoCalles'), setValueDenuncia])
 
   const calcularEdad = (fechaNac: string): string => {
     try {
@@ -264,6 +1137,57 @@ export default function NuevaDenunciaPage() {
     }
   }
 
+  const construirDenunciantePayload = (data: z.infer<typeof denuncianteSchema>) => {
+    const { rol: _rol, representaA: _representaA, ...datos } = data
+    const departamento = datos.departamento?.toUpperCase() || ''
+    const ciudad = datos.ciudad?.toUpperCase() || ''
+    const calles = datos.calles?.toUpperCase() || ''
+    const domicilio = construirDomicilio(
+      departamento || undefined,
+      ciudad || undefined,
+      calles || undefined
+    )
+    const edadCalculada = datos.fechaNacimiento ? calcularEdad(datos.fechaNacimiento) : ''
+
+    return {
+      nombres: datos.nombres?.toUpperCase() || '',
+      tipoDocumento: datos.tipoDocumento || '',
+      numeroDocumento: datos.numeroDocumento?.toUpperCase() || '',
+      nacionalidad: datos.nacionalidad?.toUpperCase() || '',
+      estadoCivil: datos.estadoCivil?.toUpperCase() || '',
+      fechaNacimiento: datos.fechaNacimiento,
+      lugarNacimiento: datos.lugarNacimiento?.toUpperCase() || '',
+      telefono: datos.telefono?.toUpperCase() || '',
+      correo: datos.correo ? datos.correo.trim().toLowerCase() : null,
+      domicilio: domicilio || null,
+      departamento: departamento || null,
+      ciudad: ciudad || null,
+      calles: calles || null,
+      profesion: datos.profesion?.toUpperCase() || null,
+      edad: datos.edad || edadCalculada,
+      matricula: datos.matricula?.toUpperCase() || null,
+    }
+  }
+
+  const construirColeccionDenunciantesPayload = (lista: DenuncianteEnLista[]) =>
+    lista.map((denunciante) => {
+      const representado =
+        denunciante.rol === 'abogado'
+          ? lista.find((item) => item.id === denunciante.representaA) || null
+          : null
+      return {
+        id: denunciante.id,
+        rol: denunciante.rol,
+        representaA: denunciante.rol === 'abogado' ? denunciante.representaA || null : null,
+        representaDocumento:
+          denunciante.rol === 'abogado' ? representado?.numeroDocumento || null : null,
+        conCartaPoder: denunciante.rol === 'abogado' ? denunciante.conCartaPoder || false : false,
+        cartaPoderFecha: denunciante.rol === 'abogado' ? denunciante.cartaPoderFecha || null : null,
+        cartaPoderNotario: denunciante.rol === 'abogado' ? denunciante.cartaPoderNotario?.toUpperCase() || null : null,
+        datos: construirDenunciantePayload(denunciante),
+      }
+    })
+
   const cargarBorrador = async (id: number) => {
     try {
       const response = await fetch(`/api/denuncias/ver/${id}`, { cache: 'no-store' })
@@ -272,23 +1196,155 @@ export default function NuevaDenunciaPage() {
       const data = await response.json()
       setBorradorId(data.id)
       
-      // Cargar datos del denunciante
-      if (data.nombres_denunciante) {
+      const involucradosApi = Array.isArray(data.denunciantes_involucrados)
+        ? data.denunciantes_involucrados
+        : []
+
+      let listaDenunciantes: DenuncianteEnLista[] = []
+
+      if (involucradosApi.length > 0) {
+        const transformarFila = (fila: any): DenuncianteEnLista => {
+          let fechaNacimientoISO = ''
+          if (fila.fecha_nacimiento) {
+            try {
+              fechaNacimientoISO = new Date(fila.fecha_nacimiento).toISOString().split('T')[0]
+            } catch {
+              fechaNacimientoISO = ''
+            }
+          }
+
+          const domicilioParsed = descomponerDomicilio(fila.domicilio)
+
+          return {
+            ...valoresInicialesDenunciante,
+            id: String(fila.denunciante_id),
+            nombres: fila.nombres || '',
+            tipoDocumento: fila.tipo_documento || '',
+            numeroDocumento: fila.cedula || '',
+            nacionalidad: fila.nacionalidad || 'PARAGUAYA',
+            estadoCivil: fila.estado_civil || '',
+            edad: fila.edad ? String(fila.edad) : '',
+            fechaNacimiento: fechaNacimientoISO,
+            lugarNacimiento: fila.lugar_nacimiento || '',
+            telefono: fila.telefono || '',
+            correo: fila.correo || '',
+            departamento: domicilioParsed.departamento || '',
+            ciudad: domicilioParsed.ciudad || '',
+            calles: domicilioParsed.calles || '',
+            profesion: fila.profesion || '',
+          matricula: fila.matricula || '',
+            rol: (fila.rol as RolDenunciante) || 'co-denunciante',
+            representaA:
+              fila.rol === 'abogado' && fila.representa_denunciante_id
+                ? String(fila.representa_denunciante_id)
+                : null,
+            conCartaPoder: fila.con_carta_poder || false,
+            cartaPoderFecha: fila.carta_poder_fecha ? new Date(fila.carta_poder_fecha).toISOString().split('T')[0] : '',
+            cartaPoderNotario: fila.carta_poder_notario || '',
+          }
+        }
+
+        listaDenunciantes = involucradosApi.map(transformarFila)
+        const principalApi =
+          involucradosApi.find((fila: any) => fila.rol === 'principal') || involucradosApi[0]
+        const principalTransformado =
+          listaDenunciantes.find((item) => item.id === String(principalApi.denunciante_id)) ||
+          transformarFila(principalApi)
+
+        setValueDenunciante('nombres', principalTransformado.nombres)
+        setValueDenunciante('tipoDocumento', principalTransformado.tipoDocumento || 'Cédula de Identidad Paraguaya')
+        setValueDenunciante('numeroDocumento', principalTransformado.numeroDocumento || '')
+        setValueDenunciante('nacionalidad', principalTransformado.nacionalidad || 'PARAGUAYA')
+        setValueDenunciante('estadoCivil', principalTransformado.estadoCivil || '')
+        setValueDenunciante('edad', principalTransformado.edad || '')
+        setValueDenunciante('fechaNacimiento', principalTransformado.fechaNacimiento || '')
+        setValueDenunciante('lugarNacimiento', principalTransformado.lugarNacimiento || '')
+        setValueDenunciante('telefono', principalTransformado.telefono || '')
+        setValueDenunciante('profesion', principalTransformado.profesion || '')
+        setValueDenunciante('correo', principalTransformado.correo || '')
+        setValueDenunciante('departamento', principalTransformado.departamento || '')
+        setValueDenunciante('ciudad', principalTransformado.ciudad || '')
+        setValueDenunciante('calles', principalTransformado.calles || '')
+        setValueDenunciante('rol', principalTransformado.rol)
+        setValueDenunciante('representaA', null)
+        setValueDenunciante('matricula', principalTransformado.matricula || '')
+        setValueDenunciante('conCartaPoder', principalTransformado.conCartaPoder || false)
+        setValueDenunciante('cartaPoderFecha', principalTransformado.cartaPoderFecha || '')
+        setValueDenunciante('cartaPoderNumero', principalTransformado.cartaPoderNumero || '')
+        setValueDenunciante('cartaPoderNotario', principalTransformado.cartaPoderNotario || '')
+
+        setDenunciantes(listaDenunciantes)
+        setDenuncianteEnEdicionId(principalTransformado.id)
+      } else if (data.nombres_denunciante) {
+        let fechaNacimientoISO = ''
+        if (data.fecha_nacimiento) {
+          try {
+            fechaNacimientoISO = new Date(data.fecha_nacimiento).toISOString().split('T')[0]
+          } catch {
+            fechaNacimientoISO = ''
+          }
+        }
+
         setValueDenunciante('nombres', data.nombres_denunciante)
         setValueDenunciante('tipoDocumento', data.tipo_documento || 'Cédula de Identidad Paraguaya')
         setValueDenunciante('numeroDocumento', data.cedula)
         setValueDenunciante('nacionalidad', data.nacionalidad)
         setValueDenunciante('estadoCivil', data.estado_civil)
-        setValueDenunciante('edad', data.edad?.toString())
-        // Formatear fecha de nacimiento al formato YYYY-MM-DD
-        if (data.fecha_nacimiento) {
-          const fechaNac = new Date(data.fecha_nacimiento)
-          const fechaFormateada = fechaNac.toISOString().split('T')[0]
-          setValueDenunciante('fechaNacimiento', fechaFormateada)
-        }
+        setValueDenunciante('edad', data.edad?.toString() || '')
+        setValueDenunciante('fechaNacimiento', fechaNacimientoISO)
         setValueDenunciante('lugarNacimiento', data.lugar_nacimiento)
         setValueDenunciante('telefono', data.telefono)
         if (data.profesion) setValueDenunciante('profesion', data.profesion)
+        setValueDenunciante('correo', data.correo || '')
+        setValueDenunciante('matricula', data.matricula || '')
+
+        const domicilioParsed = descomponerDomicilio(data.domicilio)
+        const departamentoValido =
+          domicilioParsed.departamento && departamentosParaguay.some((dep) => dep.nombre === domicilioParsed.departamento)
+
+        if (departamentoValido) {
+          setValueDenunciante('departamento', domicilioParsed.departamento)
+          const departamentoActual = departamentosParaguay.find((dep) => dep.nombre === domicilioParsed.departamento)
+          if (departamentoActual && domicilioParsed.ciudad && departamentoActual.ciudades.includes(domicilioParsed.ciudad)) {
+            setValueDenunciante('ciudad', domicilioParsed.ciudad)
+          } else {
+            setValueDenunciante('ciudad', '')
+          }
+          setValueDenunciante('calles', domicilioParsed.calles || '')
+        } else {
+          setValueDenunciante('departamento', '')
+          setValueDenunciante('ciudad', '')
+          setValueDenunciante('calles', domicilioParsed.calles || '')
+        }
+
+        setValueDenunciante('rol', 'principal')
+        setValueDenunciante('representaA', null)
+
+        const idGenerado = generarIdDenunciante()
+        const registroPrincipal: DenuncianteEnLista = {
+          ...valoresInicialesDenunciante,
+          id: idGenerado,
+          nombres: data.nombres_denunciante || '',
+          tipoDocumento: data.tipo_documento || 'Cédula de Identidad Paraguaya',
+          numeroDocumento: data.cedula || '',
+          nacionalidad: data.nacionalidad || 'PARAGUAYA',
+          estadoCivil: data.estado_civil || '',
+          edad: data.edad?.toString() || '',
+          fechaNacimiento: fechaNacimientoISO,
+          lugarNacimiento: data.lugar_nacimiento || '',
+          telefono: data.telefono || '',
+          correo: data.correo || '',
+          departamento: domicilioParsed.departamento || '',
+          ciudad: domicilioParsed.ciudad || '',
+          calles: domicilioParsed.calles || '',
+          profesion: data.profesion || '',
+          matricula: data.matricula || '',
+          rol: 'principal',
+          representaA: null,
+        }
+        listaDenunciantes = [registroPrincipal]
+        setDenunciantes(listaDenunciantes)
+        setDenuncianteEnEdicionId(idGenerado)
       }
       
       // Cargar datos de la denuncia
@@ -298,9 +1354,42 @@ export default function NuevaDenunciaPage() {
         const fechaHechoFormateada = fechaHecho.toISOString().split('T')[0]
         setValueDenuncia('fechaHecho', fechaHechoFormateada)
         setValueDenuncia('horaHecho', data.hora_hecho)
+        // Cargar rango de fechas si existe
+        if (data.fecha_hecho_fin) {
+          setValueDenuncia('usarRango', true)
+          const fechaHechoFin = new Date(data.fecha_hecho_fin)
+          const fechaHechoFinFormateada = fechaHechoFin.toISOString().split('T')[0]
+          setValueDenuncia('fechaHechoFin', fechaHechoFinFormateada)
+          setValueDenuncia('horaHechoFin', data.hora_hecho_fin || '')
+        } else {
+          setValueDenuncia('usarRango', false)
+          setValueDenuncia('fechaHechoFin', '')
+          setValueDenuncia('horaHechoFin', '')
+        }
         setValueDenuncia('tipoDenuncia', data.tipo_denuncia === 'OTRO' ? 'Otro (Especificar)' : data.tipo_denuncia)
         if (data.otro_tipo) setValueDenuncia('otroTipo', data.otro_tipo)
-        setValueDenuncia('lugarHecho', data.lugar_hecho)
+        // Cargar lugar del hecho (descomponer)
+        const lugarHechoParsed = descomponerDomicilio(data.lugar_hecho)
+        const departamentoLugarValido =
+          lugarHechoParsed.departamento && departamentosParaguay.some((dep) => dep.nombre === lugarHechoParsed.departamento)
+        
+        if (departamentoLugarValido) {
+          setValueDenuncia('lugarHechoDepartamento', lugarHechoParsed.departamento)
+          const departamentoActual = departamentosParaguay.find((dep) => dep.nombre === lugarHechoParsed.departamento)
+          if (departamentoActual && lugarHechoParsed.ciudad && departamentoActual.ciudades.includes(lugarHechoParsed.ciudad)) {
+            setValueDenuncia('lugarHechoCiudad', lugarHechoParsed.ciudad)
+          } else {
+            setValueDenuncia('lugarHechoCiudad', '')
+          }
+          setValueDenuncia('lugarHechoCalles', lugarHechoParsed.calles || '')
+          // También mantener lugarHecho completo para compatibilidad
+          setValueDenuncia('lugarHecho', construirDomicilio(lugarHechoParsed.departamento, lugarHechoParsed.ciudad, lugarHechoParsed.calles))
+        } else {
+          setValueDenuncia('lugarHechoDepartamento', '')
+          setValueDenuncia('lugarHechoCiudad', '')
+          setValueDenuncia('lugarHechoCalles', lugarHechoParsed.calles || '')
+          setValueDenuncia('lugarHecho', data.lugar_hecho)
+        }
         setValueDenuncia('relato', data.relato)
         if (data.monto_dano) setValueDenuncia('montoDano', data.monto_dano.toString())
         if (data.moneda) setValueDenuncia('moneda', data.moneda)
@@ -316,7 +1405,25 @@ export default function NuevaDenunciaPage() {
             setAutorConocido('Conocido')
             setValueAutor('nombre', primerAutor.nombre_autor)
             setValueAutor('cedula', primerAutor.cedula_autor)
-            setValueAutor('domicilio', primerAutor.domicilio_autor)
+            // Cargar domicilio del autor (descomponer)
+            const domicilioAutorParsed = descomponerDomicilio(primerAutor.domicilio_autor)
+            const departamentoAutorValido =
+              domicilioAutorParsed.departamento && departamentosParaguay.some((dep) => dep.nombre === domicilioAutorParsed.departamento)
+            
+            if (departamentoAutorValido) {
+              setValueAutor('departamento', domicilioAutorParsed.departamento)
+              const departamentoActual = departamentosParaguay.find((dep) => dep.nombre === domicilioAutorParsed.departamento)
+              if (departamentoActual && domicilioAutorParsed.ciudad && departamentoActual.ciudades.includes(domicilioAutorParsed.ciudad)) {
+                setValueAutor('ciudad', domicilioAutorParsed.ciudad)
+              } else {
+                setValueAutor('ciudad', '')
+              }
+              setValueAutor('calles', domicilioAutorParsed.calles || '')
+            } else {
+              setValueAutor('departamento', '')
+              setValueAutor('ciudad', '')
+              setValueAutor('calles', domicilioAutorParsed.calles || '')
+            }
             setValueAutor('nacionalidad', primerAutor.nacionalidad_autor)
             setValueAutor('estadoCivil', primerAutor.estado_civil_autor)
             setValueAutor('edad', primerAutor.edad_autor?.toString())
@@ -331,15 +1438,18 @@ export default function NuevaDenunciaPage() {
             setValueAutor('profesion', primerAutor.profesion_autor)
           }
         
-        // Cargar información adicional
-        const infoAdicional = data.supuestos_autores.filter((a: any) => a.autor_conocido === 'Desconocido')
-        if (infoAdicional.length > 0) {
-          setInfoAdicionalLista(infoAdicional.map((a: any) => ({
-            telefonosInvolucrados: a.telefonos_involucrados || '',
-            numeroCuenta: a.numero_cuenta_beneficiaria || '',
-            nombreCuenta: a.nombre_cuenta_beneficiaria || '',
-            entidadBancaria: a.entidad_bancaria || ''
-          })))
+        // Cargar descripción física
+        const autorDesconocido = data.supuestos_autores.find((a: any) => a.autor_conocido === 'Desconocido')
+        if (autorDesconocido && autorDesconocido.descripcion_fisica) {
+          try {
+            const descFisica = typeof autorDesconocido.descripcion_fisica === 'string' 
+              ? JSON.parse(autorDesconocido.descripcion_fisica) 
+              : autorDesconocido.descripcion_fisica
+            setDescripcionFisica(descFisica || {})
+          } catch {
+            // Si no es JSON válido, intentar como texto plano (legacy)
+            setDescripcionFisica({})
+          }
         }
       }
     } catch (error) {
@@ -376,8 +1486,31 @@ export default function NuevaDenunciaPage() {
     }
   }, [router])
 
-  const onDenuncianteSubmit = (data: any) => {
+  const onDenuncianteSubmit = (data: DenuncianteFormValues) => {
+    const listaActualizada = guardarDenuncianteEnLista(data, { mantenerFormulario: false })
+    if (!listaActualizada) return
+
+    const principal = obtenerDenunciantePrincipal(listaActualizada)
+    if (!principal) {
+      alert('Debes registrar al menos un denunciante principal para continuar.')
+      return
+    }
+
     setPaso(2)
+  }
+
+  const handlePaso1Submit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const datosActuales = getValuesDenunciante()
+    const principal = obtenerDenunciantePrincipal()
+
+    if (esFormularioDenuncianteVacio(datosActuales)) {
+      resetFormularioDenunciante(obtenerRolSugerido())
+      setPaso(2)
+      return
+    }
+
+    handleSubmitDenunciante(onDenuncianteSubmit)(event)
   }
 
   const onAutorSubmit = (data: any) => {
@@ -387,55 +1520,75 @@ export default function NuevaDenunciaPage() {
   const onVistaPrevia = async () => {
     if (!usuario) return
 
-    // Validar que todos los formularios estén completos
-    const denuncianteData = watchDenunciante()
+    if (denunciantes.length === 0) {
+      alert('Agrega al menos un denunciante antes de generar la vista previa.')
+      setPaso(1)
+      return
+    }
+
+    const denunciantePrincipal = obtenerDenunciantePrincipal()
+    if (!denunciantePrincipal) {
+      alert('Debes registrar un denunciante principal antes de continuar.')
+      setPaso(1)
+      return
+    }
+
+    // Validar campos obligatorios del denunciante principal
+    if (
+      !denunciantePrincipal.nombres ||
+      !denunciantePrincipal.numeroDocumento ||
+      !denunciantePrincipal.departamento ||
+      !denunciantePrincipal.ciudad ||
+      !denunciantePrincipal.calles ||
+      !denunciantePrincipal.correo
+    ) {
+      alert('Por favor completa todos los campos obligatorios del denunciante principal.')
+      setPaso(1)
+      return
+    }
+
     const autorData = watchAutor()
     const denunciaData = watchDenuncia()
 
-    if (!denuncianteData.nombres || !denuncianteData.numeroDocumento || !denunciaData.fechaHecho || !denunciaData.relato) {
-      alert('Por favor complete todos los campos obligatorios antes de ver la vista previa.')
+    if (!denunciaData.fechaHecho || !denunciaData.relato) {
+      alert('Por favor completa los campos obligatorios del hecho antes de generar la vista previa.')
       return
     }
 
     setLoading(true)
 
     try {
-      // Obtener fecha y hora actual
       const { fecha, hora } = await obtenerFechaHoraActual()
       const fechaActual = fecha.split('/').reverse().join('-')
-      
-      // Convertir fecha de hecho si viene en formato YYYY-MM-DD
-      let fechaHecho = denunciaData.fechaHecho
-      if (fechaHecho.includes('-')) {
-        // Ya está en formato YYYY-MM-DD
-      } else if (fechaHecho.includes('/')) {
-        // Convertir de DD/MM/YYYY a YYYY-MM-DD
+
+      let fechaHecho = denunciaData.fechaHecho || ''
+      if (fechaHecho.includes('/')) {
         const [dia, mes, año] = fechaHecho.split('/')
         fechaHecho = `${año}-${mes}-${dia}`
       }
 
-      // Preparar datos para enviar (todos en mayúsculas)
+      const denunciantePayload = construirDenunciantePayload(denunciantePrincipal)
+      const coleccionDenunciantes = construirColeccionDenunciantesPayload(denunciantes)
+
       const payload = {
-        denunciante: {
-          nombres: denuncianteData.nombres?.toUpperCase() || '',
-          tipoDocumento: denuncianteData.tipoDocumento || '',
-          numeroDocumento: denuncianteData.numeroDocumento?.toUpperCase() || '',
-          nacionalidad: denuncianteData.nacionalidad?.toUpperCase() || '',
-          estadoCivil: denuncianteData.estadoCivil?.toUpperCase() || '',
-          fechaNacimiento: denuncianteData.fechaNacimiento,
-          lugarNacimiento: denuncianteData.lugarNacimiento?.toUpperCase() || '',
-          telefono: denuncianteData.telefono?.toUpperCase() || '',
-          profesion: denuncianteData.profesion?.toUpperCase() || null,
-          edad: denuncianteData.edad || calcularEdad(denuncianteData.fechaNacimiento),
-        },
+        borradorId: borradorId || null,
+        denunciante: denunciantePayload,
+        denunciantes: coleccionDenunciantes,
+        denunciantePrincipalId: denunciantePrincipal.id,
+        denunciantesAdicionales: coleccionDenunciantes.filter(
+          (denunciante) => denunciante.id !== denunciantePrincipal.id
+        ),
         denuncia: {
           fechaDenuncia: fechaActual,
           horaDenuncia: hora,
           fechaHecho: fechaHecho,
           horaHecho: denunciaData.horaHecho,
+          usarRango: denunciaData.usarRango || false,
+          fechaHechoFin: denunciaData.fechaHechoFin || null,
+          horaHechoFin: denunciaData.horaHechoFin || null,
           tipoDenuncia: denunciaData.tipoDenuncia === 'Otro (Especificar)' ? 'OTRO' : denunciaData.tipoDenuncia,
           otroTipo: denunciaData.tipoDenuncia === 'Otro (Especificar)' ? denunciaData.otroTipo?.toUpperCase() : null,
-          lugarHecho: denunciaData.lugarHecho?.toUpperCase() || '',
+          lugarHecho: construirDomicilio(denunciaData.lugarHechoDepartamento, denunciaData.lugarHechoCiudad, denunciaData.lugarHechoCalles)?.toUpperCase() || denunciaData.lugarHecho?.toUpperCase() || '',
           relato: denunciaData.relato || '',
           montoDano: denunciaData.montoDano ? parseInt(denunciaData.montoDano.replace(/\./g, '')) : null,
           moneda: denunciaData.moneda || null,
@@ -447,7 +1600,7 @@ export default function NuevaDenunciaPage() {
           ...(autorConocido === 'Conocido' && {
             nombre: autorData.nombre?.toUpperCase() || null,
             cedula: autorData.cedula?.toUpperCase() || null,
-            domicilio: autorData.domicilio?.toUpperCase() || null,
+            domicilio: construirDomicilio(autorData.departamento, autorData.ciudad, autorData.calles) || null,
             nacionalidad: autorData.nacionalidad?.toUpperCase() || null,
             estadoCivil: autorData.estadoCivil?.toUpperCase() || null,
             edad: autorData.edad || null,
@@ -457,12 +1610,9 @@ export default function NuevaDenunciaPage() {
             profesion: autorData.profesion?.toUpperCase() || null,
           }),
         },
-        infoAdicional: infoAdicionalLista.map(info => ({
-          telefonosInvolucrados: info.telefonosInvolucrados || null,
-          numeroCuenta: info.numeroCuenta || null,
-          nombreCuenta: info.nombreCuenta || null,
-          entidadBancaria: info.entidadBancaria || null,
-        })),
+        descripcionFisica: autorConocido === 'Desconocido' 
+          ? (Object.keys(descripcionFisica).length > 0 ? JSON.stringify(descripcionFisica) : null)
+          : null,
         operador: {
           nombre: usuario.nombre,
           apellido: usuario.apellido,
@@ -499,45 +1649,51 @@ export default function NuevaDenunciaPage() {
   const onDenunciaSubmit = async (data: any) => {
     if (!usuario) return
 
+    if (denunciantes.length === 0) {
+      alert('Debes agregar al menos un denunciante antes de completar la denuncia.')
+      setPaso(1)
+      return
+    }
+
+    const denunciantePrincipal = obtenerDenunciantePrincipal()
+    if (!denunciantePrincipal) {
+      alert('Debes registrar un denunciante principal antes de completar la denuncia.')
+      setPaso(1)
+      return
+    }
+
     setLoading(true)
 
     try {
-      const denuncianteData = watchDenunciante()
       const autorData = watchAutor()
       const denunciaData = watchDenuncia()
-      
-      // Convertir fecha de hecho si viene en formato YYYY-MM-DD
-      let fechaHecho = denunciaData.fechaHecho
-      if (fechaHecho.includes('-')) {
-        // Ya está en formato YYYY-MM-DD
-      } else if (fechaHecho.includes('/')) {
-        // Convertir de DD/MM/YYYY a YYYY-MM-DD
+
+      let fechaHecho = denunciaData.fechaHecho || ''
+      if (fechaHecho.includes('/')) {
         const [dia, mes, año] = fechaHecho.split('/')
         fechaHecho = `${año}-${mes}-${dia}`
       }
 
-      // Preparar datos para enviar (todos en mayúsculas)
-      // La fecha y hora se generan en el servidor para evitar manipulación
+      const denunciantePayload = construirDenunciantePayload(denunciantePrincipal)
+      const coleccionDenunciantes = construirColeccionDenunciantesPayload(denunciantes)
+
       const payload = {
         borradorId: borradorId || null,
-        denunciante: {
-          nombres: denuncianteData.nombres?.toUpperCase() || '',
-          tipoDocumento: denuncianteData.tipoDocumento || '',
-          numeroDocumento: denuncianteData.numeroDocumento?.toUpperCase() || '',
-          nacionalidad: denuncianteData.nacionalidad?.toUpperCase() || '',
-          estadoCivil: denuncianteData.estadoCivil?.toUpperCase() || '',
-          fechaNacimiento: denuncianteData.fechaNacimiento,
-          lugarNacimiento: denuncianteData.lugarNacimiento?.toUpperCase() || '',
-          telefono: denuncianteData.telefono?.toUpperCase() || '',
-          profesion: denuncianteData.profesion?.toUpperCase() || null,
-          edad: denuncianteData.edad || calcularEdad(denuncianteData.fechaNacimiento),
-        },
+        denunciante: denunciantePayload,
+        denunciantes: coleccionDenunciantes,
+        denunciantePrincipalId: denunciantePrincipal.id,
+        denunciantesAdicionales: coleccionDenunciantes.filter(
+          (denunciante) => denunciante.id !== denunciantePrincipal.id
+        ),
         denuncia: {
           fechaHecho: fechaHecho,
           horaHecho: denunciaData.horaHecho,
+          usarRango: denunciaData.usarRango || false,
+          fechaHechoFin: denunciaData.fechaHechoFin || null,
+          horaHechoFin: denunciaData.horaHechoFin || null,
           tipoDenuncia: denunciaData.tipoDenuncia === 'Otro (Especificar)' ? 'OTRO' : denunciaData.tipoDenuncia,
           otroTipo: denunciaData.tipoDenuncia === 'Otro (Especificar)' ? denunciaData.otroTipo?.toUpperCase() : null,
-          lugarHecho: denunciaData.lugarHecho?.toUpperCase() || '',
+          lugarHecho: construirDomicilio(denunciaData.lugarHechoDepartamento, denunciaData.lugarHechoCiudad, denunciaData.lugarHechoCalles)?.toUpperCase() || denunciaData.lugarHecho?.toUpperCase() || '',
           relato: denunciaData.relato || '',
           montoDano: denunciaData.montoDano ? parseInt(denunciaData.montoDano.replace(/\./g, '')) : null,
           moneda: denunciaData.moneda || null,
@@ -549,7 +1705,7 @@ export default function NuevaDenunciaPage() {
           ...(autorConocido === 'Conocido' && {
             nombre: autorData.nombre?.toUpperCase() || null,
             cedula: autorData.cedula?.toUpperCase() || null,
-            domicilio: autorData.domicilio?.toUpperCase() || null,
+            domicilio: construirDomicilio(autorData.departamento, autorData.ciudad, autorData.calles) || null,
             nacionalidad: autorData.nacionalidad?.toUpperCase() || null,
             estadoCivil: autorData.estadoCivil?.toUpperCase() || null,
             edad: autorData.edad || null,
@@ -559,12 +1715,9 @@ export default function NuevaDenunciaPage() {
             profesion: autorData.profesion?.toUpperCase() || null,
           }),
         },
-        infoAdicional: infoAdicionalLista.map(info => ({
-          telefonosInvolucrados: info.telefonosInvolucrados || null,
-          numeroCuenta: info.numeroCuenta || null,
-          nombreCuenta: info.nombreCuenta || null,
-          entidadBancaria: info.entidadBancaria || null,
-        })),
+        descripcionFisica: autorConocido === 'Desconocido' 
+          ? (Object.keys(descripcionFisica).length > 0 ? JSON.stringify(descripcionFisica) : null)
+          : null,
         usuarioId: usuario.id,
       }
 
@@ -579,8 +1732,7 @@ export default function NuevaDenunciaPage() {
       }
 
       const result = await response.json()
-      
-      // Redirigir a página de confirmación
+
       router.push(`/nueva-denuncia/confirmacion?id=${result.id}`)
     } catch (error) {
       console.error('Error:', error)
@@ -596,11 +1748,23 @@ export default function NuevaDenunciaPage() {
     setGuardandoBorrador(true)
 
     try {
+      if (denunciantes.length === 0) {
+        alert('Agrega al menos un denunciante antes de guardar el borrador.')
+        setPaso(1)
+        return
+      }
+
+      const denunciantePrincipal = obtenerDenunciantePrincipal()
+      if (!denunciantePrincipal) {
+        alert('Debes registrar un denunciante principal antes de guardar el borrador.')
+        setPaso(1)
+        return
+      }
+
       // Obtener fecha y hora actual
       const { fecha, hora } = await obtenerFechaHoraActual()
       const fechaActual = fecha.split('/').reverse().join('-')
       
-      const denuncianteData = watchDenunciante()
       const autorData = watchAutor()
       const denunciaData = watchDenuncia()
       
@@ -615,19 +1779,17 @@ export default function NuevaDenunciaPage() {
       }
 
       // Preparar datos para enviar
+      const denunciantePayload = construirDenunciantePayload(denunciantePrincipal)
+      const coleccionDenunciantes = construirColeccionDenunciantesPayload(denunciantes)
+      const documentoPrincipal = denunciantePrincipal.numeroDocumento || denunciantePrincipal.matricula || null
       const payload = {
-        denunciante: {
-          nombres: denuncianteData.nombres?.toUpperCase() || '',
-          tipoDocumento: denuncianteData.tipoDocumento || '',
-          numeroDocumento: denuncianteData.numeroDocumento?.toUpperCase() || '',
-          nacionalidad: denuncianteData.nacionalidad?.toUpperCase() || '',
-          estadoCivil: denuncianteData.estadoCivil?.toUpperCase() || '',
-          fechaNacimiento: denuncianteData.fechaNacimiento || '',
-          lugarNacimiento: denuncianteData.lugarNacimiento?.toUpperCase() || '',
-          telefono: denuncianteData.telefono?.toUpperCase() || '',
-          profesion: denuncianteData.profesion?.toUpperCase() || null,
-          edad: denuncianteData.edad || (denuncianteData.fechaNacimiento ? calcularEdad(denuncianteData.fechaNacimiento) : ''),
-        },
+        denunciante: denunciantePayload,
+        denunciantes: coleccionDenunciantes,
+        denunciantePrincipalId: denunciantePrincipal.id,
+        denunciantePrincipalDocumento: documentoPrincipal,
+        denunciantesAdicionales: coleccionDenunciantes.filter(
+          (denunciante) => denunciante.id !== denunciantePrincipal.id
+        ),
         denuncia: {
           fechaDenuncia: fechaActual,
           horaDenuncia: hora,
@@ -635,7 +1797,7 @@ export default function NuevaDenunciaPage() {
           horaHecho: denunciaData.horaHecho || '',
           tipoDenuncia: denunciaData.tipoDenuncia === 'Otro (Especificar)' ? 'OTRO' : denunciaData.tipoDenuncia || '',
           otroTipo: denunciaData.tipoDenuncia === 'Otro (Especificar)' ? denunciaData.otroTipo?.toUpperCase() : null,
-          lugarHecho: denunciaData.lugarHecho?.toUpperCase() || '',
+          lugarHecho: construirDomicilio(denunciaData.lugarHechoDepartamento, denunciaData.lugarHechoCiudad, denunciaData.lugarHechoCalles)?.toUpperCase() || denunciaData.lugarHecho?.toUpperCase() || '',
           relato: denunciaData.relato || '',
           montoDano: denunciaData.montoDano ? parseInt(denunciaData.montoDano.replace(/\./g, '')) : null,
           moneda: denunciaData.moneda || null,
@@ -647,7 +1809,7 @@ export default function NuevaDenunciaPage() {
           ...(autorConocido === 'Conocido' && {
             nombre: autorData.nombre?.toUpperCase() || null,
             cedula: autorData.cedula?.toUpperCase() || null,
-            domicilio: autorData.domicilio?.toUpperCase() || null,
+            domicilio: construirDomicilio(autorData.departamento, autorData.ciudad, autorData.calles) || null,
             nacionalidad: autorData.nacionalidad?.toUpperCase() || null,
             estadoCivil: autorData.estadoCivil?.toUpperCase() || null,
             edad: autorData.edad || null,
@@ -657,12 +1819,9 @@ export default function NuevaDenunciaPage() {
             profesion: autorData.profesion?.toUpperCase() || null,
           }),
         },
-        infoAdicional: infoAdicionalLista.map(info => ({
-          telefonosInvolucrados: info.telefonosInvolucrados || null,
-          numeroCuenta: info.numeroCuenta || null,
-          nombreCuenta: info.nombreCuenta || null,
-          entidadBancaria: info.entidadBancaria || null,
-        })),
+        descripcionFisica: autorConocido === 'Desconocido' 
+          ? (Object.keys(descripcionFisica).length > 0 ? JSON.stringify(descripcionFisica) : null)
+          : null,
         usuarioId: usuario.id,
         borradorId: borradorId,
       }
@@ -765,7 +1924,7 @@ export default function NuevaDenunciaPage() {
         {/* Paso 1: Datos del Denunciante */}
         {paso === 1 && (
           <form
-            onSubmit={handleSubmitDenunciante(onDenuncianteSubmit)}
+            onSubmit={handlePaso1Submit}
             autoComplete="off"
             className="bg-white rounded-lg shadow-md p-8"
           >
@@ -774,10 +1933,54 @@ export default function NuevaDenunciaPage() {
             </h2>
 
             <div className="space-y-4">
-              {/* 1. Nombres y Apellidos */}
+              {/* Rol dentro de la denuncia */}
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Rol dentro de la denuncia *
+                </label>
+                <select
+                  {...registerDenunciante('rol')}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-sans text-sm uppercase"
+                  style={{ fontFamily: 'Inter, sans-serif' }}
+                >
+                  {ROLES_DENUNCIANTE.map((rol) => {
+                    const esRolActual = registroDenuncianteEnEdicion?.rol === rol
+                    const deshabilitarPrincipal = rol === 'principal' && existePrincipalRegistrado && !esRolActual
+                    const coDenunciantesRegistrados = denunciantes.filter((denunciante) => denunciante.rol === 'co-denunciante').length
+                    const deshabilitarCoDenunciante =
+                      rol === 'co-denunciante' && coDenunciantesRegistrados >= 2 && !esRolActual
+                    const deshabilitarAbogado = rol === 'abogado' && !principalActual && !esRolActual
+                    return (
+                      <option
+                        key={rol}
+                        value={rol}
+                        disabled={deshabilitarPrincipal || deshabilitarAbogado || deshabilitarCoDenunciante}
+                      >
+                        {rol === 'principal' && 'Denunciante principal'}
+                        {rol === 'co-denunciante' && 'Co-denunciante'}
+                        {rol === 'abogado' && 'Abogado / representante legal'}
+                      </option>
+                    )
+                  })}
+                </select>
+                {errorsDenunciante.rol && (
+                  <p className="text-red-600 text-sm mt-1">{errorsDenunciante.rol.message as string}</p>
+                )}
+                
+                {/* Botón temporal para completar automáticamente (SOLO PARA PRUEBAS) */}
+                <button
+                  type="button"
+                  onClick={completarFormularioAutomatico}
+                  className="mt-2 px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
+                >
+                  🎲 Completar automáticamente (PRUEBAS)
+                </button>
+              </div>
+
+              {/* Nombres y Apellidos */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nombres y Apellidos *
+                  {esAbogado ? 'Nombre completo del abogado *' : 'Nombres y Apellidos *'}
                 </label>
                 <input
                   {...registerDenunciante('nombres')}
@@ -794,7 +1997,7 @@ export default function NuevaDenunciaPage() {
               </div>
 
               {/* 2. Tipo de Documento y Número */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className={`grid ${esAbogado ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-2'} gap-4`}>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Documento de Identidad Tipo *
@@ -816,17 +2019,15 @@ export default function NuevaDenunciaPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Número de Documento *
+                    Número de Documento {esAbogado ? '*' : '*'}
                   </label>
                   <input
                     {...registerDenunciante('numeroDocumento')}
                     onChange={(e) => {
                       const tipoDoc = watchDenunciante('tipoDocumento')
                       if (tipoDoc === 'Pasaporte' || tipoDoc === 'Documento de origen') {
-                        // Permitir alfanumérico
                         convertirAMayusculas(e)
                       } else {
-                        // Solo números para cédula paraguaya
                         e.target.value = e.target.value.replace(/[^0-9]/g, '')
                       }
                       registerDenunciante('numeroDocumento').onChange(e)
@@ -838,193 +2039,576 @@ export default function NuevaDenunciaPage() {
                     <p className="text-red-600 text-sm mt-1">{errorsDenunciante.numeroDocumento.message as string}</p>
                   )}
                 </div>
+
+                {esAbogado && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Matrícula Número *
+                    </label>
+                    <input
+                      {...registerDenunciante('matricula')}
+                      onChange={(e) => {
+                        convertirAMayusculas(e)
+                        registerDenunciante('matricula').onChange(e)
+                      }}
+                      autoComplete="off"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
+                  />
+                    {errorsDenunciante.matricula && (
+                      <p className="text-red-600 text-sm mt-1">{errorsDenunciante.matricula.message as string}</p>
+                  )}
+                  </div>
+                )}
               </div>
 
               {/* 3. Nacionalidad */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nacionalidad *
-                </label>
-                <Controller
-                  name="nacionalidad"
-                  control={controlDenunciante}
-                  render={({ field }) => {
-                    const currentValue = field.value || 'PARAGUAYA'
-                    return (
-                      <Select
-                        options={nacionalidades.map((nac) => ({ value: nac, label: nac }))}
-                        value={nacionalidades.find((nac) => nac === currentValue) ? { value: currentValue, label: currentValue } : { value: 'PARAGUAYA', label: 'PARAGUAYA' }}
-                        onChange={(option) => {
-                          field.onChange(option?.value || 'PARAGUAYA')
-                        }}
-                        isSearchable
-                        placeholder="Buscar nacionalidad..."
-                        className="text-sm"
-                      styles={{
-                        control: (base, state) => ({
-                          ...base,
-                          fontFamily: 'Inter, sans-serif',
-                          fontSize: '14px',
-                          minHeight: '42px',
-                          borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
-                          boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
-                          '&:hover': {
-                            borderColor: '#3b82f6',
-                          },
-                        }),
-                        menu: (base) => ({
-                          ...base,
-                          fontFamily: 'Inter, sans-serif',
-                          fontSize: '14px',
-                          maxHeight: '250px',
-                          zIndex: 9999,
-                        }),
-                        menuList: (base) => ({
-                          ...base,
-                          maxHeight: '250px',
-                        }),
-                        option: (base, state) => ({
-                          ...base,
-                          fontFamily: 'Inter, sans-serif',
-                          fontSize: '14px',
-                          padding: '8px 12px',
-                          backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
-                          color: state.isSelected ? 'white' : '#1f2937',
-                          cursor: 'pointer',
-                        }),
-                        input: (base) => ({
-                          ...base,
-                          fontFamily: 'Inter, sans-serif',
-                          fontSize: '14px',
-                          margin: 0,
-                          padding: 0,
-                        }),
-                        singleValue: (base) => ({
-                          ...base,
-                          fontFamily: 'Inter, sans-serif',
-                          fontSize: '14px',
-                          color: '#1f2937',
-                        }),
-                        placeholder: (base) => ({
-                          ...base,
-                          fontFamily: 'Inter, sans-serif',
-                          fontSize: '14px',
-                          color: '#9ca3af',
-                        }),
-                      }}
-                      classNamePrefix="react-select"
-                      />
-                    )
-                  }}
-                />
-                {errorsDenunciante.nacionalidad && (
-                  <p className="text-red-600 text-sm mt-1">{errorsDenunciante.nacionalidad.message as string}</p>
-                )}
-              </div>
-
-              {/* 4. Fecha de Nacimiento y Edad */}
-              <div className="grid grid-cols-2 gap-4">
+              {!esAbogado && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Fecha de Nacimiento *
+                    Nacionalidad *
                   </label>
-                  <input
-                    type="date"
-                    {...registerDenunciante('fechaNacimiento')}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    max={new Date().toISOString().split('T')[0]}
+                  <Controller
+                    name="nacionalidad"
+                    control={controlDenunciante}
+                    render={({ field }) => {
+                      const currentValue = field.value || 'PARAGUAYA'
+                      return (
+                        <Select
+                          options={nacionalidades.map((nac) => ({ value: nac, label: nac }))}
+                          value={nacionalidades.find((nac) => nac === currentValue) ? { value: currentValue, label: currentValue } : { value: 'PARAGUAYA', label: 'PARAGUAYA' }}
+                          onChange={(option) => {
+                            field.onChange(option?.value || 'PARAGUAYA')
+                          }}
+                          isSearchable
+                          placeholder="Buscar nacionalidad..."
+                          className="text-sm"
+                        styles={{
+                          control: (base, state) => ({
+                            ...base,
+                            fontFamily: 'Inter, sans-serif',
+                            fontSize: '14px',
+                            minHeight: '42px',
+                            borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
+                            boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
+                            '&:hover': {
+                              borderColor: '#3b82f6',
+                            },
+                          }),
+                          menu: (base) => ({
+                            ...base,
+                            fontFamily: 'Inter, sans-serif',
+                            fontSize: '14px',
+                            maxHeight: '250px',
+                            zIndex: 9999,
+                          }),
+                          menuList: (base) => ({
+                            ...base,
+                            maxHeight: '250px',
+                          }),
+                          option: (base, state) => ({
+                            ...base,
+                            fontFamily: 'Inter, sans-serif',
+                            fontSize: '14px',
+                            padding: '8px 12px',
+                            backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
+                            color: state.isSelected ? 'white' : '#1f2937',
+                            cursor: 'pointer',
+                          }),
+                          input: (base) => ({
+                            ...base,
+                            fontFamily: 'Inter, sans-serif',
+                            fontSize: '14px',
+                            margin: 0,
+                            padding: 0,
+                          }),
+                          singleValue: (base) => ({
+                            ...base,
+                            fontFamily: 'Inter, sans-serif',
+                            fontSize: '14px',
+                            color: '#1f2937',
+                          }),
+                          placeholder: (base) => ({
+                            ...base,
+                            fontFamily: 'Inter, sans-serif',
+                            fontSize: '14px',
+                            color: '#9ca3af',
+                          }),
+                        }}
+                        classNamePrefix="react-select"
+                        />
+                      )
+                    }}
                   />
-                  {errorsDenunciante.fechaNacimiento && (
-                    <p className="text-red-600 text-sm mt-1">{errorsDenunciante.fechaNacimiento.message as string}</p>
+                  {errorsDenunciante.nacionalidad && (
+                    <p className="text-red-600 text-sm mt-1">{errorsDenunciante.nacionalidad.message as string}</p>
                   )}
                 </div>
+              )}
 
+              {/* 4. Fecha de Nacimiento y Edad */}
+              {!esAbogado && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Fecha de Nacimiento *
+                    </label>
+                    <input
+                      type="date"
+                      {...registerDenunciante('fechaNacimiento')}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      max={new Date().toISOString().split('T')[0]}
+                    />
+                    {errorsDenunciante.fechaNacimiento && (
+                      <p className="text-red-600 text-sm mt-1">{errorsDenunciante.fechaNacimiento.message as string}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Edad
+                    </label>
+                    <input
+                      {...registerDenunciante('edad')}
+                      readOnly
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* 5. Lugar de Nacimiento */}
+              {!esAbogado && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Edad
+                    Lugar de Nacimiento *
                   </label>
                   <input
-                    {...registerDenunciante('edad')}
-                    readOnly
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100"
+                    {...registerDenunciante('lugarNacimiento')}
+                    onChange={(e) => {
+                      convertirAMayusculas(e)
+                      registerDenunciante('lugarNacimiento').onChange(e)
+                    }}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
                   />
+                  {errorsDenunciante.lugarNacimiento && (
+                    <p className="text-red-600 text-sm mt-1">{errorsDenunciante.lugarNacimiento.message as string}</p>
+                  )}
+                </div>
+              )}
+
+              {/* 6. Estado Civil */}
+              {!esAbogado && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Estado Civil *
+                  </label>
+                  <select
+                    {...registerDenunciante('estadoCivil')}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-sans text-sm"
+                    style={{ fontFamily: 'Inter, sans-serif' }}
+                  >
+                    <option value="">Seleccione...</option>
+                    {estadosCiviles.map((ec) => (
+                      <option key={ec} value={ec}>
+                        {ec}
+                      </option>
+                    ))}
+                  </select>
+                  {errorsDenunciante.estadoCivil && (
+                    <p className="text-red-600 text-sm mt-1">{errorsDenunciante.estadoCivil.message as string}</p>
+                  )}
+                </div>
+              )}
+
+              {/* 7. Contacto */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Número de Teléfono *
+                  </label>
+                  <input
+                    {...registerDenunciante('telefono')}
+                    onChange={(e) => {
+                      convertirAMayusculas(e)
+                      registerDenunciante('telefono').onChange(e)
+                    }}
+                    autoComplete="off"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
+                  />
+                  {errorsDenunciante.telefono && (
+                    <p className="text-red-600 text-sm mt-1">{errorsDenunciante.telefono.message as string}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Correo Electrónico *
+                  </label>
+                  <input
+                    type="email"
+                    {...registerDenunciante('correo')}
+                    onChange={(e) => {
+                      e.target.value = e.target.value.toLowerCase()
+                      registerDenunciante('correo').onChange(e)
+                    }}
+                    autoComplete="off"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  {errorsDenunciante.correo && (
+                    <p className="text-red-600 text-sm mt-1">{errorsDenunciante.correo.message as string}</p>
+                  )}
                 </div>
               </div>
 
-              {/* 5. Lugar de Nacimiento */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Lugar de Nacimiento *
-                </label>
-                <input
-                  {...registerDenunciante('lugarNacimiento')}
-                  onChange={(e) => {
-                    convertirAMayusculas(e)
-                    registerDenunciante('lugarNacimiento').onChange(e)
-                  }}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
-                />
-                {errorsDenunciante.lugarNacimiento && (
-                  <p className="text-red-600 text-sm mt-1">{errorsDenunciante.lugarNacimiento.message as string}</p>
-                )}
-              </div>
+              {/* Carta Poder (solo para abogados) */}
+              {esAbogado && (
+                <div className="space-y-4">
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="conCartaPoder"
+                      {...registerDenunciante('conCartaPoder')}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor="conCartaPoder" className="ml-2 block text-sm font-medium text-gray-700">
+                      El abogado actúa con carta poder (denunciante no presente)
+                    </label>
+                  </div>
+                  {watchDenunciante('conCartaPoder') && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-6 border-l-2 border-blue-200">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Fecha de la Carta Poder *
+                        </label>
+                        <input
+                          type="date"
+                          {...registerDenunciante('cartaPoderFecha')}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                        {errorsDenunciante.cartaPoderFecha && (
+                          <p className="text-red-600 text-sm mt-1">{errorsDenunciante.cartaPoderFecha.message as string}</p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Notario *
+                        </label>
+                        <input
+                          {...registerDenunciante('cartaPoderNotario')}
+                          onChange={(e) => {
+                            convertirAMayusculas(e)
+                            registerDenunciante('cartaPoderNotario').onChange(e)
+                          }}
+                          autoComplete="off"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
+                        />
+                        {errorsDenunciante.cartaPoderNotario && (
+                          <p className="text-red-600 text-sm mt-1">{errorsDenunciante.cartaPoderNotario.message as string}</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
-              {/* 6. Estado Civil */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Estado Civil *
-                </label>
-                <select
-                  {...registerDenunciante('estadoCivil')}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-sans text-sm"
-                  style={{ fontFamily: 'Inter, sans-serif' }}
+              {/* 8. Domicilio */}
+              {!esAbogado && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">
+                    Domicilio
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Departamento *
+                  </label>
+                  <Controller
+                    name="departamento"
+                    control={controlDenunciante}
+                    render={({ field }) => (
+                      <Select
+                        options={departamentoOptions}
+                        value={departamentoOptions.find((option) => option.value === field.value) || null}
+                        onChange={(option) => field.onChange(option?.value || '')}
+                        isClearable
+                        placeholder="Seleccione..."
+                        className="text-sm"
+                        styles={{
+                          control: (base, state) => ({
+                            ...base,
+                            fontFamily: 'Inter, sans-serif',
+                            fontSize: '14px',
+                            minHeight: '42px',
+                            borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
+                            boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
+                            '&:hover': {
+                              borderColor: '#3b82f6',
+                            },
+                          }),
+                          menu: (base) => ({
+                            ...base,
+                            fontFamily: 'Inter, sans-serif',
+                            fontSize: '14px',
+                            maxHeight: '250px',
+                            zIndex: 9999,
+                          }),
+                          menuList: (base) => ({
+                            ...base,
+                            maxHeight: '250px',
+                          }),
+                          option: (base, state) => ({
+                            ...base,
+                            fontFamily: 'Inter, sans-serif',
+                            fontSize: '14px',
+                            padding: '8px 12px',
+                            backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
+                            color: state.isSelected ? 'white' : '#1f2937',
+                            cursor: 'pointer',
+                          }),
+                          input: (base) => ({
+                            ...base,
+                            fontFamily: 'Inter, sans-serif',
+                            fontSize: '14px',
+                            margin: 0,
+                            padding: 0,
+                          }),
+                          singleValue: (base) => ({
+                            ...base,
+                            fontFamily: 'Inter, sans-serif',
+                            fontSize: '14px',
+                            color: '#1f2937',
+                          }),
+                          placeholder: (base) => ({
+                            ...base,
+                            fontFamily: 'Inter, sans-serif',
+                            fontSize: '14px',
+                            color: '#9ca3af',
+                          }),
+                        }}
+                        classNamePrefix="react-select"
+                      />
+                    )}
+                  />
+                  {errorsDenunciante.departamento && (
+                    <p className="text-red-600 text-sm mt-1">{errorsDenunciante.departamento.message as string}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Ciudad *
+                  </label>
+                  <Controller
+                    name="ciudad"
+                    control={controlDenunciante}
+                    render={({ field }) => (
+                      <Select
+                        options={ciudadOptions}
+                        value={ciudadOptions.find((option) => option.value === field.value) || null}
+                        onChange={(option) => field.onChange(option?.value || '')}
+                        isClearable
+                        isDisabled={!departamentoSeleccionado}
+                        placeholder={departamentoSeleccionado ? 'Seleccione...' : 'Seleccione un departamento primero'}
+                        className="text-sm"
+                        styles={{
+                          control: (base, state) => ({
+                            ...base,
+                            fontFamily: 'Inter, sans-serif',
+                            fontSize: '14px',
+                            minHeight: '42px',
+                            borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
+                            boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
+                            '&:hover': {
+                              borderColor: '#3b82f6',
+                            },
+                          }),
+                          menu: (base) => ({
+                            ...base,
+                            fontFamily: 'Inter, sans-serif',
+                            fontSize: '14px',
+                            maxHeight: '250px',
+                            zIndex: 9999,
+                          }),
+                          menuList: (base) => ({
+                            ...base,
+                            maxHeight: '250px',
+                          }),
+                          option: (base, state) => ({
+                            ...base,
+                            fontFamily: 'Inter, sans-serif',
+                            fontSize: '14px',
+                            padding: '8px 12px',
+                            backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
+                            color: state.isSelected ? 'white' : '#1f2937',
+                            cursor: 'pointer',
+                          }),
+                          input: (base) => ({
+                            ...base,
+                            fontFamily: 'Inter, sans-serif',
+                            fontSize: '14px',
+                            margin: 0,
+                            padding: 0,
+                          }),
+                          singleValue: (base) => ({
+                            ...base,
+                            fontFamily: 'Inter, sans-serif',
+                            fontSize: '14px',
+                            color: '#1f2937',
+                          }),
+                          placeholder: (base) => ({
+                            ...base,
+                            fontFamily: 'Inter, sans-serif',
+                            fontSize: '14px',
+                            color: '#9ca3af',
+                          }),
+                        }}
+                        classNamePrefix="react-select"
+                      />
+                    )}
+                  />
+                  {errorsDenunciante.ciudad && (
+                    <p className="text-red-600 text-sm mt-1">{errorsDenunciante.ciudad.message as string}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Calles / Referencias *
+                  </label>
+                  <input
+                    {...registerDenunciante('calles')}
+                    onChange={(e) => {
+                      convertirAMayusculas(e)
+                      registerDenunciante('calles').onChange(e)
+                    }}
+                    autoComplete="off"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
+                  />
+                  {errorsDenunciante.calles && (
+                    <p className="text-red-600 text-sm mt-1">{errorsDenunciante.calles.message as string}</p>
+                  )}
+                </div>
+                </div>
+                </div>
+              )}
+
+              {/* 9. Profesión */}
+              {!esAbogado && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Profesión
+                  </label>
+                  <input
+                    {...registerDenunciante('profesion')}
+                    onChange={(e) => {
+                      convertirAMayusculas(e)
+                      registerDenunciante('profesion').onChange(e)
+                    }}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
+                  />
+                  {errorsDenunciante.profesion && (
+                    <p className="text-red-600 text-sm mt-1">{errorsDenunciante.profesion.message as string}</p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="mt-8 space-y-6">
+              {denuncianteEnEdicionId && (
+                <div className="px-4 py-3 rounded-lg border border-blue-200 bg-blue-50 text-sm text-blue-800 font-medium">
+                  Estás editando a {registroDenuncianteEnEdicion?.nombres || 'la persona seleccionada'}.
+                </div>
+              )}
+
+              {denunciantes.length > 0 && (
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-800">Personas agregadas</h3>
+                    <p className="text-sm text-gray-500">
+                      Puedes editar o eliminar cada registro antes de continuar al siguiente paso.
+                    </p>
+                  </div>
+                  <div className="space-y-3">
+                    {denunciantesOrdenados.map((denunciante) => {
+                      const esEdicionActual = denunciante.id === denuncianteEnEdicionId
+                      const representado = obtenerDenunciantePorId(denunciante.representaA)
+                      return (
+                        <div
+                          key={denunciante.id}
+                          className={`rounded-lg border p-4 transition ${
+                            esEdicionActual ? 'border-blue-400 bg-blue-50' : 'border-gray-200 bg-white'
+                          }`}
+                        >
+                          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                            <div>
+                              <p className="text-base font-semibold text-gray-800 uppercase">
+                                {denunciante.nombres || (denunciante.rol === 'abogado' ? 'ABOGADO/A' : '')}
+                              </p>
+                              <p className="text-sm text-gray-600">
+                                Rol:{' '}
+                                {denunciante.rol === 'principal'
+                                  ? 'Denunciante principal'
+                                  : denunciante.rol === 'co-denunciante'
+                                  ? 'Co-denunciante'
+                                  : 'Abogado / representante legal'}
+                              </p>
+                              {denunciante.rol === 'abogado' && representado && (
+                                <p className="text-sm text-gray-600">
+                                  Representa a: <span className="font-medium">{representado.nombres}</span>
+                                </p>
+                              )}
+                              <p className="text-xs text-gray-500 mt-1">
+                                Documento:{' '}
+                                {[
+                                  denunciante.tipoDocumento || null,
+                                  denunciante.numeroDocumento || null,
+                                ]
+                                  .filter(Boolean)
+                                  .join(' ') || 'No especificado'}
+                              </p>
+                              {denunciante.rol === 'abogado' && (
+                                <p className="text-xs text-gray-500">
+                                  Matrícula: {denunciante.matricula || 'No especificada'}
+                                </p>
+                              )}
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                onClick={() => manejarEditarDenunciante(denunciante.id)}
+                                className="px-4 py-2 bg-white border border-blue-500 text-blue-600 rounded-lg hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-sm font-medium"
+                              >
+                                Editar
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => manejarEliminarDenunciante(denunciante.id)}
+                                className="px-4 py-2 bg-white border border-red-500 text-red-600 rounded-lg hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 text-sm font-medium"
+                              >
+                                Eliminar
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex flex-wrap gap-3 justify-center">
+                <button
+                  type="button"
+                  onClick={manejarAgregarDenunciante}
+                  className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 text-sm font-medium"
                 >
-                  <option value="">Seleccione...</option>
-                  {estadosCiviles.map((ec) => (
-                    <option key={ec} value={ec}>
-                      {ec}
-                    </option>
-                  ))}
-                </select>
-                {errorsDenunciante.estadoCivil && (
-                  <p className="text-red-600 text-sm mt-1">{errorsDenunciante.estadoCivil.message as string}</p>
-                )}
-              </div>
-
-              {/* 7. Número de Teléfono */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Número de Teléfono *
-                </label>
-                <input
-                  {...registerDenunciante('telefono')}
-                  onChange={(e) => {
-                    convertirAMayusculas(e)
-                    registerDenunciante('telefono').onChange(e)
-                  }}
-                  autoComplete="off"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
-                />
-                {errorsDenunciante.telefono && (
-                  <p className="text-red-600 text-sm mt-1">{errorsDenunciante.telefono.message as string}</p>
-                )}
-              </div>
-
-              {/* 8. Profesión */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Profesión
-                </label>
-                <input
-                  {...registerDenunciante('profesion')}
-                  onChange={(e) => {
-                    convertirAMayusculas(e)
-                    registerDenunciante('profesion').onChange(e)
-                  }}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
-                />
-                {errorsDenunciante.profesion && (
-                  <p className="text-red-600 text-sm mt-1">{errorsDenunciante.profesion.message as string}</p>
+                  {denuncianteEnEdicionId ? 'Actualizar denunciante' : 'Guardar denunciante y cargar otro'}
+                </button>
+                {denuncianteEnEdicionId && (
+                  <button
+                    type="button"
+                    onClick={manejarCancelarEdicion}
+                    className="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 text-sm font-medium"
+                  >
+                    Cancelar edición
+                  </button>
                 )}
               </div>
             </div>
@@ -1065,7 +2649,7 @@ export default function NuevaDenunciaPage() {
                 ¿El supuesto autor es conocido o desconocido? *
               </label>
               <div className="flex space-x-6">
-                <label className="flex items-center">
+                <label className="flex items-center text-gray-800 cursor-pointer">
                   <input
                     type="radio"
                     value="Conocido"
@@ -1073,9 +2657,9 @@ export default function NuevaDenunciaPage() {
                     onChange={(e) => setAutorConocido(e.target.value as 'Conocido' | 'Desconocido')}
                     className="mr-2"
                   />
-                  Conocido
+                  <span className="text-gray-800">Conocido</span>
                 </label>
-                <label className="flex items-center">
+                <label className="flex items-center text-gray-800 cursor-pointer">
                   <input
                     type="radio"
                     value="Desconocido"
@@ -1083,14 +2667,26 @@ export default function NuevaDenunciaPage() {
                     onChange={(e) => setAutorConocido(e.target.value as 'Conocido' | 'Desconocido')}
                     className="mr-2"
                   />
-                  Desconocido
+                  <span className="text-gray-800">Desconocido</span>
                 </label>
               </div>
             </div>
 
             {autorConocido === 'Conocido' && (
               <div className="space-y-4 mb-6">
-                <div className="grid grid-cols-2 gap-4">
+                {/* Botón para completar automáticamente (SOLO PARA PRUEBAS) */}
+                <div className="mb-4">
+                  <button
+                    type="button"
+                    onClick={completarAutorAutomatico}
+                    className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
+                  >
+                    🎲 Completar automáticamente (PRUEBAS)
+                  </button>
+                </div>
+
+                {/* Nombres y Cédula */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Nombres y Apellidos
@@ -1119,21 +2715,176 @@ export default function NuevaDenunciaPage() {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                {/* Domicilio */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">
                     Domicilio
-                  </label>
-                  <input
-                    {...registerAutor('domicilio')}
-                    onChange={(e) => {
-                      convertirAMayusculas(e)
-                      registerAutor('domicilio').onChange(e)
-                    }}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
-                  />
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Departamento
+                      </label>
+                      <Controller
+                        name="departamento"
+                        control={controlAutor}
+                        render={({ field }) => (
+                          <Select
+                            options={departamentoAutorOptions}
+                            value={departamentoAutorOptions.find((option) => option.value === field.value) || null}
+                            onChange={(option) => field.onChange(option?.value || '')}
+                            isClearable
+                            placeholder="Seleccione..."
+                            className="text-sm"
+                            styles={{
+                              control: (base, state) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                minHeight: '42px',
+                                borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
+                                boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
+                                '&:hover': {
+                                  borderColor: '#3b82f6',
+                                },
+                              }),
+                              menu: (base) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                maxHeight: '250px',
+                                zIndex: 9999,
+                              }),
+                              menuList: (base) => ({
+                                ...base,
+                                maxHeight: '250px',
+                              }),
+                              option: (base, state) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                padding: '8px 12px',
+                                backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
+                                color: state.isSelected ? 'white' : '#1f2937',
+                                cursor: 'pointer',
+                              }),
+                              input: (base) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                margin: 0,
+                                padding: 0,
+                              }),
+                              singleValue: (base) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                color: '#1f2937',
+                              }),
+                              placeholder: (base) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                color: '#9ca3af',
+                              }),
+                            }}
+                            classNamePrefix="react-select"
+                          />
+                        )}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Ciudad
+                      </label>
+                      <Controller
+                        name="ciudad"
+                        control={controlAutor}
+                        render={({ field }) => (
+                          <Select
+                            options={ciudadAutorOptions}
+                            value={ciudadAutorOptions.find((option) => option.value === field.value) || null}
+                            onChange={(option) => field.onChange(option?.value || '')}
+                            isClearable
+                            isDisabled={!departamentoAutor}
+                            placeholder={departamentoAutor ? 'Seleccione...' : 'Seleccione un departamento primero'}
+                            className="text-sm"
+                            styles={{
+                              control: (base, state) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                minHeight: '42px',
+                                borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
+                                boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
+                                '&:hover': {
+                                  borderColor: '#3b82f6',
+                                },
+                              }),
+                              menu: (base) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                maxHeight: '250px',
+                                zIndex: 9999,
+                              }),
+                              menuList: (base) => ({
+                                ...base,
+                                maxHeight: '250px',
+                              }),
+                              option: (base, state) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                padding: '8px 12px',
+                                backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
+                                color: state.isSelected ? 'white' : '#1f2937',
+                                cursor: 'pointer',
+                              }),
+                              input: (base) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                margin: 0,
+                                padding: 0,
+                              }),
+                              singleValue: (base) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                color: '#1f2937',
+                              }),
+                              placeholder: (base) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                color: '#9ca3af',
+                              }),
+                            }}
+                            classNamePrefix="react-select"
+                          />
+                        )}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Calles / Referencias
+                      </label>
+                      <input
+                        {...registerAutor('calles')}
+                        onChange={(e) => {
+                          convertirAMayusculas(e)
+                          registerAutor('calles').onChange(e)
+                        }}
+                        autoComplete="off"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
+                      />
+                    </div>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                {/* Nacionalidad y Estado Civil */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Nacionalidad
@@ -1231,7 +2982,8 @@ export default function NuevaDenunciaPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-4">
+                {/* Fecha de Nacimiento y Edad juntos */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Fecha de Nacimiento
@@ -1256,22 +3008,25 @@ export default function NuevaDenunciaPage() {
                       }`}
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Lugar de Nacimiento
-                    </label>
-                    <input
-                      {...registerAutor('lugarNacimiento')}
-                      onChange={(e) => {
-                        convertirAMayusculas(e)
-                        registerAutor('lugarNacimiento').onChange(e)
-                      }}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
-                    />
-                  </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                {/* Lugar de Nacimiento */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Lugar de Nacimiento
+                  </label>
+                  <input
+                    {...registerAutor('lugarNacimiento')}
+                    onChange={(e) => {
+                      convertirAMayusculas(e)
+                      registerAutor('lugarNacimiento').onChange(e)
+                    }}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
+                  />
+                </div>
+
+                {/* Teléfono y Profesión */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Número de Teléfono
@@ -1302,128 +3057,279 @@ export default function NuevaDenunciaPage() {
               </div>
             )}
 
-            <div className="mb-6">
-              <div className="flex justify-between items-center mb-4">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-800">Información Adicional</h3>
-                  <p className="text-sm text-gray-500 mt-1">Teléfonos y cuentas bancarias relacionadas</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setInfoAdicionalLista([...infoAdicionalLista, {
-                    telefonosInvolucrados: '',
-                    numeroCuenta: '',
-                    nombreCuenta: '',
-                    entidadBancaria: ''
-                  }])}
-                  className="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-sm font-medium shadow-sm transition-all"
-                >
-                  + Agregar Grupo
-                </button>
-              </div>
+            {autorConocido === 'Desconocido' && (
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">Descripción Física</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Complete los campos que sean relevantes para describir físicamente al supuesto autor desconocido.
+                </p>
 
-              {infoAdicionalLista.length > 0 && (
-                <div className="space-y-4">
-                  {infoAdicionalLista.map((info, index) => (
-                    <div key={index} className="border border-gray-300 rounded-xl p-6 bg-white shadow-sm hover:shadow-md transition-shadow">
-                      <div className="flex justify-between items-center mb-5 pb-4 border-b border-gray-200">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                            <span className="text-blue-600 font-semibold text-sm">{index + 1}</span>
-                          </div>
-                          <h4 className="font-semibold text-gray-800">Grupo {index + 1}</h4>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setInfoAdicionalLista(infoAdicionalLista.filter((_, i) => i !== index))}
-                          className="px-3 py-1 text-red-600 hover:text-red-800 hover:bg-red-50 text-sm font-medium rounded-lg transition-colors"
+                <div className="space-y-6">
+                  {/* 1. Constitución física */}
+                  <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                    <h4 className="font-semibold text-gray-800 mb-3">1. Constitución física</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Altura</label>
+                        <select
+                          value={descripcionFisica.altura || ''}
+                          onChange={(e) => setDescripcionFisica({ ...descripcionFisica, altura: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                         >
-                          Eliminar
-                        </button>
+                          <option value="">Seleccione...</option>
+                          {opcionesAltura.map((opcion) => (
+                            <option key={opcion} value={opcion}>{opcion}</option>
+                          ))}
+                        </select>
                       </div>
-                      <div className="grid grid-cols-1 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Teléfono(s) involucrado(s)
-                          </label>
-                          <input
-                            type="text"
-                            value={info.telefonosInvolucrados}
-                            onChange={(e) => {
-                              const nuevaLista = [...infoAdicionalLista]
-                              nuevaLista[index].telefonosInvolucrados = e.target.value.toUpperCase()
-                              setInfoAdicionalLista(nuevaLista)
-                            }}
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 uppercase transition-colors"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Número de Cuenta Beneficiaria
-                          </label>
-                          <input
-                            type="text"
-                            value={info.numeroCuenta}
-                            onChange={(e) => {
-                              const nuevaLista = [...infoAdicionalLista]
-                              nuevaLista[index].numeroCuenta = e.target.value.toUpperCase()
-                              setInfoAdicionalLista(nuevaLista)
-                            }}
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 uppercase transition-colors"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Nombre de Cuenta Beneficiaria
-                          </label>
-                          <input
-                            type="text"
-                            value={info.nombreCuenta}
-                            onChange={(e) => {
-                              const nuevaLista = [...infoAdicionalLista]
-                              nuevaLista[index].nombreCuenta = e.target.value.toUpperCase()
-                              setInfoAdicionalLista(nuevaLista)
-                            }}
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 uppercase transition-colors"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Entidad Bancaria
-                          </label>
-                          <select
-                            value={info.entidadBancaria}
-                            onChange={(e) => {
-                              const nuevaLista = [...infoAdicionalLista]
-                              nuevaLista[index].entidadBancaria = e.target.value
-                              setInfoAdicionalLista(nuevaLista)
-                            }}
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                          >
-                            <option value="">Seleccione...</option>
-                            {bancos.map((banco) => (
-                              <option key={banco} value={banco}>
-                                {banco}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Complexión</label>
+                        <select
+                          value={descripcionFisica.complexion || ''}
+                          onChange={(e) => setDescripcionFisica({ ...descripcionFisica, complexion: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                        >
+                          <option value="">Seleccione...</option>
+                          {opcionesComplexion.map((opcion) => (
+                            <option key={opcion} value={opcion}>{opcion}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Postura</label>
+                        <select
+                          value={descripcionFisica.postura || ''}
+                          onChange={(e) => setDescripcionFisica({ ...descripcionFisica, postura: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                        >
+                          <option value="">Seleccione...</option>
+                          {opcionesPostura.map((opcion) => (
+                            <option key={opcion} value={opcion}>{opcion}</option>
+                          ))}
+                        </select>
                       </div>
                     </div>
-                  ))}
+                  </div>
+
+                  {/* 2. Forma del rostro */}
+                  <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                    <h4 className="font-semibold text-gray-800 mb-3">2. Forma del rostro</h4>
+                    <select
+                      value={descripcionFisica.formaRostro || ''}
+                      onChange={(e) => setDescripcionFisica({ ...descripcionFisica, formaRostro: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                    >
+                      <option value="">Seleccione...</option>
+                      {opcionesFormaRostro.map((opcion) => (
+                        <option key={opcion} value={opcion}>{opcion}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* 3. Piel */}
+                  <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                    <h4 className="font-semibold text-gray-800 mb-3">3. Piel</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Tono</label>
+                        <select
+                          value={descripcionFisica.tonoPiel || ''}
+                          onChange={(e) => setDescripcionFisica({ ...descripcionFisica, tonoPiel: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                        >
+                          <option value="">Seleccione...</option>
+                          {opcionesTonoPiel.map((opcion) => (
+                            <option key={opcion} value={opcion}>{opcion}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Textura</label>
+                        <select
+                          value={descripcionFisica.texturaPiel || ''}
+                          onChange={(e) => setDescripcionFisica({ ...descripcionFisica, texturaPiel: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                        >
+                          <option value="">Seleccione...</option>
+                          {opcionesTexturaPiel.map((opcion) => (
+                            <option key={opcion} value={opcion}>{opcion}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 4. Cabello */}
+                  <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                    <h4 className="font-semibold text-gray-800 mb-3">4. Cabello</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Color</label>
+                        <select
+                          value={descripcionFisica.colorCabello || ''}
+                          onChange={(e) => setDescripcionFisica({ ...descripcionFisica, colorCabello: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                        >
+                          <option value="">Seleccione...</option>
+                          {opcionesColorCabello.map((opcion) => (
+                            <option key={opcion} value={opcion}>{opcion}</option>
+                          ))}
+                        </select>
+                        {descripcionFisica.colorCabello === 'Teñido' && (
+                          <input
+                            type="text"
+                            value={descripcionFisica.cabelloTeñido || ''}
+                            onChange={(e) => setDescripcionFisica({ ...descripcionFisica, cabelloTeñido: e.target.value.toUpperCase() })}
+                            placeholder="Especificar color..."
+                            className="w-full mt-2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase text-sm"
+                          />
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Longitud</label>
+                        <select
+                          value={descripcionFisica.longitudCabello || ''}
+                          onChange={(e) => setDescripcionFisica({ ...descripcionFisica, longitudCabello: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                        >
+                          <option value="">Seleccione...</option>
+                          {opcionesLongitudCabello.map((opcion) => (
+                            <option key={opcion} value={opcion}>{opcion}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Textura</label>
+                        <select
+                          value={descripcionFisica.texturaCabello || ''}
+                          onChange={(e) => setDescripcionFisica({ ...descripcionFisica, texturaCabello: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                        >
+                          <option value="">Seleccione...</option>
+                          {opcionesTexturaCabello.map((opcion) => (
+                            <option key={opcion} value={opcion}>{opcion}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Peinado</label>
+                        <select
+                          value={descripcionFisica.peinado || ''}
+                          onChange={(e) => setDescripcionFisica({ ...descripcionFisica, peinado: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                        >
+                          <option value="">Seleccione...</option>
+                          {opcionesPeinado.map((opcion) => (
+                            <option key={opcion} value={opcion}>{opcion}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 5. Ojos */}
+                  <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                    <h4 className="font-semibold text-gray-800 mb-3">5. Ojos</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Forma</label>
+                        <select
+                          value={descripcionFisica.formaOjos || ''}
+                          onChange={(e) => setDescripcionFisica({ ...descripcionFisica, formaOjos: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                        >
+                          <option value="">Seleccione...</option>
+                          {opcionesFormaOjos.map((opcion) => (
+                            <option key={opcion} value={opcion}>{opcion}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Color</label>
+                        <select
+                          value={descripcionFisica.colorOjos || ''}
+                          onChange={(e) => setDescripcionFisica({ ...descripcionFisica, colorOjos: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                        >
+                          <option value="">Seleccione...</option>
+                          {opcionesColorOjos.map((opcion) => (
+                            <option key={opcion} value={opcion}>{opcion}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="mt-3">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Características</label>
+                      <div className="flex flex-wrap gap-3">
+                        {opcionesCaracteristicasOjos.map((opcion) => (
+                          <label key={opcion} className="flex items-center text-sm text-gray-800 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={descripcionFisica.caracteristicasOjos?.includes(opcion) || false}
+                              onChange={(e) => {
+                                const actuales = descripcionFisica.caracteristicasOjos || []
+                                if (e.target.checked) {
+                                  setDescripcionFisica({ ...descripcionFisica, caracteristicasOjos: [...actuales, opcion] })
+                                } else {
+                                  setDescripcionFisica({ ...descripcionFisica, caracteristicasOjos: actuales.filter((c) => c !== opcion) })
+                                }
+                              }}
+                              className="mr-2"
+                            />
+                            <span className="text-gray-800">{opcion}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 6. Otros rasgos distintivos */}
+                  <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                    <h4 className="font-semibold text-gray-800 mb-3">6. Otros rasgos distintivos</h4>
+                    <div className="flex flex-wrap gap-3">
+                      {opcionesOtrosRasgos.map((opcion) => (
+                        <label key={opcion} className="flex items-center text-sm text-gray-800 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={descripcionFisica.otrosRasgos?.includes(opcion) || false}
+                            onChange={(e) => {
+                              const actuales = descripcionFisica.otrosRasgos || []
+                              if (e.target.checked) {
+                                setDescripcionFisica({ ...descripcionFisica, otrosRasgos: [...actuales, opcion] })
+                              } else {
+                                setDescripcionFisica({ ...descripcionFisica, otrosRasgos: actuales.filter((r) => r !== opcion) })
+                              }
+                            }}
+                            className="mr-2"
+                          />
+                          <span className="text-gray-800">{opcion}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 7. Detalles adicionales */}
+                  <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                    <h4 className="font-semibold text-gray-800 mb-3">7. Detalles adicionales</h4>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Agregar detalles adicionales no mencionados anteriormente
+                      </label>
+                      <textarea
+                        value={descripcionFisica.detallesAdicionales || ''}
+                        onChange={(e) => setDescripcionFisica({ ...descripcionFisica, detallesAdicionales: e.target.value.toUpperCase() })}
+                        placeholder="Ingrese cualquier detalle físico adicional que considere relevante..."
+                        rows={4}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 uppercase transition-colors resize-vertical"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Este campo permite agregar información adicional que no esté contemplada en las opciones anteriores.
+                      </p>
+                    </div>
+                  </div>
                 </div>
-              )}
-              
-              {infoAdicionalLista.length === 0 && (
-                <div className="text-center py-8 px-4 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50">
-                  <p className="text-gray-500 text-sm">No hay información adicional agregada</p>
-                  <p className="text-gray-400 text-xs mt-1">Presiona "Agregar Grupo" para comenzar</p>
-                </div>
-              )}
-            </div>
+              </div>
+            )}
 
             <div className="mt-8 flex justify-between">
               <div className="flex gap-4">
@@ -1465,34 +3371,115 @@ export default function NuevaDenunciaPage() {
             </h2>
 
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Fecha del Hecho *
-                </label>
+              <div className="flex items-center mb-4">
                 <input
-                  type="date"
-                  {...registerDenuncia('fechaHecho')}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  type="checkbox"
+                  id="usarRango"
+                  {...registerDenuncia('usarRango')}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                 />
-                {errorsDenuncia.fechaHecho && (
-                  <p className="text-red-600 text-sm mt-1">{errorsDenuncia.fechaHecho.message as string}</p>
-                )}
+                <label htmlFor="usarRango" className="ml-2 block text-sm font-medium text-gray-700">
+                  El hecho ocurrió en un rango de fechas/horas (fecha/hora desconocida)
+                </label>
               </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Hora del Hecho (HH:MM) *
-                  </label>
-                  <input
-                    type="time"
-                    {...registerDenuncia('horaHecho')}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                  {errorsDenuncia.horaHecho && (
-                    <p className="text-red-600 text-sm mt-1">{errorsDenuncia.horaHecho.message as string}</p>
-                  )}
+              
+              {!usarRango ? (
+                // Fecha y hora única
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Fecha del Hecho *
+                    </label>
+                    <input
+                      type="date"
+                      {...registerDenuncia('fechaHecho')}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    {errorsDenuncia.fechaHecho && (
+                      <p className="text-red-600 text-sm mt-1">{errorsDenuncia.fechaHecho.message as string}</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Hora del Hecho (HH:MM) *
+                    </label>
+                    <input
+                      type="time"
+                      {...registerDenuncia('horaHecho')}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    {errorsDenuncia.horaHecho && (
+                      <p className="text-red-600 text-sm mt-1">{errorsDenuncia.horaHecho.message as string}</p>
+                    )}
+                  </div>
                 </div>
-              </div>
+              ) : (
+                // Rango de fechas/horas
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-700 mb-3">Fecha y Hora de Inicio</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Fecha de Inicio *
+                        </label>
+                        <input
+                          type="date"
+                          {...registerDenuncia('fechaHecho')}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                        {errorsDenuncia.fechaHecho && (
+                          <p className="text-red-600 text-sm mt-1">{errorsDenuncia.fechaHecho.message as string}</p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Hora de Inicio (HH:MM) *
+                        </label>
+                        <input
+                          type="time"
+                          {...registerDenuncia('horaHecho')}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                        {errorsDenuncia.horaHecho && (
+                          <p className="text-red-600 text-sm mt-1">{errorsDenuncia.horaHecho.message as string}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-700 mb-3">Fecha y Hora de Fin</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Fecha de Fin *
+                        </label>
+                        <input
+                          type="date"
+                          {...registerDenuncia('fechaHechoFin')}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                        {errorsDenuncia.fechaHechoFin && (
+                          <p className="text-red-600 text-sm mt-1">{errorsDenuncia.fechaHechoFin.message as string}</p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Hora de Fin (HH:MM) *
+                        </label>
+                        <input
+                          type="time"
+                          {...registerDenuncia('horaHechoFin')}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                        {errorsDenuncia.horaHechoFin && (
+                          <p className="text-red-600 text-sm mt-1">{errorsDenuncia.horaHechoFin.message as string}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1533,35 +3520,194 @@ export default function NuevaDenunciaPage() {
                 </div>
               )}
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Lugar del Hecho *
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    {...registerDenuncia('lugarHecho')}
-                    onChange={(e) => {
-                      convertirAMayusculas(e)
-                      registerDenuncia('lugarHecho').onChange(e)
-                    }}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setMostrarMapa(true)}
-                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
-                  >
-                    Abrir Mapa
-                  </button>
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">
+                    Lugar del Hecho
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Departamento *
+                      </label>
+                      <Controller
+                        name="lugarHechoDepartamento"
+                        control={controlDenuncia}
+                        render={({ field }) => (
+                          <Select
+                            options={lugarHechoDepartamentoOptions}
+                            value={lugarHechoDepartamentoOptions.find((option) => option.value === field.value) || null}
+                            onChange={(option) => field.onChange(option?.value || '')}
+                            isClearable
+                            placeholder="Seleccione..."
+                            className="text-sm"
+                            styles={{
+                              control: (base, state) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                minHeight: '42px',
+                                borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
+                                boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
+                                '&:hover': {
+                                  borderColor: '#3b82f6',
+                                },
+                              }),
+                              menu: (base) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                maxHeight: '250px',
+                                zIndex: 9999,
+                              }),
+                              menuList: (base) => ({
+                                ...base,
+                                maxHeight: '250px',
+                              }),
+                              option: (base, state) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                padding: '8px 12px',
+                                backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
+                                color: state.isSelected ? 'white' : '#1f2937',
+                                cursor: 'pointer',
+                              }),
+                              input: (base) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                margin: 0,
+                                padding: 0,
+                              }),
+                              singleValue: (base) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                color: '#1f2937',
+                              }),
+                              placeholder: (base) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                color: '#9ca3af',
+                              }),
+                            }}
+                            classNamePrefix="react-select"
+                          />
+                        )}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Ciudad *
+                      </label>
+                      <Controller
+                        name="lugarHechoCiudad"
+                        control={controlDenuncia}
+                        render={({ field }) => (
+                          <Select
+                            options={lugarHechoCiudadOptions}
+                            value={lugarHechoCiudadOptions.find((option) => option.value === field.value) || null}
+                            onChange={(option) => field.onChange(option?.value || '')}
+                            isClearable
+                            isDisabled={!lugarHechoDepartamento}
+                            placeholder={lugarHechoDepartamento ? 'Seleccione...' : 'Seleccione un departamento primero'}
+                            className="text-sm"
+                            styles={{
+                              control: (base, state) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                minHeight: '42px',
+                                borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
+                                boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
+                                '&:hover': {
+                                  borderColor: '#3b82f6',
+                                },
+                              }),
+                              menu: (base) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                maxHeight: '250px',
+                                zIndex: 9999,
+                              }),
+                              menuList: (base) => ({
+                                ...base,
+                                maxHeight: '250px',
+                              }),
+                              option: (base, state) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                padding: '8px 12px',
+                                backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
+                                color: state.isSelected ? 'white' : '#1f2937',
+                                cursor: 'pointer',
+                              }),
+                              input: (base) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                margin: 0,
+                                padding: 0,
+                              }),
+                              singleValue: (base) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                color: '#1f2937',
+                              }),
+                              placeholder: (base) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                color: '#9ca3af',
+                              }),
+                            }}
+                            classNamePrefix="react-select"
+                          />
+                        )}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Calles / Referencias *
+                      </label>
+                      <input
+                        {...registerDenuncia('lugarHechoCalles')}
+                        onChange={(e) => {
+                          convertirAMayusculas(e)
+                          registerDenuncia('lugarHechoCalles').onChange(e)
+                        }}
+                        autoComplete="off"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex gap-2 mt-4">
+                    <input
+                      {...registerDenuncia('lugarHecho')}
+                      type="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setMostrarMapa(true)}
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                    >
+                      Abrir Mapa
+                    </button>
+                  </div>
+                  {coordenadas && (
+                    <p className="text-sm text-gray-600 mt-1">
+                      Coordenadas: {coordenadas.lat.toFixed(6)}, {coordenadas.lng.toFixed(6)}
+                    </p>
+                  )}
+                  {errorsDenuncia.lugarHecho && (
+                    <p className="text-red-600 text-sm mt-1">{errorsDenuncia.lugarHecho.message as string}</p>
+                  )}
                 </div>
-                {coordenadas && (
-                  <p className="text-sm text-gray-600 mt-1">
-                    Coordenadas: {coordenadas.lat.toFixed(6)}, {coordenadas.lng.toFixed(6)}
-                  </p>
-                )}
-                {errorsDenuncia.lugarHecho && (
-                  <p className="text-red-600 text-sm mt-1">{errorsDenuncia.lugarHecho.message as string}</p>
-                )}
               </div>
 
               <div>
@@ -1703,4 +3849,5 @@ export default function NuevaDenunciaPage() {
     </div>
   )
 }
+
 

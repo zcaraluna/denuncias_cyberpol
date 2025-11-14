@@ -2,6 +2,38 @@ import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/lib/db'
 import { randomBytes } from 'crypto'
 
+type RolDenunciante = 'principal' | 'co-denunciante' | 'abogado'
+
+interface DenuncianteDatos {
+  nombres: string | null
+  tipoDocumento: string | null
+  numeroDocumento: string | null
+  nacionalidad: string | null
+  estadoCivil: string | null
+  edad: string | null
+  fechaNacimiento: string | null
+  lugarNacimiento: string | null
+  domicilio: string | null
+  telefono: string | null
+  correo: string | null
+  profesion: string | null
+  matricula: string | null
+}
+
+interface DenuncianteEntrada {
+  id: string
+  rol: RolDenunciante
+  representaA: string | null
+  representaDocumento?: string | null
+  conCartaPoder?: boolean
+  cartaPoderFecha?: string | null
+  cartaPoderNumero?: string | null
+  cartaPoderNotario?: string | null
+  datos: DenuncianteDatos
+}
+
+const ROLES_VALIDOS: RolDenunciante[] = ['principal', 'co-denunciante', 'abogado']
+
 function generarHash(oficina: string): string {
   const identificadores: Record<string, string> = {
     'Asunción': 'A',
@@ -13,246 +45,213 @@ function generarHash(oficina: string): string {
   const idOficina = identificadores[oficina] || '0'
   const año = new Date().getFullYear() % 100
   const hashBase = randomBytes(3).toString('hex').toUpperCase()
-  
+
   return `${hashBase}${idOficina}${año.toString().padStart(2, '0')}`
+}
+
+const normalizarTexto = (valor: any, opciones: { upper?: boolean; fallback?: string | null } = {}) => {
+  if (valor === undefined || valor === null) return opciones.fallback ?? null
+  const texto = String(valor).trim()
+  if (!texto) return opciones.fallback ?? null
+  return opciones.upper ? texto.toUpperCase() : texto
+}
+
+const normalizarDocumento = (valor: any) => (normalizarTexto(valor, { fallback: null }) ?? null)
+
+async function upsertDenunciante(client: any, datos: DenuncianteDatos) {
+  const numeroDocumento = normalizarDocumento(datos.numeroDocumento)
+  const nombres = normalizarTexto(datos.nombres, { upper: true, fallback: '' })
+  const tipoDocumento = normalizarTexto(datos.tipoDocumento)
+  const nacionalidad = normalizarTexto(datos.nacionalidad, { upper: true })
+  const estadoCivil = normalizarTexto(datos.estadoCivil, { upper: true })
+  const fechaNacimiento = normalizarTexto(datos.fechaNacimiento)
+  const lugarNacimiento = normalizarTexto(datos.lugarNacimiento, { upper: true })
+  const domicilio = normalizarTexto(datos.domicilio)
+  const telefono = normalizarTexto(datos.telefono)
+  const correo = normalizarTexto(datos.correo, { fallback: null })
+  const profesion = normalizarTexto(datos.profesion, { upper: true })
+  const matricula = normalizarTexto(datos.matricula, { upper: true })
+  const edad = datos.edad ? parseInt(datos.edad, 10) : null
+
+  const aplicarUpdate = async (denuncianteId: number) => {
+    await client.query(
+        `UPDATE denunciantes SET
+          nombres = $1,
+          tipo_documento = $2,
+          nacionalidad = $3,
+          estado_civil = $4,
+          edad = $5,
+          fecha_nacimiento = $6,
+          lugar_nacimiento = $7,
+          domicilio = $8,
+          telefono = $9,
+          correo = $10,
+          profesion = $11,
+          matricula = $12
+        WHERE id = $13`,
+        [
+          nombres,
+          tipoDocumento,
+          nacionalidad,
+          estadoCivil,
+          edad,
+          fechaNacimiento,
+          lugarNacimiento,
+          domicilio,
+          telefono,
+          correo,
+          profesion,
+          matricula,
+          denuncianteId
+        ]
+    )
+    return denuncianteId
+  }
+
+  if (numeroDocumento) {
+    const existente = await client.query('SELECT id FROM denunciantes WHERE cedula = $1', [numeroDocumento])
+    if (existente.rows.length > 0) {
+      return aplicarUpdate(existente.rows[0].id)
+    }
+  }
+
+  if (matricula) {
+    const existenteMatricula = await client.query('SELECT id FROM denunciantes WHERE matricula = $1', [matricula])
+    if (existenteMatricula.rows.length > 0) {
+      return aplicarUpdate(existenteMatricula.rows[0].id)
+    }
+  }
+
+  const resultado = await client.query(
+    `INSERT INTO denunciantes (
+      nombres, cedula, tipo_documento, nacionalidad, estado_civil, edad,
+      fecha_nacimiento, lugar_nacimiento, domicilio, telefono, correo, profesion, matricula
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+    RETURNING id`,
+    [
+      nombres,
+      numeroDocumento,
+      tipoDocumento,
+      nacionalidad,
+      estadoCivil,
+      datos.edad ? parseInt(datos.edad, 10) : null,
+      fechaNacimiento,
+      lugarNacimiento,
+      domicilio,
+      telefono,
+      correo,
+      profesion,
+      matricula
+    ]
+  )
+  return resultado.rows[0].id
+}
+
+function construirColeccionDenunciantes(body: any): DenuncianteEntrada[] {
+  if (Array.isArray(body?.denunciantes) && body.denunciantes.length > 0) {
+    return body.denunciantes
+      .map((item: any) => ({
+        id: item.id ?? normalizarTexto(item.datos?.numeroDocumento) ?? `tmp-${Math.random().toString(36).slice(2, 10)}`,
+        rol: ROLES_VALIDOS.includes(item.rol) ? item.rol : 'co-denunciante',
+        representaA: item.representaA ?? null,
+        representaDocumento: item.representaDocumento ?? null,
+        conCartaPoder: item.conCartaPoder ?? false,
+        cartaPoderFecha: item.cartaPoderFecha ?? null,
+        cartaPoderNotario: item.cartaPoderNotario ?? null,
+        datos: {
+          ...(item.datos ?? {}),
+          matricula: item.datos?.matricula ?? item.matricula ?? null,
+        }
+      }))
+  }
+
+  if (body?.denunciante) {
+    return [
+      {
+        id: normalizarTexto(body.denunciante.numeroDocumento) ?? 'principal',
+        rol: 'principal',
+        representaA: null,
+        datos: {
+          ...body.denunciante,
+          matricula: body.denunciante.matricula ?? null,
+        }
+      }
+    ]
+  }
+
+  throw new Error('Debe proporcionar al menos un denunciante.')
+}
+
+async function registrarInvolucrados(
+  client: any,
+  denunciaId: number,
+  coleccion: DenuncianteEntrada[],
+  mapaIds: Map<string, number>
+) {
+  await client.query('DELETE FROM denuncias_involucrados WHERE denuncia_id = $1', [denunciaId])
+
+  for (const entrada of coleccion) {
+    const denuncianteId = mapaIds.get(entrada.id)
+    if (!denuncianteId) continue
+
+    let representaId: number | null = null
+    if (entrada.rol === 'abogado') {
+      if (entrada.representaA && mapaIds.has(entrada.representaA)) {
+        representaId = mapaIds.get(entrada.representaA) ?? null
+      } else if (entrada.representaDocumento) {
+        const representado = await client.query('SELECT id FROM denunciantes WHERE cedula = $1', [
+          normalizarDocumento(entrada.representaDocumento)
+        ])
+        if (representado.rows.length > 0) {
+          representaId = representado.rows[0].id
+        }
+      }
+    }
+
+    await client.query(
+      `INSERT INTO denuncias_involucrados (
+        denuncia_id,
+        denunciante_id,
+        rol,
+        representa_denunciante_id,
+        con_carta_poder,
+        carta_poder_fecha,
+        carta_poder_numero,
+        carta_poder_notario
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [
+        denunciaId,
+        denuncianteId,
+        entrada.rol,
+        representaId,
+        Boolean(entrada.conCartaPoder),
+        entrada.cartaPoderFecha || null,
+        null, // carta_poder_numero ya no se usa
+        entrada.cartaPoderNotario || null,
+      ]
+    )
+  }
 }
 
 export async function POST(request: NextRequest) {
   const client = await pool.connect()
-  
+
   try {
     await client.query('BEGIN')
 
     const body = await request.json()
-    const { borradorId, denunciante, denuncia, autor, infoAdicional, usuarioId } = body
+    const { borradorId, denuncia, autor, descripcionFisica, usuarioId } = body
+    const coleccionDenunciantes = construirColeccionDenunciantes(body)
 
-    // Si viene un borradorId, actualizar el borrador existente
-    if (borradorId) {
-      // Usar la lógica de actualización existente
-      const now = new Date()
-      const fechaActual = now.toLocaleDateString('es-PY', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        timeZone: 'America/Asuncion'
-      }).split('/').reverse().join('-')
-      const horaActual = now.toLocaleTimeString('es-PY', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false,
-        timeZone: 'America/Asuncion'
-      })
-
-      // Actualizar denunciante
-      const numeroDoc = denunciante.numeroDocumento || denunciante.cedula
-      await client.query(
-        `UPDATE denunciantes SET
-          nombres = $1, cedula = $2, tipo_documento = $3, nacionalidad = $4, 
-          estado_civil = $5, edad = $6, fecha_nacimiento = $7, lugar_nacimiento = $8,
-          telefono = $9, profesion = $10
-        WHERE id = (SELECT denunciante_id FROM denuncias WHERE id = $11)`,
-        [
-          denunciante.nombres,
-          numeroDoc,
-          denunciante.tipoDocumento,
-          denunciante.nacionalidad,
-          denunciante.estadoCivil,
-          parseInt(denunciante.edad),
-          denunciante.fechaNacimiento,
-          denunciante.lugarNacimiento,
-          denunciante.telefono,
-          denunciante.profesion || null,
-          borradorId
-        ]
-      )
-
-      // Obtener número de orden
-      const año = fechaActual.split('-')[0]
-      const ordenResult = await client.query(
-        `SELECT COALESCE(MAX(orden), 0) + 1 as orden
-         FROM denuncias
-         WHERE EXTRACT(YEAR FROM fecha_denuncia) = $1 AND orden >= 1`,
-        [año]
-      )
-      const numeroOrden = ordenResult.rows[0].orden
-
-      // Obtener datos del usuario y generar hash
-      const usuarioResult = await client.query(
-        'SELECT nombre, apellido, grado, oficina FROM usuarios WHERE id = $1',
-        [usuarioId]
-      )
-      const usuario = usuarioResult.rows[0]
-      const hash = generarHash(usuario.oficina)
-
-      // Actualizar denuncia a completada
-      await client.query(
-        `UPDATE denuncias SET
-          fecha_denuncia = $1, hora_denuncia = $2, fecha_hecho = $3, hora_hecho = $4,
-          tipo_denuncia = $5, otro_tipo = $6, relato = $7, lugar_hecho = $8,
-          latitud = $9, longitud = $10, monto_dano = $11, moneda = $12,
-          estado = 'completada', orden = $13, hash = $14
-        WHERE id = $15`,
-        [
-          fechaActual,
-          horaActual,
-          denuncia.fechaHecho,
-          denuncia.horaHecho,
-          denuncia.tipoDenuncia,
-          denuncia.otroTipo,
-          denuncia.relato,
-          denuncia.lugarHecho,
-          denuncia.latitud,
-          denuncia.longitud,
-          denuncia.montoDano,
-          denuncia.moneda,
-          numeroOrden,
-          hash,
-          borradorId
-        ]
-      )
-
-      // Eliminar supuestos autores anteriores
-      await client.query('DELETE FROM supuestos_autores WHERE denuncia_id = $1', [borradorId])
-
-      // Crear supuesto autor si hay datos
-      if (autor.conocido === 'Conocido' && autor.nombre) {
-        await client.query(
-          `INSERT INTO supuestos_autores (
-            denuncia_id, autor_conocido, nombre_autor, cedula_autor, domicilio_autor,
-            nacionalidad_autor, estado_civil_autor, edad_autor, fecha_nacimiento_autor,
-            lugar_nacimiento_autor, telefono_autor, profesion_autor,
-            telefonos_involucrados, numero_cuenta_beneficiaria,
-            nombre_cuenta_beneficiaria, entidad_bancaria
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
-          [
-            borradorId,
-            autor.conocido,
-            autor.nombre,
-            autor.cedula || null,
-            autor.domicilio || null,
-            autor.nacionalidad || null,
-            autor.estadoCivil || null,
-            autor.edad ? parseInt(autor.edad) : null,
-            autor.fechaNacimiento || null,
-            autor.lugarNacimiento || null,
-            autor.telefono || null,
-            autor.profesion || null,
-            null,
-            null,
-            null,
-            null
-          ]
-        )
-      }
-
-      // Insertar información adicional
-      if (infoAdicional && Array.isArray(infoAdicional) && infoAdicional.length > 0) {
-        for (const info of infoAdicional) {
-          await client.query(
-            `INSERT INTO supuestos_autores (
-              denuncia_id, autor_conocido,
-              telefonos_involucrados, numero_cuenta_beneficiaria,
-              nombre_cuenta_beneficiaria, entidad_bancaria
-            ) VALUES ($1, $2, $3, $4, $5, $6)`,
-            [
-              borradorId,
-              'Desconocido',
-              info.telefonosInvolucrados || null,
-              info.numeroCuenta || null,
-              info.nombreCuenta || null,
-              info.entidadBancaria || null
-            ]
-          )
-        }
-      }
-
-      // Insertar en historial
-      await client.query(
-        `INSERT INTO historial_denuncias (
-          nombre_denunciante, cedula_denunciante, operador,
-          fecha_denuncia, hora_denuncia, numero_orden, tipo_hecho, hash_denuncia
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-        [
-          denunciante.nombres,
-          numeroDoc,
-          `${usuario.grado} ${usuario.nombre} ${usuario.apellido}`,
-          fechaActual,
-          horaActual,
-          numeroOrden,
-          denuncia.tipoDenuncia,
-          hash
-        ]
-      )
-
-      await client.query('COMMIT')
-
-      return NextResponse.json({
-        success: true,
-        id: borradorId,
-        hash: hash,
-        orden: numeroOrden
-      })
+    const principalEntrada = coleccionDenunciantes.find((item) => item.rol === 'principal')
+    if (!principalEntrada) {
+      throw new Error('Debe incluir un denunciante principal.')
     }
 
-    // Generar fecha y hora en el servidor (no confiar en el cliente)
-    const now = new Date()
-    const fechaActual = now.toLocaleDateString('es-PY', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      timeZone: 'America/Asuncion'
-    }).split('/').reverse().join('-')
-    const horaActual = now.toLocaleTimeString('es-PY', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-      timeZone: 'America/Asuncion'
-    })
-
-    // 1. Buscar o crear denunciante (usar numeroDocumento si existe, sino cedula)
-    const numeroDoc = denunciante.numeroDocumento || denunciante.cedula
-    let denuncianteResult = await client.query(
-      'SELECT id FROM denunciantes WHERE cedula = $1',
-      [numeroDoc]
-    )
-
-    let denuncianteId: number
-    if (denuncianteResult.rows.length > 0) {
-      denuncianteId = denuncianteResult.rows[0].id
-    } else {
-      const insertDenunciante = await client.query(
-        `INSERT INTO denunciantes (
-          nombres, cedula, tipo_documento, nacionalidad, estado_civil, edad,
-          fecha_nacimiento, lugar_nacimiento, telefono, profesion
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-        RETURNING id`,
-        [
-          denunciante.nombres,
-          numeroDoc,
-          denunciante.tipoDocumento,
-          denunciante.nacionalidad,
-          denunciante.estadoCivil,
-          parseInt(denunciante.edad),
-          denunciante.fechaNacimiento,
-          denunciante.lugarNacimiento,
-          denunciante.telefono,
-          denunciante.profesion || null
-        ]
-      )
-      denuncianteId = insertDenunciante.rows[0].id
+    if (!usuarioId) {
+      throw new Error('Usuario requerido.')
     }
 
-    // 2. Obtener número de orden usando fecha del servidor
-    const año = fechaActual.split('-')[0]
-    const ordenResult = await client.query(
-      `SELECT COALESCE(MAX(orden), 0) + 1 as orden
-       FROM denuncias
-       WHERE EXTRACT(YEAR FROM fecha_denuncia) = $1`,
-      [año]
-    )
-    const numeroOrden = ordenResult.rows[0].orden
-
-    // 3. Obtener datos del usuario
     const usuarioResult = await client.query(
       'SELECT nombre, apellido, grado, oficina FROM usuarios WHERE id = $1',
       [usuarioId]
@@ -263,45 +262,161 @@ export async function POST(request: NextRequest) {
     }
 
     const usuario = usuarioResult.rows[0]
+    const now = new Date()
+    const fechaActual = now
+      .toLocaleDateString('es-PY', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        timeZone: 'America/Asuncion'
+      })
+      .split('/')
+      .reverse()
+      .join('-')
+    const horaActual = now.toLocaleTimeString('es-PY', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+      timeZone: 'America/Asuncion'
+    })
+
+    const mapaDenunciantes = new Map<string, number>()
+    for (const entrada of coleccionDenunciantes) {
+      const id = await upsertDenunciante(client, entrada.datos)
+      mapaDenunciantes.set(entrada.id, id)
+    }
+
+    const principalId = mapaDenunciantes.get(principalEntrada.id)
+    if (!principalId) {
+      throw new Error('No se pudo determinar el denunciante principal.')
+    }
+
+    const fechaHecho = denuncia?.fechaHecho ?? null
+    const horaHecho = denuncia?.horaHecho ?? null
+    const fechaHechoFin = denuncia?.fechaHechoFin ?? null
+    const horaHechoFin = denuncia?.horaHechoFin ?? null
+    const tipoDenuncia = denuncia?.tipoDenuncia ?? null
+    const otroTipo = denuncia?.otroTipo ?? null
+    const relato = denuncia?.relato ?? null
+    const lugarHecho = denuncia?.lugarHecho ?? null
+    const latitud = denuncia?.latitud ?? null
+    const longitud = denuncia?.longitud ?? null
+    const montoDano = denuncia?.montoDano ?? null
+    const moneda = denuncia?.moneda ?? null
+
     const hash = generarHash(usuario.oficina)
 
-    // 4. Crear denuncia (sin PDF - se generará bajo demanda)
-    const insertDenuncia = await client.query(
-      `INSERT INTO denuncias (
-        denunciante_id, fecha_denuncia, hora_denuncia, fecha_hecho, hora_hecho,
-        tipo_denuncia, otro_tipo, relato, lugar_hecho, latitud, longitud,
-        orden, usuario_id, oficina, operador_grado, operador_nombre,
-        operador_apellido, monto_dano, moneda, hash, pdf, estado
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, NULL, 'completada')
-      RETURNING id`,
-      [
-        denuncianteId,
-        fechaActual, // Fecha del servidor
-        horaActual, // Hora del servidor
-        denuncia.fechaHecho,
-        denuncia.horaHecho,
-        denuncia.tipoDenuncia,
-        denuncia.otroTipo,
-        denuncia.relato,
-        denuncia.lugarHecho,
-        denuncia.latitud,
-        denuncia.longitud,
-        numeroOrden,
-        usuarioId,
-        usuario.oficina,
-        usuario.grado,
-        usuario.nombre,
-        usuario.apellido,
-        denuncia.montoDano,
-        denuncia.moneda,
-        hash
-      ]
-    )
+    let denunciaId = borradorId ?? null
+    let numeroOrden = 0
 
-    const denunciaId = insertDenuncia.rows[0].id
+    if (borradorId) {
+      const año = fechaActual.split('-')[0]
+      const ordenResult = await client.query(
+        `SELECT COALESCE(MAX(orden), 0) + 1 as orden
+         FROM denuncias
+         WHERE EXTRACT(YEAR FROM fecha_denuncia) = $1 AND orden >= 1`,
+        [año]
+      )
+      numeroOrden = ordenResult.rows[0].orden
 
-    // 5. Crear supuesto autor si hay datos del autor conocido
-    if (autor.conocido === 'Conocido' && autor.nombre) {
+      await client.query(
+        `UPDATE denuncias SET
+          denunciante_id = $1,
+          fecha_denuncia = $2,
+          hora_denuncia = $3,
+          fecha_hecho = $4,
+          hora_hecho = $5,
+          fecha_hecho_fin = $6,
+          hora_hecho_fin = $7,
+          tipo_denuncia = $8,
+          otro_tipo = $9,
+          relato = $10,
+          lugar_hecho = $11,
+          latitud = $12,
+          longitud = $13,
+          monto_dano = $14,
+          moneda = $15,
+          estado = 'completada',
+          orden = $16,
+          hash = $17
+        WHERE id = $18`,
+        [
+          principalId,
+          fechaActual,
+          horaActual,
+          fechaHecho,
+          horaHecho,
+          fechaHechoFin,
+          horaHechoFin,
+          tipoDenuncia,
+          otroTipo,
+          relato,
+          lugarHecho,
+          latitud,
+          longitud,
+          montoDano,
+          moneda,
+          numeroOrden,
+          hash,
+          borradorId
+        ]
+      )
+      denunciaId = borradorId
+    } else {
+      const año = fechaActual.split('-')[0]
+      const ordenResult = await client.query(
+        `SELECT COALESCE(MAX(orden), 0) + 1 as orden
+         FROM denuncias
+         WHERE EXTRACT(YEAR FROM fecha_denuncia) = $1`,
+        [año]
+      )
+      numeroOrden = ordenResult.rows[0].orden
+
+      const insertDenuncia = await client.query(
+        `INSERT INTO denuncias (
+          denunciante_id, fecha_denuncia, hora_denuncia, fecha_hecho, hora_hecho, fecha_hecho_fin, hora_hecho_fin,
+          tipo_denuncia, otro_tipo, relato, lugar_hecho, latitud, longitud,
+          orden, usuario_id, oficina, operador_grado, operador_nombre,
+          operador_apellido, monto_dano, moneda, hash, pdf, estado
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, NULL, 'completada')
+        RETURNING id`,
+        [
+          principalId,
+          fechaActual,
+          horaActual,
+          fechaHecho,
+          horaHecho,
+          fechaHechoFin,
+          horaHechoFin,
+          tipoDenuncia,
+          otroTipo,
+          relato,
+          lugarHecho,
+          latitud,
+          longitud,
+          numeroOrden,
+          usuarioId,
+          usuario.oficina,
+          usuario.grado,
+          usuario.nombre,
+          usuario.apellido,
+          montoDano,
+          moneda,
+          hash
+        ]
+      )
+      denunciaId = insertDenuncia.rows[0].id
+    }
+
+    if (!denunciaId) {
+      throw new Error('No se pudo registrar la denuncia.')
+    }
+
+    await registrarInvolucrados(client, denunciaId, coleccionDenunciantes, mapaDenunciantes)
+
+    await client.query('DELETE FROM supuestos_autores WHERE denuncia_id = $1', [denunciaId])
+
+    if (autor?.conocido === 'Conocido' && autor?.nombre) {
       await client.query(
         `INSERT INTO supuestos_autores (
           denuncia_id, autor_conocido, nombre_autor, cedula_autor, domicilio_autor,
@@ -312,17 +427,17 @@ export async function POST(request: NextRequest) {
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
         [
           denunciaId,
-          autor.conocido,
-          autor.nombre,
-          autor.cedula || null,
-          autor.domicilio || null,
-          autor.nacionalidad || null,
-          autor.estadoCivil || null,
-          autor.edad ? parseInt(autor.edad) : null,
-          autor.fechaNacimiento || null,
-          autor.lugarNacimiento || null,
-          autor.telefono || null,
-          autor.profesion || null,
+          'Conocido',
+          normalizarTexto(autor.nombre, { upper: true }),
+          normalizarDocumento(autor.cedula),
+          normalizarTexto(autor.domicilio, { upper: true }),
+          normalizarTexto(autor.nacionalidad, { upper: true }),
+          normalizarTexto(autor.estadoCivil, { upper: true }),
+          autor.edad ? parseInt(autor.edad, 10) : null,
+          autor.fechaNacimiento ?? null,
+          normalizarTexto(autor.lugarNacimiento, { upper: true }),
+          normalizarTexto(autor.telefono),
+          normalizarTexto(autor.profesion, { upper: true }),
           null,
           null,
           null,
@@ -331,41 +446,33 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 6. Insertar información adicional si existe
-    if (infoAdicional && Array.isArray(infoAdicional) && infoAdicional.length > 0) {
-      for (const info of infoAdicional) {
-        await client.query(
-          `INSERT INTO supuestos_autores (
-            denuncia_id, autor_conocido,
-            telefonos_involucrados, numero_cuenta_beneficiaria,
-            nombre_cuenta_beneficiaria, entidad_bancaria
-          ) VALUES ($1, $2, $3, $4, $5, $6)`,
-          [
-            denunciaId,
-            'Desconocido',
-            info.telefonosInvolucrados || null,
-            info.numeroCuenta || null,
-            info.nombreCuenta || null,
-            info.entidadBancaria || null
-          ]
-        )
-      }
+    // Guardar descripción física si el autor es desconocido
+    if (autor.conocido === 'Desconocido' && descripcionFisica && descripcionFisica.trim() !== '') {
+      await client.query(
+        `INSERT INTO supuestos_autores (
+          denuncia_id, autor_conocido, descripcion_fisica
+        ) VALUES ($1, $2, $3)`,
+        [
+          denunciaId,
+          'Desconocido',
+          normalizarTexto(descripcionFisica)
+        ]
+      )
     }
 
-    // 7. Insertar en historial
     await client.query(
       `INSERT INTO historial_denuncias (
         nombre_denunciante, cedula_denunciante, operador,
         fecha_denuncia, hora_denuncia, numero_orden, tipo_hecho, hash_denuncia
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
       [
-        denunciante.nombres,
-        numeroDoc,
+        principalEntrada.datos.nombres,
+        normalizarDocumento(principalEntrada.datos.numeroDocumento),
         `${usuario.grado} ${usuario.nombre} ${usuario.apellido}`,
         fechaActual,
         horaActual,
         numeroOrden,
-        denuncia.tipoDenuncia,
+        tipoDenuncia,
         hash
       ]
     )
@@ -375,15 +482,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       id: denunciaId,
-      hash: hash,
+      hash,
       orden: numeroOrden
     })
-
   } catch (error) {
     await client.query('ROLLBACK')
     console.error('Error creando denuncia:', error)
     return NextResponse.json(
-      { error: 'Error al crear la denuncia', details: error instanceof Error ? error.message : 'Unknown error' },
+      {
+        error: 'Error al crear la denuncia',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     )
   } finally {

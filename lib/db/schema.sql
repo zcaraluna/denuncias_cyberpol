@@ -26,7 +26,9 @@ CREATE TABLE IF NOT EXISTS denunciantes (
     fecha_nacimiento DATE,
     lugar_nacimiento VARCHAR(200),
     telefono VARCHAR(50),
+    correo VARCHAR(200),
     profesion VARCHAR(200),
+    matricula VARCHAR(100),
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -109,11 +111,26 @@ CREATE TABLE IF NOT EXISTS visitas_denuncias (
     fecha_visita TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Tabla de denunciantes involucrados (co-denunciantes, abogados, etc.)
+CREATE TABLE IF NOT EXISTS denuncias_involucrados (
+    id SERIAL PRIMARY KEY,
+    denuncia_id INTEGER REFERENCES denuncias(id) ON DELETE CASCADE,
+    denunciante_id INTEGER REFERENCES denunciantes(id) ON DELETE CASCADE,
+    rol VARCHAR(30) NOT NULL,
+    representa_denunciante_id INTEGER REFERENCES denunciantes(id) ON DELETE SET NULL,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT check_rol_denuncia CHECK (rol IN ('principal', 'co-denunciante', 'abogado'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_denuncias_involucrados_denuncia ON denuncias_involucrados(denuncia_id);
+CREATE INDEX IF NOT EXISTS idx_denuncias_involucrados_denunciante ON denuncias_involucrados(denunciante_id);
+
 -- Índices para mejorar rendimiento
 CREATE INDEX IF NOT EXISTS idx_denuncias_fecha ON denuncias(fecha_denuncia);
 CREATE INDEX IF NOT EXISTS idx_denuncias_orden ON denuncias(orden);
 CREATE INDEX IF NOT EXISTS idx_denuncias_hash ON denuncias(hash);
 CREATE INDEX IF NOT EXISTS idx_denunciantes_cedula ON denunciantes(cedula);
+CREATE INDEX IF NOT EXISTS idx_denunciantes_matricula ON denunciantes(matricula);
 CREATE INDEX IF NOT EXISTS idx_supuestos_autores_denuncia ON supuestos_autores(denuncia_id);
 CREATE INDEX IF NOT EXISTS idx_visitas_denuncia ON visitas_denuncias(denuncia_id);
 CREATE INDEX IF NOT EXISTS idx_visitas_usuario ON visitas_denuncias(usuario_id);
