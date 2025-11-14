@@ -679,9 +679,9 @@ export function generarPDF(
   
   if (hayAbogadoConCartaPoder && abogadoConCartaPoder) {
     // Cuando hay abogado con carta poder, firma el abogado
-    const { nombre, documento, matricula } = obtenerDatosAbogado(abogadoConCartaPoder)
+    const { nombre, matricula } = obtenerDatosAbogado(abogadoConCartaPoder)
     nombreFirma = nombre
-    docFirma = documento ? `DOC.: ${documento}` : `MATRÍCULA: ${matricula}`
+    docFirma = `MATRÍCULA PROF. Nº ${matricula}`
     etiquetaFirma = 'REPRESENTANTE LEGAL'
   } else {
     // Caso normal: firma el denunciante
