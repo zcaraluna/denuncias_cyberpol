@@ -130,3 +130,5 @@ function ocultarDocumentoParcial(tipo: string | null, numero: string | null): st
   return `${tipoDoc} ${'*'.repeat(numLimpio.length - 3)}${ultimos3}`
 }
 
+
+

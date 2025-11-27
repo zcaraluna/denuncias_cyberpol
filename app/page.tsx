@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -9,6 +9,22 @@ export default function LoginPage() {
   const [contraseña, setContraseña] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [modoPruebas, setModoPruebas] = useState(false)
+
+  // Cargar estado del modo pruebas desde localStorage
+  useEffect(() => {
+    const savedMode = localStorage.getItem('modoPruebas')
+    if (savedMode !== null) {
+      setModoPruebas(savedMode === 'true')
+    }
+  }, [])
+
+  // Guardar estado en localStorage cuando cambie
+  const toggleModoPruebas = () => {
+    const nuevoValor = !modoPruebas
+    setModoPruebas(nuevoValor)
+    localStorage.setItem('modoPruebas', String(nuevoValor))
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -98,6 +114,29 @@ export default function LoginPage() {
             {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
           </button>
         </form>
+
+        {/* Switch para modo pruebas - discreto en la esquina */}
+        <div className="mt-6 pt-4 border-t border-gray-200">
+          <label className="flex items-center justify-between cursor-pointer group">
+            <span className="text-xs text-gray-400 group-hover:text-gray-600 transition-colors">
+              Modo Pruebas
+            </span>
+            <div className="relative">
+              <input
+                type="checkbox"
+                checked={modoPruebas}
+                onChange={toggleModoPruebas}
+                className="sr-only peer"
+              />
+              <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-500"></div>
+            </div>
+          </label>
+          {modoPruebas && (
+            <p className="text-xs text-purple-500 mt-1">
+              ✓ Botones de autocompletado activados
+            </p>
+          )}
+        </div>
       </div>
     </div>
   )

@@ -315,6 +315,15 @@ export default function NuevaDenunciaPage() {
   const [mostrarModalVistaPrevia, setMostrarModalVistaPrevia] = useState(false)
   const [textoVistaPrevia, setTextoVistaPrevia] = useState<string>('')
   const [generandoVistaPrevia, setGenerandoVistaPrevia] = useState(false)
+  const [modoPruebas, setModoPruebas] = useState(false)
+
+  // Cargar estado del modo pruebas desde localStorage
+  useEffect(() => {
+    const savedMode = localStorage.getItem('modoPruebas')
+    if (savedMode !== null) {
+      setModoPruebas(savedMode === 'true')
+    }
+  }, [])
 
   const tiposDenuncia = [
     'Estafa',
@@ -2078,13 +2087,15 @@ export default function NuevaDenunciaPage() {
                 )}
                 
                 {/* Botón temporal para completar automáticamente (SOLO PARA PRUEBAS) */}
-                <button
-                  type="button"
-                  onClick={completarFormularioAutomatico}
-                  className="mt-2 px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
-                >
-                  🎲 Completar automáticamente (PRUEBAS)
-                </button>
+                {modoPruebas && (
+                  <button
+                    type="button"
+                    onClick={completarFormularioAutomatico}
+                    className="mt-2 px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
+                  >
+                    Completar automáticamente (PRUEBAS)
+                  </button>
+                )}
               </div>
 
               {/* Nombres y Apellidos */}
@@ -2785,15 +2796,17 @@ export default function NuevaDenunciaPage() {
             {autorConocido === 'Conocido' && (
               <div className="space-y-4 mb-6">
                 {/* Botón para completar automáticamente (SOLO PARA PRUEBAS) */}
-                <div className="mb-4">
-                  <button
-                    type="button"
-                    onClick={completarAutorAutomatico}
-                    className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
-                  >
-                    🎲 Completar automáticamente (PRUEBAS)
-                  </button>
-                </div>
+                {modoPruebas && (
+                  <div className="mb-4">
+                    <button
+                      type="button"
+                      onClick={completarAutorAutomatico}
+                      className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
+                    >
+                      Completar automáticamente (PRUEBAS)
+                    </button>
+                  </div>
+                )}
 
                 {/* Nombres y Cédula */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
