@@ -193,7 +193,7 @@ export async function GET(
     }
 
     // Generar PDF según el formato seleccionado
-    const pdfBuffer = generarPDF(row.orden, denunciante, datosDenuncia)
+    const pdfBuffer = await generarPDF(row.orden, denunciante, datosDenuncia)
 
     return new Response(new Uint8Array(pdfBuffer), {
       headers: {

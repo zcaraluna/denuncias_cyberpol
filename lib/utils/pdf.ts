@@ -1,6 +1,10 @@
 import { jsPDF } from 'jspdf'
 import fs from 'fs'
 import path from 'path'
+import QRCode from 'qrcode'
+
+// URL base para la verificación de denuncias (se puede configurar con variable de entorno)
+const URL_BASE_VERIFICACION = process.env.NEXT_PUBLIC_URL_BASE || 'https://neo.s1mple.cloud'
 
 const datosOficina = {
   direccion: "E. V. Haedo 725 casi O'Leary",
@@ -371,11 +375,11 @@ function agregarEncabezado(doc: jsPDF, titulo: string, anchoPagina: number) {
   doc.text(titulo, 108, 72, { align: 'center' })
 }
 
-export function generarPDF(
+export async function generarPDF(
   numeroOrden: number,
   denunciante: Denunciante,
   datosDenuncia: DatosDenuncia
-): Buffer {
+): Promise<Buffer> {
   // Determinar el tamaño de papel (A4: 210x297mm, Oficio: 216x330mm)
   const formatoPapel = datosDenuncia.tipo_papel === 'a4' ? [210, 297] : [216, 330]
   
@@ -507,7 +511,7 @@ export function generarPDF(
   if (tieneRango && fechaHechoFin) {
     parrafo2 += `, ocurrido entre las ${datosDenuncia.hora_hecho} horas del ${fechaHecho} y las ${datosDenuncia.hora_hecho_fin} horas del ${fechaHechoFin}, en la dirección ${datosDenuncia.lugar_hecho.toUpperCase()}`
   } else {
-    parrafo2 += `, ocurrido en fecha ${fechaHecho} siendo las ${datosDenuncia.hora_hecho} aproximadamente, en la dirección ${datosDenuncia.lugar_hecho.toUpperCase()}`
+  parrafo2 += `, ocurrido en fecha ${fechaHecho} siendo las ${datosDenuncia.hora_hecho} aproximadamente, en la dirección ${datosDenuncia.lugar_hecho.toUpperCase()}`
   }
 
   if (datosDenuncia.nombre_autor) {
@@ -679,7 +683,7 @@ export function generarPDF(
     agregarEncabezado(doc, titulo, formatoPapel[0])
     yActual = 80
   }
-  
+
   // Agregar firmas en la última página
   // Calcular la posición máxima para las firmas (asegurando que quepan completas)
   const yFirmasMaxima = alturaPagina - alturaFirmas - margenInferior
@@ -713,10 +717,32 @@ export function generarPDF(
   doc.setFont('helvetica', 'bold')
   doc.text(etiquetaMostrar, 48, yFirmas + 17, { align: 'center' })
 
-  // Centro - Hash
+  // Centro - QR y Hash
+  try {
+    // Generar código QR con la URL de verificación
+    const urlVerificacion = `${URL_BASE_VERIFICACION}/verificar/${datosDenuncia.hash}`
+    const qrDataUrl = await QRCode.toDataURL(urlVerificacion, {
+      width: 80,
+      margin: 1,
+      color: {
+        dark: '#000000',
+        light: '#ffffff'
+      }
+    })
+    
+    // Agregar QR centrado encima del hash (22x22mm)
+    const qrSize = 22
+    const qrX = 108 - (qrSize / 2) // Centrado en x=108
+    const qrY = yFirmas - 7 // Encima de la línea de firma
+    doc.addImage(qrDataUrl, 'PNG', qrX, qrY, qrSize, qrSize)
+  } catch (qrError) {
+    console.error('Error generando QR:', qrError)
+  }
+  
+  // Hash debajo del QR (con espacio suficiente para no solaparse)
   doc.setFontSize(8)
   doc.setFont('helvetica', 'bold')
-  doc.text(datosDenuncia.hash, 108, yFirmas + 7, { align: 'center' })
+  doc.text(datosDenuncia.hash, 108, yFirmas + 18, { align: 'center' })
 
   // Firma derecha - Denunciante o Abogado (si hay carta poder)
   let nombreFirma: string
@@ -978,11 +1004,11 @@ export function generarTextoPDF(
   return texto
 }
 
-export function generarPDFFormato2(
+export async function generarPDFFormato2(
   numeroOrden: number,
   denunciante: Denunciante,
   datosDenuncia: DatosDenuncia
-): Buffer {
+): Promise<Buffer> {
   // Determinar el tamaño de papel (A4: 210x297mm, Oficio: 216x330mm)
   const formatoPapel = datosDenuncia.tipo_papel === 'a4' ? [210, 297] : [216, 330]
   
@@ -1328,10 +1354,32 @@ export function generarPDFFormato2(
   doc.setFont('helvetica', 'bold')
   doc.text(etiquetaMostrar, 48, yFirmasFinal + 17, { align: 'center' })
 
-  // Centro - Hash
+  // Centro - QR y Hash
+  try {
+    // Generar código QR con la URL de verificación
+    const urlVerificacion = `${URL_BASE_VERIFICACION}/verificar/${datosDenuncia.hash}`
+    const qrDataUrl = await QRCode.toDataURL(urlVerificacion, {
+      width: 80,
+      margin: 1,
+      color: {
+        dark: '#000000',
+        light: '#ffffff'
+      }
+    })
+    
+    // Agregar QR centrado encima del hash (22x22mm)
+    const qrSize = 22
+    const qrX = 108 - (qrSize / 2) // Centrado en x=108
+    const qrY = yFirmasFinal - 7 // Encima de la línea de firma
+    doc.addImage(qrDataUrl, 'PNG', qrX, qrY, qrSize, qrSize)
+  } catch (qrError) {
+    console.error('Error generando QR:', qrError)
+  }
+  
+  // Hash debajo del QR (con espacio suficiente para no solaparse)
   doc.setFontSize(8)
   doc.setFont('helvetica', 'bold')
-  doc.text(datosDenuncia.hash, 108, yFirmasFinal + 7, { align: 'center' })
+  doc.text(datosDenuncia.hash, 108, yFirmasFinal + 18, { align: 'center' })
 
   // Firma derecha - Denunciante
   const docDenunciante = `NUMERO DE DOC.: ${denunciante['Número de Documento'] || denunciante['Cédula de Identidad']}`
