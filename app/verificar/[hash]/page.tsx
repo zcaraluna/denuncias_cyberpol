@@ -157,18 +157,23 @@ export default function VerificarDenunciaPage() {
                 Datos del Hecho Denunciado
               </h3>
               <div className="grid grid-cols-2 gap-4">
-                <InfoItem 
-                  label="Fecha del Hecho" 
-                  value={datos.fechaHechoFin 
-                    ? `${datos.fechaHecho} al ${datos.fechaHechoFin}` 
-                    : datos.fechaHecho} 
-                />
-                <InfoItem 
-                  label="Hora del Hecho" 
-                  value={datos.horaHechoFin 
-                    ? `${datos.horaHecho} a ${datos.horaHechoFin}` 
-                    : datos.horaHecho} 
-                />
+                {datos.fechaHechoFin ? (
+                  <>
+                    <InfoItem 
+                      label="Inicio del Hecho" 
+                      value={`${datos.fechaHecho} a las ${datos.horaHecho}`} 
+                    />
+                    <InfoItem 
+                      label="Fin del Hecho" 
+                      value={`${datos.fechaHechoFin} a las ${datos.horaHechoFin || '—'}`} 
+                    />
+                  </>
+                ) : (
+                  <>
+                    <InfoItem label="Fecha del Hecho" value={datos.fechaHecho} />
+                    <InfoItem label="Hora del Hecho" value={datos.horaHecho} />
+                  </>
+                )}
                 <InfoItem label="Lugar del Hecho" value={datos.lugarHecho} className="col-span-2" />
               </div>
             </div>
