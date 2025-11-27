@@ -99,6 +99,22 @@ export interface DatosDenuncia {
   involucrados?: DenuncianteInvolucrado[]
 }
 
+// Función para sanitizar caracteres especiales que jsPDF no puede renderizar con Helvetica
+const sanitizarTextoParaPDF = (texto: string): string => {
+  return texto
+    .replace(/≤/g, 'de')        // menor o igual → "de"
+    .replace(/≥/g, 'de')        // mayor o igual → "de"  
+    .replace(/–/g, '-')         // guión largo → guión normal
+    .replace(/—/g, '-')         // guión extra largo → guión normal
+    .replace(/'/g, "'")         // comilla tipográfica → comilla simple
+    .replace(/'/g, "'")         // comilla tipográfica → comilla simple
+    .replace(/"/g, '"')         // comilla tipográfica → comilla doble
+    .replace(/"/g, '"')         // comilla tipográfica → comilla doble
+    .replace(/…/g, '...')       // elipsis → tres puntos
+    .replace(/•/g, '-')         // viñeta → guión
+    .replace(/°/g, 'o')         // símbolo de grado → o
+}
+
 const formatearDocumento = (tipo?: string | null, numero?: string | null) => {
   const tipoLimpio = tipo ? tipo.trim() : ''
   const numeroLimpio = numero ? numero.trim() : ''
@@ -468,7 +484,9 @@ export function generarPDF(
     if (index > 0) {
       yActualIntroduccion += alturaLinea
     }
-    const lineas = doc.splitTextToSize(parrafo, 156)
+    // Sanitizar caracteres especiales antes de procesar
+    const parrafoSanitizado = sanitizarTextoParaPDF(parrafo)
+    const lineas = doc.splitTextToSize(parrafoSanitizado, 156)
     doc.text(lineas, 30, yActualIntroduccion, { align: 'justify', maxWidth: 156 })
     yActualIntroduccion += lineas.length * alturaLinea
   })
@@ -557,7 +575,9 @@ export function generarPDF(
   }
 
   const yParrafo2 = yActualIntroduccion
-  const splitParrafo2 = doc.splitTextToSize(parrafo2, 156)
+  // Sanitizar caracteres especiales antes de procesar
+  const parrafo2Sanitizado = sanitizarTextoParaPDF(parrafo2)
+  const splitParrafo2 = doc.splitTextToSize(parrafo2Sanitizado, 156)
   doc.text(splitParrafo2, 30, yParrafo2, { align: 'justify', maxWidth: 156 })
 
   // Relato
@@ -581,7 +601,9 @@ export function generarPDF(
     : 'LA PERSONA RECURRENTE ES INFORMADA'
   const relato = `${datosDenuncia.relato}\nNO HABIENDO NADA MÁS QUE AGREGAR SE DA POR TERMINADA EL ACTA, PREVIA LECTURA Y RATIFICACIÓN DE SU CONTENIDO, ${textoFirmas}, EN 3 (TRES) COPIAS DEL MISMO TENOR Y EFECTO. ${textoPersonas} SOBRE: ARTÍCULO 289.- "DENUNCIA FALSA"; ARTÍCULO 242.- "TESTIMONIO FALSO"; ARTÍCULO 243.- "DECLARACIÓN FALSA".`
   doc.setFont('helvetica', 'italic')
-  const splitRelato = doc.splitTextToSize(relato, 156)
+  // Sanitizar caracteres especiales antes de procesar
+  const relatoSanitizado = sanitizarTextoParaPDF(relato)
+  const splitRelato = doc.splitTextToSize(relatoSanitizado, 156)
   
   // Escribir el texto del relato con manejo de páginas
   let yActual = yRelato + 5
@@ -589,10 +611,10 @@ export function generarPDF(
   const alturaLineaRelato = 6
   // Altura máxima para páginas intermedias (usar casi todo el espacio, solo 5mm de margen)
   const alturaMaximaIntermedia = formatoPapel[1] - 5
-  // Altura máxima para la última página (dejar espacio suficiente para firmas: ~65mm para A4, ~75mm para Oficio)
-  // Las firmas necesitan: línea (yFirmas) + nombre (yFirmas + 7) + documento (yFirmas + 12) + etiqueta (yFirmas + 17) + margen
-  // Total aprox: 20mm para contenido + 10mm de espacio antes + 5mm margen final = ~35mm mínimo, pero usamos más por seguridad
-  const espacioReservadoFirmas = formatoPapel[1] === 297 ? 65 : 75 // 65mm para A4, 75mm para Oficio
+  // Altura máxima para la última página (dejar espacio suficiente para firmas)
+  // Las firmas necesitan: línea (yFirmas) + nombre (+7) + documento (+12) + etiqueta (+17) + margen inferior (5mm)
+  // Total real: ~22mm, pero reservamos 28mm para mayor seguridad
+  const espacioReservadoFirmas = 28 // Mismo valor para A4 y Oficio
   const alturaMaximaUltima = formatoPapel[1] - espacioReservadoFirmas
 
   while (textoRestante.length > 0) {
