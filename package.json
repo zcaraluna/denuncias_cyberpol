@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "TURBOPACK=0 next build",
     "start": "next start -p 6368",
     "lint": "next lint",
     "init-db": "node scripts/init-db.js"
@@ -31,7 +31,6 @@
     "react-leaflet": "^4.2.1",
     "react-select": "^5.10.2",
     "recharts": "^3.3.0",
-    "@tailwindcss/postcss": "^3.4.1",
     "tailwindcss": "^3.3.5",
     "xlsx": "^0.18.5",
     "zod": "^3.22.4"
