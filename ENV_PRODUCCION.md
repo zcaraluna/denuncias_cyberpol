@@ -68,6 +68,22 @@ NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=[TU_API_KEY_DE_GOOGLE_MAPS]
 # El puerto ya está configurado en package.json como 6368
 # Solo cambiar si necesitas usar otro puerto
 PORT=6368
+
+
+# ============================================
+# VERIFICACIÓN VPN (OPCIONAL)
+# ============================================
+# Habilitar verificación VPN (true/false)
+VPN_REQUIRED=true
+
+# Rango de IPs VPN (por defecto 10.8.0.0/24)
+VPN_RANGE=10.8.0.0/24
+
+# Dominios que requieren VPN (separados por comas)
+VPN_REQUIRED_DOMAINS=denuncias.cyberpol.com.py
+
+# URL de la API para verificar VPN (por defecto usa el mismo servidor)
+VPN_API_URL=http://127.0.0.1:6368
 ```
 
 ## 📝 Ejemplo real completo
@@ -89,6 +105,12 @@ NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=AIzaSyBxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 # Puerto
 PORT=6368
+
+# Verificación VPN
+VPN_REQUIRED=true
+VPN_RANGE=10.8.0.0/24
+VPN_REQUIRED_DOMAINS=denuncias.cyberpol.com.py
+VPN_API_URL=http://127.0.0.1:6368
 ```
 
 ## ✅ Variables mínimas requeridas
@@ -156,4 +178,8 @@ NODE_ENV=production
 - **NEXT_PUBLIC_URL_BASE**: Esta URL debe ser accesible públicamente, ya que se usa en los QR codes de las denuncias
 - **NODE_ENV**: Siempre debe ser `production` en el servidor de producción
 - **PORT**: Ya está configurado en `package.json` como 6368, solo cambia si necesitas otro puerto
+- **VPN_REQUIRED**: Si es `true`, solo permite acceso desde IPs de la red VPN o conexiones activas registradas
+- **VPN_RANGE**: Rango de IPs de la red VPN (por defecto `10.8.0.0/24` para OpenVPN)
+- **VPN_REQUIRED_DOMAINS**: Lista de dominios que requieren VPN (separados por comas)
+- **VPN_API_URL**: URL interna para verificar el estado VPN (por defecto `http://127.0.0.1:6368`)
 
