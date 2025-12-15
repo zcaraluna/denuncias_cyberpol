@@ -54,7 +54,22 @@ input::placeholder, textarea::placeholder {
 
 /* Estilos para labels (asegurar que el texto se vea) */
 label {
-  color: inherit;
+  color: #374151 !important; /* text-gray-700 equivalente - color oscuro por defecto */
+}
+
+/* Permitir que las clases de Tailwind sobrescriban cuando sea necesario */
+label.text-white,
+label.text-gray-50,
+label.text-gray-100,
+label.text-gray-200,
+label.text-gray-300,
+label.text-gray-400,
+label.text-gray-500,
+label.text-gray-600,
+label.text-gray-800,
+label.text-gray-900,
+label.text-black {
+  color: inherit !important;
 }
 
 /* Estilos para inputs tipo radio y checkbox */

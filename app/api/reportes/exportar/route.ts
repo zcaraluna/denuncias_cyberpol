@@ -108,13 +108,27 @@ export async function GET(request: NextRequest) {
         }
       })
     } else {
-      // Generar Excel usando dynamic import para evitar problemas con Turbopack
-      const XLSX = await import('xlsx')
-      const worksheet = XLSX.utils.json_to_sheet(datos)
-      const workbook = XLSX.utils.book_new()
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'Denuncias')
+      // Generar Excel usando exceljs (alternativa segura a xlsx)
+      const ExcelJS = await import('exceljs')
+      const workbook = new ExcelJS.Workbook()
+      const worksheet = workbook.addWorksheet('Denuncias')
       
-      const excelBuffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' })
+      // Agregar encabezados
+      if (datos.length > 0) {
+        worksheet.columns = Object.keys(datos[0]).map(key => ({
+          header: key,
+          key: key,
+          width: 15
+        }))
+        
+        // Agregar datos
+        datos.forEach(row => {
+          worksheet.addRow(row)
+        })
+      }
+      
+      // Generar buffer
+      const excelBuffer = await workbook.xlsx.writeBuffer()
       
       return new NextResponse(excelBuffer, {
         headers: {

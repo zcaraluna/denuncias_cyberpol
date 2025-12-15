@@ -3848,7 +3848,8 @@ export default function NuevaDenunciaPage() {
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              {/* Campos ocultos: Monto estimado de daño patrimonial y Moneda */}
+              <div className="hidden grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Monto estimado de daño patrimonial
