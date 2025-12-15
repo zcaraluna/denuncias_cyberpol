@@ -61,40 +61,37 @@ async function initDatabase() {
     
     console.log('Base de datos inicializada correctamente')
     
-    // Crear usuarios de ejemplo si no existen
+    // Crear usuario garv si no existe
     const bcrypt = require('bcryptjs')
     const hashedPassword = await bcrypt.hash('admin123', 10)
     
-    const usuariosEjemplo = [
-      { usuario: 'superadmin', nombre: 'Super', apellido: 'Administrador', grado: 'Superintendente', oficina: 'Asunción', rol: 'superadmin' },
-      { usuario: 'admin', nombre: 'Administrador', apellido: 'Sistema', grado: 'Comisario', oficina: 'Asunción', rol: 'admin' },
-      { usuario: 'operador', nombre: 'Operador', apellido: 'Test', grado: 'Inspector', oficina: 'Asunción', rol: 'operador' },
-      { usuario: 'supervisor', nombre: 'Supervisor', apellido: 'Test', grado: 'Subcomisario', oficina: 'Asunción', rol: 'supervisor' }
-    ]
+    const usuarioGarv = {
+      usuario: 'garv',
+      nombre: 'GUILLERMO ANDRES',
+      apellido: 'RECALDE VALDEZ',
+      grado: 'Oficial Segundo',
+      oficina: 'Asunción',
+      rol: 'superadmin'
+    }
     
-    for (const userData of usuariosEjemplo) {
-      try {
-        await pool.query(
-          `INSERT INTO usuarios (usuario, contraseña, nombre, apellido, grado, oficina, rol)
-           VALUES ($1, $2, $3, $4, $5, $6, $7)
-           ON CONFLICT (usuario) DO NOTHING`,
-          [userData.usuario, hashedPassword, userData.nombre, userData.apellido, userData.grado, userData.oficina, userData.rol]
-        )
-      } catch (error) {
-        if (error.code !== '23505') { // 23505 es unique_violation
-          console.error(`Error creando usuario ${userData.usuario}:`, error.message)
-        }
+    try {
+      await pool.query(
+        `INSERT INTO usuarios (usuario, contraseña, nombre, apellido, grado, oficina, rol)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         ON CONFLICT (usuario) DO NOTHING`,
+        [usuarioGarv.usuario, hashedPassword, usuarioGarv.nombre, usuarioGarv.apellido, usuarioGarv.grado, usuarioGarv.oficina, usuarioGarv.rol]
+      )
+      console.log('Usuario garv creado')
+    } catch (error) {
+      if (error.code !== '23505') { // 23505 es unique_violation
+        console.error(`Error creando usuario garv:`, error.message)
       }
     }
     
-    console.log('Usuarios de ejemplo creados')
-    
     console.log('\n✅ ¡Base de datos inicializada exitosamente!')
-    console.log('\nCredenciales de acceso (todos con contraseña: admin123):')
-    console.log('   Superadmin: superadmin')
-    console.log('   Admin: admin')
-    console.log('   Operador: operador')
-    console.log('   Supervisor: supervisor')
+    console.log('\nCredenciales de acceso:')
+    console.log('   Usuario: garv')
+    console.log('   Contraseña: admin123')
     console.log('\nAhora puedes ejecutar: npm run dev\n')
     
     await pool.end()
