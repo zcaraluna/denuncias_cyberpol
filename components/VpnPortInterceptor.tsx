@@ -11,6 +11,8 @@ export default function VpnPortInterceptor() {
     // Solo ejecutar en el cliente
     if (typeof window === 'undefined') return
 
+    console.log('[VPN Port Interceptor] Inicializando interceptor de puerto VPN...')
+
     // Función para obtener el puerto VPN
     const getVpnPort = async (): Promise<string | null> => {
       try {
@@ -39,7 +41,10 @@ export default function VpnPortInterceptor() {
             // Guardar en sessionStorage con timestamp
             sessionStorage.setItem('vpn-port', data.port)
             sessionStorage.setItem('vpn-port-timestamp', Date.now().toString())
+            console.log(`[VPN Port Interceptor] Puerto VPN obtenido: ${data.port}`)
             return data.port
+          } else {
+            console.warn('[VPN Port Interceptor] No se encontró puerto VPN en la respuesta:', data)
           }
         }
       } catch (error) {
@@ -69,6 +74,9 @@ export default function VpnPortInterceptor() {
       const headers = new Headers(options.headers)
       if (vpnPort) {
         headers.set('X-VPN-Port', vpnPort)
+        console.log(`[VPN Port Interceptor] Agregando header X-VPN-Port: ${vpnPort} a solicitud: ${urlString}`)
+      } else {
+        console.warn(`[VPN Port Interceptor] No se pudo obtener puerto VPN para solicitud: ${urlString}`)
       }
 
       // Llamar fetch original con headers actualizados
