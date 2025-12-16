@@ -40,6 +40,8 @@ CREATE TABLE IF NOT EXISTS denuncias (
     hora_denuncia VARCHAR(10),
     fecha_hecho DATE,
     hora_hecho VARCHAR(10),
+    fecha_hecho_fin DATE,
+    hora_hecho_fin VARCHAR(10),
     tipo_denuncia VARCHAR(200),
     otro_tipo VARCHAR(200),
     relato TEXT,
