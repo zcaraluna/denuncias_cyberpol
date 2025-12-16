@@ -67,15 +67,13 @@ export async function isVpnConnected(request: Request): Promise<boolean> {
   }
   
   // Si no está en el rango VPN, verificar usando el archivo de estado de OpenVPN
+  // Esto es más confiable que depender de hooks que pueden fallar
   try {
     const apiUrl = process.env.VPN_API_URL || 'http://127.0.0.1:6368';
     const checkUrl = `${apiUrl}/api/vpn/check-status?realIp=${encodeURIComponent(clientIp)}`;
     
-    console.log(`[VPN Utils] Verificando conexión VPN para IP: ${clientIp}`);
-    console.log(`[VPN Utils] URL de verificación: ${checkUrl}`);
-    
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 2000); // Aumentado a 2 segundos
+    const timeoutId = setTimeout(() => controller.abort(), 1000);
     
     try {
       const response = await fetch(checkUrl, {
@@ -87,22 +85,14 @@ export async function isVpnConnected(request: Request): Promise<boolean> {
       
       if (response.ok) {
         const data = await response.json();
-        console.log(`[VPN Utils] Respuesta de verificación VPN:`, JSON.stringify(data, null, 2));
+        console.log(`[VPN Utils] Verificación para IP ${clientIp}:`, data);
         return data.isActive === true;
-      } else {
-        const errorText = await response.text();
-        console.error(`[VPN Utils] Error en respuesta HTTP ${response.status}:`, errorText);
       }
     } catch (fetchError) {
       clearTimeout(timeoutId);
-      if (fetchError instanceof Error) {
-        if (fetchError.name === 'AbortError') {
-          console.error('[VPN Utils] Timeout verificando estado VPN (2s)');
-        } else {
-          console.error('[VPN Utils] Error verificando estado:', fetchError.message, fetchError.stack);
-        }
-      } else {
-        console.error('[VPN Utils] Error desconocido verificando estado:', fetchError);
+      // Si es timeout, no es crítico
+      if (fetchError instanceof Error && fetchError.name !== 'AbortError') {
+        console.error('[VPN Utils] Error verificando estado:', fetchError.message);
       }
     }
   } catch (error) {

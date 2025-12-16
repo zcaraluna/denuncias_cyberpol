@@ -15,30 +15,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'realIp es requerido' }, { status: 400 });
     }
 
-    // Intentar múltiples ubicaciones posibles del archivo de estado
-    const possibleStatusFiles = [
-      '/run/openvpn/server.status',
-      '/var/log/openvpn-status.log',
-      '/etc/openvpn/server.status',
-    ];
+    const statusFile = '/var/log/openvpn-status.log';
     
-    let statusFile: string | null = null;
-    for (const file of possibleStatusFiles) {
-      if (existsSync(file)) {
-        statusFile = file;
-        break;
-      }
-    }
-    
-    if (!statusFile) {
+    // Verificar si el archivo existe
+    if (!existsSync(statusFile)) {
       return NextResponse.json({ 
         isActive: false,
         error: 'Archivo de estado no encontrado',
-        searchedFiles: possibleStatusFiles,
-        debug: {
-          fileExists: false,
-          searchedIp: realIp,
-        }
+        statusFile 
       });
     }
     
@@ -249,8 +233,6 @@ export async function GET(request: NextRequest) {
           routingTableLastRef: routingTableLastRef?.toISOString() || null,
           fileUpdatedAt: fileUpdatedAt?.toISOString() || null,
           searchedIp: realIp,
-          fileContentFull: content, // Contenido completo del archivo
-          fileLines: lines.length,
           allClientListIps, // Todas las IPs encontradas en CLIENT LIST
           allRoutingTableIps, // Todas las IPs encontradas en ROUTING TABLE
           clientListCount: allClientListIps.length,
