@@ -22,8 +22,28 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ 
         isActive: false,
         error: 'Archivo de estado no encontrado',
-        statusFile 
+        statusFile,
+        debug: {
+          fileExists: false,
+          searchedIp: realIp,
+        }
       });
+    }
+    
+    // Obtener información del archivo
+    let fileStats: any = null;
+    try {
+      const stats = await stat(statusFile);
+      fileStats = {
+        exists: true,
+        size: stats.size,
+        lastModified: stats.mtime.toISOString(),
+        ageSeconds: Math.floor((Date.now() - stats.mtime.getTime()) / 1000),
+      };
+    } catch (statError) {
+      fileStats = {
+        error: statError instanceof Error ? statError.message : 'Unknown error'
+      };
     }
 
     try {
@@ -184,7 +204,16 @@ export async function GET(request: NextRequest) {
         connectionInfo,
         checkedAt: new Date().toISOString(),
         fileLastModified: lastModified.toISOString(),
-        fileAgeSeconds: Math.floor((Date.now() - lastModified.getTime()) / 1000)
+        fileAgeSeconds: Math.floor((Date.now() - lastModified.getTime()) / 1000),
+        fileStats,
+        debug: {
+          foundInClientList,
+          hasRoutingTableLastRef: routingTableLastRef !== null,
+          routingTableLastRef: routingTableLastRef?.toISOString() || null,
+          fileUpdatedAt: fileUpdatedAt?.toISOString() || null,
+          searchedIp: realIp,
+          fileContentPreview: content.substring(0, 500), // Primeros 500 caracteres para debugging
+        }
       });
       
       response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
@@ -208,4 +237,5 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
 
