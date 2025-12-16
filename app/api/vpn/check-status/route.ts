@@ -15,7 +15,32 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'realIp es requerido' }, { status: 400 });
     }
 
-    const statusFile = '/var/log/openvpn-status.log';
+    // Intentar múltiples ubicaciones posibles del archivo de estado
+    const possibleStatusFiles = [
+      '/run/openvpn/server.status',
+      '/var/log/openvpn-status.log',
+      '/etc/openvpn/server.status',
+    ];
+    
+    let statusFile: string | null = null;
+    for (const file of possibleStatusFiles) {
+      if (existsSync(file)) {
+        statusFile = file;
+        break;
+      }
+    }
+    
+    if (!statusFile) {
+      return NextResponse.json({ 
+        isActive: false,
+        error: 'Archivo de estado no encontrado',
+        searchedFiles: possibleStatusFiles,
+        debug: {
+          fileExists: false,
+          searchedIp: realIp,
+        }
+      });
+    }
     
     // Verificar si el archivo existe
     if (!existsSync(statusFile)) {
@@ -82,6 +107,7 @@ export async function GET(request: NextRequest) {
       let commonName = '';
       let realAddress = '';
       let virtualAddress = '';
+      const allClientListIps: string[] = []; // Para debugging
       
       for (const line of lines) {
         const trimmedLine = line.trim();
@@ -105,14 +131,19 @@ export async function GET(request: NextRequest) {
         }
         
         // Buscar en CLIENT LIST
-        if (inClientList && trimmedLine && !trimmedLine.startsWith('#') && !trimmedLine.startsWith('Updated,') && !trimmedLine.startsWith('Common Name,')) {
+        if (inClientList && trimmedLine && !trimmedLine.startsWith('#') && !trimmedLine.startsWith('Updated,') && !trimmedLine.startsWith('Common Name,') && !trimmedLine.startsWith('HEADER,')) {
           const parts = trimmedLine.split(',');
           if (parts.length >= 2) {
             const addr = parts[1].trim();
             if (addr.includes(':')) {
               const ipFromAddress = addr.split(':')[0];
               
-              if (/^\d+\.\d+\.\d+\.\d+$/.test(ipFromAddress) && ipFromAddress === realIp) {
+              // Guardar todas las IPs encontradas para debugging
+              if (/^\d+\.\d+\.\d+\.\d+$/.test(ipFromAddress)) {
+                allClientListIps.push(ipFromAddress);
+              }
+              
+              if (ipFromAddress === realIp) {
                 foundInClientList = true;
                 commonName = parts[0]?.trim() || '';
                 realAddress = addr;
@@ -127,6 +158,7 @@ export async function GET(request: NextRequest) {
       
       // Buscar Last Ref en ROUTING TABLE
       inRoutingTable = false;
+      const allRoutingTableIps: string[] = []; // Para debugging
       for (const line of lines) {
         const trimmedLine = line.trim();
         
@@ -140,12 +172,17 @@ export async function GET(request: NextRequest) {
           continue;
         }
         
-        if (inRoutingTable && trimmedLine && !trimmedLine.startsWith('Virtual Address,') && trimmedLine.includes(realIp)) {
+        if (inRoutingTable && trimmedLine && !trimmedLine.startsWith('Virtual Address,') && !trimmedLine.startsWith('HEADER,')) {
           const routingParts = trimmedLine.split(',');
           if (routingParts.length >= 4) {
             const routingRealAddress = routingParts[2]?.trim();
             if (routingRealAddress && routingRealAddress.includes(':')) {
               const routingIpFromAddress = routingRealAddress.split(':')[0];
+              // Guardar todas las IPs encontradas para debugging
+              if (/^\d+\.\d+\.\d+\.\d+$/.test(routingIpFromAddress)) {
+                allRoutingTableIps.push(routingIpFromAddress);
+              }
+              
               if (routingIpFromAddress === realIp) {
                 const lastRefStr = routingParts[3]?.trim();
                 if (lastRefStr) {
@@ -212,23 +249,12 @@ export async function GET(request: NextRequest) {
           routingTableLastRef: routingTableLastRef?.toISOString() || null,
           fileUpdatedAt: fileUpdatedAt?.toISOString() || null,
           searchedIp: realIp,
-          fileContentPreview: content.substring(0, 500), // Primeros 500 caracteres para debugging
           fileContentFull: content, // Contenido completo del archivo
           fileLines: lines.length,
-          clientListLines: lines.filter((line, idx) => {
-            // Encontrar líneas que están en la sección CLIENT LIST
-            let inClientList = false;
-            for (let i = 0; i <= idx; i++) {
-              const trimmed = lines[i].trim();
-              if (trimmed === 'OpenVPN CLIENT LIST' || trimmed === 'CLIENT LIST') {
-                inClientList = true;
-              }
-              if (trimmed === 'ROUTING TABLE' || trimmed === 'GLOBAL STATS' || trimmed === 'END') {
-                inClientList = false;
-              }
-            }
-            return inClientList && !line.trim().startsWith('#') && !line.trim().startsWith('HEADER') && line.trim() !== '';
-          }).slice(0, 10), // Primeras 10 líneas de clientes
+          allClientListIps, // Todas las IPs encontradas en CLIENT LIST
+          allRoutingTableIps, // Todas las IPs encontradas en ROUTING TABLE
+          clientListCount: allClientListIps.length,
+          routingTableCount: allRoutingTableIps.length,
         }
       });
       
