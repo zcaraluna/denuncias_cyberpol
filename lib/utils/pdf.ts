@@ -808,14 +808,35 @@ export async function generarPDFAmpliacion(
     format: formatoPapel as [number, number],
   })
 
-  const año = datosDenuncia.fecha_denuncia.split('-')[0]
+  // Convertir fecha_denuncia a string si es necesario
+  const fechaDenunciaStr = datosDenuncia.fecha_denuncia instanceof Date 
+    ? datosDenuncia.fecha_denuncia.toISOString().split('T')[0]
+    : String(datosDenuncia.fecha_denuncia)
+  const año = fechaDenunciaStr.split('-')[0]
   const titulo = `AMPLIACIÓN Nº ${numeroAmpliacion} DE LA DENUNCIA Nº ${numeroOrden}/${año}`
 
-  const fechaDenuncia = formatDate(datosDenuncia.fecha_denuncia)
-  const fechaNacimiento = formatDate(denunciante['Fecha de Nacimiento'])
-  const fechaHecho = formatDate(datosDenuncia.fecha_hecho)
+  // Convertir fechas a string si vienen como Date
+  const fechaDenunciaParaFormat = datosDenuncia.fecha_denuncia instanceof Date
+    ? datosDenuncia.fecha_denuncia.toISOString().split('T')[0]
+    : String(datosDenuncia.fecha_denuncia)
+  const fechaNacimientoParaFormat = denunciante['Fecha de Nacimiento'] instanceof Date
+    ? denunciante['Fecha de Nacimiento'].toISOString().split('T')[0]
+    : String(denunciante['Fecha de Nacimiento'])
+  const fechaHechoParaFormat = datosDenuncia.fecha_hecho instanceof Date
+    ? datosDenuncia.fecha_hecho.toISOString().split('T')[0]
+    : String(datosDenuncia.fecha_hecho)
+  
+  const fechaDenuncia = formatDate(fechaDenunciaParaFormat)
+  const fechaNacimiento = formatDate(fechaNacimientoParaFormat)
+  const fechaHecho = formatDate(fechaHechoParaFormat)
+  
   const tieneRango = datosDenuncia.fecha_hecho_fin && datosDenuncia.hora_hecho_fin
-  const fechaHechoFin = tieneRango && datosDenuncia.fecha_hecho_fin ? formatDate(datosDenuncia.fecha_hecho_fin) : null
+  const fechaHechoFinParaFormat = tieneRango && datosDenuncia.fecha_hecho_fin
+    ? (datosDenuncia.fecha_hecho_fin instanceof Date
+        ? datosDenuncia.fecha_hecho_fin.toISOString().split('T')[0]
+        : String(datosDenuncia.fecha_hecho_fin))
+    : null
+  const fechaHechoFin = fechaHechoFinParaFormat ? formatDate(fechaHechoFinParaFormat) : null
   const involucrados = (datosDenuncia.involucrados || []).filter(
     (involucrado) => involucrado.rol !== 'principal'
   )

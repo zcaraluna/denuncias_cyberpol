@@ -80,6 +80,18 @@ export async function GET(
     const autor = autorResult.rows[0] || null
 
     // Obtener involucrados
+    // Función helper para convertir Date a string
+    const dateToString = (date: any): string => {
+      if (!date) return ''
+      if (date instanceof Date) {
+        const año = date.getFullYear()
+        const mes = String(date.getMonth() + 1).padStart(2, '0')
+        const dia = String(date.getDate()).padStart(2, '0')
+        return `${año}-${mes}-${dia}`
+      }
+      return String(date)
+    }
+
     const involucradosResult = await pool.query(
       `SELECT 
         di.id,
@@ -126,10 +138,10 @@ export async function GET(
       nacionalidad: involucrado.nacionalidad || null,
       estadoCivil: involucrado.estado_civil || null,
       edad: involucrado.edad ? String(involucrado.edad) : null,
-      fechaNacimiento: involucrado.fecha_nacimiento || null,
+      fechaNacimiento: involucrado.fecha_nacimiento ? dateToString(involucrado.fecha_nacimiento) : null,
       lugarNacimiento: involucrado.lugar_nacimiento || null,
       conCartaPoder: involucrado.con_carta_poder || false,
-      cartaPoderFecha: involucrado.carta_poder_fecha || null,
+      cartaPoderFecha: involucrado.carta_poder_fecha ? dateToString(involucrado.carta_poder_fecha) : null,
       cartaPoderNumero: involucrado.carta_poder_numero || null,
       cartaPoderNotario: involucrado.carta_poder_notario || null,
     }))
@@ -143,7 +155,7 @@ export async function GET(
       'Nacionalidad': row.nacionalidad,
       'Estado Civil': row.estado_civil,
       'Edad': String(row.edad),
-      'Fecha de Nacimiento': row.fecha_nacimiento,
+      'Fecha de Nacimiento': dateToString(row.fecha_nacimiento),
       'Lugar de Nacimiento': row.lugar_nacimiento,
       'Número de Teléfono': row.telefono,
       'Domicilio': row.domicilio,
@@ -152,13 +164,13 @@ export async function GET(
     }
 
     // Construir objeto DatosDenuncia
-    const fechaDenuncia = row.fecha_denuncia
+    const fechaDenuncia = dateToString(row.fecha_denuncia)
     const datosDenuncia: DatosDenuncia = {
       fecha_denuncia: fechaDenuncia,
       hora_denuncia: row.hora_denuncia,
-      fecha_hecho: row.fecha_hecho,
+      fecha_hecho: dateToString(row.fecha_hecho),
       hora_hecho: row.hora_hecho,
-      fecha_hecho_fin: row.fecha_hecho_fin || null,
+      fecha_hecho_fin: row.fecha_hecho_fin ? dateToString(row.fecha_hecho_fin) : null,
       hora_hecho_fin: row.hora_hecho_fin || null,
       tipo_denuncia: row.tipo_denuncia,
       otro_tipo: row.otro_tipo,
@@ -180,7 +192,7 @@ export async function GET(
       nacionalidad_autor: autor?.nacionalidad_autor || null,
       estado_civil_autor: autor?.estado_civil_autor || null,
       edad_autor: autor?.edad_autor ? String(autor.edad_autor) : null,
-      fecha_nacimiento_autor: autor?.fecha_nacimiento_autor || null,
+      fecha_nacimiento_autor: autor?.fecha_nacimiento_autor ? dateToString(autor.fecha_nacimiento_autor) : null,
       lugar_nacimiento_autor: autor?.lugar_nacimiento_autor || null,
       telefono_autor: autor?.telefono_autor || null,
       profesion_autor: autor?.profesion_autor || null,
