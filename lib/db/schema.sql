@@ -88,6 +88,7 @@ CREATE TABLE IF NOT EXISTS supuestos_autores (
     numero_cuenta_beneficiaria VARCHAR(200),
     nombre_cuenta_beneficiaria VARCHAR(200),
     entidad_bancaria VARCHAR(200),
+    descripcion_fisica TEXT,
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -120,6 +121,10 @@ CREATE TABLE IF NOT EXISTS denuncias_involucrados (
     denunciante_id INTEGER REFERENCES denunciantes(id) ON DELETE CASCADE,
     rol VARCHAR(30) NOT NULL,
     representa_denunciante_id INTEGER REFERENCES denunciantes(id) ON DELETE SET NULL,
+    con_carta_poder BOOLEAN DEFAULT FALSE,
+    carta_poder_fecha DATE,
+    carta_poder_numero VARCHAR(100),
+    carta_poder_notario VARCHAR(255),
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT check_rol_denuncia CHECK (rol IN ('principal', 'co-denunciante', 'abogado'))
 );
