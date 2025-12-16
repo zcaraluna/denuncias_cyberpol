@@ -57,7 +57,12 @@ export function getClientIp(request: Request): string {
  * Primero verifica si la IP está en el rango VPN
  * Si no, verifica si hay una conexión activa registrada en el archivo de estado de OpenVPN
  */
-export async function isVpnConnected(request: Request): Promise<boolean> {
+/**
+ * Verifica si el cliente está conectado a través de VPN
+ * Para el middleware inicial: solo verifica que haya VPN activa (permisivo)
+ * Para rutas protegidas: requiere puerto VPN si hay múltiples conexiones (estricto)
+ */
+export async function isVpnConnected(request: Request, requireStrictCheck: boolean = false): Promise<boolean> {
   const clientIp = getClientIp(request);
   const vpnRange = process.env.VPN_RANGE || '10.8.0.0/24';
   
@@ -72,7 +77,12 @@ export async function isVpnConnected(request: Request): Promise<boolean> {
     const apiUrl = process.env.VPN_API_URL || 'http://127.0.0.1:6368';
     // Intentar obtener puerto VPN del header si está disponible
     const vpnPort = request.headers.get('x-vpn-port');
-    const checkUrl = `${apiUrl}/api/vpn/check-status?realIp=${encodeURIComponent(clientIp)}${vpnPort ? `&vpnPort=${encodeURIComponent(vpnPort)}` : ''}`;
+    
+    // Para el middleware inicial, usar verificación permisiva (sin puerto requerido)
+    // Para rutas protegidas, usar verificación estricta (con puerto requerido si hay múltiples conexiones)
+    // Para el middleware inicial, usar modo permisivo (sin strict)
+    // Para rutas protegidas de API, usar modo estricto (con strict=true)
+    const checkUrl = `${apiUrl}/api/vpn/check-status?realIp=${encodeURIComponent(clientIp)}${vpnPort ? `&vpnPort=${encodeURIComponent(vpnPort)}` : ''}${requireStrictCheck ? '&strict=true' : ''}`;
     
     const controller = new AbortController();
     // Aumentado timeout de 1s a 2s para dar más tiempo si el servidor está bajo carga
@@ -99,7 +109,7 @@ export async function isVpnConnected(request: Request): Promise<boolean> {
       
       if (response.ok) {
         const data = await response.json();
-        console.log(`[VPN Utils] Verificación para IP ${clientIp}:`, data);
+        console.log(`[VPN Utils] Verificación para IP ${clientIp} (strict=${requireStrictCheck}):`, data);
         return data.isActive === true;
       } else {
         console.warn(`[VPN Utils] Verificación falló para IP ${clientIp}, status: ${response.status}`);
