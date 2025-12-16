@@ -213,6 +213,22 @@ export async function GET(request: NextRequest) {
           fileUpdatedAt: fileUpdatedAt?.toISOString() || null,
           searchedIp: realIp,
           fileContentPreview: content.substring(0, 500), // Primeros 500 caracteres para debugging
+          fileContentFull: content, // Contenido completo del archivo
+          fileLines: lines.length,
+          clientListLines: lines.filter((line, idx) => {
+            // Encontrar líneas que están en la sección CLIENT LIST
+            let inClientList = false;
+            for (let i = 0; i <= idx; i++) {
+              const trimmed = lines[i].trim();
+              if (trimmed === 'OpenVPN CLIENT LIST' || trimmed === 'CLIENT LIST') {
+                inClientList = true;
+              }
+              if (trimmed === 'ROUTING TABLE' || trimmed === 'GLOBAL STATS' || trimmed === 'END') {
+                inClientList = false;
+              }
+            }
+            return inClientList && !line.trim().startsWith('#') && !line.trim().startsWith('HEADER') && line.trim() !== '';
+          }).slice(0, 10), // Primeras 10 líneas de clientes
         }
       });
       
