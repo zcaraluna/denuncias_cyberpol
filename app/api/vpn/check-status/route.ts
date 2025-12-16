@@ -43,7 +43,23 @@ export async function GET(request: NextRequest) {
     }
 
     try {
+      // Obtener información del archivo ANTES de leerlo para verificar consistencia
+      const statsBefore = await stat(statusFile);
+      const mtimeBefore = statsBefore.mtime.getTime();
+      
       const content = await readFile(statusFile, 'utf-8');
+      
+      // Verificar que el archivo no cambió mientras se leía (consistencia)
+      const statsAfter = await stat(statusFile);
+      const mtimeAfter = statsAfter.mtime.getTime();
+      const fileChangedDuringRead = mtimeBefore !== mtimeAfter;
+      
+      // Log para debugging
+      console.log(`[VPN Status] Verificando IP: ${realIp}`);
+      console.log(`[VPN Status] Archivo existe, tamaño: ${content.length} bytes`);
+      if (fileChangedDuringRead) {
+        console.log(`[VPN Status] ⚠️ Archivo cambió durante la lectura (mtime antes: ${mtimeBefore}, después: ${mtimeAfter})`);
+      }
       
       const lines = content.split('\n');
       let found = false;
@@ -236,25 +252,62 @@ export async function GET(request: NextRequest) {
         }
       }
       
+      // REGLA PRINCIPAL: La conexión está activa SOLO si:
+      // 1. Está en CLIENT LIST (requisito obligatorio)
+      // 2. Y tiene Last Ref reciente (≤15s) O Connected Since reciente (≤30s)
+      
+      // REGLA 1: Si NO está en CLIENT LIST → INACTIVA (sin excepciones)
+      // NOTA: Confiamos en el parsing estructurado, NO en búsqueda simple de strings
+      // porque la IP podría aparecer en comentarios u otras secciones que no cuentan
+      
       // Determinar si la conexión está activa
       const now = Date.now();
       let isActive = false;
       
-      if (routingTableLastRef) {
-        const timeSinceLastRef = now - routingTableLastRef.getTime();
-        isActive = timeSinceLastRef <= 15 * 1000; // 15 segundos de umbral
-      } else if (foundInClientList) {
-        if (connectedSinceStr) {
+      // Verificar que el archivo se actualizó recientemente
+      const timeSinceFileUpdate = now - fileUpdatedAt.getTime();
+      // Aumentado a 30 segundos para dar más tolerancia al delay de actualización
+      // El archivo se actualiza cada 10s, así que 30s es un margen seguro
+      const fileIsRecent = timeSinceFileUpdate <= 30 * 1000; // 30 segundos
+      
+      if (!foundInClientList) {
+        // REGLA 1: Si NO está en CLIENT LIST → INACTIVA (sin excepciones)
+        isActive = false;
+        console.log(`[VPN Status] ❌ IP ${realIp} NO está en CLIENT LIST → INACTIVA`);
+      } else {
+        // Si está en CLIENT LIST, verificar Last Ref
+        if (routingTableLastRef) {
+          const timeSinceLastRef = now - routingTableLastRef.getTime();
+          const lastRefSeconds = Math.floor(timeSinceLastRef / 1000);
+          
+          // Está en CLIENT LIST y tiene Last Ref: activa si Last Ref ≤15s
+          // Aumentado de 12s a 15s para dar margen al delay de actualización del archivo (10s)
+          // Esto previene falsos negativos cuando el archivo está siendo actualizado
+          isActive = timeSinceLastRef <= 15 * 1000;
+          console.log(`[VPN Status] Last Ref hace ${lastRefSeconds}s (umbral: 15s) → activa: ${isActive}`);
+        } else if (connectedSinceStr) {
+          // Está en CLIENT LIST pero NO tiene Last Ref: usar Connected Since
           try {
             const connectedSince = new Date(connectedSinceStr);
             const timeSinceConnection = now - connectedSince.getTime();
-            const timeSinceFileUpdate = now - fileUpdatedAt.getTime();
-            isActive = timeSinceConnection <= 20 * 1000 && timeSinceFileUpdate <= 15 * 1000;
-          } catch {
+            const connectionSeconds = Math.floor(timeSinceConnection / 1000);
+            
+            // Solo activa si Connected Since es reciente (≤30s) Y el archivo se actualizó recientemente
+            // Aumentado de 20s a 30s para dar más margen de tolerancia
+            // Si el archivo es reciente (≤30s), confiamos más en Connected Since
+            const fileIsRecentExtended = timeSinceFileUpdate <= 30 * 1000;
+            isActive = timeSinceConnection <= 30 * 1000 && fileIsRecentExtended;
+            console.log(`[VPN Status] Connected Since hace ${connectionSeconds}s (umbral: 30s), archivo reciente: ${fileIsRecentExtended} → activa: ${isActive}`);
+          } catch (error) {
             isActive = false;
+            console.log(`[VPN Status] ❌ Error parseando Connected Since: ${error} → INACTIVA`);
           }
         } else {
-          isActive = false;
+          // Está en CLIENT LIST pero sin Last Ref ni Connected Since
+          // Si el archivo es reciente, considerar activa (puede ser conexión muy nueva)
+          // Si el archivo es antiguo, inactiva por seguridad
+          isActive = fileIsRecent && timeSinceFileUpdate <= 15 * 1000;
+          console.log(`[VPN Status] ⚠️ En CLIENT LIST pero sin Last Ref ni Connected Since, archivo reciente: ${fileIsRecent} (${Math.floor(timeSinceFileUpdate / 1000)}s) → activa: ${isActive}`);
         }
       }
       
@@ -269,8 +322,8 @@ export async function GET(request: NextRequest) {
         };
       }
       
-      const stats = await stat(statusFile);
-      const lastModified = stats.mtime;
+      // Obtener información de última actualización del archivo (ya tenemos statsAfter)
+      const lastModified = statsAfter.mtime;
       
       const response = NextResponse.json({ 
         isActive: found,
@@ -285,6 +338,7 @@ export async function GET(request: NextRequest) {
           hasRoutingTableLastRef: routingTableLastRef !== null,
           routingTableLastRef: routingTableLastRef?.toISOString() || null,
           fileUpdatedAt: fileUpdatedAt?.toISOString() || null,
+          fileChangedDuringRead, // Indica si el archivo cambió mientras se leía
           searchedIp: realIp,
           allClientListIps, // Todas las IPs encontradas en CLIENT LIST
           allRoutingTableIps, // Todas las IPs encontradas en ROUTING TABLE
