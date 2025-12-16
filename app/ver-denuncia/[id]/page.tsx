@@ -4,6 +4,17 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 
+interface Ampliacion {
+  id: number
+  numero_ampliacion: number
+  relato: string
+  fecha_ampliacion: string
+  hora_ampliacion: string
+  operador_grado: string
+  operador_nombre: string
+  operador_apellido: string
+}
+
 interface DenunciaCompleta {
   id: number
   nombres_denunciante: string
@@ -68,6 +79,7 @@ export default function VerDenunciaPage({ params }: { params: Promise<{ id: stri
   const router = useRouter()
   const [usuario, setUsuario] = useState<Usuario | null>(null)
   const [denuncia, setDenuncia] = useState<DenunciaCompleta | null>(null)
+  const [ampliaciones, setAmpliaciones] = useState<Ampliacion[]>([])
   const [loading, setLoading] = useState(true)
   const [mostrarModalPDF, setMostrarModalPDF] = useState(false)
   const [tipoPapelSeleccionado, setTipoPapelSeleccionado] = useState<'oficio' | 'a4'>('oficio')
@@ -101,6 +113,7 @@ export default function VerDenunciaPage({ params }: { params: Promise<{ id: stri
   useEffect(() => {
     if (denunciaId && usuario) {
       cargarDenuncia()
+      cargarAmpliaciones()
     }
   }, [denunciaId, usuario])
 
@@ -133,6 +146,24 @@ export default function VerDenunciaPage({ params }: { params: Promise<{ id: stri
     } finally {
       setLoading(false)
     }
+  }
+
+  const cargarAmpliaciones = async () => {
+    if (!denunciaId) return
+    
+    try {
+      const response = await fetch(`/api/denuncias/ampliaciones/${denunciaId}`, { cache: 'no-store' })
+      if (!response.ok) throw new Error('Error al cargar ampliaciones')
+      
+      const data = await response.json()
+      setAmpliaciones(data.ampliaciones || [])
+    } catch (error) {
+      console.error('Error cargando ampliaciones:', error)
+    }
+  }
+
+  const descargarPDFAmpliacion = (ampliacionId: number, tipoPapel: 'oficio' | 'a4' = 'oficio') => {
+    window.open(`/api/denuncias/ampliacion/pdf/${ampliacionId}?tipo=${tipoPapel}`, '_blank')
   }
 
   const handleLogout = () => {
@@ -246,12 +277,20 @@ export default function VerDenunciaPage({ params }: { params: Promise<{ id: stri
                 </>
               )}
               {denuncia.estado === 'completada' && (
-                <button
-                  onClick={abrirModalPDF}
-                  className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 font-medium"
-                >
-                  Ver PDF
-                </button>
+                <>
+                  <Link
+                    href={`/ampliar-denuncia/${denunciaId}`}
+                    className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 font-medium"
+                  >
+                    Ampliar Denuncia
+                  </Link>
+                  <button
+                    onClick={abrirModalPDF}
+                    className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 font-medium"
+                  >
+                    Ver PDF
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -470,6 +509,52 @@ export default function VerDenunciaPage({ params }: { params: Promise<{ id: stri
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/* Ampliaciones */}
+            {denuncia.estado === 'completada' && ampliaciones.length > 0 && (
+              <div>
+                <h2 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">
+                  Ampliaciones de Denuncia
+                </h2>
+                <div className="space-y-4">
+                  {ampliaciones.map((ampliacion) => (
+                    <div key={ampliacion.id} className="p-4 border border-gray-200 rounded-lg">
+                      <div className="flex justify-between items-start mb-3">
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-800">
+                            Ampliación Nº {ampliacion.numero_ampliacion}
+                          </h3>
+                          <p className="text-sm text-gray-600">
+                            Fecha: {new Date(ampliacion.fecha_ampliacion).toLocaleDateString('es-ES')} {ampliacion.hora_ampliacion}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            Operador: {ampliacion.operador_grado} {ampliacion.operador_nombre} {ampliacion.operador_apellido}
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => descargarPDFAmpliacion(ampliacion.id, 'oficio')}
+                            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 text-sm font-medium"
+                          >
+                            PDF Oficio
+                          </button>
+                          <button
+                            onClick={() => descargarPDFAmpliacion(ampliacion.id, 'a4')}
+                            className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 text-sm font-medium"
+                          >
+                            PDF A4
+                          </button>
+                        </div>
+                      </div>
+                      <div className="mt-3">
+                        <p className="text-sm font-medium text-gray-600 mb-1">Relato:</p>
+                        <p className="text-base text-gray-900 whitespace-pre-wrap">{ampliacion.relato}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
