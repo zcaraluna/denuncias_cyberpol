@@ -26,19 +26,6 @@ export async function GET(request: NextRequest) {
       });
     }
     
-    // Verificar si el archivo existe
-    if (!existsSync(statusFile)) {
-      return NextResponse.json({ 
-        isActive: false,
-        error: 'Archivo de estado no encontrado',
-        statusFile,
-        debug: {
-          fileExists: false,
-          searchedIp: realIp,
-        }
-      });
-    }
-    
     // Obtener información del archivo
     let fileStats: any = null;
     try {
@@ -146,8 +133,35 @@ export async function GET(request: NextRequest) {
       for (const line of lines) {
         const trimmedLine = line.trim();
         
-        if (trimmedLine === 'ROUTING TABLE') {
+        if (trimmedLine === 'ROUTING TABLE' || trimmedLine.startsWith('HEADER,ROUTING_TABLE')) {
           inRoutingTable = true;
+          continue;
+        }
+        
+        // Las líneas de datos pueden empezar directamente con ROUTING_TABLE,
+        if (trimmedLine.startsWith('ROUTING_TABLE,')) {
+          inRoutingTable = true;
+          // Procesar esta línea como línea de datos
+          const routingParts = trimmedLine.substring('ROUTING_TABLE,'.length).split(',');
+          if (routingParts.length >= 3) {
+            const routingRealAddress = routingParts[2]?.trim();
+            if (routingRealAddress && routingRealAddress.includes(':')) {
+              const routingIpFromAddress = routingRealAddress.split(':')[0];
+              if (/^\d+\.\d+\.\d+\.\d+$/.test(routingIpFromAddress)) {
+                allRoutingTableIps.push(routingIpFromAddress);
+              }
+              if (routingIpFromAddress === realIp) {
+                const lastRefStr = routingParts[3]?.trim();
+                if (lastRefStr) {
+                  try {
+                    routingTableLastRef = new Date(lastRefStr);
+                  } catch {
+                    // Ignorar si no se puede parsear
+                  }
+                }
+              }
+            }
+          }
           continue;
         }
         
@@ -156,10 +170,22 @@ export async function GET(request: NextRequest) {
           continue;
         }
         
-        if (inRoutingTable && trimmedLine && !trimmedLine.startsWith('Virtual Address,') && !trimmedLine.startsWith('HEADER,')) {
-          const routingParts = trimmedLine.split(',');
-          if (routingParts.length >= 4) {
+        // Las líneas de datos en ROUTING_TABLE pueden empezar con "ROUTING_TABLE," o ser líneas normales
+        // (Las que empiezan con ROUTING_TABLE, ya fueron procesadas arriba)
+        if (inRoutingTable && trimmedLine && !trimmedLine.startsWith('Virtual Address,') && !trimmedLine.startsWith('HEADER,') && !trimmedLine.startsWith('ROUTING_TABLE,')) {
+          // Si la línea empieza con "ROUTING_TABLE,", es una línea de datos
+          const isDataLine = trimmedLine.startsWith('ROUTING_TABLE,');
+          const routingParts = isDataLine ? trimmedLine.substring('ROUTING_TABLE,'.length).split(',') : trimmedLine.split(',');
+          
+          if (routingParts.length >= 3) {
+            // Si es línea que empieza con ROUTING_TABLE, los índices son diferentes:
+            // ROUTING_TABLE,10.8.0.6,DCHPEF-1-ASU,181.91.85.248:30517,2025-12-16 02:07:09,1765850829
+            // parts[0] = Virtual Address, parts[1] = Common Name, parts[2] = Real Address, parts[3] = Last Ref
+            // Si es línea normal:
+            // parts[0] = Virtual Address, parts[1] = Common Name, parts[2] = Real Address, parts[3] = Last Ref
             const routingRealAddress = routingParts[2]?.trim();
+            const lastRefIndex = isDataLine ? 3 : 3; // Mismo índice en ambos casos
+            
             if (routingRealAddress && routingRealAddress.includes(':')) {
               const routingIpFromAddress = routingRealAddress.split(':')[0];
               // Guardar todas las IPs encontradas para debugging
@@ -168,7 +194,7 @@ export async function GET(request: NextRequest) {
               }
               
               if (routingIpFromAddress === realIp) {
-                const lastRefStr = routingParts[3]?.trim();
+                const lastRefStr = routingParts[lastRefIndex]?.trim();
                 if (lastRefStr) {
                   try {
                     routingTableLastRef = new Date(lastRefStr);
