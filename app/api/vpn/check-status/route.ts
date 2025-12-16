@@ -335,25 +335,82 @@ export async function GET(request: NextRequest) {
           
           if (connectionIsActive) {
             activeConnections.push({ connection: conn, lastRef });
-            if (!isActive) {
-              // Usar la primera conexión activa encontrada
-              isActive = true;
-              activeConnection = conn;
-              activeLastRef = lastRef;
-            }
           }
         }
         
-        // Si hay múltiples conexiones activas, registrar warning
-        if (activeConnections.length > 1) {
-          console.log(`[VPN Status] ⚠️ ADVERTENCIA: Múltiples conexiones VPN activas (${activeConnections.length}) desde IP ${realIp}:`);
-          activeConnections.forEach((ac, idx) => {
-            console.log(`[VPN Status]   ${idx + 1}. ${ac.connection.commonName} (${ac.connection.virtualAddress}) - Last Ref: ${ac.lastRef ? ac.lastRef.toISOString() : 'N/A'}`);
-          });
-        }
-        
-        if (!isActive) {
-          console.log(`[VPN Status] ❌ Ninguna de las ${connectionsFromIp.length} conexión(es) desde IP ${realIp} está activa`);
+        // REGLA DE SEGURIDAD ESTRICTA: Si hay múltiples conexiones desde la misma IP pública,
+        // solo permitir acceso si hay EXACTAMENTE UNA conexión activa Y su Last Ref es muy reciente (≤5s)
+        // Esto previene que una computadora sin VPN use la conexión VPN de otra computadora
+        if (connectionsFromIp.length > 1) {
+          if (activeConnections.length === 0) {
+            // Múltiples conexiones pero ninguna activa
+            isActive = false;
+            console.log(`[VPN Status] ❌ Múltiples conexiones (${connectionsFromIp.length}) desde IP ${realIp}, pero ninguna está activa → DENEGAR ACCESO`);
+          } else if (activeConnections.length === 1) {
+            // Múltiples conexiones pero solo UNA activa → Verificar que Last Ref sea muy reciente (≤5s)
+            const ac = activeConnections[0];
+            if (ac.lastRef) {
+              const timeSinceLastRef = now - ac.lastRef.getTime();
+              const lastRefSeconds = Math.floor(timeSinceLastRef / 1000);
+              // Solo permitir si Last Ref es ≤5s (más estricto que el umbral normal de 15s)
+              if (timeSinceLastRef <= 5 * 1000) {
+                isActive = true;
+                activeConnection = ac.connection;
+                activeLastRef = ac.lastRef;
+                console.log(`[VPN Status] ✓ Múltiples conexiones (${connectionsFromIp.length}) desde IP ${realIp}, solo UNA activa con Last Ref muy reciente (${lastRefSeconds}s ≤5s) → PERMITIR ACCESO`);
+              } else {
+                isActive = false;
+                console.log(`[VPN Status] 🚨 SEGURIDAD: Múltiples conexiones desde IP ${realIp}, pero Last Ref de la conexión activa es muy antiguo (${lastRefSeconds}s >5s) → DENEGAR ACCESO por seguridad`);
+              }
+            } else {
+              // No tiene Last Ref, usar Connected Since con umbral más estricto
+              if (ac.connection.connectedSince) {
+                try {
+                  const connectedSince = new Date(ac.connection.connectedSince);
+                  const timeSinceConnection = now - connectedSince.getTime();
+                  // Solo permitir si Connected Since es ≤10s (más estricto que el umbral normal de 30s)
+                  if (timeSinceConnection <= 10 * 1000 && fileIsRecent) {
+                    isActive = true;
+                    activeConnection = ac.connection;
+                    activeLastRef = null;
+                    console.log(`[VPN Status] ✓ Múltiples conexiones (${connectionsFromIp.length}) desde IP ${realIp}, solo UNA activa con Connected Since muy reciente (≤10s) → PERMITIR ACCESO`);
+                  } else {
+                    isActive = false;
+                    console.log(`[VPN Status] 🚨 SEGURIDAD: Múltiples conexiones desde IP ${realIp}, pero Connected Since es muy antiguo → DENEGAR ACCESO por seguridad`);
+                  }
+                } catch (error) {
+                  isActive = false;
+                  console.log(`[VPN Status] ❌ Error verificando Connected Since: ${error}`);
+                }
+              } else {
+                isActive = false;
+                console.log(`[VPN Status] 🚨 SEGURIDAD: Múltiples conexiones desde IP ${realIp}, pero la conexión activa no tiene Last Ref ni Connected Since → DENEGAR ACCESO por seguridad`);
+              }
+            }
+          } else {
+            // Múltiples conexiones activas → DENEGAR por seguridad
+            isActive = false;
+            console.log(`[VPN Status] 🚨 SEGURIDAD: Múltiples conexiones VPN activas (${activeConnections.length}) desde IP ${realIp} → DENEGAR ACCESO por seguridad:`);
+            activeConnections.forEach((ac, idx) => {
+              console.log(`[VPN Status]   ${idx + 1}. ${ac.connection.commonName} (${ac.connection.virtualAddress}) - Last Ref: ${ac.lastRef ? ac.lastRef.toISOString() : 'N/A'}`);
+            });
+            console.log(`[VPN Status]   Razón: No podemos identificar qué computadora está haciendo la solicitud cuando hay múltiples conexiones activas desde la misma IP pública.`);
+          }
+        } else if (connectionsFromIp.length === 1) {
+          // Solo UNA conexión desde esta IP → Verificar si está activa
+          if (activeConnections.length === 1) {
+            isActive = true;
+            activeConnection = activeConnections[0].connection;
+            activeLastRef = activeConnections[0].lastRef;
+            console.log(`[VPN Status] ✓ Única conexión desde IP ${realIp} está activa (${activeConnection.commonName}) → PERMITIR ACCESO`);
+          } else {
+            isActive = false;
+            console.log(`[VPN Status] ❌ Única conexión desde IP ${realIp} NO está activa → DENEGAR ACCESO`);
+          }
+        } else {
+          // No hay conexiones (no debería llegar aquí porque foundInClientList sería false)
+          isActive = false;
+          console.log(`[VPN Status] ❌ No se encontraron conexiones desde IP ${realIp} → DENEGAR ACCESO`);
         }
       }
       
