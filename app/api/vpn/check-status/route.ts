@@ -10,6 +10,8 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const realIp = searchParams.get('realIp');
+    // Obtener puerto VPN del header si está disponible (opcional)
+    const vpnPort = request.headers.get('x-vpn-port') || searchParams.get('vpnPort') || null;
     
     if (!realIp) {
       return NextResponse.json({ error: 'realIp es requerido' }, { status: 400 });
@@ -55,7 +57,7 @@ export async function GET(request: NextRequest) {
       const fileChangedDuringRead = mtimeBefore !== mtimeAfter;
       
       // Log para debugging
-      console.log(`[VPN Status] Verificando IP: ${realIp}`);
+      console.log(`[VPN Status] Verificando IP: ${realIp}${vpnPort ? `, Puerto VPN: ${vpnPort}` : ' (sin puerto VPN en header)'}`);
       console.log(`[VPN Status] Archivo existe, tamaño: ${content.length} bytes`);
       if (fileChangedDuringRead) {
         console.log(`[VPN Status] ⚠️ Archivo cambió durante la lectura (mtime antes: ${mtimeBefore}, después: ${mtimeAfter})`);
@@ -128,13 +130,24 @@ export async function GET(request: NextRequest) {
               if (ipFromAddress === realIp) {
                 // Guardar TODAS las conexiones desde esta IP
                 const port = addr.includes(':') ? addr.split(':')[1] : null;
-                connectionsFromIp.push({
+                const connection = {
                   commonName: parts[0]?.trim() || '',
                   realAddress: addr,
                   virtualAddress: parts[2]?.trim() || '',
                   connectedSince: parts[6]?.trim() || '',
                   port: port
-                });
+                };
+                
+                // Si tenemos puerto VPN en el header, solo agregar si coincide
+                if (vpnPort) {
+                  if (port === vpnPort) {
+                    connectionsFromIp.push(connection);
+                    console.log(`[VPN Status] ✓ Conexión encontrada con IP ${realIp} y puerto ${port} (coincide con header)`);
+                  }
+                } else {
+                  // Sin puerto en header, agregar todas las conexiones (comportamiento anterior)
+                  connectionsFromIp.push(connection);
+                }
               }
             }
           }
@@ -169,13 +182,24 @@ export async function GET(request: NextRequest) {
               if (ipFromAddress === realIp) {
                 // Guardar TODAS las conexiones desde esta IP (líneas normales)
                 const port = addr.includes(':') ? addr.split(':')[1] : null;
-                connectionsFromIp.push({
+                const connection = {
                   commonName: parts[0]?.trim() || '',
                   realAddress: addr,
                   virtualAddress: parts[2]?.trim() || '',
                   connectedSince: parts[6]?.trim() || '',
                   port: port
-                });
+                };
+                
+                // Si tenemos puerto VPN en el header, solo agregar si coincide
+                if (vpnPort) {
+                  if (port === vpnPort) {
+                    connectionsFromIp.push(connection);
+                    console.log(`[VPN Status] ✓ Conexión encontrada con IP ${realIp} y puerto ${port} (coincide con header)`);
+                  }
+                } else {
+                  // Sin puerto en header, agregar todas las conexiones (comportamiento anterior)
+                  connectionsFromIp.push(connection);
+                }
               }
             }
           }
@@ -338,10 +362,58 @@ export async function GET(request: NextRequest) {
           }
         }
         
-        // REGLA DE SEGURIDAD ESTRICTA: Si hay múltiples conexiones desde la misma IP pública,
-        // solo permitir acceso si hay EXACTAMENTE UNA conexión activa Y su Last Ref es muy reciente (≤5s)
-        // Esto previene que una computadora sin VPN use la conexión VPN de otra computadora
-        if (connectionsFromIp.length > 1) {
+        // Si tenemos puerto VPN en el header, deberíamos tener solo UNA conexión (la correcta)
+        if (vpnPort && connectionsFromIp.length === 0) {
+          // Puerto especificado pero no se encontró conexión con ese puerto
+          isActive = false;
+          console.log(`[VPN Status] ❌ Puerto VPN ${vpnPort} especificado en header, pero no se encontró conexión con ese puerto desde IP ${realIp} → DENEGAR ACCESO`);
+        } else if (vpnPort && connectionsFromIp.length === 1) {
+          // Puerto especificado y encontramos exactamente UNA conexión → Verificar si está activa
+          const conn = connectionsFromIp[0];
+          const lastRef = lastRefByVirtualAddress.get(conn.virtualAddress) || null;
+          
+          if (lastRef) {
+            const timeSinceLastRef = now - lastRef.getTime();
+            const lastRefSeconds = Math.floor(timeSinceLastRef / 1000);
+            isActive = timeSinceLastRef <= 15 * 1000;
+            if (isActive) {
+              activeConnection = conn;
+              activeLastRef = lastRef;
+              console.log(`[VPN Status] ✓ Conexión identificada por puerto ${vpnPort} está activa (Last Ref: ${lastRefSeconds}s) → PERMITIR ACCESO`);
+            } else {
+              console.log(`[VPN Status] ❌ Conexión identificada por puerto ${vpnPort} NO está activa (Last Ref: ${lastRefSeconds}s >15s) → DENEGAR ACCESO`);
+            }
+          } else if (conn.connectedSince) {
+            try {
+              const connectedSince = new Date(conn.connectedSince);
+              const timeSinceConnection = now - connectedSince.getTime();
+              const fileIsRecentExtended = timeSinceFileUpdate <= 30 * 1000;
+              isActive = timeSinceConnection <= 30 * 1000 && fileIsRecentExtended;
+              if (isActive) {
+                activeConnection = conn;
+                activeLastRef = null;
+                console.log(`[VPN Status] ✓ Conexión identificada por puerto ${vpnPort} está activa (Connected Since) → PERMITIR ACCESO`);
+              } else {
+                console.log(`[VPN Status] ❌ Conexión identificada por puerto ${vpnPort} NO está activa → DENEGAR ACCESO`);
+              }
+            } catch (error) {
+              isActive = false;
+              console.log(`[VPN Status] ❌ Error verificando conexión con puerto ${vpnPort}: ${error}`);
+            }
+          } else {
+            isActive = fileIsRecent && timeSinceFileUpdate <= 15 * 1000;
+            if (isActive) {
+              activeConnection = conn;
+              activeLastRef = null;
+              console.log(`[VPN Status] ✓ Conexión identificada por puerto ${vpnPort} (sin Last Ref, archivo reciente) → PERMITIR ACCESO`);
+            } else {
+              console.log(`[VPN Status] ❌ Conexión identificada por puerto ${vpnPort} NO está activa → DENEGAR ACCESO`);
+            }
+          }
+        } else if (!vpnPort && connectionsFromIp.length > 1) {
+          // REGLA DE SEGURIDAD ESTRICTA: Si hay múltiples conexiones desde la misma IP pública SIN puerto en header,
+          // solo permitir acceso si hay EXACTAMENTE UNA conexión activa Y su Last Ref es muy reciente (≤5s)
+          // Esto previene que una computadora sin VPN use la conexión VPN de otra computadora
           if (activeConnections.length === 0) {
             // Múltiples conexiones pero ninguna activa
             isActive = false;
@@ -439,6 +511,8 @@ export async function GET(request: NextRequest) {
         debug: {
           foundInClientList,
           connectionsFound: connectionsFromIp.length,
+          vpnPortProvided: vpnPort !== null,
+          vpnPort: vpnPort,
           connectionsFromIp: connectionsFromIp.map(c => ({
             commonName: c.commonName,
             virtualAddress: c.virtualAddress,

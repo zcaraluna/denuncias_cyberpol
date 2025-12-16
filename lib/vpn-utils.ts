@@ -70,16 +70,28 @@ export async function isVpnConnected(request: Request): Promise<boolean> {
   // Esto es más confiable que depender de hooks que pueden fallar
   try {
     const apiUrl = process.env.VPN_API_URL || 'http://127.0.0.1:6368';
-    const checkUrl = `${apiUrl}/api/vpn/check-status?realIp=${encodeURIComponent(clientIp)}`;
+    // Intentar obtener puerto VPN del header si está disponible
+    const vpnPort = request.headers.get('x-vpn-port');
+    const checkUrl = `${apiUrl}/api/vpn/check-status?realIp=${encodeURIComponent(clientIp)}${vpnPort ? `&vpnPort=${encodeURIComponent(vpnPort)}` : ''}`;
     
     const controller = new AbortController();
     // Aumentado timeout de 1s a 2s para dar más tiempo si el servidor está bajo carga
     // o si el archivo de estado es grande
     const timeoutId = setTimeout(() => controller.abort(), 2000);
     
+    // Preparar headers para la solicitud
+    const headers: HeadersInit = {
+      'Cache-Control': 'no-store',
+    };
+    // Si el cliente envió el puerto VPN, pasarlo también
+    if (vpnPort) {
+      headers['X-VPN-Port'] = vpnPort;
+    }
+    
     try {
       const response = await fetch(checkUrl, {
         signal: controller.signal,
+        headers,
         cache: 'no-store',
       });
       
