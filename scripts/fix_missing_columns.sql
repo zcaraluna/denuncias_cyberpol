@@ -1,98 +1,18 @@
 -- Script para agregar columnas faltantes en producción
--- Ejecutar este script en la base de datos de producción si falta fecha_hecho_fin y hora_hecho_fin
+-- Ejecutar este script en la base de datos de producción
 
 -- Agregar campos para rango de fechas/horas del hecho (si no existen)
-DO $$
-BEGIN
-    -- Verificar y agregar fecha_hecho_fin
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_schema = 'public' 
-        AND table_name = 'denuncias' 
-        AND column_name = 'fecha_hecho_fin'
-    ) THEN
-        ALTER TABLE denuncias ADD COLUMN fecha_hecho_fin DATE;
-        RAISE NOTICE 'Columna fecha_hecho_fin agregada';
-    ELSE
-        RAISE NOTICE 'Columna fecha_hecho_fin ya existe';
-    END IF;
+ALTER TABLE denuncias ADD COLUMN IF NOT EXISTS fecha_hecho_fin DATE;
+ALTER TABLE denuncias ADD COLUMN IF NOT EXISTS hora_hecho_fin VARCHAR(10);
 
-    -- Verificar y agregar hora_hecho_fin
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_schema = 'public' 
-        AND table_name = 'denuncias' 
-        AND column_name = 'hora_hecho_fin'
-    ) THEN
-        ALTER TABLE denuncias ADD COLUMN hora_hecho_fin VARCHAR(10);
-        RAISE NOTICE 'Columna hora_hecho_fin agregada';
-    ELSE
-        RAISE NOTICE 'Columna hora_hecho_fin ya existe';
-    END IF;
-END $$;
+-- Agregar columnas de carta poder en denuncias_involucrados
+ALTER TABLE denuncias_involucrados ADD COLUMN IF NOT EXISTS con_carta_poder BOOLEAN DEFAULT FALSE;
+ALTER TABLE denuncias_involucrados ADD COLUMN IF NOT EXISTS carta_poder_fecha DATE;
+ALTER TABLE denuncias_involucrados ADD COLUMN IF NOT EXISTS carta_poder_numero VARCHAR(100);
+ALTER TABLE denuncias_involucrados ADD COLUMN IF NOT EXISTS carta_poder_notario VARCHAR(255);
 
-    -- Verificar y agregar columnas de carta poder en denuncias_involucrados
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_schema = 'public' 
-        AND table_name = 'denuncias_involucrados' 
-        AND column_name = 'con_carta_poder'
-    ) THEN
-        ALTER TABLE denuncias_involucrados ADD COLUMN con_carta_poder BOOLEAN DEFAULT FALSE;
-        RAISE NOTICE 'Columna con_carta_poder agregada';
-    ELSE
-        RAISE NOTICE 'Columna con_carta_poder ya existe';
-    END IF;
-
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_schema = 'public' 
-        AND table_name = 'denuncias_involucrados' 
-        AND column_name = 'carta_poder_fecha'
-    ) THEN
-        ALTER TABLE denuncias_involucrados ADD COLUMN carta_poder_fecha DATE;
-        RAISE NOTICE 'Columna carta_poder_fecha agregada';
-    ELSE
-        RAISE NOTICE 'Columna carta_poder_fecha ya existe';
-    END IF;
-
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_schema = 'public' 
-        AND table_name = 'denuncias_involucrados' 
-        AND column_name = 'carta_poder_numero'
-    ) THEN
-        ALTER TABLE denuncias_involucrados ADD COLUMN carta_poder_numero VARCHAR(100);
-        RAISE NOTICE 'Columna carta_poder_numero agregada';
-    ELSE
-        RAISE NOTICE 'Columna carta_poder_numero ya existe';
-    END IF;
-
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_schema = 'public' 
-        AND table_name = 'denuncias_involucrados' 
-        AND column_name = 'carta_poder_notario'
-    ) THEN
-        ALTER TABLE denuncias_involucrados ADD COLUMN carta_poder_notario VARCHAR(255);
-        RAISE NOTICE 'Columna carta_poder_notario agregada';
-    ELSE
-        RAISE NOTICE 'Columna carta_poder_notario ya existe';
-    END IF;
-
-    -- Verificar y agregar descripcion_fisica en supuestos_autores
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_schema = 'public' 
-        AND table_name = 'supuestos_autores' 
-        AND column_name = 'descripcion_fisica'
-    ) THEN
-        ALTER TABLE supuestos_autores ADD COLUMN descripcion_fisica TEXT;
-        RAISE NOTICE 'Columna descripcion_fisica agregada';
-    ELSE
-        RAISE NOTICE 'Columna descripcion_fisica ya existe';
-    END IF;
-END $$;
+-- Agregar descripcion_fisica en supuestos_autores
+ALTER TABLE supuestos_autores ADD COLUMN IF NOT EXISTS descripcion_fisica TEXT;
 
 -- Verificar que todas las columnas existen
 SELECT 
@@ -159,4 +79,3 @@ SELECT
         ) THEN '✓ descripcion_fisica existe'
         ELSE '✗ ERROR: descripcion_fisica NO existe'
     END as estado_descripcion_fisica;
-
