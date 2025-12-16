@@ -808,23 +808,27 @@ export async function generarPDFAmpliacion(
     format: formatoPapel as [number, number],
   })
 
+  // Función helper para convertir cualquier tipo de fecha a string
+  const toDateString = (date: any): string => {
+    if (!date) return ''
+    if (date instanceof Date) {
+      return date.toISOString().split('T')[0]
+    }
+    if (typeof date === 'string') {
+      return date
+    }
+    return String(date)
+  }
+
   // Convertir fecha_denuncia a string si es necesario
-  const fechaDenunciaStr = datosDenuncia.fecha_denuncia instanceof Date 
-    ? datosDenuncia.fecha_denuncia.toISOString().split('T')[0]
-    : String(datosDenuncia.fecha_denuncia)
+  const fechaDenunciaStr = toDateString(datosDenuncia.fecha_denuncia)
   const año = fechaDenunciaStr.split('-')[0]
   const titulo = `AMPLIACIÓN Nº ${numeroAmpliacion} DE LA DENUNCIA Nº ${numeroOrden}/${año}`
 
   // Convertir fechas a string si vienen como Date
-  const fechaDenunciaParaFormat = datosDenuncia.fecha_denuncia instanceof Date
-    ? datosDenuncia.fecha_denuncia.toISOString().split('T')[0]
-    : String(datosDenuncia.fecha_denuncia)
-  const fechaNacimientoParaFormat = denunciante['Fecha de Nacimiento'] instanceof Date
-    ? denunciante['Fecha de Nacimiento'].toISOString().split('T')[0]
-    : String(denunciante['Fecha de Nacimiento'])
-  const fechaHechoParaFormat = datosDenuncia.fecha_hecho instanceof Date
-    ? datosDenuncia.fecha_hecho.toISOString().split('T')[0]
-    : String(datosDenuncia.fecha_hecho)
+  const fechaDenunciaParaFormat = toDateString(datosDenuncia.fecha_denuncia)
+  const fechaNacimientoParaFormat = toDateString(denunciante['Fecha de Nacimiento'])
+  const fechaHechoParaFormat = toDateString(datosDenuncia.fecha_hecho)
   
   const fechaDenuncia = formatDate(fechaDenunciaParaFormat)
   const fechaNacimiento = formatDate(fechaNacimientoParaFormat)
@@ -832,9 +836,7 @@ export async function generarPDFAmpliacion(
   
   const tieneRango = datosDenuncia.fecha_hecho_fin && datosDenuncia.hora_hecho_fin
   const fechaHechoFinParaFormat = tieneRango && datosDenuncia.fecha_hecho_fin
-    ? (datosDenuncia.fecha_hecho_fin instanceof Date
-        ? datosDenuncia.fecha_hecho_fin.toISOString().split('T')[0]
-        : String(datosDenuncia.fecha_hecho_fin))
+    ? toDateString(datosDenuncia.fecha_hecho_fin)
     : null
   const fechaHechoFin = fechaHechoFinParaFormat ? formatDate(fechaHechoFinParaFormat) : null
   const involucrados = (datosDenuncia.involucrados || []).filter(
