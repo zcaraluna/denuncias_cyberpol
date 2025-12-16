@@ -80,6 +80,7 @@ export async function middleware(request: NextRequest) {
       pathname.startsWith('/_next/') ||
       pathname.startsWith('/api/vpn/check-status') ||
       pathname.startsWith('/api/vpn/connections') ||
+      pathname.startsWith('/api/vpn/get-my-port') ||
       pathname.startsWith('/api/debug-ip');
 
     if (isPublicPath) {

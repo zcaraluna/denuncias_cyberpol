@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter, Lato } from 'next/font/google'
 import './globals.css'
+import VpnPortInterceptor from '@/components/VpnPortInterceptor'
 
 const inter = Inter({ subsets: ['latin'] })
 const lato = Lato({ 
@@ -21,7 +22,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es">
-      <body className={`${inter.className} ${lato.variable}`}>{children}</body>
+      <body className={`${inter.className} ${lato.variable}`}>
+        <VpnPortInterceptor />
+        {children}
+      </body>
     </html>
   )
 }
