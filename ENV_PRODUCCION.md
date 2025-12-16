@@ -84,6 +84,10 @@ VPN_REQUIRED_DOMAINS=denuncias.cyberpol.com.py
 
 # URL de la API para verificar VPN (por defecto usa el mismo servidor)
 VPN_API_URL=http://127.0.0.1:6368
+
+# URL pública del sitio (usado para determinar dominio cuando se accede por localhost)
+# Si no está configurado, se usa NEXT_PUBLIC_URL_BASE como fallback
+NEXT_PUBLIC_SITE_URL=https://denuncias.cyberpol.com.py
 ```
 
 ## 📝 Ejemplo real completo
@@ -111,6 +115,7 @@ VPN_REQUIRED=true
 VPN_RANGE=10.8.0.0/24
 VPN_REQUIRED_DOMAINS=denuncias.cyberpol.com.py
 VPN_API_URL=http://127.0.0.1:6368
+NEXT_PUBLIC_SITE_URL=https://denuncias.cyberpol.com.py
 ```
 
 ## ✅ Variables mínimas requeridas
