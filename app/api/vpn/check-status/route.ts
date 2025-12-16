@@ -83,13 +83,41 @@ export async function GET(request: NextRequest) {
       for (const line of lines) {
         const trimmedLine = line.trim();
         
-        if (trimmedLine === 'OpenVPN CLIENT LIST' || trimmedLine === 'CLIENT LIST') {
+        if (trimmedLine === 'OpenVPN CLIENT LIST' || trimmedLine === 'CLIENT LIST' || trimmedLine.startsWith('HEADER,CLIENT_LIST')) {
           inClientList = true;
           inRoutingTable = false;
           continue;
         }
         
-        if (trimmedLine === 'ROUTING TABLE') {
+        // Las líneas de datos pueden empezar directamente con CLIENT_LIST,
+        if (trimmedLine.startsWith('CLIENT_LIST,')) {
+          inClientList = true;
+          inRoutingTable = false;
+          // Procesar esta línea como línea de datos
+          const parts = trimmedLine.substring('CLIENT_LIST,'.length).split(',');
+          if (parts.length >= 2) {
+            const addr = parts[1].trim(); // Real Address está en el índice 1 después de quitar "CLIENT_LIST,"
+            if (addr.includes(':')) {
+              const ipFromAddress = addr.split(':')[0];
+              
+              // Guardar todas las IPs encontradas para debugging
+              if (/^\d+\.\d+\.\d+\.\d+$/.test(ipFromAddress)) {
+                allClientListIps.push(ipFromAddress);
+              }
+              
+              if (ipFromAddress === realIp) {
+                foundInClientList = true;
+                commonName = parts[0]?.trim() || ''; // Common Name está en el índice 0
+                realAddress = addr;
+                virtualAddress = parts[2]?.trim() || ''; // Virtual Address está en el índice 2
+                connectedSinceStr = parts[6]?.trim() || ''; // Connected Since está en el índice 6 (después de quitar CLIENT_LIST,)
+              }
+            }
+          }
+          continue;
+        }
+        
+        if (trimmedLine === 'ROUTING TABLE' || trimmedLine.startsWith('HEADER,ROUTING_TABLE')) {
           inClientList = false;
           inRoutingTable = true;
           continue;
@@ -101,8 +129,8 @@ export async function GET(request: NextRequest) {
           continue;
         }
         
-        // Buscar en CLIENT LIST
-        if (inClientList && trimmedLine && !trimmedLine.startsWith('#') && !trimmedLine.startsWith('Updated,') && !trimmedLine.startsWith('Common Name,') && !trimmedLine.startsWith('HEADER,')) {
+        // Buscar en CLIENT LIST (líneas normales, sin prefijo CLIENT_LIST,)
+        if (inClientList && trimmedLine && !trimmedLine.startsWith('#') && !trimmedLine.startsWith('Updated,') && !trimmedLine.startsWith('Common Name,') && !trimmedLine.startsWith('HEADER,') && !trimmedLine.startsWith('CLIENT_LIST,')) {
           const parts = trimmedLine.split(',');
           if (parts.length >= 2) {
             const addr = parts[1].trim();
@@ -119,8 +147,7 @@ export async function GET(request: NextRequest) {
                 commonName = parts[0]?.trim() || '';
                 realAddress = addr;
                 virtualAddress = parts[2]?.trim() || '';
-                connectedSinceStr = parts[5]?.trim() || '';
-                break;
+                connectedSinceStr = parts[6]?.trim() || '';
               }
             }
           }
