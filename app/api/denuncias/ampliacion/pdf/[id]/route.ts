@@ -189,6 +189,17 @@ export async function GET(
     }
 
     // Generar PDF de ampliación
+    // Convertir fecha_ampliacion a string si viene como Date
+    let fechaAmpliacionStr: string
+    if (ampliacion.fecha_ampliacion instanceof Date) {
+      const año = ampliacion.fecha_ampliacion.getFullYear()
+      const mes = String(ampliacion.fecha_ampliacion.getMonth() + 1).padStart(2, '0')
+      const dia = String(ampliacion.fecha_ampliacion.getDate()).padStart(2, '0')
+      fechaAmpliacionStr = `${año}-${mes}-${dia}`
+    } else {
+      fechaAmpliacionStr = String(ampliacion.fecha_ampliacion)
+    }
+    
     const año = fechaDenuncia.split('-')[0]
     const pdfBuffer = await generarPDFAmpliacion(
       row.orden,
@@ -196,7 +207,7 @@ export async function GET(
       denunciante,
       datosDenuncia,
       ampliacion.relato,
-      ampliacion.fecha_ampliacion,
+      fechaAmpliacionStr,
       ampliacion.hora_ampliacion,
       {
         grado: ampliacion.operador_grado,

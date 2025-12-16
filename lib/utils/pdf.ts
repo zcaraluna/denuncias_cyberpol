@@ -13,12 +13,25 @@ const datosOficina = {
   email: 'ayudantia@delitoseconomicos.gov.py',
 }
 
-function formatDate(dateStr: string): string {
+function formatDate(dateStr: string | Date | null): string {
+  if (!dateStr) return ''
+  
+  // Si es un objeto Date, convertirlo a string ISO
+  let dateString: string
+  if (dateStr instanceof Date) {
+    const año = dateStr.getFullYear()
+    const mes = String(dateStr.getMonth() + 1).padStart(2, '0')
+    const dia = String(dateStr.getDate()).padStart(2, '0')
+    dateString = `${año}-${mes}-${dia}`
+  } else {
+    dateString = String(dateStr)
+  }
+  
   try {
-    const [año, mes, dia] = dateStr.split('-')
+    const [año, mes, dia] = dateString.split('-')
     return `${dia}/${mes}/${año}`
   } catch {
-    return dateStr
+    return dateString
   }
 }
 
