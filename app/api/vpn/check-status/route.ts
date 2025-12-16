@@ -88,12 +88,16 @@ export async function GET(request: NextRequest) {
         fileUpdatedAt = new Date();
       }
       
-      // Buscar en CLIENT LIST
-      let foundInClientList = false;
-      let connectedSinceStr = '';
-      let commonName = '';
-      let realAddress = '';
-      let virtualAddress = '';
+      // Buscar en CLIENT LIST - ahora buscamos TODAS las conexiones desde esa IP
+      interface VpnConnection {
+        commonName: string;
+        realAddress: string;
+        virtualAddress: string;
+        connectedSince: string;
+        port: string | null;
+      }
+      
+      const connectionsFromIp: VpnConnection[] = [];
       const allClientListIps: string[] = []; // Para debugging
       
       for (const line of lines) {
@@ -122,11 +126,15 @@ export async function GET(request: NextRequest) {
               }
               
               if (ipFromAddress === realIp) {
-                foundInClientList = true;
-                commonName = parts[0]?.trim() || ''; // Common Name está en el índice 0
-                realAddress = addr;
-                virtualAddress = parts[2]?.trim() || ''; // Virtual Address está en el índice 2
-                connectedSinceStr = parts[6]?.trim() || ''; // Connected Since está en el índice 6 (después de quitar CLIENT_LIST,)
+                // Guardar TODAS las conexiones desde esta IP
+                const port = addr.includes(':') ? addr.split(':')[1] : null;
+                connectionsFromIp.push({
+                  commonName: parts[0]?.trim() || '',
+                  realAddress: addr,
+                  virtualAddress: parts[2]?.trim() || '',
+                  connectedSince: parts[6]?.trim() || '',
+                  port: port
+                });
               }
             }
           }
@@ -159,18 +167,27 @@ export async function GET(request: NextRequest) {
               }
               
               if (ipFromAddress === realIp) {
-                foundInClientList = true;
-                commonName = parts[0]?.trim() || '';
-                realAddress = addr;
-                virtualAddress = parts[2]?.trim() || '';
-                connectedSinceStr = parts[6]?.trim() || '';
+                // Guardar TODAS las conexiones desde esta IP (líneas normales)
+                const port = addr.includes(':') ? addr.split(':')[1] : null;
+                connectionsFromIp.push({
+                  commonName: parts[0]?.trim() || '',
+                  realAddress: addr,
+                  virtualAddress: parts[2]?.trim() || '',
+                  connectedSince: parts[6]?.trim() || '',
+                  port: port
+                });
               }
             }
           }
         }
       }
       
-      // Buscar Last Ref en ROUTING TABLE
+      // Verificar si encontramos conexiones
+      const foundInClientList = connectionsFromIp.length > 0;
+      
+      // Buscar Last Ref en ROUTING TABLE para TODAS las conexiones encontradas
+      // Mapear Virtual Address -> Last Ref para cada conexión
+      const lastRefByVirtualAddress = new Map<string, Date>();
       inRoutingTable = false;
       const allRoutingTableIps: string[] = []; // Para debugging
       for (const line of lines) {
@@ -194,10 +211,12 @@ export async function GET(request: NextRequest) {
                 allRoutingTableIps.push(routingIpFromAddress);
               }
               if (routingIpFromAddress === realIp) {
+                // Guardar Last Ref para esta conexión (usando Virtual Address como clave)
+                const virtualAddr = routingParts[0]?.trim();
                 const lastRefStr = routingParts[3]?.trim();
-                if (lastRefStr) {
+                if (virtualAddr && lastRefStr) {
                   try {
-                    routingTableLastRef = new Date(lastRefStr);
+                    lastRefByVirtualAddress.set(virtualAddr, new Date(lastRefStr));
                   } catch {
                     // Ignorar si no se puede parsear
                   }
@@ -237,15 +256,17 @@ export async function GET(request: NextRequest) {
               }
               
               if (routingIpFromAddress === realIp) {
+                // Guardar Last Ref para esta conexión (usando Virtual Address como clave)
+                const virtualAddr = routingParts[0]?.trim();
                 const lastRefStr = routingParts[lastRefIndex]?.trim();
-                if (lastRefStr) {
+                if (virtualAddr && lastRefStr) {
                   try {
-                    routingTableLastRef = new Date(lastRefStr);
+                    lastRefByVirtualAddress.set(virtualAddr, new Date(lastRefStr));
                   } catch {
                     // Ignorar si no se puede parsear
                   }
                 }
-                break;
+                // No hacer break, seguir buscando todas las conexiones
               }
             }
           }
@@ -254,7 +275,7 @@ export async function GET(request: NextRequest) {
       
       // REGLA PRINCIPAL: La conexión está activa SOLO si:
       // 1. Está en CLIENT LIST (requisito obligatorio)
-      // 2. Y tiene Last Ref reciente (≤15s) O Connected Since reciente (≤30s)
+      // 2. Y tiene al menos UNA conexión con Last Ref reciente (≤15s) O Connected Since reciente (≤30s)
       
       // REGLA 1: Si NO está en CLIENT LIST → INACTIVA (sin excepciones)
       // NOTA: Confiamos en el parsing estructurado, NO en búsqueda simple de strings
@@ -263,6 +284,9 @@ export async function GET(request: NextRequest) {
       // Determinar si la conexión está activa
       const now = Date.now();
       let isActive = false;
+      let activeConnection: VpnConnection | null = null;
+      let activeLastRef: Date | null = null;
+      const activeConnections: Array<{connection: VpnConnection, lastRef: Date | null}> = [];
       
       // Verificar que el archivo se actualizó recientemente
       const timeSinceFileUpdate = now - fileUpdatedAt.getTime();
@@ -275,50 +299,72 @@ export async function GET(request: NextRequest) {
         isActive = false;
         console.log(`[VPN Status] ❌ IP ${realIp} NO está en CLIENT LIST → INACTIVA`);
       } else {
-        // Si está en CLIENT LIST, verificar Last Ref
-        if (routingTableLastRef) {
-          const timeSinceLastRef = now - routingTableLastRef.getTime();
-          const lastRefSeconds = Math.floor(timeSinceLastRef / 1000);
+        // Verificar TODAS las conexiones encontradas desde esta IP
+        console.log(`[VPN Status] Encontradas ${connectionsFromIp.length} conexión(es) desde IP ${realIp}`);
+        
+        for (const conn of connectionsFromIp) {
+          const lastRef = lastRefByVirtualAddress.get(conn.virtualAddress) || null;
+          let connectionIsActive = false;
           
-          // Está en CLIENT LIST y tiene Last Ref: activa si Last Ref ≤15s
-          // Aumentado de 12s a 15s para dar margen al delay de actualización del archivo (10s)
-          // Esto previene falsos negativos cuando el archivo está siendo actualizado
-          isActive = timeSinceLastRef <= 15 * 1000;
-          console.log(`[VPN Status] Last Ref hace ${lastRefSeconds}s (umbral: 15s) → activa: ${isActive}`);
-        } else if (connectedSinceStr) {
-          // Está en CLIENT LIST pero NO tiene Last Ref: usar Connected Since
-          try {
-            const connectedSince = new Date(connectedSinceStr);
-            const timeSinceConnection = now - connectedSince.getTime();
-            const connectionSeconds = Math.floor(timeSinceConnection / 1000);
-            
-            // Solo activa si Connected Since es reciente (≤30s) Y el archivo se actualizó recientemente
-            // Aumentado de 20s a 30s para dar más margen de tolerancia
-            // Si el archivo es reciente (≤30s), confiamos más en Connected Since
-            const fileIsRecentExtended = timeSinceFileUpdate <= 30 * 1000;
-            isActive = timeSinceConnection <= 30 * 1000 && fileIsRecentExtended;
-            console.log(`[VPN Status] Connected Since hace ${connectionSeconds}s (umbral: 30s), archivo reciente: ${fileIsRecentExtended} → activa: ${isActive}`);
-          } catch (error) {
-            isActive = false;
-            console.log(`[VPN Status] ❌ Error parseando Connected Since: ${error} → INACTIVA`);
+          if (lastRef) {
+            // Tiene Last Ref: verificar si es reciente (≤15s)
+            const timeSinceLastRef = now - lastRef.getTime();
+            const lastRefSeconds = Math.floor(timeSinceLastRef / 1000);
+            connectionIsActive = timeSinceLastRef <= 15 * 1000;
+            console.log(`[VPN Status] Conexión ${conn.commonName} (${conn.virtualAddress}): Last Ref hace ${lastRefSeconds}s (umbral: 15s) → activa: ${connectionIsActive}`);
+          } else if (conn.connectedSince) {
+            // NO tiene Last Ref: usar Connected Since
+            try {
+              const connectedSince = new Date(conn.connectedSince);
+              const timeSinceConnection = now - connectedSince.getTime();
+              const connectionSeconds = Math.floor(timeSinceConnection / 1000);
+              
+              // Solo activa si Connected Since es reciente (≤30s) Y el archivo se actualizó recientemente
+              const fileIsRecentExtended = timeSinceFileUpdate <= 30 * 1000;
+              connectionIsActive = timeSinceConnection <= 30 * 1000 && fileIsRecentExtended;
+              console.log(`[VPN Status] Conexión ${conn.commonName} (${conn.virtualAddress}): Connected Since hace ${connectionSeconds}s (umbral: 30s), archivo reciente: ${fileIsRecentExtended} → activa: ${connectionIsActive}`);
+            } catch (error) {
+              connectionIsActive = false;
+              console.log(`[VPN Status] ❌ Error parseando Connected Since para ${conn.commonName}: ${error}`);
+            }
+          } else {
+            // Sin Last Ref ni Connected Since
+            connectionIsActive = fileIsRecent && timeSinceFileUpdate <= 15 * 1000;
+            console.log(`[VPN Status] ⚠️ Conexión ${conn.commonName} (${conn.virtualAddress}): Sin Last Ref ni Connected Since, archivo reciente: ${fileIsRecent} → activa: ${connectionIsActive}`);
           }
-        } else {
-          // Está en CLIENT LIST pero sin Last Ref ni Connected Since
-          // Si el archivo es reciente, considerar activa (puede ser conexión muy nueva)
-          // Si el archivo es antiguo, inactiva por seguridad
-          isActive = fileIsRecent && timeSinceFileUpdate <= 15 * 1000;
-          console.log(`[VPN Status] ⚠️ En CLIENT LIST pero sin Last Ref ni Connected Since, archivo reciente: ${fileIsRecent} (${Math.floor(timeSinceFileUpdate / 1000)}s) → activa: ${isActive}`);
+          
+          if (connectionIsActive) {
+            activeConnections.push({ connection: conn, lastRef });
+            if (!isActive) {
+              // Usar la primera conexión activa encontrada
+              isActive = true;
+              activeConnection = conn;
+              activeLastRef = lastRef;
+            }
+          }
+        }
+        
+        // Si hay múltiples conexiones activas, registrar warning
+        if (activeConnections.length > 1) {
+          console.log(`[VPN Status] ⚠️ ADVERTENCIA: Múltiples conexiones VPN activas (${activeConnections.length}) desde IP ${realIp}:`);
+          activeConnections.forEach((ac, idx) => {
+            console.log(`[VPN Status]   ${idx + 1}. ${ac.connection.commonName} (${ac.connection.virtualAddress}) - Last Ref: ${ac.lastRef ? ac.lastRef.toISOString() : 'N/A'}`);
+          });
+        }
+        
+        if (!isActive) {
+          console.log(`[VPN Status] ❌ Ninguna de las ${connectionsFromIp.length} conexión(es) desde IP ${realIp} está activa`);
         }
       }
       
-      if (isActive) {
+      if (isActive && activeConnection) {
         found = true;
         connectionInfo = {
-          commonName: commonName || '',
-          realAddress: realAddress || '',
-          virtualAddress: virtualAddress || '',
-          connectedSince: connectedSinceStr || '',
-          lastRef: routingTableLastRef?.toISOString() || null
+          commonName: activeConnection.commonName || '',
+          realAddress: activeConnection.realAddress || '',
+          virtualAddress: activeConnection.virtualAddress || '',
+          connectedSince: activeConnection.connectedSince || '',
+          lastRef: activeLastRef?.toISOString() || null
         };
       }
       
@@ -335,8 +381,15 @@ export async function GET(request: NextRequest) {
         fileStats,
         debug: {
           foundInClientList,
-          hasRoutingTableLastRef: routingTableLastRef !== null,
-          routingTableLastRef: routingTableLastRef?.toISOString() || null,
+          connectionsFound: connectionsFromIp.length,
+          connectionsFromIp: connectionsFromIp.map(c => ({
+            commonName: c.commonName,
+            virtualAddress: c.virtualAddress,
+            port: c.port
+          })),
+          activeConnectionsCount: activeConnections.length,
+          hasRoutingTableLastRef: activeLastRef !== null,
+          routingTableLastRef: activeLastRef?.toISOString() || null,
           fileUpdatedAt: fileUpdatedAt?.toISOString() || null,
           fileChangedDuringRead, // Indica si el archivo cambió mientras se leía
           searchedIp: realIp,
