@@ -134,11 +134,7 @@ export async function validarCodigoActivacion(
       [fingerprint]
     );
 
-    if (dispositivoExistente.rows.length > 0) {
-      return { valido: false, mensaje: 'Este dispositivo ya está autorizado' };
-    }
-
-    // Marcar código como usado y registrar dispositivo
+    // Marcar código como usado y registrar/actualizar dispositivo
     await pool.query('BEGIN');
 
     try {
@@ -148,11 +144,27 @@ export async function validarCodigoActivacion(
         [fingerprint, codigoActivacion.id]
       );
 
-      // Registrar dispositivo autorizado (heredar nombre del código si existe)
-      await pool.query(
-        'INSERT INTO dispositivos_autorizados (fingerprint, user_agent, ip_address, codigo_activacion_id, nombre) VALUES ($1, $2, $3, $4, $5)',
-        [fingerprint, userAgent, ipAddress || null, codigoActivacion.id, codigoActivacion.nombre || null]
-      );
+      if (dispositivoExistente.rows.length > 0) {
+        // Dispositivo ya existe, actualizar su información (reautorización)
+        await pool.query(
+          `UPDATE dispositivos_autorizados 
+           SET user_agent = $1, 
+               ip_address = $2, 
+               codigo_activacion_id = $3, 
+               nombre = COALESCE($4, nombre),
+               autorizado_en = CURRENT_TIMESTAMP,
+               ultimo_acceso = CURRENT_TIMESTAMP,
+               activo = TRUE
+           WHERE fingerprint = $5`,
+          [userAgent, ipAddress || null, codigoActivacion.id, codigoActivacion.nombre || null, fingerprint]
+        );
+      } else {
+        // Nuevo dispositivo, insertarlo
+        await pool.query(
+          'INSERT INTO dispositivos_autorizados (fingerprint, user_agent, ip_address, codigo_activacion_id, nombre) VALUES ($1, $2, $3, $4, $5)',
+          [fingerprint, userAgent, ipAddress || null, codigoActivacion.id, codigoActivacion.nombre || null]
+        );
+      }
 
       await pool.query('COMMIT');
       return { valido: true };
