@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/lib/db'
+import { getFechaHoraParaguay } from '@/lib/utils/timezone'
 
 export async function POST(request: NextRequest) {
   try {
@@ -41,10 +42,8 @@ export async function POST(request: NextRequest) {
     )
     const numero_ampliacion = ampliacionesResult.rows[0].siguiente_numero
 
-    // Obtener fecha y hora actual
-    const fechaActual = new Date()
-    const fecha_ampliacion = fechaActual.toISOString().split('T')[0]
-    const hora_ampliacion = fechaActual.toTimeString().slice(0, 5)
+    // Obtener fecha y hora actual en zona horaria de Paraguay
+    const { fecha: fecha_ampliacion, hora: hora_ampliacion } = getFechaHoraParaguay()
 
     // Insertar la ampliación
     const result = await pool.query(

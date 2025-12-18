@@ -5,7 +5,9 @@ import { generarTextoPDF, Denunciante, DatosDenuncia } from '@/lib/utils/pdf'
 const formatDate = (date: any): string => {
   if (!date) return ''
   if (date instanceof Date) {
-    return date.toISOString().split('T')[0]
+    // Usar zona horaria de Paraguay
+    const { dateToParaguayString } = require('@/lib/utils/timezone')
+    return dateToParaguayString(date)
   }
   return String(date)
 }
@@ -74,9 +76,8 @@ export async function POST(request: NextRequest) {
             }))
         : []
 
-    const hoy = new Date()
-    const fechaDenuncia = hoy.toISOString().split('T')[0]
-    const horaDenuncia = `${String(hoy.getHours()).padStart(2, '0')}:${String(hoy.getMinutes()).padStart(2, '0')}`
+    const { getFechaHoraParaguay } = await import('@/lib/utils/timezone')
+    const { fecha: fechaDenuncia, hora: horaDenuncia } = getFechaHoraParaguay()
 
     const datosDenuncia: DatosDenuncia = {
       fecha_denuncia: formatDate(data.denuncia.fechaDenuncia) || fechaDenuncia,

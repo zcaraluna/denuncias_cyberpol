@@ -83,3 +83,5 @@ El cliente debe:
 
 Si el puerto VPN no se envía en el header, el sistema usará la verificación anterior (más estricta con múltiples conexiones). El puerto VPN es opcional pero recomendado para máxima seguridad.
 
+
+

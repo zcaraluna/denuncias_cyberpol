@@ -6,7 +6,9 @@ import { generarPDF, generarPDFFormato2, Denunciante, DatosDenuncia } from '@/li
 const formatDate = (date: any): string => {
   if (!date) return ''
   if (date instanceof Date) {
-    return date.toISOString().split('T')[0]
+    // Usar zona horaria de Paraguay
+    const { dateToParaguayString } = require('@/lib/utils/timezone')
+    return dateToParaguayString(date)
   }
   return String(date)
 }

@@ -18,3 +18,5 @@ CREATE TABLE IF NOT EXISTS ampliaciones_denuncia (
 CREATE INDEX IF NOT EXISTS idx_ampliaciones_denuncia ON ampliaciones_denuncia(denuncia_id);
 CREATE INDEX IF NOT EXISTS idx_ampliaciones_fecha ON ampliaciones_denuncia(fecha_ampliacion);
 
+
+
