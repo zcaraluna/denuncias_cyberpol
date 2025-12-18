@@ -35,45 +35,42 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// GET endpoint para verificar usando la cookie del request (preferido) o user-agent
+// GET endpoint para verificar usando la cookie del request
 export async function GET(request: NextRequest) {
   try {
-    // Primero intentar obtener el fingerprint de la cookie
+    // Obtener el fingerprint de la cookie
     const fingerprintCookie = request.cookies.get('device_fingerprint')?.value;
     
-    let fingerprint: string;
-    let usarCookie = false;
-    
-    if (fingerprintCookie) {
-      // Usar el fingerprint de la cookie
-      fingerprint = fingerprintCookie;
-      usarCookie = true;
-    } else {
-      // Si no hay cookie, generar del user-agent (pero esto no debería pasar en producción)
-      const userAgent = request.headers.get('user-agent') || '';
-      fingerprint = generarFingerprint(userAgent);
+    // Si no hay cookie, directamente devolver que no está autorizado
+    if (!fingerprintCookie) {
+      return NextResponse.json({
+        autorizado: false,
+        fingerprint: null,
+      });
     }
 
-    const estaAutorizado = await verificarDispositivoAutorizado(fingerprint);
+    // Verificar si el dispositivo está autorizado
+    const estaAutorizado = await verificarDispositivoAutorizado(fingerprintCookie);
 
-    // Si no está autorizado y había cookie, limpiarla
-    if (!estaAutorizado && usarCookie) {
+    // Si no está autorizado, limpiar la cookie
+    if (!estaAutorizado) {
       const response = NextResponse.json({
         autorizado: false,
-        fingerprint: fingerprint,
+        fingerprint: fingerprintCookie,
       });
       response.cookies.delete('device_fingerprint');
       return response;
     }
 
+    // Está autorizado
     return NextResponse.json({
-      autorizado: estaAutorizado,
-      fingerprint: fingerprint,
+      autorizado: true,
+      fingerprint: fingerprintCookie,
     });
   } catch (error) {
     console.error('Error verificando dispositivo:', error);
     return NextResponse.json(
-      { error: 'Error del servidor', autorizado: false },
+      { error: 'Error del servidor', autorizado: false, fingerprint: null },
       { status: 500 }
     );
   }
