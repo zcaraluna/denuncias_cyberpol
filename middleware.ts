@@ -1,12 +1,14 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { verificarDispositivoAutorizado, generarFingerprint } from '@/lib/auth';
 
 /**
  * Middleware para verificar autorización de dispositivos
  * 
- * Verifica que el dispositivo esté realmente autorizado en la base de datos.
- * Excepciones: /autenticar y rutas de API públicas.
+ * Verifica que el dispositivo tenga la cookie de autorización.
+ * La validación real contra la base de datos se hace en las rutas API protegidas.
+ * 
+ * Nota: Este middleware corre en Edge Runtime, por lo que no puede acceder directamente
+ * a la base de datos. La validación completa se hace en las rutas API.
  */
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -29,49 +31,21 @@ export async function middleware(request: NextRequest) {
   }
 
   // Obtener el fingerprint de la cookie
-  const fingerprintCookie = request.cookies.get('device_fingerprint')?.value;
+  const fingerprint = request.cookies.get('device_fingerprint')?.value;
 
-  // Si no tiene fingerprint en cookie, generar uno del user-agent y verificar
-  let fingerprint = fingerprintCookie;
-  
+  // Si no tiene fingerprint, redirigir a /autenticar
   if (!fingerprint) {
-    // Generar fingerprint del user-agent actual
-    const userAgent = request.headers.get('user-agent') || '';
-    fingerprint = generarFingerprint(userAgent);
-    
-    // Si no hay cookie, definitivamente no está autorizado
-    const url = request.nextUrl.clone();
-    url.pathname = '/autenticar';
-    const response = NextResponse.redirect(url);
-    // Limpiar cookie inválida si existe
-    response.cookies.delete('device_fingerprint');
-    return response;
-  }
-
-  // Verificar contra la base de datos que el dispositivo está realmente autorizado
-  try {
-    const estaAutorizado = await verificarDispositivoAutorizado(fingerprint);
-    
-    if (!estaAutorizado) {
-      // Dispositivo no autorizado, redirigir a /autenticar y limpiar cookie
+    // Solo redirigir si no está ya en /autenticar
+    if (pathname !== '/autenticar') {
       const url = request.nextUrl.clone();
       url.pathname = '/autenticar';
-      const response = NextResponse.redirect(url);
-      response.cookies.delete('device_fingerprint');
-      return response;
+      return NextResponse.redirect(url);
     }
-    
-    // Dispositivo autorizado, permitir acceso
-    return NextResponse.next();
-  } catch (error) {
-    // En caso de error de BD, por seguridad redirigir a autenticar
-    console.error('Error verificando dispositivo en middleware:', error);
-    const url = request.nextUrl.clone();
-    url.pathname = '/autenticar';
-    const response = NextResponse.redirect(url);
-    response.cookies.delete('device_fingerprint');
-    return response;
   }
+
+  // Permitir el acceso - la validación real se hace en las rutas API
+  // Las páginas también pueden verificar en el cliente antes de cargar datos
+  return NextResponse.next();
 }
 
 // Configurar qué rutas deben pasar por el middleware
