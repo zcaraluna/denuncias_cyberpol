@@ -48,14 +48,27 @@ En `lib/auth.ts`:
 
 ### 6. Script de Generación
 
-- **`scripts/generar-codigo-activacion.js`**: Script para generar códigos de activación
+- **`scripts/generar-codigo-activacion.js`**: Script para generar códigos de activación con nombre/descripción opcional
+
+### 7. Página de Gestión (Superadmin)
+
+- **`/gestion-dispositivos`**: Página web para gestionar dispositivos y códigos (solo superadmin)
+  - Ver todos los dispositivos autorizados
+  - Ver todos los códigos de activación
+  - Desactivar dispositivos y códigos
+  - Ver estado de códigos (válido, expirado, usado, desactivado)
+  - Ver días restantes de expiración
 
 ## Uso
 
-### Paso 1: Ejecutar la Migración
+### Paso 1: Ejecutar las Migraciones
 
 ```bash
+# Migración base
 node scripts/run-migration.js 008_add_dispositivos_autorizados.sql
+
+# Migración para agregar campos de nombre y activo
+node scripts/run-migration.js 009_add_nombre_codigos_dispositivos.sql
 ```
 
 ### Paso 2: Generar un Código de Activación
@@ -66,6 +79,12 @@ node scripts/generar-codigo-activacion.js
 
 # Generar código con expiración personalizada (ej: 7 días)
 node scripts/generar-codigo-activacion.js 7
+
+# Generar código con nombre/descripción (para identificar oficina)
+node scripts/generar-codigo-activacion.js 30 "Oficina Central"
+
+# Combinar ambos: días de expiración y nombre
+node scripts/generar-codigo-activacion.js 30 "Sucursal Ciudad del Este"
 ```
 
 El script mostrará el código generado. **Guárdalo de forma segura**, ya que solo puede usarse una vez.
@@ -92,6 +111,8 @@ Comparte el código con la persona que necesita autorizar su dispositivo. El có
 - ✅ Validación en servidor (no se puede falsificar fácilmente)
 - ✅ Registro de IP y User-Agent del dispositivo
 - ✅ Cookies con SameSite=Strict para protección CSRF
+- ✅ Desactivación de códigos y dispositivos (soft delete)
+- ✅ Seguimiento de estado de códigos (activo, usado, expirado)
 
 ### Limitaciones
 
@@ -109,11 +130,47 @@ Comparte el código con la persona que necesita autorizar su dispositivo. El có
 
 ## Gestión de Dispositivos
 
-### Ver dispositivos autorizados
+### Interfaz Web (Superadmin)
+
+Los superadmins pueden gestionar dispositivos y códigos desde la interfaz web:
+
+1. Accede al **Dashboard**
+2. Haz clic en **"Gestión de Dispositivos"** (solo visible para superadmin)
+3. En la página verás dos pestañas:
+   - **Dispositivos Autorizados**: Lista todos los dispositivos que han sido autorizados
+   - **Códigos de Activación**: Lista todos los códigos generados
+
+### Funcionalidades en la Interfaz
+
+#### Dispositivos Autorizados
+- Ver nombre/descripción del dispositivo (heredado del código usado)
+- Ver fingerprint, IP, fecha de autorización y último acceso
+- Ver el código de activación que se usó
+- Estado activo/inactivo
+- **Desactivar dispositivos** (botón disponible)
+
+#### Códigos de Activación
+- Ver nombre/descripción asignado al generar el código
+- Ver el código completo
+- **Estado visual**: 
+  - ✅ Válido (con días restantes)
+  - ⚠️ Expira pronto (menos de 7 días)
+  - ❌ Expirado
+  - ✔️ Usado
+  - ❌ Desactivado
+- Ver fecha de creación y expiración
+- Ver si fue usado y en qué fecha
+- Ver dispositivo asociado (si fue usado)
+- **Desactivar códigos no usados**
+
+### Gestión desde Base de Datos
+
+#### Ver dispositivos autorizados
 
 ```sql
 SELECT 
     id,
+    nombre,
     fingerprint,
     user_agent,
     ip_address,
@@ -124,7 +181,7 @@ FROM dispositivos_autorizados
 ORDER BY autorizado_en DESC;
 ```
 
-### Desactivar un dispositivo
+#### Desactivar un dispositivo
 
 ```sql
 UPDATE dispositivos_autorizados 
@@ -132,19 +189,35 @@ SET activo = FALSE
 WHERE id = <id_dispositivo>;
 ```
 
-### Ver códigos usados
+#### Ver códigos con días restantes
 
 ```sql
 SELECT 
     id,
     codigo,
+    nombre,
     usado,
     usado_en,
     dispositivo_fingerprint,
     creado_en,
-    expira_en
+    expira_en,
+    activo,
+    CASE 
+        WHEN usado THEN 'Usado'
+        WHEN NOT activo THEN 'Desactivado'
+        WHEN expira_en < NOW() THEN 'Expirado'
+        ELSE CONCAT('Válido (', CEIL(EXTRACT(EPOCH FROM (expira_en - NOW())) / 86400), ' días)')
+    END as estado
 FROM codigos_activacion
 ORDER BY creado_en DESC;
+```
+
+#### Desactivar un código
+
+```sql
+UPDATE codigos_activacion 
+SET activo = FALSE 
+WHERE id = <id_codigo>;
 ```
 
 ## Ejemplo de Flujo Completo

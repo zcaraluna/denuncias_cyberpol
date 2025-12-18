@@ -101,7 +101,7 @@ export async function validarCodigoActivacion(
     
     // Buscar el código normalizando ambos lados (código en BD puede tener guiones)
     const result = await pool.query(
-      `SELECT id, usado, expira_en, codigo 
+      `SELECT id, usado, expira_en, codigo, nombre, activo 
        FROM codigos_activacion 
        WHERE REPLACE(UPPER(codigo), '-', '') = $1`,
       [codigoNormalizado]
@@ -112,6 +112,11 @@ export async function validarCodigoActivacion(
     }
 
     const codigoActivacion = result.rows[0];
+
+    // Verificar si el código está activo
+    if (codigoActivacion.activo === false) {
+      return { valido: false, mensaje: 'Este código ha sido desactivado' };
+    }
 
     // Verificar si ya fue usado
     if (codigoActivacion.usado) {
@@ -143,10 +148,10 @@ export async function validarCodigoActivacion(
         [fingerprint, codigoActivacion.id]
       );
 
-      // Registrar dispositivo autorizado
+      // Registrar dispositivo autorizado (heredar nombre del código si existe)
       await pool.query(
-        'INSERT INTO dispositivos_autorizados (fingerprint, user_agent, ip_address, codigo_activacion_id) VALUES ($1, $2, $3, $4)',
-        [fingerprint, userAgent, ipAddress || null, codigoActivacion.id]
+        'INSERT INTO dispositivos_autorizados (fingerprint, user_agent, ip_address, codigo_activacion_id, nombre) VALUES ($1, $2, $3, $4, $5)',
+        [fingerprint, userAgent, ipAddress || null, codigoActivacion.id, codigoActivacion.nombre || null]
       );
 
       await pool.query('COMMIT');
@@ -193,7 +198,8 @@ export async function verificarDispositivoAutorizado(
  * Genera un código de activación nuevo
  */
 export async function generarCodigoActivacion(
-  diasExpiracion: number = 30
+  diasExpiracion: number = 30,
+  nombre?: string
 ): Promise<string> {
   try {
     const crypto = require('crypto');
@@ -204,13 +210,101 @@ export async function generarCodigoActivacion(
     fechaExpiracion.setDate(fechaExpiracion.getDate() + diasExpiracion);
 
     await pool.query(
-      'INSERT INTO codigos_activacion (codigo, expira_en) VALUES ($1, $2)',
-      [codigo, fechaExpiracion]
+      'INSERT INTO codigos_activacion (codigo, expira_en, nombre) VALUES ($1, $2, $3)',
+      [codigo, fechaExpiracion, nombre || null]
     );
 
     return codigo;
   } catch (error) {
     console.error('Error generando código de activación:', error);
+    throw error;
+  }
+}
+
+/**
+ * Desactiva un código de activación
+ */
+export async function desactivarCodigoActivacion(codigoId: number): Promise<boolean> {
+  try {
+    await pool.query(
+      'UPDATE codigos_activacion SET activo = FALSE WHERE id = $1',
+      [codigoId]
+    );
+    return true;
+  } catch (error) {
+    console.error('Error desactivando código de activación:', error);
+    return false;
+  }
+}
+
+/**
+ * Desactiva un dispositivo autorizado
+ */
+export async function desactivarDispositivo(dispositivoId: number): Promise<boolean> {
+  try {
+    await pool.query(
+      'UPDATE dispositivos_autorizados SET activo = FALSE WHERE id = $1',
+      [dispositivoId]
+    );
+    return true;
+  } catch (error) {
+    console.error('Error desactivando dispositivo:', error);
+    return false;
+  }
+}
+
+/**
+ * Obtiene todos los dispositivos autorizados
+ */
+export async function obtenerDispositivosAutorizados() {
+  try {
+    const result = await pool.query(`
+      SELECT 
+        d.id,
+        d.fingerprint,
+        d.nombre,
+        d.user_agent,
+        d.ip_address,
+        d.autorizado_en,
+        d.ultimo_acceso,
+        d.activo,
+        c.codigo as codigo_activacion,
+        c.usado as codigo_usado,
+        c.expira_en as codigo_expira_en,
+        c.activo as codigo_activo
+      FROM dispositivos_autorizados d
+      LEFT JOIN codigos_activacion c ON d.codigo_activacion_id = c.id
+      ORDER BY d.autorizado_en DESC
+    `);
+    return result.rows;
+  } catch (error) {
+    console.error('Error obteniendo dispositivos autorizados:', error);
+    throw error;
+  }
+}
+
+/**
+ * Obtiene todos los códigos de activación
+ */
+export async function obtenerCodigosActivacion() {
+  try {
+    const result = await pool.query(`
+      SELECT 
+        id,
+        codigo,
+        nombre,
+        usado,
+        usado_en,
+        dispositivo_fingerprint,
+        creado_en,
+        expira_en,
+        activo
+      FROM codigos_activacion
+      ORDER BY creado_en DESC
+    `);
+    return result.rows;
+  } catch (error) {
+    console.error('Error obteniendo códigos de activación:', error);
     throw error;
   }
 }

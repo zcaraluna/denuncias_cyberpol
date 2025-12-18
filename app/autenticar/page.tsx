@@ -14,7 +14,8 @@ export default function AutenticarPage() {
   useEffect(() => {
     const verificarAutorizacion = async () => {
       try {
-        // Intentar obtener el fingerprint del localStorage
+        // Intentar obtener el fingerprint del localStorage o cookies
+        // El servidor puede tenerlo en cookie también
         const fingerprintGuardado = localStorage.getItem('device_fingerprint')
         
         if (fingerprintGuardado) {
@@ -31,6 +32,25 @@ export default function AutenticarPage() {
             // Ya está autorizado, redirigir al login
             router.push('/')
             return
+          } else {
+            // Si el servidor dice que no está autorizado, limpiar localStorage
+            localStorage.removeItem('device_fingerprint')
+          }
+        } else {
+          // No hay fingerprint en localStorage, verificar si hay cookie válida
+          // haciendo una verificación con el servidor usando GET
+          const response = await fetch('/api/verificar-dispositivo', {
+            method: 'GET',
+          })
+          
+          if (response.ok) {
+            const data = await response.json()
+            if (data.autorizado && data.fingerprint) {
+              // Hay cookie válida, guardar en localStorage y redirigir
+              localStorage.setItem('device_fingerprint', data.fingerprint)
+              router.push('/')
+              return
+            }
           }
         }
         

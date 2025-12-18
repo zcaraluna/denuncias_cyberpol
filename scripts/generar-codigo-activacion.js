@@ -16,7 +16,7 @@ const pool = new Pool({
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
 });
 
-async function generarCodigoActivacion(diasExpiracion = 30) {
+async function generarCodigoActivacion(diasExpiracion = 30, nombre = null) {
   try {
     // Validar que DATABASE_URL esté configurado
     if (!process.env.DATABASE_URL) {
@@ -47,13 +47,16 @@ async function generarCodigoActivacion(diasExpiracion = 30) {
     // Insertar código en la base de datos (sin guiones, normalizado)
     // Esto permite que el usuario ingrese el código con o sin guiones
     await pool.query(
-      'INSERT INTO codigos_activacion (codigo, expira_en) VALUES ($1, $2)',
-      [codigo, fechaExpiracion]
+      'INSERT INTO codigos_activacion (codigo, expira_en, nombre) VALUES ($1, $2, $3)',
+      [codigo, fechaExpiracion, nombre]
     );
 
     console.log('\n✅ ¡Código de activación generado exitosamente!');
     console.log('\n📋 Detalles del código:');
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    if (nombre) {
+      console.log(`Nombre:        ${nombre}`);
+    }
     console.log(`Código:        ${codigoFormateado}`);
     console.log(`                ${codigo} (sin guiones también válido)`);
     console.log(`Expira en:     ${fechaExpiracion.toLocaleDateString('es-PY')}`);
@@ -81,15 +84,19 @@ async function generarCodigoActivacion(diasExpiracion = 30) {
   }
 }
 
-// Obtener días de expiración desde argumentos (opcional)
+// Obtener parámetros desde argumentos
+// Formato: node scripts/generar-codigo-activacion.js [dias_expiracion] [nombre]
+// Ejemplo: node scripts/generar-codigo-activacion.js 30 "Oficina Central"
 const diasExpiracion = process.argv[2] ? parseInt(process.argv[2]) : 30;
+const nombre = process.argv[3] || null;
 
 if (isNaN(diasExpiracion) || diasExpiracion < 1) {
   console.error('❌ Error: Los días de expiración deben ser un número positivo');
-  console.error('Uso: node scripts/generar-codigo-activacion.js [dias_expiracion]');
+  console.error('Uso: node scripts/generar-codigo-activacion.js [dias_expiracion] [nombre]');
+  console.error('Ejemplo: node scripts/generar-codigo-activacion.js 30 "Oficina Central"');
   console.error('Ejemplo: node scripts/generar-codigo-activacion.js 30');
   process.exit(1);
 }
 
-generarCodigoActivacion(diasExpiracion);
+generarCodigoActivacion(diasExpiracion, nombre);
 
