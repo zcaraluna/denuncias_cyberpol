@@ -19,6 +19,8 @@ export async function middleware(request: NextRequest) {
     '/api/autenticar',
     '/api/verificar-dispositivo',
     '/api/auth/login', // El login también debe ser accesible sin dispositivo autorizado
+    '/verificar', // Página pública para verificar denuncias
+    '/api/verificar', // API pública para verificar denuncias
   ];
 
   // Verificar si es una ruta pública

@@ -20,3 +20,4 @@ CREATE INDEX IF NOT EXISTS idx_ampliaciones_fecha ON ampliaciones_denuncia(fecha
 
 
 
+

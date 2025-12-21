@@ -168,3 +168,4 @@ Después de hacer los cambios, verifica:
 - [ ] Revisé los logs y no hay errores relacionados con VPN
 - [ ] (Opcional) Detuve/deshabilité OpenVPN si ya no lo necesito
 
+
