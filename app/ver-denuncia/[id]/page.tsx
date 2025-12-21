@@ -49,20 +49,21 @@ interface DenunciaCompleta {
   estado: string
   supuestos_autores: Array<{
     autor_conocido: string
-    nombre_autor: string
-    cedula_autor: string
-    domicilio_autor: string
-    nacionalidad_autor: string
-    estado_civil_autor: string
-    edad_autor: number
-    fecha_nacimiento_autor: string
-    lugar_nacimiento_autor: string
-    telefono_autor: string
-    profesion_autor: string
-    telefonos_involucrados: string
-    numero_cuenta_beneficiaria: string
-    nombre_cuenta_beneficiaria: string
-    entidad_bancaria: string
+    nombre_autor: string | null
+    cedula_autor: string | null
+    domicilio_autor: string | null
+    nacionalidad_autor: string | null
+    estado_civil_autor: string | null
+    edad_autor: number | null
+    fecha_nacimiento_autor: string | null
+    lugar_nacimiento_autor: string | null
+    telefono_autor: string | null
+    profesion_autor: string | null
+    telefonos_involucrados: string | null
+    numero_cuenta_beneficiaria: string | null
+    nombre_cuenta_beneficiaria: string | null
+    entidad_bancaria: string | null
+    descripcion_fisica: string | null
   }>
 }
 
@@ -414,6 +415,15 @@ export default function VerDenunciaPage({ params }: { params: Promise<{ id: stri
                 </h2>
                 {denuncia.supuestos_autores.map((autor, index) => (
                   <div key={index} className="mb-6 p-4 border border-gray-200 rounded-lg">
+                    <div className="mb-3">
+                      <span className={`px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full ${
+                        autor.autor_conocido === 'Conocido'
+                          ? 'bg-blue-100 text-blue-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {autor.autor_conocido === 'Conocido' ? 'Autor Conocido' : 'Autor Desconocido'}
+                      </span>
+                    </div>
                     <div className="grid grid-cols-2 gap-4">
                       {autor.autor_conocido === 'Conocido' ? (
                         <>
@@ -480,6 +490,12 @@ export default function VerDenunciaPage({ params }: { params: Promise<{ id: stri
                         </>
                       ) : (
                         <>
+                          {autor.descripcion_fisica && (
+                            <div className="col-span-2">
+                              <p className="text-sm font-medium text-gray-600">Descripción Física</p>
+                              <p className="text-base text-gray-900 whitespace-pre-wrap">{autor.descripcion_fisica}</p>
+                            </div>
+                          )}
                           {autor.telefonos_involucrados && (
                             <div>
                               <p className="text-sm font-medium text-gray-600">Teléfono(s) Involucrado(s)</p>
