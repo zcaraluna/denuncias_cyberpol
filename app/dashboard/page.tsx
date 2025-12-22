@@ -1,45 +1,10 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
 import Link from 'next/link'
-
-interface Usuario {
-  id: number
-  usuario: string
-  nombre: string
-  apellido: string
-  grado: string
-  oficina: string
-  rol: string
-}
+import { useAuth } from '@/lib/hooks/useAuth'
 
 export default function DashboardPage() {
-  const router = useRouter()
-  const [usuario, setUsuario] = useState<Usuario | null>(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    const usuarioStr = sessionStorage.getItem('usuario')
-    if (!usuarioStr) {
-      router.push('/')
-      return
-    }
-
-    try {
-      const usuarioData = JSON.parse(usuarioStr)
-      setUsuario(usuarioData)
-    } catch (error) {
-      router.push('/')
-    } finally {
-      setLoading(false)
-    }
-  }, [router])
-
-  const handleLogout = () => {
-    sessionStorage.removeItem('usuario')
-    router.push('/')
-  }
+  const { usuario, loading, logout } = useAuth()
 
   if (loading) {
     return (
@@ -70,7 +35,7 @@ export default function DashboardPage() {
                 <span className="ml-2">{usuario.oficina}</span>
               </div>
               <button
-                onClick={handleLogout}
+                onClick={logout}
                 className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition"
               >
                 Cerrar Sesión

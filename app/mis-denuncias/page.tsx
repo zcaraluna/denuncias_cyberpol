@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useAuth } from '@/lib/hooks/useAuth'
 
 interface Denuncia {
   id: number
@@ -16,36 +17,12 @@ interface Denuncia {
   estado: string
 }
 
-interface Usuario {
-  id: number
-  nombre: string
-  apellido: string
-  grado: string
-  oficina: string
-  rol: string
-}
-
 export default function MisDenunciasPage() {
   const router = useRouter()
-  const [usuario, setUsuario] = useState<Usuario | null>(null)
+  const { usuario, loading: authLoading, logout } = useAuth()
   const [denuncias, setDenuncias] = useState<Denuncia[]>([])
   const [loading, setLoading] = useState(true)
   const [filtroEstado, setFiltroEstado] = useState<'todos' | 'borrador' | 'completada'>('todos')
-
-  useEffect(() => {
-    const usuarioStr = sessionStorage.getItem('usuario')
-    if (!usuarioStr) {
-      router.push('/')
-      return
-    }
-
-    try {
-      const usuarioData = JSON.parse(usuarioStr)
-      setUsuario(usuarioData)
-    } catch (error) {
-      router.push('/')
-    }
-  }, [router])
 
   const cargarDenuncias = async () => {
     if (!usuario) return
@@ -69,10 +46,6 @@ export default function MisDenunciasPage() {
     }
   }, [usuario, filtroEstado])
 
-  const handleLogout = () => {
-    sessionStorage.removeItem('usuario')
-    router.push('/')
-  }
 
   const verDenuncia = (id: number) => {
     router.push(`/ver-denuncia/${id}`)
@@ -82,7 +55,7 @@ export default function MisDenunciasPage() {
     ? denuncias 
     : denuncias.filter(d => d.estado === filtroEstado)
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-xl">Cargando...</div>
@@ -108,7 +81,7 @@ export default function MisDenunciasPage() {
                 <span className="font-medium">{usuario.grado} {usuario.nombre} {usuario.apellido}</span>
               </div>
               <button
-                onClick={handleLogout}
+                onClick={logout}
                 className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition"
               >
                 Cerrar Sesión

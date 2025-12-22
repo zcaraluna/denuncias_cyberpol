@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useAuth } from '@/lib/hooks/useAuth'
 
 interface Visita {
   id: number
@@ -58,25 +59,18 @@ export default function PerfilUsuarioPage({ params }: { params: Promise<{ id: st
     loadParams()
   }, [params])
 
-  useEffect(() => {
-    const usuarioStr = sessionStorage.getItem('usuario')
-    if (!usuarioStr) {
-      router.push('/')
-      return
-    }
+  const { usuario: usuarioAuth, loading: authLoading } = useAuth()
 
-    try {
-      const usuarioData = JSON.parse(usuarioStr)
-      setUsuarioActivo(usuarioData)
+  useEffect(() => {
+    if (usuarioAuth) {
+      setUsuarioActivo(usuarioAuth)
       
-      if (usuarioData.rol !== 'superadmin' && usuarioData.rol !== 'admin') {
+      if (usuarioAuth.rol !== 'superadmin' && usuarioAuth.rol !== 'admin') {
         router.push('/dashboard')
         return
       }
-    } catch (error) {
-      router.push('/')
     }
-  }, [router])
+  }, [usuarioAuth, router])
 
   useEffect(() => {
     if (!usuarioId || !usuarioActivo) return

@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useAuth } from '@/lib/hooks/useAuth'
 
 interface Usuario {
   id: number
@@ -46,32 +47,22 @@ interface Codigo {
 
 export default function GestionDispositivosPage() {
   const router = useRouter()
-  const [usuario, setUsuario] = useState<Usuario | null>(null)
+  const { usuario, loading: authLoading } = useAuth()
   const [dispositivos, setDispositivos] = useState<Dispositivo[]>([])
   const [codigos, setCodigos] = useState<Codigo[]>([])
   const [loading, setLoading] = useState(true)
   const [tabActivo, setTabActivo] = useState<'dispositivos' | 'codigos'>('dispositivos')
 
   useEffect(() => {
-    const usuarioStr = sessionStorage.getItem('usuario')
-    if (!usuarioStr) {
-      router.push('/')
-      return
-    }
-
-    try {
-      const usuarioData = JSON.parse(usuarioStr)
-      setUsuario(usuarioData)
-      
+    if (usuario) {
       // Solo superadmin puede acceder a esta página
-      if (usuarioData.rol !== 'superadmin') {
+      if (usuario.rol !== 'superadmin') {
         router.push('/dashboard')
         return
       }
-    } catch (error) {
-      router.push('/')
+      cargarDatos()
     }
-  }, [router])
+  }, [usuario, router])
 
   const cargarDatos = async () => {
     if (!usuario) return

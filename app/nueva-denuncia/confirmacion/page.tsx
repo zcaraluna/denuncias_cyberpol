@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState, Suspense } from 'react'
+import { useAuth } from '@/lib/hooks/useAuth'
 
 interface DenunciaInfo {
   id: number
@@ -31,17 +32,7 @@ function ConfirmacionPage() {
   const [mostrarModal, setMostrarModal] = useState(false)
   const [tipoPapelSeleccionado, setTipoPapelSeleccionado] = useState<'oficio' | 'a4'>('oficio')
 
-  useEffect(() => {
-    const usuarioStr = sessionStorage.getItem('usuario')
-    if (usuarioStr) {
-      try {
-        const usuarioData = JSON.parse(usuarioStr)
-        setUsuario(usuarioData)
-      } catch (error) {
-        console.error('Error parsing usuario:', error)
-      }
-    }
-  }, [])
+  const { usuario, loading: authLoading } = useAuth()
 
   useEffect(() => {
     const id = searchParams.get('id')

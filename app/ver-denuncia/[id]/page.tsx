@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useAuth } from '@/lib/hooks/useAuth'
 
 interface Ampliacion {
   id: number
@@ -144,7 +145,7 @@ const formatearDescripcionFisica = (descJson: string | null): string | null => {
 
 export default function VerDenunciaPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
-  const [usuario, setUsuario] = useState<Usuario | null>(null)
+  const { usuario, loading: authLoading } = useAuth()
   const [denuncia, setDenuncia] = useState<DenunciaCompleta | null>(null)
   const [ampliaciones, setAmpliaciones] = useState<Ampliacion[]>([])
   const [loading, setLoading] = useState(true)
@@ -161,21 +162,6 @@ export default function VerDenunciaPage({ params }: { params: Promise<{ id: stri
     }
     loadParams()
   }, [params])
-
-  useEffect(() => {
-    const usuarioStr = sessionStorage.getItem('usuario')
-    if (!usuarioStr) {
-      router.push('/')
-      return
-    }
-
-    try {
-      const usuarioData = JSON.parse(usuarioStr)
-      setUsuario(usuarioData)
-    } catch (error) {
-      router.push('/')
-    }
-  }, [router])
 
   useEffect(() => {
     if (denunciaId && usuario) {

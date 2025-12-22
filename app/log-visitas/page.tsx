@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useAuth } from '@/lib/hooks/useAuth'
 
 interface Visita {
   id: number
@@ -28,30 +29,20 @@ interface Usuario {
 
 export default function LogVisitasPage() {
   const router = useRouter()
-  const [usuario, setUsuario] = useState<Usuario | null>(null)
+  const { usuario, loading: authLoading, logout } = useAuth()
   const [visitas, setVisitas] = useState<Visita[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const usuarioStr = sessionStorage.getItem('usuario')
-    if (!usuarioStr) {
-      router.push('/')
-      return
-    }
-
-    try {
-      const usuarioData = JSON.parse(usuarioStr)
-      setUsuario(usuarioData)
-      
+    if (usuario) {
       // Solo superadmin y admin pueden acceder a esta página
-      if (usuarioData.rol !== 'superadmin' && usuarioData.rol !== 'admin') {
+      if (usuario.rol !== 'superadmin' && usuario.rol !== 'admin') {
         router.push('/dashboard')
         return
       }
-    } catch (error) {
-      router.push('/')
+      cargarVisitas()
     }
-  }, [router])
+  }, [usuario, router])
 
   const cargarVisitas = async () => {
     try {
@@ -67,16 +58,6 @@ export default function LogVisitasPage() {
     }
   }
 
-  useEffect(() => {
-    if (usuario && (usuario.rol === 'admin' || usuario.rol === 'superadmin')) {
-      cargarVisitas()
-    }
-  }, [usuario])
-
-  const handleLogout = () => {
-    sessionStorage.removeItem('usuario')
-    router.push('/')
-  }
 
   const formatearFecha = (fecha: string) => {
     // La fecha ya viene corregida desde el servidor (con 3 horas restadas)
@@ -113,7 +94,7 @@ export default function LogVisitasPage() {
             </Link>
             <h1 className="text-xl font-bold text-gray-800">Log de Visitas</h1>
             <button
-              onClick={handleLogout}
+              onClick={logout}
               className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition"
             >
               Cerrar Sesión

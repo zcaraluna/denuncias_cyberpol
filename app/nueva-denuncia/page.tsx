@@ -8,6 +8,7 @@ import { z } from 'zod'
 import dynamic from 'next/dynamic'
 import Select from 'react-select'
 import { departamentosParaguay } from '@/lib/data/departamentos'
+import { useAuth } from '@/lib/hooks/useAuth'
 
 // Importar el mapa dinámicamente (solo en cliente)
 const MapSelector = dynamic(() => import('@/components/MapSelector'), { ssr: false })
@@ -283,7 +284,7 @@ const generarDatosAleatorios = (
 
 export default function NuevaDenunciaPage() {
   const router = useRouter()
-  const [usuario, setUsuario] = useState<Usuario | null>(null)
+  const { usuario, loading: authLoading } = useAuth()
   const [paso, setPaso] = useState(1)
   const [autorConocido, setAutorConocido] = useState<'Conocido' | 'Desconocido'>('Desconocido')
   const [coordenadas, setCoordenadas] = useState<{ lat: number; lng: number } | null>(null)
@@ -1477,26 +1478,17 @@ export default function NuevaDenunciaPage() {
   }, [fechaNacimientoAutor, setValueAutor])
 
   useEffect(() => {
-    const usuarioStr = sessionStorage.getItem('usuario')
-    if (!usuarioStr) {
-      router.push('/')
-      return
-    }
-
-    try {
-      const usuarioData = JSON.parse(usuarioStr)
-      setUsuario(usuarioData)
-
+    if (usuario) {
       // Verificar si hay un borrador para continuar
-      const borradorId = sessionStorage.getItem('borradorId')
-      if (borradorId) {
-        cargarBorrador(parseInt(borradorId))
-        sessionStorage.removeItem('borradorId')
+      if (typeof window !== 'undefined') {
+        const borradorId = sessionStorage.getItem('borradorId')
+        if (borradorId) {
+          cargarBorrador(parseInt(borradorId))
+          sessionStorage.removeItem('borradorId')
+        }
       }
-    } catch (error) {
-      router.push('/')
     }
-  }, [router])
+  }, [usuario])
 
   const onDenuncianteSubmit = (data: DenuncianteFormValues) => {
     const listaActualizada = guardarDenuncianteEnLista(data, { mantenerFormulario: false })

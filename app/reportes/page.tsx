@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useAuth } from '@/lib/hooks/useAuth'
 import {
   BarChart,
   Bar,
@@ -61,34 +62,19 @@ export default function ReportesPage() {
   // Tabs activos
   const [tabActivo, setTabActivo] = useState('general')
 
-  useEffect(() => {
-    const usuarioStr = sessionStorage.getItem('usuario')
-    if (!usuarioStr) {
-      router.push('/')
-      return
-    }
-
-    try {
-      const usuarioData = JSON.parse(usuarioStr)
-      setUsuario(usuarioData)
-      
-      // Solo superadmin y admin pueden acceder
-      if (usuarioData.rol !== 'superadmin' && usuarioData.rol !== 'admin') {
-        router.push('/dashboard')
-        return
-      }
-    } catch (error) {
-      router.push('/')
-    } finally {
-      setLoading(false)
-    }
-  }, [router])
+  const { usuario, loading: authLoading } = useAuth()
 
   useEffect(() => {
     if (usuario) {
+      // Solo superadmin y admin pueden acceder
+      if (usuario.rol !== 'superadmin' && usuario.rol !== 'admin') {
+        router.push('/dashboard')
+        return
+      }
       cargarOpcionesFiltros()
     }
-  }, [usuario])
+    setLoading(false)
+  }, [usuario, router])
 
   useEffect(() => {
     if (usuario) {

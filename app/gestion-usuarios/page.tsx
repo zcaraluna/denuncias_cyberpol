@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useAuth } from '@/lib/hooks/useAuth'
 
 interface Usuario {
   id: number
@@ -82,28 +83,21 @@ export default function GestionUsuariosPage() {
     contraseña: ''
   })
 
-  useEffect(() => {
-    const usuarioStr = sessionStorage.getItem('usuario')
-    if (!usuarioStr) {
-      router.push('/')
-      return
-    }
+  const { usuario: usuarioAuth, loading: authLoading } = useAuth()
 
-    try {
-      const usuarioData = JSON.parse(usuarioStr)
-      setUsuario(usuarioData)
+  useEffect(() => {
+    if (usuarioAuth) {
+      setUsuario(usuarioAuth)
       
       // Solo superadmin y admin pueden acceder a esta página
-      if (usuarioData.rol !== 'superadmin' && usuarioData.rol !== 'admin') {
-        router.push('/inicio')
+      if (usuarioAuth.rol !== 'superadmin' && usuarioAuth.rol !== 'admin') {
+        router.push('/dashboard')
         return
       }
       
       cargarUsuarios()
-    } catch (error) {
-      router.push('/')
     }
-  }, [router])
+  }, [usuarioAuth, router])
 
   const cargarUsuarios = async () => {
     try {

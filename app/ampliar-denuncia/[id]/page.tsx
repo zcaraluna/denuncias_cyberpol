@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useAuth } from '@/lib/hooks/useAuth'
 
 interface Usuario {
   id: number
@@ -38,20 +39,7 @@ export default function AmpliarDenunciaPage({ params }: { params: Promise<{ id: 
     loadParams()
   }, [params])
 
-  useEffect(() => {
-    const usuarioStr = sessionStorage.getItem('usuario')
-    if (!usuarioStr) {
-      router.push('/')
-      return
-    }
-
-    try {
-      const usuarioData = JSON.parse(usuarioStr)
-      setUsuario(usuarioData)
-    } catch (error) {
-      router.push('/')
-    }
-  }, [router])
+  const { usuario, loading: authLoading } = useAuth()
 
   useEffect(() => {
     if (denunciaId && usuario) {

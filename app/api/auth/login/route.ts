@@ -21,10 +21,24 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    return NextResponse.json({
+    // Crear respuesta con el usuario
+    const response = NextResponse.json({
       success: true,
       usuario: usuarioValidado,
     })
+
+    // Establecer cookie con la información del usuario (válida por 7 días)
+    // Usar encodeURIComponent para manejar caracteres especiales
+    const usuarioJson = encodeURIComponent(JSON.stringify(usuarioValidado))
+    response.cookies.set('usuario_sesion', usuarioJson, {
+      httpOnly: false, // Permitir acceso desde JS para compatibilidad con sessionStorage
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60, // 7 días
+      path: '/',
+    })
+
+    return response
   } catch (error) {
     console.error('Error en login:', error)
     return NextResponse.json(

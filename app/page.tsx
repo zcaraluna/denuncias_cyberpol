@@ -32,8 +32,11 @@ export default function LoginPage() {
         return
       }
 
-      // Guardar datos del usuario en sessionStorage
-      sessionStorage.setItem('usuario', JSON.stringify(data.usuario))
+      // Guardar datos del usuario en sessionStorage como respaldo
+      // La cookie ya fue establecida por el servidor
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('usuario', JSON.stringify(data.usuario))
+      }
       router.push('/dashboard')
     } catch (err) {
       setError('Error de conexión. Por favor, intente nuevamente.')
