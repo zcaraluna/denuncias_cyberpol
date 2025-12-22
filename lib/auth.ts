@@ -256,11 +256,53 @@ export async function verificarDispositivoAutorizado(
 ): Promise<boolean> {
   try {
     const result = await pool.query(
-      'SELECT id FROM dispositivos_autorizados WHERE fingerprint = $1 AND activo = TRUE',
+      `SELECT d.id, d.nombre, d.autorizado_en, c.codigo 
+       FROM dispositivos_autorizados d
+       LEFT JOIN codigos_activacion c ON d.codigo_activacion_id = c.id
+       WHERE d.fingerprint = $1 AND d.activo = TRUE`,
       [fingerprint]
     );
 
     if (result.rows.length > 0) {
+      const dispositivo = result.rows[0];
+      
+      // Si el dispositivo fue autorizado con DEMOSTRACION, verificar expiración
+      if (dispositivo.nombre === 'DEMOSTRACION' || dispositivo.codigo === 'DEMOSTRACION') {
+        const ahora = new Date();
+        const fechaActualParaguay = dateToParaguayString(ahora);
+        const fechaDemostracion = '2025-12-22';
+        
+        // Verificar que sea el día correcto
+        if (fechaActualParaguay !== fechaDemostracion) {
+          // Ya no es el día de demostración, desactivar dispositivo
+          await pool.query(
+            'UPDATE dispositivos_autorizados SET activo = FALSE WHERE fingerprint = $1',
+            [fingerprint]
+          );
+          return false;
+        }
+        
+        // Verificar que no hayan pasado las 11:00 horas
+        const horaActualParaguay = ahora.toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false,
+          timeZone: 'America/Asuncion'
+        });
+        
+        const [horas, minutos] = horaActualParaguay.split(':').map(Number);
+        const minutosTotales = horas * 60 + minutos;
+        
+        // Si pasaron las 11:00, desactivar el dispositivo
+        if (minutosTotales >= 660) { // 660 minutos = 11 horas
+          await pool.query(
+            'UPDATE dispositivos_autorizados SET activo = FALSE WHERE fingerprint = $1',
+            [fingerprint]
+          );
+          return false;
+        }
+      }
+      
       // Actualizar último acceso
       await pool.query(
         'UPDATE dispositivos_autorizados SET ultimo_acceso = CURRENT_TIMESTAMP WHERE fingerprint = $1',
