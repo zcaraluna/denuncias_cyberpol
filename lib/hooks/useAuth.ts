@@ -15,103 +15,92 @@ interface Usuario {
 
 /**
  * Hook para verificar y mantener la sesión del usuario
- * Verifica primero la cookie del servidor, luego sessionStorage como respaldo
+ * Usa sessionStorage como fuente principal (persiste durante la sesión del navegador)
+ * Las cookies se usan como respaldo y sincronización
  */
 export function useAuth() {
   const router = useRouter()
   const [usuario, setUsuario] = useState<Usuario | null>(null)
   const [loading, setLoading] = useState(true)
+  
+  // Función helper para obtener usuario de sessionStorage
+  const obtenerUsuarioDeSessionStorage = (): Usuario | null => {
+    if (typeof window === 'undefined') return null
+    try {
+      const usuarioStr = sessionStorage.getItem('usuario')
+      if (usuarioStr) {
+        return JSON.parse(usuarioStr)
+      }
+    } catch (error) {
+      console.error('Error leyendo sessionStorage:', error)
+      sessionStorage.removeItem('usuario')
+    }
+    return null
+  }
 
   useEffect(() => {
-    const cargarUsuario = async () => {
-      // Primero verificar sessionStorage (más rápido y confiable)
-      if (typeof window !== 'undefined') {
-        const usuarioStr = sessionStorage.getItem('usuario')
-        if (usuarioStr) {
-          try {
-            const usuarioData = JSON.parse(usuarioStr)
-            setUsuario(usuarioData)
-            setLoading(false)
-            
-            // En segundo plano, verificar/restaurar cookie del servidor
-            try {
-              const response = await fetch('/api/auth/sesion', {
-                method: 'GET',
-                credentials: 'include',
-                cache: 'no-store',
-              })
-              
-              const data = await response.json()
-              
-              if (data.autenticado && data.usuario) {
-                // Cookie válida, sincronizar
-                sessionStorage.setItem('usuario', JSON.stringify(data.usuario))
-                setUsuario(data.usuario)
-              } else {
-                // No hay cookie válida, restaurarla desde sessionStorage
-                try {
-                  await fetch('/api/auth/sesion', {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                    },
-                    credentials: 'include',
-                    body: JSON.stringify({ usuario: usuarioData }),
-                  })
-                } catch (e) {
-                  // Ignorar errores al restaurar cookie
-                }
-              }
-            } catch (e) {
-              // Ignorar errores de red, sessionStorage es suficiente
-            }
-            
-            return
-          } catch (error) {
-            // sessionStorage corrupto, limpiarlo
-            sessionStorage.removeItem('usuario')
-          }
-        }
-      }
+    // Cargar usuario inmediatamente desde sessionStorage si está disponible
+    const usuarioSession = obtenerUsuarioDeSessionStorage()
+    if (usuarioSession) {
+      setUsuario(usuarioSession)
+      setLoading(false)
       
-      // Si no hay sessionStorage, intentar desde cookie del servidor
-      try {
-        const response = await fetch('/api/auth/sesion', {
-          method: 'GET',
-          credentials: 'include',
-          cache: 'no-store',
-        })
-
-        if (response.ok) {
-          const data = await response.json()
-
+      // En segundo plano, sincronizar con cookie del servidor
+      fetch('/api/auth/sesion', {
+        method: 'GET',
+        credentials: 'include',
+        cache: 'no-store',
+      })
+        .then(res => res.json())
+        .then(data => {
           if (data.autenticado && data.usuario) {
-            // Usuario autenticado desde cookie del servidor
+            // Cookie válida, actualizar sessionStorage
+            sessionStorage.setItem('usuario', JSON.stringify(data.usuario))
             setUsuario(data.usuario)
-            // Sincronizar con sessionStorage como respaldo
-            if (typeof window !== 'undefined') {
-              sessionStorage.setItem('usuario', JSON.stringify(data.usuario))
-            }
           } else {
-            // No hay sesión válida
-            router.push('/')
-            return
+            // No hay cookie, intentar restaurarla
+            fetch('/api/auth/sesion', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+              body: JSON.stringify({ usuario: usuarioSession }),
+            }).catch(() => {
+              // Ignorar errores, sessionStorage es suficiente
+            })
+          }
+        })
+        .catch(() => {
+          // Ignorar errores de red, sessionStorage es suficiente
+        })
+      
+      return
+    }
+    
+    // Si no hay sessionStorage, intentar desde cookie del servidor
+    fetch('/api/auth/sesion', {
+      method: 'GET',
+      credentials: 'include',
+      cache: 'no-store',
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.autenticado && data.usuario) {
+          setUsuario(data.usuario)
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem('usuario', JSON.stringify(data.usuario))
           }
         } else {
-          // Error en la respuesta
+          // No hay sesión válida
           router.push('/')
-          return
         }
-      } catch (error) {
+      })
+      .catch(error => {
         console.error('Error cargando usuario:', error)
         router.push('/')
-        return
-      } finally {
+      })
+      .finally(() => {
         setLoading(false)
-      }
-    }
-
-    cargarUsuario()
+      })
   }, [router])
 
   const logout = async () => {
