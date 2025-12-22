@@ -2362,7 +2362,7 @@ export default function NuevaDenunciaPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Correo Electrónico *
+                    Correo Electrónico
                   </label>
                   <input
                     type="email"

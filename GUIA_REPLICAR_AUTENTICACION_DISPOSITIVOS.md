@@ -1008,3 +1008,4 @@ Si necesitas ver la implementación completa, consulta estos archivos en el proy
 ¡Listo! Con esta guía puedes replicar el sistema fielmente en cualquier proyecto Next.js con PostgreSQL.
 
 
+
