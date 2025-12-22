@@ -321,3 +321,75 @@ export async function obtenerCodigosActivacion() {
   }
 }
 
+/**
+ * Asegura que la tabla de configuración exista (la crea si no existe)
+ */
+async function asegurarTablaConfiguracion() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS configuracion_sistema (
+        clave VARCHAR(100) PRIMARY KEY,
+        valor TEXT NOT NULL,
+        descripcion TEXT,
+        actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+  } catch (error) {
+    console.error('Error creando tabla de configuración:', error);
+    throw error;
+  }
+}
+
+/**
+ * Obtiene el estado de si se requiere autenticación de dispositivo
+ * Por defecto retorna true (requerido) si no está configurado
+ */
+export async function seRequiereAutenticacionDispositivo(): Promise<boolean> {
+  try {
+    await asegurarTablaConfiguracion();
+    
+    const result = await pool.query(
+      'SELECT valor FROM configuracion_sistema WHERE clave = $1',
+      ['requiere_autenticacion_dispositivo']
+    );
+
+    if (result.rows.length === 0) {
+      // Por defecto, sí se requiere
+      return true;
+    }
+
+    return result.rows[0].valor === 'true' || result.rows[0].valor === '1';
+  } catch (error) {
+    console.error('Error obteniendo configuración de autenticación:', error);
+    // Por seguridad, si hay error, requerir autenticación
+    return true;
+  }
+}
+
+/**
+ * Establece si se requiere autenticación de dispositivo
+ */
+export async function establecerRequiereAutenticacionDispositivo(
+  requiere: boolean
+): Promise<boolean> {
+  try {
+    await asegurarTablaConfiguracion();
+
+    await pool.query(`
+      INSERT INTO configuracion_sistema (clave, valor, descripcion, actualizado_en)
+      VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
+      ON CONFLICT (clave) 
+      DO UPDATE SET valor = $2, actualizado_en = CURRENT_TIMESTAMP
+    `, [
+      'requiere_autenticacion_dispositivo',
+      requiere ? 'true' : 'false',
+      'Si es true, se requiere código de activación de dispositivo. Si es false, cualquier usuario puede acceder sin código.'
+    ]);
+
+    return true;
+  } catch (error) {
+    console.error('Error estableciendo configuración de autenticación:', error);
+    return false;
+  }
+}
+

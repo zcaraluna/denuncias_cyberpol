@@ -14,6 +14,130 @@ interface Usuario {
   rol: string
 }
 
+// Componente para activar/desactivar modo demo (sin requisito de autenticación de dispositivo)
+function ModoDemoToggle({ usuario }: { usuario: Usuario }) {
+  const [requiere, setRequiere] = useState<boolean | null>(null)
+  const [cargando, setCargando] = useState(true)
+  const [cambiando, setCambiando] = useState(false)
+
+  useEffect(() => {
+    cargarEstado()
+  }, [])
+
+  const cargarEstado = async () => {
+    try {
+      const response = await fetch('/api/configuracion-autenticacion')
+      if (response.ok) {
+        const data = await response.json()
+        setRequiere(data.requiere)
+      }
+    } catch (error) {
+      console.error('Error cargando configuración:', error)
+    } finally {
+      setCargando(false)
+    }
+  }
+
+  const cambiarModo = async () => {
+    if (cambiando) return
+
+    setCambiando(true)
+    try {
+      const nuevoEstado = !requiere
+      const response = await fetch('/api/configuracion-autenticacion', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          requiere: nuevoEstado,
+          usuario: usuario.usuario,
+          usuario_rol: usuario.rol,
+        }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setRequiere(nuevoEstado)
+        alert(data.mensaje || (nuevoEstado ? 'Modo normal activado' : 'Modo demostración activado'))
+        // Recargar la página para que el middleware aplique los cambios
+        window.location.reload()
+      } else {
+        const error = await response.json()
+        alert(error.error || 'Error al cambiar el modo')
+      }
+    } catch (error) {
+      console.error('Error cambiando modo:', error)
+      alert('Error al cambiar el modo')
+    } finally {
+      setCambiando(false)
+    }
+  }
+
+  if (cargando) {
+    return (
+      <div className="bg-white rounded-lg shadow-md p-6 border-2 border-gray-300">
+        <div className="text-gray-600">Cargando configuración...</div>
+      </div>
+    )
+  }
+
+  const estaEnModoDemo = requiere === false
+
+  return (
+    <div className={`rounded-lg shadow-md p-6 border-2 transition ${
+      estaEnModoDemo 
+        ? 'bg-yellow-50 border-yellow-400' 
+        : 'bg-white border-gray-300'
+    }`}>
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+            {estaEnModoDemo && (
+              <span className="px-2 py-1 text-xs font-bold bg-yellow-400 text-yellow-900 rounded">
+                MODO DEMO ACTIVO
+              </span>
+            )}
+            Autenticación de Dispositivo
+          </h3>
+          <p className="text-gray-600 text-sm mt-1">
+            {estaEnModoDemo
+              ? 'Cualquier usuario puede acceder sin código de activación (ideal para demostraciones)'
+              : 'Se requiere código de activación para nuevos dispositivos'}
+          </p>
+        </div>
+        <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+          <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
+        </div>
+      </div>
+      
+      <button
+        onClick={cambiarModo}
+        disabled={cambiando}
+        className={`w-full px-4 py-2 rounded-lg font-medium transition ${
+          estaEnModoDemo
+            ? 'bg-gray-700 hover:bg-gray-800 text-white'
+            : 'bg-yellow-500 hover:bg-yellow-600 text-yellow-900'
+        } disabled:opacity-50 disabled:cursor-not-allowed`}
+      >
+        {cambiando
+          ? 'Cambiando...'
+          : estaEnModoDemo
+          ? 'Activar Requisito de Código'
+          : 'Desactivar Requisito (Modo Demo)'}
+      </button>
+      
+      {estaEnModoDemo && (
+        <p className="text-xs text-yellow-700 mt-3 text-center">
+          ⚠️ Recuerda reactivar el requisito después de la demostración
+        </p>
+      )}
+    </div>
+  )
+}
+
 export default function DashboardPage() {
   const router = useRouter()
   const [usuario, setUsuario] = useState<Usuario | null>(null)
@@ -172,24 +296,28 @@ export default function DashboardPage() {
           )}
 
           {usuario.rol === 'superadmin' && (
-            <Link
-              href="/gestion-dispositivos"
-              className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition cursor-pointer border-2 border-transparent hover:border-blue-500"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-800">
-                  Gestión de Dispositivos
-                </h3>
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
-                  </svg>
+            <>
+              <Link
+                href="/gestion-dispositivos"
+                className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition cursor-pointer border-2 border-transparent hover:border-blue-500"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    Gestión de Dispositivos
+                  </h3>
+                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+                    </svg>
+                  </div>
                 </div>
-              </div>
-              <p className="text-gray-600 text-sm">
-                Administrar dispositivos autorizados y códigos de activación
-              </p>
-            </Link>
+                <p className="text-gray-600 text-sm">
+                  Administrar dispositivos autorizados y códigos de activación
+                </p>
+              </Link>
+              
+              <ModoDemoToggle usuario={usuario} />
+            </>
           )}
 
           <Link

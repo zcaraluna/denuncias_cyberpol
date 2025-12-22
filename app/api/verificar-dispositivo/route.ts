@@ -38,6 +38,18 @@ export async function POST(request: NextRequest) {
 // GET endpoint para verificar usando la cookie del request
 export async function GET(request: NextRequest) {
   try {
+    // Verificar si el modo demo está activo (cookie establecida por el middleware o la API de configuración)
+    const modoDemo = request.cookies.get('demo_mode_allowed')?.value === 'true';
+    
+    // Si el modo demo está activo, permitir acceso sin verificar dispositivo
+    if (modoDemo) {
+      return NextResponse.json({
+        autorizado: true,
+        fingerprint: null,
+        modoDemo: true,
+      });
+    }
+
     // Obtener el fingerprint de la cookie
     const fingerprintCookie = request.cookies.get('device_fingerprint')?.value;
     
