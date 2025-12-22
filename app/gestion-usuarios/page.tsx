@@ -155,7 +155,7 @@ export default function GestionUsuariosPage() {
     }
   }
 
-  const handleAbrirEditar = (user: Usuario) => {
+  const handleAbrirEditar = (user: UsuarioCompleto) => {
     setUsuarioEditando(user)
     setEditUsuario({
       nombre: user.nombre,
