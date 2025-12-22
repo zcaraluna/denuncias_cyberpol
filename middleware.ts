@@ -32,14 +32,6 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Verificar si el modo demo está activo (cookie especial)
-  const modoDemo = request.cookies.get('demo_mode_allowed')?.value === 'true';
-  
-  // Si el modo demo está activo, permitir acceso sin verificar dispositivo
-  if (modoDemo) {
-    return NextResponse.next();
-  }
-
   // Obtener el fingerprint de la cookie
   const fingerprint = request.cookies.get('device_fingerprint')?.value;
 
