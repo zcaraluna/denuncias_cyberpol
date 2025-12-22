@@ -119,31 +119,16 @@ export default function AmpliarDenunciaPage({ params }: { params: Promise<{ id: 
         })
       })
 
-      // Verificar si la respuesta tiene contenido antes de intentar parsear
-      const contentType = response.headers.get('content-type')
-      if (!contentType || !contentType.includes('application/json')) {
-        const text = await response.text()
-        console.error('Respuesta no JSON:', text)
-        throw new Error(`Error del servidor: ${response.status} ${response.statusText}`)
-      }
-
-      const data = await response.json()
-
       if (!response.ok) {
-        throw new Error(data.error || `Error al guardar ampliación: ${response.status}`)
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Error al guardar ampliación')
       }
 
       alert('Ampliación creada exitosamente')
       router.push(`/ver-denuncia/${denunciaId}`)
     } catch (error: any) {
-      console.error('Error completo:', error)
-      console.error('Error name:', error?.name)
-      console.error('Error message:', error?.message)
-      console.error('Error stack:', error?.stack)
-      
-      // Mensaje más descriptivo para el usuario
-      const mensajeError = error?.message || 'Error al guardar la ampliación. Por favor, verifique su conexión e intente nuevamente.'
-      alert(mensajeError)
+      console.error('Error:', error)
+      alert(error.message || 'Error al guardar la ampliación')
     } finally {
       setGuardando(false)
     }
