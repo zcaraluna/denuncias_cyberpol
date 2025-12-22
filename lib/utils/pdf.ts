@@ -956,66 +956,18 @@ export async function generarPDFAmpliacion(
     parrafo2 += `, denunciado en fecha ${fechaHecho} siendo las ${datosDenuncia.hora_hecho} aproximadamente, en la dirección ${datosDenuncia.lugar_hecho.toUpperCase()}`
   }
 
+  // En ampliaciones, solo hacer referencia al supuesto autor sin repetir toda la información
   if (datosDenuncia.nombre_autor) {
-    const detallesAutor = []
-    if (datosDenuncia.cedula_autor)
-      detallesAutor.push(
-        `con número de documento ${datosDenuncia.cedula_autor.toUpperCase()}`
-      )
-    if (datosDenuncia.domicilio_autor)
-      detallesAutor.push(
-        `con domicilio en ${datosDenuncia.domicilio_autor.toUpperCase()}`
-      )
-    if (datosDenuncia.nacionalidad_autor)
-      detallesAutor.push(
-        `de nacionalidad ${datosDenuncia.nacionalidad_autor.toUpperCase()}`
-      )
-    if (datosDenuncia.estado_civil_autor)
-      detallesAutor.push(
-        `estado civil ${datosDenuncia.estado_civil_autor.toUpperCase()}`
-      )
-    if (datosDenuncia.edad_autor)
-      detallesAutor.push(`edad ${datosDenuncia.edad_autor} años`)
-    if (datosDenuncia.fecha_nacimiento_autor)
-      detallesAutor.push(
-        `nacido en fecha ${formatDate(datosDenuncia.fecha_nacimiento_autor)}`
-      )
-    if (datosDenuncia.lugar_nacimiento_autor)
-      detallesAutor.push(
-        `en ${datosDenuncia.lugar_nacimiento_autor.toUpperCase()}`
-      )
-    if (datosDenuncia.telefono_autor)
-      detallesAutor.push(
-        `número de teléfono ${datosDenuncia.telefono_autor.toUpperCase()}`
-      )
-    if (datosDenuncia.profesion_autor)
-      detallesAutor.push(
-        `de profesión ${datosDenuncia.profesion_autor.toUpperCase()}`
-      )
-
-    parrafo2 += `, sindicando como supuesto autor a ${datosDenuncia.nombre_autor.toUpperCase()}`
-    if (detallesAutor.length > 0) {
-      parrafo2 += ', ' + detallesAutor.join(', ') + '.'
-    } else {
-      parrafo2 += '.'
-    }
+    // Caso 3: Autor conocido - mencionar que su identidad ya fue mencionada
+    parrafo2 += `, siendo el supuesto autor ${datosDenuncia.nombre_autor.toUpperCase()}, cuya identidad ya ha sido mencionada anteriormente.`
   } else {
+    // Caso 1 y 2: Autor desconocido
     parrafo2 += ', siendo el supuesto autor una persona DESCONOCIDA por la persona denunciante'
     if (datosDenuncia.descripcion_fisica && datosDenuncia.descripcion_fisica.trim() !== '') {
-      try {
-        // Intentar parsear como JSON
-        const descFisicaObj = JSON.parse(datosDenuncia.descripcion_fisica)
-        const textoDesc = generarTextoDescripcionFisica(descFisicaObj)
-        if (textoDesc.trim() !== '') {
-          parrafo2 += `, a quien describe físicamente de la siguiente manera: ${textoDesc}`
-        } else {
-          parrafo2 += '.'
-        }
-      } catch {
-        // Si no es JSON, usar como texto plano (legacy)
-        parrafo2 += `, a quien describe físicamente de la siguiente manera: ${datosDenuncia.descripcion_fisica.toUpperCase()}.`
-      }
+      // Caso 2: Desconocido con descripción física - mencionar que ya fue descrita
+      parrafo2 += ', cuya descripción física ya ha sido mencionada anteriormente.'
     } else {
+      // Caso 1: Desconocido sin descripción física - mantener como está
       parrafo2 += '.'
     }
   }
