@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/lib/hooks/useAuth'
 
-interface Usuario {
+interface UsuarioCompleto {
   id: number
   usuario: string
   nombre: string
@@ -14,6 +14,16 @@ interface Usuario {
   oficina: string
   rol: string
   activo: boolean
+}
+
+interface UsuarioAuth {
+  id: number
+  usuario: string
+  nombre: string
+  apellido: string
+  grado: string
+  oficina: string
+  rol: string
 }
 
 const grados = [
@@ -54,12 +64,13 @@ const roles = [
 
 export default function GestionUsuariosPage() {
   const router = useRouter()
-  const [usuario, setUsuario] = useState<Usuario | null>(null)
-  const [usuarios, setUsuarios] = useState<Usuario[]>([])
+  const { usuario: usuarioAuth, loading: authLoading } = useAuth()
+  const [usuario, setUsuario] = useState<UsuarioAuth | null>(null)
+  const [usuarios, setUsuarios] = useState<UsuarioCompleto[]>([])
   const [loading, setLoading] = useState(true)
   const [mostrarModalCrear, setMostrarModalCrear] = useState(false)
   const [mostrarModalEditar, setMostrarModalEditar] = useState(false)
-  const [usuarioEditando, setUsuarioEditando] = useState<Usuario | null>(null)
+  const [usuarioEditando, setUsuarioEditando] = useState<UsuarioCompleto | null>(null)
 
   // Estados para formulario de creación
   const [nuevoUsuario, setNuevoUsuario] = useState({
@@ -82,8 +93,6 @@ export default function GestionUsuariosPage() {
     activo: true,
     contraseña: ''
   })
-
-  const { usuario: usuarioAuth, loading: authLoading } = useAuth()
 
   useEffect(() => {
     if (usuarioAuth) {
