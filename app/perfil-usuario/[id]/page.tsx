@@ -27,6 +27,16 @@ interface DenunciaTomada {
   hash_denuncia: string
 }
 
+interface UsuarioAuth {
+  id: number
+  nombre: string
+  apellido: string
+  grado: string
+  oficina: string
+  rol: string
+  usuario: string
+}
+
 interface Usuario {
   id: number
   nombre: string
@@ -40,7 +50,8 @@ interface Usuario {
 
 export default function PerfilUsuarioPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
-  const [usuarioActivo, setUsuarioActivo] = useState<Usuario | null>(null)
+  const { usuario: usuarioAuth, loading: authLoading } = useAuth()
+  const [usuarioActivo, setUsuarioActivo] = useState<UsuarioAuth | null>(null)
   const [usuario, setUsuario] = useState<Usuario | null>(null)
   const [visitas, setVisitas] = useState<Visita[]>([])
   const [denunciasTomadas, setDenunciasTomadas] = useState<DenunciaTomada[]>([])
@@ -58,8 +69,6 @@ export default function PerfilUsuarioPage({ params }: { params: Promise<{ id: st
     }
     loadParams()
   }, [params])
-
-  const { usuario: usuarioAuth, loading: authLoading } = useAuth()
 
   useEffect(() => {
     if (usuarioAuth) {
