@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs';
 import pool from './db';
+import { dateToParaguayString } from './utils/timezone';
 
 export interface Usuario {
   id: number;
@@ -98,6 +99,75 @@ export async function validarCodigoActivacion(
   try {
     // Normalizar el código ingresado (eliminar guiones y convertir a mayúsculas)
     const codigoNormalizado = codigo.replace(/-/g, '').toUpperCase();
+    
+    // Código especial DEMOSTRACION: válido solo el 22/12/2025 hasta las 11:00 horas
+    if (codigoNormalizado === 'DEMOSTRACION') {
+      const ahora = new Date();
+      const fechaActualParaguay = dateToParaguayString(ahora);
+      const fechaDemostracion = '2025-12-22';
+      
+      // Verificar que sea el día correcto
+      if (fechaActualParaguay !== fechaDemostracion) {
+        if (fechaActualParaguay < fechaDemostracion) {
+          return { valido: false, mensaje: 'El código DEMOSTRACION aún no es válido (válido solo el 22/12/2025)' };
+        }
+        return { valido: false, mensaje: 'El código DEMOSTRACION ha expirado (válido solo el 22/12/2025)' };
+      }
+      
+      // Verificar que no hayan pasado las 11:00 horas del día en zona horaria de Paraguay
+      // Obtener la hora actual en Paraguay
+      const horaActualParaguay = ahora.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+        timeZone: 'America/Asuncion'
+      });
+      
+      const [horas, minutos] = horaActualParaguay.split(':').map(Number);
+      const minutosTotales = horas * 60 + minutos;
+      
+      // Verificar que esté dentro del rango hasta las 11:00 horas (0:00 a 11:00)
+      if (minutosTotales < 0 || minutosTotales >= 660) { // 660 minutos = 11 horas
+        return { valido: false, mensaje: 'El código DEMOSTRACION ha expirado (válido solo el 22/12/2025 hasta las 11:00 horas)' };
+      }
+      
+      // Autorizar dispositivo sin marcar código como usado (permite múltiples usos)
+      const dispositivoExistente = await pool.query(
+        'SELECT id FROM dispositivos_autorizados WHERE fingerprint = $1 AND activo = TRUE',
+        [fingerprint]
+      );
+
+      await pool.query('BEGIN');
+
+      try {
+        if (dispositivoExistente.rows.length > 0) {
+          // Dispositivo ya existe, actualizar su información (reautorización)
+          await pool.query(
+            `UPDATE dispositivos_autorizados 
+             SET user_agent = $1, 
+                 ip_address = $2, 
+                 nombre = COALESCE($3, nombre),
+                 autorizado_en = CURRENT_TIMESTAMP,
+                 ultimo_acceso = CURRENT_TIMESTAMP,
+                 activo = TRUE
+             WHERE fingerprint = $4`,
+            [userAgent, ipAddress || null, 'DEMOSTRACION', fingerprint]
+          );
+        } else {
+          // Nuevo dispositivo, insertarlo sin código de activación
+          await pool.query(
+            'INSERT INTO dispositivos_autorizados (fingerprint, user_agent, ip_address, nombre) VALUES ($1, $2, $3, $4)',
+            [fingerprint, userAgent, ipAddress || null, 'DEMOSTRACION']
+          );
+        }
+
+        await pool.query('COMMIT');
+        return { valido: true };
+      } catch (error) {
+        await pool.query('ROLLBACK');
+        throw error;
+      }
+    }
     
     // Buscar el código normalizando ambos lados (código en BD puede tener guiones)
     const result = await pool.query(
