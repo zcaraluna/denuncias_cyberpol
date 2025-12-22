@@ -76,6 +76,72 @@ interface Usuario {
   rol: string
 }
 
+// Función para formatear la descripción física desde JSON
+const formatearDescripcionFisica = (descJson: string | null): string | null => {
+  if (!descJson || descJson.trim() === '') return null
+  
+  try {
+    const desc = typeof descJson === 'string' ? JSON.parse(descJson) : descJson
+    const partes: string[] = []
+    
+    // 1. Constitución física
+    const constitucion: string[] = []
+    if (desc.altura) constitucion.push(desc.altura)
+    if (desc.complexion) constitucion.push(desc.complexion)
+    if (desc.postura) constitucion.push(desc.postura)
+    if (constitucion.length > 0) {
+      partes.push(`• Constitución física: ${constitucion.join(', ')}`)
+    }
+    
+    // 2. Forma del rostro
+    if (desc.formaRostro) partes.push(`• Forma del rostro: ${desc.formaRostro}`)
+    
+    // 3. Piel
+    const piel: string[] = []
+    if (desc.tonoPiel) piel.push(`tono ${desc.tonoPiel}`)
+    if (desc.texturaPiel) piel.push(`textura ${desc.texturaPiel}`)
+    if (piel.length > 0) partes.push(`• Piel: ${piel.join(', ')}`)
+    
+    // 4. Cabello
+    const cabello: string[] = []
+    if (desc.colorCabello) {
+      if (desc.colorCabello === 'Teñido' && desc.cabelloTeñido) {
+        cabello.push(`color teñido (${desc.cabelloTeñido})`)
+      } else {
+        cabello.push(`color ${desc.colorCabello}`)
+      }
+    }
+    if (desc.longitudCabello) cabello.push(`longitud ${desc.longitudCabello}`)
+    if (desc.texturaCabello) cabello.push(`textura ${desc.texturaCabello}`)
+    if (desc.peinado) cabello.push(`peinado ${desc.peinado}`)
+    if (cabello.length > 0) partes.push(`• Cabello: ${cabello.join(', ')}`)
+    
+    // 5. Ojos
+    const ojos: string[] = []
+    if (desc.formaOjos) ojos.push(`forma ${desc.formaOjos}`)
+    if (desc.colorOjos) ojos.push(`color ${desc.colorOjos}`)
+    if (desc.caracteristicasOjos && Array.isArray(desc.caracteristicasOjos) && desc.caracteristicasOjos.length > 0) {
+      ojos.push(`${desc.caracteristicasOjos.join(', ')}`)
+    }
+    if (ojos.length > 0) partes.push(`• Ojos: ${ojos.join(', ')}`)
+    
+    // 6. Otros rasgos distintivos
+    if (desc.otrosRasgos && Array.isArray(desc.otrosRasgos) && desc.otrosRasgos.length > 0) {
+      partes.push(`• Otros rasgos distintivos: ${desc.otrosRasgos.join(', ')}`)
+    }
+    
+    // 7. Detalles adicionales
+    if (desc.detallesAdicionales && desc.detallesAdicionales.trim() !== '') {
+      partes.push(`• Detalles adicionales: ${desc.detallesAdicionales.trim()}`)
+    }
+    
+    return partes.length > 0 ? partes.join('\n') : null
+  } catch (error) {
+    // Si no es JSON válido, devolver como texto plano
+    return descJson
+  }
+}
+
 export default function VerDenunciaPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
   const [usuario, setUsuario] = useState<Usuario | null>(null)
@@ -490,10 +556,14 @@ export default function VerDenunciaPage({ params }: { params: Promise<{ id: stri
                         </>
                       ) : (
                         <>
-                          {autor.descripcion_fisica && (
+                          {autor.descripcion_fisica && formatearDescripcionFisica(autor.descripcion_fisica) && (
                             <div className="col-span-2">
-                              <p className="text-sm font-medium text-gray-600">Descripción Física</p>
-                              <p className="text-base text-gray-900 whitespace-pre-wrap">{autor.descripcion_fisica}</p>
+                              <p className="text-sm font-medium text-gray-600 mb-2">Descripción Física</p>
+                              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                                <p className="text-base text-gray-900 whitespace-pre-line text-sm leading-relaxed">
+                                  {formatearDescripcionFisica(autor.descripcion_fisica)}
+                                </p>
+                              </div>
                             </div>
                           )}
                           {autor.telefonos_involucrados && (
