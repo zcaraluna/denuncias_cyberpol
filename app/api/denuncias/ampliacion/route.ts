@@ -4,11 +4,22 @@ import { getFechaHoraParaguay } from '@/lib/utils/timezone'
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
+    let body
+    try {
+      body = await request.json()
+    } catch (parseError) {
+      console.error('Error parseando JSON:', parseError)
+      return NextResponse.json(
+        { error: 'Error al procesar la solicitud: formato JSON inválido' },
+        { status: 400 }
+      )
+    }
+
     const { denuncia_id, relato, usuario_id, operador_grado, operador_nombre, operador_apellido } = body
 
     // Validar campos requeridos
     if (!denuncia_id || !relato || !operador_grado || !operador_nombre || !operador_apellido) {
+      console.error('Faltan campos requeridos:', { denuncia_id, relato, operador_grado, operador_nombre, operador_apellido })
       return NextResponse.json(
         { error: 'Faltan campos requeridos' },
         { status: 400 }
@@ -67,11 +78,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       ampliacion: result.rows[0]
-    })
-  } catch (error) {
+    }, { status: 200 })
+  } catch (error: any) {
     console.error('Error creando ampliación:', error)
+    console.error('Stack trace:', error?.stack)
+    
+    // Asegurar que siempre retornamos una respuesta válida
+    const errorMessage = error instanceof Error ? error.message : 'Error desconocido al crear ampliación'
     return NextResponse.json(
-      { error: 'Error al crear ampliación' },
+      { 
+        error: 'Error al crear ampliación',
+        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+      },
       { status: 500 }
     )
   }
