@@ -26,13 +26,11 @@ interface Usuario {
 function ConfirmacionPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { usuario, loading: authLoading } = useAuth()
   const [denuncia, setDenuncia] = useState<DenunciaInfo | null>(null)
-  const [usuario, setUsuario] = useState<Usuario | null>(null)
   const [loading, setLoading] = useState(true)
   const [mostrarModal, setMostrarModal] = useState(false)
   const [tipoPapelSeleccionado, setTipoPapelSeleccionado] = useState<'oficio' | 'a4'>('oficio')
-
-  const { usuario, loading: authLoading } = useAuth()
 
   useEffect(() => {
     const id = searchParams.get('id')

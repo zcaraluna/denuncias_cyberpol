@@ -24,7 +24,7 @@ interface Denuncia {
 
 export default function AmpliarDenunciaPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
-  const [usuario, setUsuario] = useState<Usuario | null>(null)
+  const { usuario, loading: authLoading } = useAuth()
   const [denuncia, setDenuncia] = useState<Denuncia | null>(null)
   const [loading, setLoading] = useState(true)
   const [relato, setRelato] = useState('')
@@ -38,8 +38,6 @@ export default function AmpliarDenunciaPage({ params }: { params: Promise<{ id: 
     }
     loadParams()
   }, [params])
-
-  const { usuario, loading: authLoading } = useAuth()
 
   useEffect(() => {
     if (denunciaId && usuario) {

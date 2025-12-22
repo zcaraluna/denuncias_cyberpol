@@ -33,7 +33,7 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'
 
 export default function ReportesPage() {
   const router = useRouter()
-  const [usuario, setUsuario] = useState<Usuario | null>(null)
+  const { usuario, loading: authLoading } = useAuth()
   const [loading, setLoading] = useState(true)
   const [cargandoDatos, setCargandoDatos] = useState(true)
 
@@ -61,8 +61,6 @@ export default function ReportesPage() {
 
   // Tabs activos
   const [tabActivo, setTabActivo] = useState('general')
-
-  const { usuario, loading: authLoading } = useAuth()
 
   useEffect(() => {
     if (usuario) {
