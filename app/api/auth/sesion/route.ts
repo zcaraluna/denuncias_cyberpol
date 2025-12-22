@@ -41,6 +41,45 @@ export async function GET(request: NextRequest) {
 }
 
 /**
+ * POST: Restaura la cookie desde los datos del usuario (útil cuando sessionStorage tiene datos pero la cookie se perdió)
+ */
+export async function POST(request: NextRequest) {
+  try {
+    const { usuario } = await request.json()
+    
+    if (!usuario || !usuario.id) {
+      return NextResponse.json(
+        { error: 'Datos de usuario requeridos' },
+        { status: 400 }
+      )
+    }
+
+    // Establecer cookie con la información del usuario
+    const usuarioJson = encodeURIComponent(JSON.stringify(usuario))
+    const response = NextResponse.json({
+      success: true,
+      mensaje: 'Cookie restaurada correctamente',
+    })
+    
+    response.cookies.set('usuario_sesion', usuarioJson, {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60, // 7 días
+      path: '/',
+    })
+    
+    return response
+  } catch (error) {
+    console.error('Error restaurando cookie:', error)
+    return NextResponse.json(
+      { error: 'Error del servidor' },
+      { status: 500 }
+    )
+  }
+}
+
+/**
  * DELETE: Cierra la sesión del usuario
  */
 export async function DELETE(request: NextRequest) {

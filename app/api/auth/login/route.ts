@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     response.cookies.set('usuario_sesion', usuarioJson, {
       httpOnly: false, // Permitir acceso desde JS para compatibilidad con sessionStorage
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: 'lax', // Cambiado de 'strict' a 'lax' para mejor compatibilidad
       maxAge: 7 * 24 * 60 * 60, // 7 días
       path: '/',
     })

@@ -24,64 +24,88 @@ export function useAuth() {
 
   useEffect(() => {
     const cargarUsuario = async () => {
+      // Primero verificar sessionStorage (más rápido y confiable)
+      if (typeof window !== 'undefined') {
+        const usuarioStr = sessionStorage.getItem('usuario')
+        if (usuarioStr) {
+          try {
+            const usuarioData = JSON.parse(usuarioStr)
+            setUsuario(usuarioData)
+            setLoading(false)
+            
+            // En segundo plano, verificar/restaurar cookie del servidor
+            try {
+              const response = await fetch('/api/auth/sesion', {
+                method: 'GET',
+                credentials: 'include',
+                cache: 'no-store',
+              })
+              
+              const data = await response.json()
+              
+              if (data.autenticado && data.usuario) {
+                // Cookie válida, sincronizar
+                sessionStorage.setItem('usuario', JSON.stringify(data.usuario))
+                setUsuario(data.usuario)
+              } else {
+                // No hay cookie válida, restaurarla desde sessionStorage
+                try {
+                  await fetch('/api/auth/sesion', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({ usuario: usuarioData }),
+                  })
+                } catch (e) {
+                  // Ignorar errores al restaurar cookie
+                }
+              }
+            } catch (e) {
+              // Ignorar errores de red, sessionStorage es suficiente
+            }
+            
+            return
+          } catch (error) {
+            // sessionStorage corrupto, limpiarlo
+            sessionStorage.removeItem('usuario')
+          }
+        }
+      }
+      
+      // Si no hay sessionStorage, intentar desde cookie del servidor
       try {
-        // Primero intentar obtener la sesión del servidor (cookie)
         const response = await fetch('/api/auth/sesion', {
           method: 'GET',
           credentials: 'include',
+          cache: 'no-store',
         })
 
-        const data = await response.json()
+        if (response.ok) {
+          const data = await response.json()
 
-        if (data.autenticado && data.usuario) {
-          // Usuario autenticado desde cookie del servidor
-          setUsuario(data.usuario)
-          // Sincronizar con sessionStorage como respaldo
-          if (typeof window !== 'undefined') {
-            sessionStorage.setItem('usuario', JSON.stringify(data.usuario))
-          }
-        } else {
-          // Si no hay cookie, intentar desde sessionStorage (compatibilidad)
-          if (typeof window !== 'undefined') {
-            const usuarioStr = sessionStorage.getItem('usuario')
-            if (usuarioStr) {
-              try {
-                const usuarioData = JSON.parse(usuarioStr)
-                setUsuario(usuarioData)
-              } catch (error) {
-                router.push('/')
-                return
-              }
-            } else {
-              router.push('/')
-              return
+          if (data.autenticado && data.usuario) {
+            // Usuario autenticado desde cookie del servidor
+            setUsuario(data.usuario)
+            // Sincronizar con sessionStorage como respaldo
+            if (typeof window !== 'undefined') {
+              sessionStorage.setItem('usuario', JSON.stringify(data.usuario))
             }
           } else {
-            router.push('/')
-            return
-          }
-        }
-      } catch (error) {
-        console.error('Error cargando usuario:', error)
-        // En caso de error, intentar desde sessionStorage
-        if (typeof window !== 'undefined') {
-          const usuarioStr = sessionStorage.getItem('usuario')
-          if (usuarioStr) {
-            try {
-              const usuarioData = JSON.parse(usuarioStr)
-              setUsuario(usuarioData)
-            } catch (err) {
-              router.push('/')
-              return
-            }
-          } else {
+            // No hay sesión válida
             router.push('/')
             return
           }
         } else {
+          // Error en la respuesta
           router.push('/')
           return
         }
+      } catch (error) {
+        console.error('Error cargando usuario:', error)
+        router.push('/')
+        return
       } finally {
         setLoading(false)
       }
