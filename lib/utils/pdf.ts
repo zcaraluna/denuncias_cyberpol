@@ -1161,12 +1161,9 @@ export function generarTextoPDF(
   datosDenuncia: DatosDenuncia
 ): string {
   // Extraer el año de forma robusta desde fecha_denuncia
+  // fecha_denuncia siempre es un string según la interfaz DatosDenuncia
   let año: string
-  const fechaDenunciaStr = typeof datosDenuncia.fecha_denuncia === 'string' 
-    ? datosDenuncia.fecha_denuncia 
-    : datosDenuncia.fecha_denuncia instanceof Date
-    ? `${datosDenuncia.fecha_denuncia.getFullYear()}-${String(datosDenuncia.fecha_denuncia.getMonth() + 1).padStart(2, '0')}-${String(datosDenuncia.fecha_denuncia.getDate()).padStart(2, '0')}`
-    : String(datosDenuncia.fecha_denuncia)
+  const fechaDenunciaStr = datosDenuncia.fecha_denuncia
   
   if (fechaDenunciaStr.includes('-')) {
     año = fechaDenunciaStr.split('-')[0]
