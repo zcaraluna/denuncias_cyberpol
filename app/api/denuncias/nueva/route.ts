@@ -262,23 +262,36 @@ export async function POST(request: NextRequest) {
     }
 
     const usuario = usuarioResult.rows[0]
-    const now = new Date()
-    const fechaActual = now
-      .toLocaleDateString('es-PY', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
+    
+    // Usar la fecha/hora enviada desde el frontend (capturada al iniciar la denuncia)
+    // Si no viene, usar la fecha/hora actual como fallback
+    let fechaActual: string
+    let horaActual: string
+    
+    if (denuncia?.fechaDenuncia && denuncia?.horaDenuncia) {
+      // Usar los valores enviados desde el frontend
+      fechaActual = denuncia.fechaDenuncia
+      horaActual = denuncia.horaDenuncia
+    } else {
+      // Fallback: usar fecha/hora actual del servidor
+      const now = new Date()
+      fechaActual = now
+        .toLocaleDateString('es-PY', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          timeZone: 'America/Asuncion'
+        })
+        .split('/')
+        .reverse()
+        .join('-')
+      horaActual = now.toLocaleTimeString('es-PY', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
         timeZone: 'America/Asuncion'
       })
-      .split('/')
-      .reverse()
-      .join('-')
-    const horaActual = now.toLocaleTimeString('es-PY', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-      timeZone: 'America/Asuncion'
-    })
+    }
 
     const mapaDenunciantes = new Map<string, number>()
     for (const entrada of coleccionDenunciantes) {

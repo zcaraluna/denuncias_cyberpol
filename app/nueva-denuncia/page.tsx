@@ -317,6 +317,8 @@ export default function NuevaDenunciaPage() {
   const [textoVistaPrevia, setTextoVistaPrevia] = useState<string>('')
   const [generandoVistaPrevia, setGenerandoVistaPrevia] = useState(false)
   const [modoPruebas, setModoPruebas] = useState(false)
+  // Capturar fecha y hora cuando se inicia la creación de la denuncia (no al finalizar)
+  const [fechaHoraInicioDenuncia, setFechaHoraInicioDenuncia] = useState<{ fecha: string; hora: string } | null>(null)
 
   // Cargar estado del modo pruebas desde localStorage
   useEffect(() => {
@@ -324,6 +326,54 @@ export default function NuevaDenunciaPage() {
     if (savedMode !== null) {
       setModoPruebas(savedMode === 'true')
     }
+  }, [])
+
+  // Función para obtener fecha/hora actual
+  const obtenerFechaHoraActual = async () => {
+    try {
+      const response = await fetch('/api/utils/fecha-hora')
+      const data = await response.json()
+      return data
+    } catch (error) {
+      const now = new Date()
+      return {
+        fecha: now.toLocaleDateString('es-PY', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'America/Asuncion' }),
+        hora: now.toLocaleTimeString('es-PY', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Asuncion' }),
+      }
+    }
+  }
+
+  // Capturar fecha y hora cuando se carga la página (inicio de creación de denuncia)
+  // Esto solo se ejecuta para denuncias nuevas, no para borradores cargados
+  useEffect(() => {
+    // Si ya hay fecha/hora (por ejemplo, de un borrador cargado), no sobrescribirla
+    if (fechaHoraInicioDenuncia) return
+
+    const capturarFechaHoraInicio = async () => {
+      try {
+        const { fecha, hora } = await obtenerFechaHoraActual()
+        setFechaHoraInicioDenuncia({ fecha, hora })
+      } catch (error) {
+        // Si falla, usar fecha/hora del cliente
+        const now = new Date()
+        const fecha = now.toLocaleDateString('es-PY', { 
+          day: '2-digit', 
+          month: '2-digit', 
+          year: 'numeric', 
+          timeZone: 'America/Asuncion' 
+        })
+        const hora = now.toLocaleTimeString('es-PY', { 
+          hour: '2-digit', 
+          minute: '2-digit', 
+          hour12: false, 
+          timeZone: 'America/Asuncion' 
+        })
+        setFechaHoraInicioDenuncia({ fecha, hora })
+      }
+    }
+
+    capturarFechaHoraInicio()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const tiposDenuncia = [
@@ -1168,20 +1218,6 @@ export default function NuevaDenunciaPage() {
     }
   }
 
-  const obtenerFechaHoraActual = async () => {
-    try {
-      const response = await fetch('/api/utils/fecha-hora')
-      const data = await response.json()
-      return data
-    } catch (error) {
-      const now = new Date()
-      return {
-        fecha: now.toLocaleDateString('es-PY', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'America/Asuncion' }),
-        hora: now.toLocaleTimeString('es-PY', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Asuncion' }),
-      }
-    }
-  }
-
   const construirDenunciantePayload = (data: z.infer<typeof denuncianteSchema>) => {
     const { rol: _rol, representaA: _representaA, ...datos } = data
     const departamento = datos.departamento?.toUpperCase() || ''
@@ -1240,6 +1276,14 @@ export default function NuevaDenunciaPage() {
       
       const data = await response.json()
       setBorradorId(data.id)
+      
+      // Restaurar la fecha/hora original del borrador si existe
+      if (data.fecha_denuncia && data.hora_denuncia) {
+        // Convertir fecha de YYYY-MM-DD a DD/MM/YYYY para el formato esperado
+        const fechaParts = data.fecha_denuncia.split('-')
+        const fechaFormateada = `${fechaParts[2]}/${fechaParts[1]}/${fechaParts[0]}`
+        setFechaHoraInicioDenuncia({ fecha: fechaFormateada, hora: data.hora_denuncia })
+      }
       
       const involucradosApi = Array.isArray(data.denunciantes_involucrados)
         ? data.denunciantes_involucrados
@@ -1515,8 +1559,11 @@ export default function NuevaDenunciaPage() {
       if (typeof window !== 'undefined') {
         const borradorId = sessionStorage.getItem('borradorId')
         if (borradorId) {
+          // Cargar el borrador (esto restaurará la fecha/hora original del borrador)
           cargarBorrador(parseInt(borradorId))
           sessionStorage.removeItem('borradorId')
+          // No capturar nueva fecha/hora ya que cargarBorrador restaurará la original
+          return
         }
       }
     }
@@ -1594,8 +1641,14 @@ export default function NuevaDenunciaPage() {
     setLoading(true)
 
     try {
-      const { fecha, hora } = await obtenerFechaHoraActual()
-      const fechaActual = fecha.split('/').reverse().join('-')
+      // Usar la fecha/hora capturada al inicio, no la actual
+      if (!fechaHoraInicioDenuncia) {
+        alert('Error: No se pudo determinar la hora de inicio de la denuncia. Por favor, recarga la página.')
+        setLoading(false)
+        return
+      }
+      const fechaActual = fechaHoraInicioDenuncia.fecha.split('/').reverse().join('-')
+      const hora = fechaHoraInicioDenuncia.hora
 
       let fechaHecho = denunciaData.fechaHecho || ''
       if (fechaHecho.includes('/')) {
@@ -1713,9 +1766,14 @@ export default function NuevaDenunciaPage() {
       const denunciantePayload = construirDenunciantePayload(denunciantePrincipal)
       const coleccionDenunciantes = construirColeccionDenunciantesPayload(denunciantes)
 
-      const hoy = new Date()
-      const fechaDenuncia = hoy.toISOString().split('T')[0]
-      const horaDenuncia = `${String(hoy.getHours()).padStart(2, '0')}:${String(hoy.getMinutes()).padStart(2, '0')}`
+      // Usar la fecha/hora capturada al inicio, no la actual
+      if (!fechaHoraInicioDenuncia) {
+        alert('Error: No se pudo determinar la hora de inicio de la denuncia. Por favor, recarga la página.')
+        setLoading(false)
+        return
+      }
+      const fechaDenuncia = fechaHoraInicioDenuncia.fecha.split('/').reverse().join('-')
+      const horaDenuncia = fechaHoraInicioDenuncia.hora
 
       const payload = {
         borradorId: borradorId || null,
@@ -1820,6 +1878,15 @@ export default function NuevaDenunciaPage() {
       const denunciantePayload = construirDenunciantePayload(denunciantePrincipal)
       const coleccionDenunciantes = construirColeccionDenunciantesPayload(denunciantes)
 
+      // Usar la fecha/hora capturada al inicio, no la actual
+      if (!fechaHoraInicioDenuncia) {
+        alert('Error: No se pudo determinar la hora de inicio de la denuncia. Por favor, recarga la página.')
+        setLoading(false)
+        return
+      }
+      const fechaDenuncia = fechaHoraInicioDenuncia.fecha.split('/').reverse().join('-')
+      const horaDenuncia = fechaHoraInicioDenuncia.hora
+
       const payload = {
         borradorId: borradorId || null,
         denunciante: denunciantePayload,
@@ -1829,6 +1896,8 @@ export default function NuevaDenunciaPage() {
           (denunciante) => denunciante.id !== denunciantePrincipal.id
         ),
         denuncia: {
+          fechaDenuncia: fechaDenuncia,
+          horaDenuncia: horaDenuncia,
           fechaHecho: fechaHecho,
           horaHecho: denunciaData.horaHecho,
           usarRango: denunciaData.usarRango || false,
@@ -1904,9 +1973,14 @@ export default function NuevaDenunciaPage() {
         return
       }
 
-      // Obtener fecha y hora actual
-      const { fecha, hora } = await obtenerFechaHoraActual()
-      const fechaActual = fecha.split('/').reverse().join('-')
+      // Usar la fecha/hora capturada al inicio, no la actual
+      if (!fechaHoraInicioDenuncia) {
+        alert('Error: No se pudo determinar la hora de inicio de la denuncia. Por favor, recarga la página.')
+        setLoading(false)
+        return
+      }
+      const fechaActual = fechaHoraInicioDenuncia.fecha.split('/').reverse().join('-')
+      const hora = fechaHoraInicioDenuncia.hora
       
       const autorData = watchAutor()
       const denunciaData = watchDenuncia()
