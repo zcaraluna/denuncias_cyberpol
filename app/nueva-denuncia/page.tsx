@@ -327,18 +327,44 @@ export default function NuevaDenunciaPage() {
   }, [])
 
   const tiposDenuncia = [
-    'Estafa',
-    'Estafa a través de sistemas informáticos',
-    'Acceso indebido a datos',
-    'Pornografía infantil',
-    'Clonación de tarjetas de crédito y/o débito',
-    'Lesión a la imagen y la comunicación',
-    'Suplantación de identidad',
-    'Abuso de documento de identidad',
-    'Difamación, Calumnia y/o Injuria',
-    'Producción de documentos no auténticos',
-    'Extravío de documentos',
-    'Usura',
+    'HECHO PUNIBLE CONTRA LA VIDA',
+    'HECHO PUNIBLE CONTRA INTEGRIDAD FÍSICA',
+    'HECHO PUNIBLE CONTRA LIBERTAD',
+    'HECHO PUNIBLE CONTRA LA AUTONOMÍA SEXUAL',
+    'HECHO PUNIBLE CONTRA MENORES',
+    'HECHO PUNIBLE CONTRA EL ÁMBITO DE VIDA Y LA INTIMIDAD DE LA PERSONA',
+    'HECHO PUNIBLE CONTRA EL HONOR Y LA REPUTACIÓN',
+    'HECHO PUNIBLE CONTRA LOS BIENES DE LA PERSONA',
+    'HECHO PUNIBLE CONTRA LA PROPIEDAD',
+    'HECHO PUNIBLE CONTRA OTROS DERECHOS PATRIMONIALES',
+    'HECHO PUNIBLE CONTRA EL PATRIMONIO',
+    'HECHO PUNIBLE CONTRA LA RESTITUCIÓN DE BIENES',
+    'HECHO PUNIBLE CONTRA LA SEGURIDAD DE LA VIDA Y DE LA INTEGRIDAD FÍSICA DE LAS PERSONAS',
+    'HECHO PUNIBLE CONTRA LAS BASES NATURALES DE LA VIDA HUMANA',
+    'HECHO PUNIBLE CONTRA LA SEGURIDAD DE LAS PERSONAS FRENTE A RIESGOS COLECTIVOS',
+    'HECHO PUNIBLE CONTRA LA SEGURIDAD DE LAS PERSONAS EN EL TRANSITO',
+    'HECHO PUNIBLE CONTRA EL FUNCIONAMIENTO DE INSTALACIONES IMPRESCINDIBLES',
+    'HECHO PUNIBLE CONTRA EL ESTADO CIVIL, EL MATRIMONIO Y LA VIDA',
+    'HECHO PUNIBLE CONTRA LA PAZ DE LOS DIFUNTOS',
+    'HECHO PUNIBLE CONTRA LA TOLERANCIA RELIGIOSA',
+    'HECHO PUNIBLE CONTRA LA SEGURIDAD DE LA CONVIVENCIA DE LAS PERSONAS',
+    'HECHO PUNIBLE CONTRA LAS RELACIONES JURÍDICAS',
+    'HECHO PUNIBLE CONTRA LA PRUEBA TESTIMONIAL',
+    'HECHO PUNIBLE CONTRA LA PRUEBA DOCUMENTAL',
+    'HECHO PUNIBLE CONTRA EL ERARIO',
+    'HECHO PUNIBLE CONTRA LA AUTENTICIDAD DE MONEDAS Y VALORES',
+    'HECHO PUNIBLE CONTRA EL ESTADO',
+    'HECHO PUNIBLE CONTRA LA EXISTENCIA DEL ESTADO',
+    'HECHO PUNIBLE CONTRA LA CONSTITUCIONALIDAD DEL ESTADO Y EL SISTEMA ELECTORAL',
+    'HECHO PUNIBLE CONTRA LA SEGURIDAD EXTERNA DEL ESTADO',
+    'HECHO PUNIBLE CONTRA ORGANOS CONSTITUCIONALES',
+    'HECHO PUNIBLE CONTRA LA DEFENSA PÚBLICA',
+    'HECHO PUNIBLE CONTRA LA ADMINISTRACIÓN DEL ESTADO',
+    'HECHO PUNIBLE CONTRA LA ADMINISTRACIÓN DE LA JUSTICIA',
+    'HECHO PUNIBLE CONTRA LA ADMINISTRACIÓN PÚBLICA',
+    'HECHO PUNIBLE CONTRA EL EJERCICIO DE FUNCIONES PUBLICAS',
+    'HECHO PUNIBLE CONTRA LOS PUEBLOS',
+    'HECHO PUNIBLE A DETERMINAR',
     'Otro (Especificar)'
   ]
 
@@ -1013,6 +1039,12 @@ export default function NuevaDenunciaPage() {
   const usarRango = watchDenuncia('usarRango')
   const lugarHechoDepartamento = watchDenuncia('lugarHechoDepartamento')
   const lugarHechoCiudad = watchDenuncia('lugarHechoCiudad')
+
+  // Opciones para tipo de denuncia (react-select)
+  const tiposDenunciaOptions = useMemo(
+    () => tiposDenuncia.map((tipo) => ({ value: tipo, label: tipo })),
+    []
+  )
 
   // Opciones de departamento y ciudad para lugar del hecho
   const lugarHechoDepartamentoOptions = useMemo(
@@ -3600,17 +3632,74 @@ export default function NuevaDenunciaPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Tipo de Denuncia *
                 </label>
-                <select
-                  {...registerDenuncia('tipoDenuncia')}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">Seleccione...</option>
-                  {tiposDenuncia.map((tipo) => (
-                    <option key={tipo} value={tipo}>
-                      {tipo}
-                    </option>
-                  ))}
-                </select>
+                <Controller
+                  name="tipoDenuncia"
+                  control={controlDenuncia}
+                  render={({ field }) => (
+                    <Select
+                      options={tiposDenunciaOptions}
+                      value={tiposDenunciaOptions.find((option) => option.value === field.value) || null}
+                      onChange={(option) => field.onChange(option?.value || '')}
+                      isClearable
+                      placeholder="Seleccione o busque..."
+                      isSearchable
+                      className="text-sm"
+                      styles={{
+                        control: (base, state) => ({
+                          ...base,
+                          fontFamily: 'Inter, sans-serif',
+                          fontSize: '14px',
+                          minHeight: '42px',
+                          borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
+                          boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
+                          '&:hover': {
+                            borderColor: '#3b82f6',
+                          },
+                        }),
+                        menu: (base) => ({
+                          ...base,
+                          fontFamily: 'Inter, sans-serif',
+                          fontSize: '14px',
+                          maxHeight: '300px',
+                          zIndex: 9999,
+                        }),
+                        menuList: (base) => ({
+                          ...base,
+                          maxHeight: '300px',
+                        }),
+                        option: (base, state) => ({
+                          ...base,
+                          fontFamily: 'Inter, sans-serif',
+                          fontSize: '14px',
+                          padding: '8px 12px',
+                          backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
+                          color: state.isSelected ? 'white' : '#1f2937',
+                          cursor: 'pointer',
+                        }),
+                        input: (base) => ({
+                          ...base,
+                          fontFamily: 'Inter, sans-serif',
+                          fontSize: '14px',
+                          margin: 0,
+                          padding: 0,
+                        }),
+                        singleValue: (base) => ({
+                          ...base,
+                          fontFamily: 'Inter, sans-serif',
+                          fontSize: '14px',
+                          color: '#1f2937',
+                        }),
+                        placeholder: (base) => ({
+                          ...base,
+                          fontFamily: 'Inter, sans-serif',
+                          fontSize: '14px',
+                          color: '#9ca3af',
+                        }),
+                      }}
+                      classNamePrefix="react-select"
+                    />
+                  )}
+                />
                 {errorsDenuncia.tipoDenuncia && (
                   <p className="text-red-600 text-sm mt-1">{errorsDenuncia.tipoDenuncia.message as string}</p>
                 )}

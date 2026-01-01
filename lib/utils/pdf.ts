@@ -510,7 +510,7 @@ export async function generarPDF(
 
   // Segundo párrafo
   const hayCoDenunciantes = coDenunciantes.length > 0
-  let parrafo2 = `Que por la presente ${hayCoDenunciantes ? 'vienen' : 'viene'} a realizar una denuncia sobre un supuesto hecho de ${datosDenuncia.tipo_denuncia.toUpperCase()}`
+  let parrafo2 = `Que por la presente ${hayCoDenunciantes ? 'vienen' : 'viene'} a realizar una denuncia sobre un supuesto ${datosDenuncia.tipo_denuncia.toUpperCase()}`
   if (
     datosDenuncia.tipo_denuncia.toUpperCase() === 'OTRO' &&
     datosDenuncia.otro_tipo
@@ -939,7 +939,7 @@ export async function generarPDFAmpliacion(
 
   // Segundo párrafo - MODIFICADO para ampliación
   const hayCoDenunciantes = coDenunciantes.length > 0
-  let parrafo2 = `Que por la presente ${hayCoDenunciantes ? 'vienen' : 'viene'} a realizar una ampliación de denuncia sobre el supuesto hecho de ${datosDenuncia.tipo_denuncia.toUpperCase()}`
+  let parrafo2 = `Que por la presente ${hayCoDenunciantes ? 'vienen' : 'viene'} a realizar una ampliación de denuncia sobre el supuesto ${datosDenuncia.tipo_denuncia.toUpperCase()}`
   if (
     datosDenuncia.tipo_denuncia.toUpperCase() === 'OTRO' &&
     datosDenuncia.otro_tipo
@@ -1273,7 +1273,7 @@ export function generarTextoPDF(
 
   // Segundo párrafo
   const hayCoDenunciantes = coDenunciantes.length > 0
-  let parrafo2 = `Que por la presente ${hayCoDenunciantes ? 'vienen' : 'viene'} a realizar una denuncia sobre un supuesto hecho de ${bold(datosDenuncia.tipo_denuncia.toUpperCase())}`
+  let parrafo2 = `Que por la presente ${hayCoDenunciantes ? 'vienen' : 'viene'} a realizar una denuncia sobre un supuesto ${bold(datosDenuncia.tipo_denuncia.toUpperCase())}`
   if (
     datosDenuncia.tipo_denuncia.toUpperCase() === 'OTRO' &&
     datosDenuncia.otro_tipo
