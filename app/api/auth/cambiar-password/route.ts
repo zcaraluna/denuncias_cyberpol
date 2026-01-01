@@ -30,9 +30,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verificar que la contraseña actual sea correcta
+    // Verificar que la contraseña actual sea correcta y obtener datos del usuario
     const result = await pool.query(
-      'SELECT id, contraseña, activo FROM usuarios WHERE id = $1',
+      'SELECT id, usuario, contraseña, nombre, apellido, grado, oficina, rol, activo FROM usuarios WHERE id = $1',
       [usuario_id]
     )
 
@@ -78,10 +78,36 @@ export async function POST(request: NextRequest) {
       [hashedPassword, usuario_id]
     )
 
-    return NextResponse.json({
+    // Obtener el usuario actualizado de la base de datos (sin la contraseña)
+    const usuarioActualizado = {
+      id: user.id,
+      usuario: user.usuario,
+      nombre: user.nombre,
+      apellido: user.apellido,
+      grado: user.grado,
+      oficina: user.oficina,
+      rol: user.rol,
+      debe_cambiar_contraseña: false, // Ya se actualizó a FALSE
+    }
+
+    // Crear respuesta con el usuario actualizado
+    const response = NextResponse.json({
       success: true,
-      mensaje: 'Contraseña actualizada correctamente'
+      mensaje: 'Contraseña actualizada correctamente',
+      usuario: usuarioActualizado,
     })
+
+    // Actualizar la cookie con el usuario actualizado (sin debe_cambiar_contraseña)
+    const usuarioJson = encodeURIComponent(JSON.stringify(usuarioActualizado))
+    response.cookies.set('usuario_sesion', usuarioJson, {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60, // 7 días
+      path: '/',
+    })
+
+    return response
   } catch (error) {
     console.error('Error cambiando contraseña:', error)
     return NextResponse.json(

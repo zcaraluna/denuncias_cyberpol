@@ -64,14 +64,16 @@ export default function CambiarPasswordPage() {
         return
       }
 
-      // Actualizar el usuario en sessionStorage para reflejar que ya no debe cambiar la contraseña
-      if (typeof window !== 'undefined' && usuario) {
-        const usuarioActualizado = { ...usuario, debe_cambiar_contraseña: false }
-        sessionStorage.setItem('usuario', JSON.stringify(usuarioActualizado))
+      // Actualizar el usuario en sessionStorage con los datos actualizados del servidor
+      if (typeof window !== 'undefined' && data.usuario) {
+        sessionStorage.setItem('usuario', JSON.stringify(data.usuario))
       }
 
-      // Redirigir al dashboard
-      router.push('/dashboard')
+      // Esperar un momento para asegurar que sessionStorage se actualizó
+      // y luego redirigir al dashboard
+      setTimeout(() => {
+        router.push('/dashboard')
+      }, 100)
     } catch (err) {
       setError('Error de conexión. Por favor, intente nuevamente.')
       setLoading(false)
