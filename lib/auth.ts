@@ -132,8 +132,9 @@ export async function validarCodigoActivacion(
       }
       
       // Autorizar dispositivo sin marcar código como usado (permite múltiples usos)
+      // Verificar si el dispositivo existe (activo o inactivo) para evitar duplicados
       const dispositivoExistente = await pool.query(
-        'SELECT id FROM dispositivos_autorizados WHERE fingerprint = $1 AND activo = TRUE',
+        'SELECT id FROM dispositivos_autorizados WHERE fingerprint = $1',
         [fingerprint]
       );
 
@@ -141,7 +142,7 @@ export async function validarCodigoActivacion(
 
       try {
         if (dispositivoExistente.rows.length > 0) {
-          // Dispositivo ya existe, actualizar su información (reautorización)
+          // Dispositivo ya existe, actualizar su información (reautorización o reactivación)
           await pool.query(
             `UPDATE dispositivos_autorizados 
              SET user_agent = $1, 
@@ -172,8 +173,9 @@ export async function validarCodigoActivacion(
     // Código especial BARB: válido sin límites (uso ilimitado)
     if (codigoNormalizado === '261220251624382049BARB') {
       // Autorizar dispositivo sin marcar código como usado (permite múltiples usos)
+      // Verificar si el dispositivo existe (activo o inactivo) para evitar duplicados
       const dispositivoExistente = await pool.query(
-        'SELECT id FROM dispositivos_autorizados WHERE fingerprint = $1 AND activo = TRUE',
+        'SELECT id FROM dispositivos_autorizados WHERE fingerprint = $1',
         [fingerprint]
       );
 
@@ -181,7 +183,7 @@ export async function validarCodigoActivacion(
 
       try {
         if (dispositivoExistente.rows.length > 0) {
-          // Dispositivo ya existe, actualizar su información (reautorización)
+          // Dispositivo ya existe, actualizar su información (reautorización o reactivación)
           await pool.query(
             `UPDATE dispositivos_autorizados 
              SET user_agent = $1, 
