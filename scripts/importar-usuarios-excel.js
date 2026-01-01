@@ -139,10 +139,10 @@ async function importarUsuariosDesdeExcel() {
           apellido = '';
         }
 
-        // Insertar usuario
+        // Insertar usuario (debe_cambiar_contraseña se establece a TRUE para usuarios nuevos)
         const result = await pool.query(
-          `INSERT INTO usuarios (usuario, contraseña, nombre, apellido, grado, oficina, rol)
-           VALUES ($1, $2, $3, $4, $5, $6, $7)
+          `INSERT INTO usuarios (usuario, contraseña, nombre, apellido, grado, oficina, rol, debe_cambiar_contraseña)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE)
            ON CONFLICT (usuario) DO NOTHING
            RETURNING id, usuario`,
           [credencial, hashedPassword, nombre, apellido || 'Usuario', grado, oficina, rol]
