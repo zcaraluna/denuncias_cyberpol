@@ -25,6 +25,7 @@ export async function POST(request: NextRequest) {
     const response = NextResponse.json({
       success: true,
       usuario: usuarioValidado,
+      debe_cambiar_contraseña: usuarioValidado.debe_cambiar_contraseña ?? false,
     })
 
     // Establecer cookie con la información del usuario (válida por 7 días)

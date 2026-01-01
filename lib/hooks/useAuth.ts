@@ -11,6 +11,7 @@ interface Usuario {
   grado: string
   oficina: string
   rol: string
+  debe_cambiar_contraseña?: boolean
 }
 
 /**

@@ -8,7 +8,8 @@
     "start": "next start -p 6368",
     "lint": "next lint",
     "init-db": "node scripts/init-db.js",
-    "migrate": "node scripts/run-migration.js"
+    "migrate": "node scripts/run-migration.js",
+    "importar-usuarios": "node scripts/importar-usuarios-excel.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.2",

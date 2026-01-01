@@ -20,6 +20,8 @@ export async function middleware(request: NextRequest) {
     '/api/verificar-dispositivo',
     '/api/auth/login', // El login también debe ser accesible sin dispositivo autorizado
     '/api/auth/sesion', // Verificación de sesión
+    '/api/auth/cambiar-contraseña', // Cambio de contraseña (accesible después de login)
+    '/cambiar-contraseña', // Página de cambio de contraseña
     '/verificar', // Página pública para verificar denuncias
     '/api/verificar', // API pública para verificar denuncias
   ];

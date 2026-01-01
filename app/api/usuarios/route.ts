@@ -44,10 +44,10 @@ export async function POST(request: NextRequest) {
     // Hashear contraseña
     const hashedPassword = await bcrypt.hash(contraseña, 10)
 
-    // Insertar usuario
+    // Insertar usuario (debe_cambiar_contraseña se establece automáticamente a TRUE por defecto)
     const result = await pool.query(
-      `INSERT INTO usuarios (usuario, contraseña, nombre, apellido, grado, oficina, rol)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO usuarios (usuario, contraseña, nombre, apellido, grado, oficina, rol, debe_cambiar_contraseña)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE)
        RETURNING id, usuario, nombre, apellido, grado, oficina, rol, activo`,
       [usuario, hashedPassword, nombre, apellido, grado, oficina, rol]
     )

@@ -37,7 +37,13 @@ export default function LoginPage() {
       if (typeof window !== 'undefined') {
         sessionStorage.setItem('usuario', JSON.stringify(data.usuario))
       }
-      router.push('/dashboard')
+
+      // Si debe cambiar la contraseña, redirigir a la página de cambio
+      if (data.debe_cambiar_contraseña) {
+        router.push('/cambiar-contraseña')
+      } else {
+        router.push('/dashboard')
+      }
     } catch (err) {
       setError('Error de conexión. Por favor, intente nuevamente.')
       setLoading(false)

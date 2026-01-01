@@ -10,6 +10,7 @@ export interface Usuario {
   grado: string;
   oficina: string;
   rol: string;
+  debe_cambiar_contraseña?: boolean;
 }
 
 export async function verificarCredenciales(
@@ -18,7 +19,7 @@ export async function verificarCredenciales(
 ): Promise<Usuario | null> {
   try {
     const result = await pool.query(
-      'SELECT id, usuario, contraseña, nombre, apellido, grado, oficina, rol, activo FROM usuarios WHERE usuario = $1',
+      'SELECT id, usuario, contraseña, nombre, apellido, grado, oficina, rol, activo, debe_cambiar_contraseña FROM usuarios WHERE usuario = $1',
       [usuario]
     );
 
@@ -46,6 +47,7 @@ export async function verificarCredenciales(
       grado: user.grado,
       oficina: user.oficina,
       rol: user.rol,
+      debe_cambiar_contraseña: user.debe_cambiar_contraseña ?? false,
     };
   } catch (error) {
     console.error('Error verificando credenciales:', error);
@@ -65,8 +67,9 @@ export async function crearUsuario(
   try {
     const hashedPassword = await bcrypt.hash(contraseña, 10);
     
+    // Los nuevos usuarios deben cambiar su contraseña en el primer inicio de sesión
     await pool.query(
-      'INSERT INTO usuarios (usuario, contraseña, nombre, apellido, grado, oficina, rol) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+      'INSERT INTO usuarios (usuario, contraseña, nombre, apellido, grado, oficina, rol, debe_cambiar_contraseña) VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE)',
       [usuario, hashedPassword, nombre, apellido, grado, oficina, rol]
     );
 

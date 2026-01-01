@@ -1,10 +1,20 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/hooks/useAuth'
+import { useEffect } from 'react'
 
 export default function DashboardPage() {
+  const router = useRouter()
   const { usuario, loading, logout } = useAuth()
+
+  useEffect(() => {
+    // Si el usuario debe cambiar la contraseña, redirigir
+    if (!loading && usuario && usuario.debe_cambiar_contraseña) {
+      router.push('/cambiar-contraseña')
+    }
+  }, [usuario, loading, router])
 
   if (loading) {
     return (
@@ -15,6 +25,11 @@ export default function DashboardPage() {
   }
 
   if (!usuario) {
+    return null
+  }
+
+  // Si debe cambiar contraseña, no mostrar nada (se está redirigiendo)
+  if (usuario.debe_cambiar_contraseña) {
     return null
   }
 
