@@ -38,15 +38,31 @@ async function importarUsuariosDesdeExcel() {
     console.log(`📊 Hoja encontrada: ${worksheet.name}`);
     console.log(`📏 Total de filas: ${worksheet.rowCount}`);
 
-    // Encontrar la columna "Credencial"
+    // Encontrar las columnas necesarias
     let columnaCredencial = null;
+    let columnaNombreApellido = null;
+    let columnaGrado = null;
     const primeraFila = worksheet.getRow(1);
     
     primeraFila.eachCell({ includeEmpty: false }, (cell, colNumber) => {
-      const valor = cell.value?.toString().trim();
-      if (valor && (valor.toLowerCase() === 'credencial' || valor.toLowerCase() === 'credential')) {
+      const valor = cell.value?.toString().trim().toLowerCase();
+      
+      // Buscar columna Credencial
+      if (valor === 'credencial' || valor === 'credential') {
         columnaCredencial = colNumber;
         console.log(`✅ Columna "Credencial" encontrada en la columna ${colNumber}`);
+      }
+      
+      // Buscar columna Nombre y Apellido (puede tener variaciones)
+      if (valor.includes('nombre') && valor.includes('apellido')) {
+        columnaNombreApellido = colNumber;
+        console.log(`✅ Columna "Nombre y Apellido" encontrada en la columna ${colNumber}`);
+      }
+      
+      // Buscar columna Grado
+      if (valor === 'grado') {
+        columnaGrado = colNumber;
+        console.log(`✅ Columna "Grado" encontrada en la columna ${colNumber}`);
       }
     });
 
@@ -59,8 +75,26 @@ async function importarUsuariosDesdeExcel() {
       process.exit(1);
     }
 
-    // Leer todas las credenciales
-    const credenciales = [];
+    if (!columnaNombreApellido) {
+      console.error('❌ Error: No se encontró la columna "Nombre y Apellido" en el archivo Excel');
+      console.log('Columnas encontradas en la primera fila:');
+      primeraFila.eachCell({ includeEmpty: false }, (cell, colNumber) => {
+        console.log(`  Columna ${colNumber}: "${cell.value}"`);
+      });
+      process.exit(1);
+    }
+
+    if (!columnaGrado) {
+      console.error('❌ Error: No se encontró la columna "Grado" en el archivo Excel');
+      console.log('Columnas encontradas en la primera fila:');
+      primeraFila.eachCell({ includeEmpty: false }, (cell, colNumber) => {
+        console.log(`  Columna ${colNumber}: "${cell.value}"`);
+      });
+      process.exit(1);
+    }
+
+    // Leer todas las filas con datos
+    const usuarios = [];
     let filasProcesadas = 0;
     let filasConError = 0;
 
@@ -69,34 +103,61 @@ async function importarUsuariosDesdeExcel() {
       if (rowNumber === 1) return;
 
       const celdaCredencial = row.getCell(columnaCredencial);
+      const celdaNombreApellido = row.getCell(columnaNombreApellido);
+      const celdaGrado = row.getCell(columnaGrado);
+
       const credencial = celdaCredencial.value?.toString().trim();
+      const nombreApellido = celdaNombreApellido.value?.toString().trim() || '';
+      const grado = celdaGrado.value?.toString().trim() || 'No especificado';
 
       if (credencial && credencial.length > 0) {
-        credenciales.push(credencial);
+        // Separar nombre y apellido
+        const partes = nombreApellido.split(' ').filter(p => p.length > 0);
+        let nombre = '';
+        let apellido = '';
+
+        if (partes.length === 0) {
+          nombre = credencial;
+          apellido = '';
+        } else if (partes.length === 1) {
+          nombre = partes[0];
+          apellido = '';
+        } else {
+          // Tomar la primera palabra como nombre, el resto como apellido
+          nombre = partes[0];
+          apellido = partes.slice(1).join(' ');
+        }
+
+        usuarios.push({
+          credencial,
+          nombre,
+          apellido,
+          grado: grado || 'No especificado'
+        });
         filasProcesadas++;
       } else {
         filasConError++;
       }
     });
 
-    console.log(`\n📋 Credenciales encontradas: ${credenciales.length}`);
+    console.log(`\n📋 Usuarios encontrados: ${usuarios.length}`);
     console.log(`✅ Filas procesadas: ${filasProcesadas}`);
     if (filasConError > 0) {
       console.log(`⚠️  Filas con error o vacías: ${filasConError}`);
     }
 
-    if (credenciales.length === 0) {
-      console.error('❌ Error: No se encontraron credenciales válidas en el archivo');
+    if (usuarios.length === 0) {
+      console.error('❌ Error: No se encontraron usuarios válidos en el archivo');
       process.exit(1);
     }
 
-    // Mostrar algunas credenciales como ejemplo
-    console.log('\n🔍 Primeras credenciales encontradas:');
-    credenciales.slice(0, 5).forEach((cred, index) => {
-      console.log(`  ${index + 1}. ${cred}`);
+    // Mostrar algunos usuarios como ejemplo
+    console.log('\n🔍 Primeros usuarios encontrados:');
+    usuarios.slice(0, 5).forEach((user, index) => {
+      console.log(`  ${index + 1}. ${user.credencial} - ${user.nombre} ${user.apellido} (${user.grado})`);
     });
-    if (credenciales.length > 5) {
-      console.log(`  ... y ${credenciales.length - 5} más`);
+    if (usuarios.length > 5) {
+      console.log(`  ... y ${usuarios.length - 5} más`);
     }
 
     // Confirmar antes de continuar
@@ -105,9 +166,9 @@ async function importarUsuariosDesdeExcel() {
     console.log('   - Contraseña por defecto: "operador123"');
     console.log('   - Oficina: "Asunción"');
     console.log('   - Rol: "operador"');
-    console.log('   - Nombre y Apellido: (se extraerá del valor de Credencial si es posible)');
-    console.log('   - Grado: "No especificado"');
-    console.log(`\n📝 Total de usuarios a crear: ${credenciales.length}`);
+    console.log('   - Nombre y Apellido: (de la columna correspondiente)');
+    console.log('   - Grado: (de la columna correspondiente)');
+    console.log(`\n📝 Total de usuarios a crear: ${usuarios.length}`);
 
     // Crear usuarios en la base de datos
     console.log('\n🔄 Iniciando importación de usuarios...\n');
@@ -116,48 +177,32 @@ async function importarUsuariosDesdeExcel() {
     const hashedPassword = await bcrypt.hash(contraseñaPorDefecto, 10);
     const oficina = 'Asunción';
     const rol = 'operador';
-    const grado = 'No especificado';
 
     let usuariosCreados = 0;
     let usuariosExistentes = 0;
     let errores = 0;
 
-    for (const credencial of credenciales) {
+    for (const usuario of usuarios) {
       try {
-        // Intentar extraer nombre y apellido de la credencial si tiene formato especial
-        // Por ahora, usar la credencial como nombre completo
-        let nombre = credencial;
-        let apellido = '';
-
-        // Si la credencial tiene espacios, usar la primera parte como nombre y el resto como apellido
-        const partes = credencial.split(' ').filter(p => p.length > 0);
-        if (partes.length >= 2) {
-          nombre = partes[0];
-          apellido = partes.slice(1).join(' ');
-        } else {
-          nombre = credencial;
-          apellido = '';
-        }
-
         // Insertar usuario (debe_cambiar_contraseña se establece a TRUE para usuarios nuevos)
         const result = await pool.query(
           `INSERT INTO usuarios (usuario, contraseña, nombre, apellido, grado, oficina, rol, debe_cambiar_contraseña)
            VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE)
            ON CONFLICT (usuario) DO NOTHING
            RETURNING id, usuario`,
-          [credencial, hashedPassword, nombre, apellido || 'Usuario', grado, oficina, rol]
+          [usuario.credencial, hashedPassword, usuario.nombre, usuario.apellido, usuario.grado, oficina, rol]
         );
 
         if (result.rows.length > 0) {
           usuariosCreados++;
-          console.log(`✅ Usuario creado: ${credencial} (ID: ${result.rows[0].id})`);
+          console.log(`✅ Usuario creado: ${usuario.credencial} - ${usuario.nombre} ${usuario.apellido} (${usuario.grado}) [ID: ${result.rows[0].id}]`);
         } else {
           usuariosExistentes++;
-          console.log(`⏭️  Usuario ya existe: ${credencial}`);
+          console.log(`⏭️  Usuario ya existe: ${usuario.credencial}`);
         }
       } catch (error) {
         errores++;
-        console.error(`❌ Error creando usuario "${credencial}":`, error.message);
+        console.error(`❌ Error creando usuario "${usuario.credencial}":`, error.message);
       }
     }
 
@@ -167,7 +212,7 @@ async function importarUsuariosDesdeExcel() {
     console.log(`✅ Usuarios creados: ${usuariosCreados}`);
     console.log(`⏭️  Usuarios ya existentes: ${usuariosExistentes}`);
     console.log(`❌ Errores: ${errores}`);
-    console.log(`📝 Total procesados: ${credenciales.length}`);
+    console.log(`📝 Total procesados: ${usuarios.length}`);
     console.log('\n🔑 Contraseña por defecto para todos los usuarios: operador123');
     console.log('⚠️  Los usuarios deberán cambiar su contraseña en su primer inicio de sesión.\n');
 
