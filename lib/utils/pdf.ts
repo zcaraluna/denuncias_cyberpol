@@ -1160,7 +1160,24 @@ export function generarTextoPDF(
   denunciante: Denunciante,
   datosDenuncia: DatosDenuncia
 ): string {
-  const año = datosDenuncia.fecha_denuncia.split('-')[0]
+  // Extraer el año de forma robusta desde fecha_denuncia
+  let año: string
+  const fechaDenunciaStr = typeof datosDenuncia.fecha_denuncia === 'string' 
+    ? datosDenuncia.fecha_denuncia 
+    : datosDenuncia.fecha_denuncia instanceof Date
+    ? `${datosDenuncia.fecha_denuncia.getFullYear()}-${String(datosDenuncia.fecha_denuncia.getMonth() + 1).padStart(2, '0')}-${String(datosDenuncia.fecha_denuncia.getDate()).padStart(2, '0')}`
+    : String(datosDenuncia.fecha_denuncia)
+  
+  if (fechaDenunciaStr.includes('-')) {
+    año = fechaDenunciaStr.split('-')[0]
+  } else if (fechaDenunciaStr.includes('/')) {
+    const parts = fechaDenunciaStr.split('/')
+    año = parts.length === 3 && parts[2].length === 4 ? parts[2] : parts[0]
+  } else {
+    // Fallback: intentar parsear como fecha o usar año actual
+    const fechaParsed = new Date(fechaDenunciaStr)
+    año = !isNaN(fechaParsed.getTime()) ? fechaParsed.getFullYear().toString() : new Date().getFullYear().toString()
+  }
   const titulo = `ACTA DE DENUNCIA Nº ${numeroOrden}/${año}`
 
   const fechaDenuncia = formatDate(datosDenuncia.fecha_denuncia)

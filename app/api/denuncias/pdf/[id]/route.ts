@@ -50,7 +50,25 @@ export async function GET(
 
     const row = denunciaResult.rows[0]
     const fechaDenuncia = formatDate(row.fecha_denuncia)
-    const año = fechaDenuncia.split('-')[0]
+    // Extraer el año de la fecha de denuncia de forma robusta
+    // Si la fecha es un objeto Date, extraer el año directamente
+    // Si es un string, extraer del formato YYYY-MM-DD
+    let año: string
+    if (row.fecha_denuncia instanceof Date) {
+      año = row.fecha_denuncia.getFullYear().toString()
+    } else if (typeof row.fecha_denuncia === 'string') {
+      // Si es string, puede venir en formato YYYY-MM-DD o DD/MM/YYYY
+      if (row.fecha_denuncia.includes('-')) {
+        año = row.fecha_denuncia.split('-')[0]
+      } else if (row.fecha_denuncia.includes('/')) {
+        año = row.fecha_denuncia.split('/')[2] || row.fecha_denuncia.split('/')[0]
+      } else {
+        año = new Date(row.fecha_denuncia).getFullYear().toString()
+      }
+    } else {
+      // Fallback: usar la fecha formateada
+      año = fechaDenuncia.split('-')[0]
+    }
 
     // Preparar datos para el PDF
     const denunciante: Denunciante = {

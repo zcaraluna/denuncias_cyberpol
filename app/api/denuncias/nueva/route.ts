@@ -270,27 +270,26 @@ export async function POST(request: NextRequest) {
     
     if (denuncia?.fechaDenuncia && denuncia?.horaDenuncia) {
       // Usar los valores enviados desde el frontend
-      fechaActual = denuncia.fechaDenuncia
+      // Asegurarse de que la fecha esté en formato YYYY-MM-DD
+      const fechaRecibida = denuncia.fechaDenuncia
+      if (fechaRecibida.includes('/')) {
+        // Si viene en formato DD/MM/YYYY, convertir a YYYY-MM-DD
+        const partes = fechaRecibida.split('/')
+        if (partes.length === 3) {
+          fechaActual = `${partes[2]}-${partes[1]}-${partes[0]}`
+        } else {
+          fechaActual = fechaRecibida
+        }
+      } else {
+        fechaActual = fechaRecibida
+      }
       horaActual = denuncia.horaDenuncia
     } else {
-      // Fallback: usar fecha/hora actual del servidor
-      const now = new Date()
-      fechaActual = now
-        .toLocaleDateString('es-PY', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
-          timeZone: 'America/Asuncion'
-        })
-        .split('/')
-        .reverse()
-        .join('-')
-      horaActual = now.toLocaleTimeString('es-PY', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false,
-        timeZone: 'America/Asuncion'
-      })
+      // Fallback: usar fecha/hora actual del servidor con zona horaria de Paraguay
+      const { getFechaHoraParaguay } = require('@/lib/utils/timezone')
+      const { fecha, hora } = getFechaHoraParaguay()
+      fechaActual = fecha // Ya viene en formato YYYY-MM-DD
+      horaActual = hora
     }
 
     const mapaDenunciantes = new Map<string, number>()
@@ -385,17 +384,32 @@ export async function POST(request: NextRequest) {
       )
       numeroOrden = ordenResult.rows[0].orden
 
+      // Validar que fechaActual esté en formato YYYY-MM-DD antes de insertar
+      // Si no está en el formato correcto, intentar parsearlo
+      let fechaActualFormateada = fechaActual
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(fechaActual)) {
+        // Si no está en formato YYYY-MM-DD, intentar parsearlo
+        console.warn(`Fecha recibida en formato inesperado: ${fechaActual}`)
+        if (fechaActual.includes('/')) {
+          const partes = fechaActual.split('/')
+          if (partes.length === 3) {
+            // Asumir formato DD/MM/YYYY
+            fechaActualFormateada = `${partes[2]}-${partes[1]}-${partes[0]}`
+          }
+        }
+      }
+      
       const insertDenuncia = await client.query(
         `INSERT INTO denuncias (
           denunciante_id, fecha_denuncia, hora_denuncia, fecha_hecho, hora_hecho, fecha_hecho_fin, hora_hecho_fin,
           tipo_denuncia, otro_tipo, relato, lugar_hecho, latitud, longitud,
           orden, usuario_id, oficina, operador_grado, operador_nombre,
           operador_apellido, monto_dano, moneda, hash, pdf, estado
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, NULL, 'completada')
+        ) VALUES ($1, $2::DATE, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, NULL, 'completada')
         RETURNING id`,
         [
           principalId,
-          fechaActual,
+          fechaActualFormateada,
           horaActual,
           fechaHecho,
           horaHecho,
