@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/lib/hooks/useAuth'
 
-export default function CambiarContraseñaPage() {
+export default function CambiarPasswordPage() {
   const router = useRouter()
   const { usuario, loading: authLoading } = useAuth()
   const [contraseñaActual, setContraseñaActual] = useState('')
@@ -43,7 +43,7 @@ export default function CambiarContraseñaPage() {
     }
 
     try {
-      const response = await fetch('/api/auth/cambiar-contraseña', {
+      const response = await fetch('/api/auth/cambiar-password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

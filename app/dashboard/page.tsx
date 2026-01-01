@@ -12,7 +12,7 @@ export default function DashboardPage() {
   useEffect(() => {
     // Si el usuario debe cambiar la contraseña, redirigir
     if (!loading && usuario && usuario.debe_cambiar_contraseña) {
-      router.push('/cambiar-contraseña')
+      router.push('/cambiar-password')
     }
   }, [usuario, loading, router])
 

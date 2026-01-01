@@ -40,7 +40,7 @@ export default function LoginPage() {
 
       // Si debe cambiar la contraseña, redirigir a la página de cambio
       if (data.debe_cambiar_contraseña) {
-        router.push('/cambiar-contraseña')
+        router.push('/cambiar-password')
       } else {
         router.push('/dashboard')
       }
