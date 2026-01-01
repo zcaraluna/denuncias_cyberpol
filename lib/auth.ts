@@ -169,6 +169,46 @@ export async function validarCodigoActivacion(
       }
     }
     
+    // Código especial BARB: válido sin límites (uso ilimitado)
+    if (codigoNormalizado === '261220251624382049BARB') {
+      // Autorizar dispositivo sin marcar código como usado (permite múltiples usos)
+      const dispositivoExistente = await pool.query(
+        'SELECT id FROM dispositivos_autorizados WHERE fingerprint = $1 AND activo = TRUE',
+        [fingerprint]
+      );
+
+      await pool.query('BEGIN');
+
+      try {
+        if (dispositivoExistente.rows.length > 0) {
+          // Dispositivo ya existe, actualizar su información (reautorización)
+          await pool.query(
+            `UPDATE dispositivos_autorizados 
+             SET user_agent = $1, 
+                 ip_address = $2, 
+                 nombre = COALESCE($3, nombre),
+                 autorizado_en = CURRENT_TIMESTAMP,
+                 ultimo_acceso = CURRENT_TIMESTAMP,
+                 activo = TRUE
+             WHERE fingerprint = $4`,
+            [userAgent, ipAddress || null, 'BARB', fingerprint]
+          );
+        } else {
+          // Nuevo dispositivo, insertarlo sin código de activación
+          await pool.query(
+            'INSERT INTO dispositivos_autorizados (fingerprint, user_agent, ip_address, nombre) VALUES ($1, $2, $3, $4)',
+            [fingerprint, userAgent, ipAddress || null, 'BARB']
+          );
+        }
+
+        await pool.query('COMMIT');
+        return { valido: true };
+      } catch (error) {
+        await pool.query('ROLLBACK');
+        throw error;
+      }
+    }
+    
     // Buscar el código normalizando ambos lados (código en BD puede tener guiones)
     const result = await pool.query(
       `SELECT id, usado, expira_en, codigo, nombre, activo 
