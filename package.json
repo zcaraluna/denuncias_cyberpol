@@ -11,7 +11,7 @@
     "migrate": "node scripts/run-migration.js",
     "importar-usuarios": "node scripts/importar-usuarios-excel.js",
     "eliminar-usuarios-importados": "node scripts/eliminar-usuarios-importados.js",
-    "vaciar-denuncias": "node scripts/vaciar-denuncias.js"
+    "corregir-fechas-denuncias": "node scripts/corregir-fechas-denuncias.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.2",

@@ -334,7 +334,7 @@ export async function POST(request: NextRequest) {
       await client.query(
         `UPDATE denuncias SET
           denunciante_id = $1,
-          fecha_denuncia = $2,
+          fecha_denuncia = $2::DATE,
           hora_denuncia = $3,
           fecha_hecho = $4,
           hora_hecho = $5,
