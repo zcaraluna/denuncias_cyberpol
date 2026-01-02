@@ -519,7 +519,7 @@ export default function VerDenunciaPage({ params }: { params: Promise<{ id: stri
                           {autor.fecha_nacimiento_autor && (
                             <div>
                               <p className="text-sm font-medium text-gray-600">Fecha de Nacimiento</p>
-                              <p className="text-base text-gray-900">{new Date(autor.fecha_nacimiento_autor).toLocaleDateString('es-ES')}</p>
+                              <p className="text-base text-gray-900">{formatearFechaSinTimezone(autor.fecha_nacimiento_autor)}</p>
                             </div>
                           )}
                           {autor.lugar_nacimiento_autor && (
