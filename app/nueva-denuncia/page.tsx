@@ -139,10 +139,11 @@ const denunciaSchema = z.object({
   horaHechoFin: z.string().optional(),
   tipoDenuncia: z.string().min(1, 'Debe seleccionar un tipo'),
   otroTipo: z.string().optional(),
-  lugarHecho: z.string().min(1, 'Este campo es obligatorio'),
+  lugarHecho: z.string().optional(),
   lugarHechoDepartamento: z.string().optional(),
   lugarHechoCiudad: z.string().optional(),
   lugarHechoCalles: z.string().optional(),
+  lugarHechoNoAplica: z.boolean().optional(),
   relato: z.string().min(10, 'El relato debe tener al menos 10 caracteres'),
   montoDano: z.string().optional(),
   moneda: z.string().optional(),
@@ -161,6 +162,16 @@ const denunciaSchema = z.object({
         path: ['horaHechoFin'],
         code: z.ZodIssueCode.custom,
         message: 'La hora de fin es requerida y debe estar en formato HH:MM',
+      })
+    }
+  }
+  // Validar lugar del hecho solo si "No aplica" no está marcado
+  if (!data.lugarHechoNoAplica) {
+    if (!data.lugarHecho || data.lugarHecho.trim() === '') {
+      ctx.addIssue({
+        path: ['lugarHecho'],
+        code: z.ZodIssueCode.custom,
+        message: 'Este campo es obligatorio',
       })
     }
   }
@@ -286,7 +297,8 @@ export default function NuevaDenunciaPage() {
   const router = useRouter()
   const { usuario, loading: authLoading } = useAuth()
   const [paso, setPaso] = useState(1)
-  const [autorConocido, setAutorConocido] = useState<'Conocido' | 'Desconocido'>('Desconocido')
+  const [autorConocido, setAutorConocido] = useState<'Conocido' | 'Desconocido' | 'No aplica'>('Desconocido')
+  const [lugarHechoNoAplica, setLugarHechoNoAplica] = useState(false)
   const [coordenadas, setCoordenadas] = useState<{ lat: number; lng: number } | null>(null)
   const [mostrarMapa, setMostrarMapa] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -415,6 +427,7 @@ export default function NuevaDenunciaPage() {
     'HECHO PUNIBLE CONTRA EL EJERCICIO DE FUNCIONES PUBLICAS',
     'HECHO PUNIBLE CONTRA LOS PUEBLOS',
     'HECHO PUNIBLE A DETERMINAR',
+    'EXTRAVÍO DE OBJETOS Y/O DOCUMENTOS',
     'Otro (Especificar)'
   ]
 
@@ -1530,6 +1543,7 @@ export default function NuevaDenunciaPage() {
         // Cargar descripción física
         const autorDesconocido = data.supuestos_autores.find((a: any) => a.autor_conocido === 'Desconocido')
         if (autorDesconocido && autorDesconocido.descripcion_fisica) {
+          setAutorConocido('Desconocido')
           try {
             const descFisica = typeof autorDesconocido.descripcion_fisica === 'string' 
               ? JSON.parse(autorDesconocido.descripcion_fisica) 
@@ -1540,6 +1554,16 @@ export default function NuevaDenunciaPage() {
             setDescripcionFisica({})
           }
         }
+      } else {
+        // Si no hay supuestos_autores, significa que es "No aplica"
+        setAutorConocido('No aplica')
+      }
+      
+      // Cargar lugar del hecho "No aplica"
+      if (!data.lugar_hecho || data.lugar_hecho.trim() === '') {
+        setLugarHechoNoAplica(true)
+      } else {
+        setLugarHechoNoAplica(false)
       }
     } catch (error) {
       console.error('Error cargando borrador:', error)
@@ -1677,7 +1701,7 @@ export default function NuevaDenunciaPage() {
           horaHechoFin: denunciaData.horaHechoFin || null,
           tipoDenuncia: denunciaData.tipoDenuncia === 'Otro (Especificar)' ? 'OTRO' : denunciaData.tipoDenuncia,
           otroTipo: denunciaData.tipoDenuncia === 'Otro (Especificar)' ? denunciaData.otroTipo?.toUpperCase() : null,
-          lugarHecho: construirDomicilio(denunciaData.lugarHechoDepartamento, denunciaData.lugarHechoCiudad, denunciaData.lugarHechoCalles)?.toUpperCase() || denunciaData.lugarHecho?.toUpperCase() || '',
+          lugarHecho: lugarHechoNoAplica ? '' : (construirDomicilio(denunciaData.lugarHechoDepartamento, denunciaData.lugarHechoCiudad, denunciaData.lugarHechoCalles)?.toUpperCase() || denunciaData.lugarHecho?.toUpperCase() || ''),
           relato: denunciaData.relato || '',
           montoDano: denunciaData.montoDano ? parseInt(denunciaData.montoDano.replace(/\./g, '')) : null,
           moneda: denunciaData.moneda || null,
@@ -1701,6 +1725,8 @@ export default function NuevaDenunciaPage() {
         },
         descripcionFisica: autorConocido === 'Desconocido' 
           ? (Object.keys(descripcionFisica).length > 0 ? JSON.stringify(descripcionFisica) : null)
+          : autorConocido === 'No aplica'
+          ? null
           : null,
         operador: {
           nombre: usuario.nombre,
@@ -1793,7 +1819,7 @@ export default function NuevaDenunciaPage() {
           horaHechoFin: denunciaData.horaHechoFin || null,
           tipoDenuncia: denunciaData.tipoDenuncia === 'Otro (Especificar)' ? 'OTRO' : denunciaData.tipoDenuncia,
           otroTipo: denunciaData.tipoDenuncia === 'Otro (Especificar)' ? denunciaData.otroTipo?.toUpperCase() : null,
-          lugarHecho: construirDomicilio(denunciaData.lugarHechoDepartamento, denunciaData.lugarHechoCiudad, denunciaData.lugarHechoCalles)?.toUpperCase() || denunciaData.lugarHecho?.toUpperCase() || '',
+          lugarHecho: lugarHechoNoAplica ? '' : (construirDomicilio(denunciaData.lugarHechoDepartamento, denunciaData.lugarHechoCiudad, denunciaData.lugarHechoCalles)?.toUpperCase() || denunciaData.lugarHecho?.toUpperCase() || ''),
           relato: denunciaData.relato || '',
           montoDano: denunciaData.montoDano ? parseInt(denunciaData.montoDano.replace(/\./g, '')) : null,
           moneda: denunciaData.moneda || null,
@@ -1817,6 +1843,8 @@ export default function NuevaDenunciaPage() {
         },
         descripcionFisica: autorConocido === 'Desconocido' 
           ? (Object.keys(descripcionFisica).length > 0 ? JSON.stringify(descripcionFisica) : null)
+          : autorConocido === 'No aplica'
+          ? null
           : null,
         operador: {
           nombre: usuario.nombre,
@@ -1905,7 +1933,7 @@ export default function NuevaDenunciaPage() {
           horaHechoFin: denunciaData.horaHechoFin || null,
           tipoDenuncia: denunciaData.tipoDenuncia === 'Otro (Especificar)' ? 'OTRO' : denunciaData.tipoDenuncia,
           otroTipo: denunciaData.tipoDenuncia === 'Otro (Especificar)' ? denunciaData.otroTipo?.toUpperCase() : null,
-          lugarHecho: construirDomicilio(denunciaData.lugarHechoDepartamento, denunciaData.lugarHechoCiudad, denunciaData.lugarHechoCalles)?.toUpperCase() || denunciaData.lugarHecho?.toUpperCase() || '',
+          lugarHecho: lugarHechoNoAplica ? '' : (construirDomicilio(denunciaData.lugarHechoDepartamento, denunciaData.lugarHechoCiudad, denunciaData.lugarHechoCalles)?.toUpperCase() || denunciaData.lugarHecho?.toUpperCase() || ''),
           relato: denunciaData.relato || '',
           montoDano: denunciaData.montoDano ? parseInt(denunciaData.montoDano.replace(/\./g, '')) : null,
           moneda: denunciaData.moneda || null,
@@ -1929,6 +1957,8 @@ export default function NuevaDenunciaPage() {
         },
         descripcionFisica: autorConocido === 'Desconocido' 
           ? (Object.keys(descripcionFisica).length > 0 ? JSON.stringify(descripcionFisica) : null)
+          : autorConocido === 'No aplica'
+          ? null
           : null,
         usuarioId: usuario.id,
       }
@@ -2014,7 +2044,7 @@ export default function NuevaDenunciaPage() {
           horaHecho: denunciaData.horaHecho || '',
           tipoDenuncia: denunciaData.tipoDenuncia === 'Otro (Especificar)' ? 'OTRO' : denunciaData.tipoDenuncia || '',
           otroTipo: denunciaData.tipoDenuncia === 'Otro (Especificar)' ? denunciaData.otroTipo?.toUpperCase() : null,
-          lugarHecho: construirDomicilio(denunciaData.lugarHechoDepartamento, denunciaData.lugarHechoCiudad, denunciaData.lugarHechoCalles)?.toUpperCase() || denunciaData.lugarHecho?.toUpperCase() || '',
+          lugarHecho: lugarHechoNoAplica ? '' : (construirDomicilio(denunciaData.lugarHechoDepartamento, denunciaData.lugarHechoCiudad, denunciaData.lugarHechoCalles)?.toUpperCase() || denunciaData.lugarHecho?.toUpperCase() || ''),
           relato: denunciaData.relato || '',
           montoDano: denunciaData.montoDano ? parseInt(denunciaData.montoDano.replace(/\./g, '')) : null,
           moneda: denunciaData.moneda || null,
@@ -2038,6 +2068,8 @@ export default function NuevaDenunciaPage() {
         },
         descripcionFisica: autorConocido === 'Desconocido' 
           ? (Object.keys(descripcionFisica).length > 0 ? JSON.stringify(descripcionFisica) : null)
+          : autorConocido === 'No aplica'
+          ? null
           : null,
         usuarioId: usuario.id,
         borradorId: borradorId,
@@ -2873,7 +2905,7 @@ export default function NuevaDenunciaPage() {
                     type="radio"
                     value="Conocido"
                     checked={autorConocido === 'Conocido'}
-                    onChange={(e) => setAutorConocido(e.target.value as 'Conocido' | 'Desconocido')}
+                    onChange={(e) => setAutorConocido(e.target.value as 'Conocido' | 'Desconocido' | 'No aplica')}
                     className="mr-2"
                   />
                   <span className="text-gray-800">Conocido</span>
@@ -2883,10 +2915,20 @@ export default function NuevaDenunciaPage() {
                     type="radio"
                     value="Desconocido"
                     checked={autorConocido === 'Desconocido'}
-                    onChange={(e) => setAutorConocido(e.target.value as 'Conocido' | 'Desconocido')}
+                    onChange={(e) => setAutorConocido(e.target.value as 'Conocido' | 'Desconocido' | 'No aplica')}
                     className="mr-2"
                   />
                   <span className="text-gray-800">Desconocido</span>
+                </label>
+                <label className="flex items-center text-gray-800 cursor-pointer">
+                  <input
+                    type="radio"
+                    value="No aplica"
+                    checked={autorConocido === 'No aplica'}
+                    onChange={(e) => setAutorConocido(e.target.value as 'Conocido' | 'Desconocido' | 'No aplica')}
+                    className="mr-2"
+                  />
+                  <span className="text-gray-800">No aplica</span>
                 </label>
               </div>
             </div>
@@ -3800,9 +3842,30 @@ export default function NuevaDenunciaPage() {
 
               <div className="space-y-4">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">
-                    Lugar del Hecho
-                  </h3>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-800 border-b pb-2 flex-1">
+                      Lugar del Hecho
+                    </h3>
+                    <label className="flex items-center ml-4 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={lugarHechoNoAplica}
+                        onChange={(e) => {
+                          setLugarHechoNoAplica(e.target.checked)
+                          if (e.target.checked) {
+                            setValueDenuncia('lugarHechoDepartamento', '')
+                            setValueDenuncia('lugarHechoCiudad', '')
+                            setValueDenuncia('lugarHechoCalles', '')
+                            setValueDenuncia('lugarHecho', '')
+                            setCoordenadas(null)
+                          }
+                        }}
+                        className="mr-2"
+                      />
+                      <span className="text-sm text-gray-700">No aplica</span>
+                    </label>
+                  </div>
+                  {!lugarHechoNoAplica && (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -3964,6 +4027,7 @@ export default function NuevaDenunciaPage() {
                       />
                     </div>
                   </div>
+                  )}
                   <div className="flex gap-2 mt-4">
                     <input
                       {...registerDenuncia('lugarHecho')}
@@ -3972,12 +4036,13 @@ export default function NuevaDenunciaPage() {
                     <button
                       type="button"
                       onClick={() => setMostrarMapa(true)}
-                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                      disabled={lugarHechoNoAplica}
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Abrir Mapa
                     </button>
                   </div>
-                  {coordenadas && (
+                  {!lugarHechoNoAplica && coordenadas && (
                     <p className="text-sm text-gray-600 mt-1">
                       Coordenadas: {coordenadas.lat.toFixed(6)}, {coordenadas.lng.toFixed(6)}
                     </p>
