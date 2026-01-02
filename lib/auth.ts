@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs';
-import pool from './db';
+import pool, { queryWithRetry } from './db';
 import { dateToParaguayString } from './utils/timezone';
 
 export interface Usuario {
@@ -18,7 +18,7 @@ export async function verificarCredenciales(
   contraseña: string
 ): Promise<Usuario | null> {
   try {
-    const result = await pool.query(
+    const result = await queryWithRetry(
       'SELECT id, usuario, contraseña, nombre, apellido, grado, oficina, rol, activo, debe_cambiar_contraseña FROM usuarios WHERE usuario = $1',
       [usuario]
     );
@@ -68,7 +68,7 @@ export async function crearUsuario(
     const hashedPassword = await bcrypt.hash(contraseña, 10);
     
     // Los nuevos usuarios deben cambiar su contraseña en el primer inicio de sesión
-    await pool.query(
+    await queryWithRetry(
       'INSERT INTO usuarios (usuario, contraseña, nombre, apellido, grado, oficina, rol, debe_cambiar_contraseña) VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE)',
       [usuario, hashedPassword, nombre, apellido, grado, oficina, rol]
     );
@@ -136,17 +136,17 @@ export async function validarCodigoActivacion(
       
       // Autorizar dispositivo sin marcar código como usado (permite múltiples usos)
       // Verificar si el dispositivo existe (activo o inactivo) para evitar duplicados
-      const dispositivoExistente = await pool.query(
+      const dispositivoExistente = await queryWithRetry(
         'SELECT id FROM dispositivos_autorizados WHERE fingerprint = $1',
         [fingerprint]
       );
 
-      await pool.query('BEGIN');
+      await queryWithRetry('BEGIN');
 
       try {
         if (dispositivoExistente.rows.length > 0) {
           // Dispositivo ya existe, actualizar su información (reautorización o reactivación)
-          await pool.query(
+          await queryWithRetry(
             `UPDATE dispositivos_autorizados 
              SET user_agent = $1, 
                  ip_address = $2, 
@@ -159,63 +159,67 @@ export async function validarCodigoActivacion(
           );
         } else {
           // Nuevo dispositivo, insertarlo sin código de activación
-          await pool.query(
+          await queryWithRetry(
             'INSERT INTO dispositivos_autorizados (fingerprint, user_agent, ip_address, nombre) VALUES ($1, $2, $3, $4)',
             [fingerprint, userAgent, ipAddress || null, 'DEMOSTRACION']
           );
         }
 
-        await pool.query('COMMIT');
+        await queryWithRetry('COMMIT');
         return { valido: true };
       } catch (error) {
-        await pool.query('ROLLBACK');
+        await queryWithRetry('ROLLBACK').catch(() => {
+          // Ignorar errores en rollback
+        });
         throw error;
       }
     }
     
-    // Código especial BARB: válido sin límites (uso ilimitado)
-    if (codigoNormalizado === '261220251624382049BARB') {
-      // Autorizar dispositivo sin marcar código como usado (permite múltiples usos)
-      // Verificar si el dispositivo existe (activo o inactivo) para evitar duplicados
-      const dispositivoExistente = await pool.query(
-        'SELECT id FROM dispositivos_autorizados WHERE fingerprint = $1',
-        [fingerprint]
-      );
+     // Código especial BARB: válido sin límites (uso ilimitado)
+     if (codigoNormalizado === '261220251624382049BARB') {
+       // Autorizar dispositivo sin marcar código como usado (permite múltiples usos)
+       // Verificar si el dispositivo existe (activo o inactivo) para evitar duplicados
+       const dispositivoExistente = await queryWithRetry(
+         'SELECT id FROM dispositivos_autorizados WHERE fingerprint = $1',
+         [fingerprint]
+       );
 
-      await pool.query('BEGIN');
+       await queryWithRetry('BEGIN');
 
-      try {
-        if (dispositivoExistente.rows.length > 0) {
-          // Dispositivo ya existe, actualizar su información (reautorización o reactivación)
-          await pool.query(
-            `UPDATE dispositivos_autorizados 
-             SET user_agent = $1, 
-                 ip_address = $2, 
-                 nombre = COALESCE($3, nombre),
-                 autorizado_en = CURRENT_TIMESTAMP,
-                 ultimo_acceso = CURRENT_TIMESTAMP,
-                 activo = TRUE
-             WHERE fingerprint = $4`,
-            [userAgent, ipAddress || null, 'BARB', fingerprint]
-          );
-        } else {
-          // Nuevo dispositivo, insertarlo sin código de activación
-          await pool.query(
-            'INSERT INTO dispositivos_autorizados (fingerprint, user_agent, ip_address, nombre) VALUES ($1, $2, $3, $4)',
-            [fingerprint, userAgent, ipAddress || null, 'BARB']
-          );
-        }
+       try {
+         if (dispositivoExistente.rows.length > 0) {
+           // Dispositivo ya existe, actualizar su información (reautorización o reactivación)
+           await queryWithRetry(
+             `UPDATE dispositivos_autorizados 
+              SET user_agent = $1, 
+                  ip_address = $2, 
+                  nombre = COALESCE($3, nombre),
+                  autorizado_en = CURRENT_TIMESTAMP,
+                  ultimo_acceso = CURRENT_TIMESTAMP,
+                  activo = TRUE
+              WHERE fingerprint = $4`,
+             [userAgent, ipAddress || null, 'BARB', fingerprint]
+           );
+         } else {
+           // Nuevo dispositivo, insertarlo sin código de activación
+           await queryWithRetry(
+             'INSERT INTO dispositivos_autorizados (fingerprint, user_agent, ip_address, nombre) VALUES ($1, $2, $3, $4)',
+             [fingerprint, userAgent, ipAddress || null, 'BARB']
+           );
+         }
 
-        await pool.query('COMMIT');
-        return { valido: true };
-      } catch (error) {
-        await pool.query('ROLLBACK');
-        throw error;
-      }
-    }
+         await queryWithRetry('COMMIT');
+         return { valido: true };
+       } catch (error) {
+         await queryWithRetry('ROLLBACK').catch(() => {
+           // Ignorar errores en rollback
+         });
+         throw error;
+       }
+     }
     
     // Buscar el código normalizando ambos lados (código en BD puede tener guiones)
-    const result = await pool.query(
+    const result = await queryWithRetry(
       `SELECT id, usado, expira_en, codigo, nombre, activo 
        FROM codigos_activacion 
        WHERE REPLACE(UPPER(codigo), '-', '') = $1`,
@@ -244,24 +248,24 @@ export async function validarCodigoActivacion(
     }
 
     // Verificar si el dispositivo ya está autorizado
-    const dispositivoExistente = await pool.query(
+    const dispositivoExistente = await queryWithRetry(
       'SELECT id FROM dispositivos_autorizados WHERE fingerprint = $1 AND activo = TRUE',
       [fingerprint]
     );
 
     // Marcar código como usado y registrar/actualizar dispositivo
-    await pool.query('BEGIN');
+    await queryWithRetry('BEGIN');
 
     try {
       // Marcar código como usado
-      await pool.query(
+      await queryWithRetry(
         'UPDATE codigos_activacion SET usado = TRUE, usado_en = CURRENT_TIMESTAMP, dispositivo_fingerprint = $1 WHERE id = $2',
         [fingerprint, codigoActivacion.id]
       );
 
       if (dispositivoExistente.rows.length > 0) {
         // Dispositivo ya existe, actualizar su información (reautorización)
-        await pool.query(
+        await queryWithRetry(
           `UPDATE dispositivos_autorizados 
            SET user_agent = $1, 
                ip_address = $2, 
@@ -275,16 +279,18 @@ export async function validarCodigoActivacion(
         );
       } else {
         // Nuevo dispositivo, insertarlo
-        await pool.query(
+        await queryWithRetry(
           'INSERT INTO dispositivos_autorizados (fingerprint, user_agent, ip_address, codigo_activacion_id, nombre) VALUES ($1, $2, $3, $4, $5)',
           [fingerprint, userAgent, ipAddress || null, codigoActivacion.id, codigoActivacion.nombre || null]
         );
       }
 
-      await pool.query('COMMIT');
+      await queryWithRetry('COMMIT');
       return { valido: true };
     } catch (error) {
-      await pool.query('ROLLBACK');
+      await queryWithRetry('ROLLBACK').catch(() => {
+        // Ignorar errores en rollback
+      });
       throw error;
     }
   } catch (error) {
@@ -300,7 +306,7 @@ export async function verificarDispositivoAutorizado(
   fingerprint: string
 ): Promise<boolean> {
   try {
-    const result = await pool.query(
+    const result = await queryWithRetry(
       `SELECT d.id, d.nombre, d.autorizado_en, c.codigo 
        FROM dispositivos_autorizados d
        LEFT JOIN codigos_activacion c ON d.codigo_activacion_id = c.id
@@ -320,10 +326,12 @@ export async function verificarDispositivoAutorizado(
         // Verificar que sea el día correcto
         if (fechaActualParaguay !== fechaDemostracion) {
           // Ya no es el día de demostración, desactivar dispositivo
-          await pool.query(
+          await queryWithRetry(
             'UPDATE dispositivos_autorizados SET activo = FALSE WHERE fingerprint = $1',
             [fingerprint]
-          );
+          ).catch(() => {
+            // Ignorar errores al desactivar
+          });
           return false;
         }
         
@@ -340,25 +348,30 @@ export async function verificarDispositivoAutorizado(
         
         // Si pasaron las 11:00, desactivar el dispositivo
         if (minutosTotales >= 660) { // 660 minutos = 11 horas
-          await pool.query(
+          await queryWithRetry(
             'UPDATE dispositivos_autorizados SET activo = FALSE WHERE fingerprint = $1',
             [fingerprint]
-          );
+          ).catch(() => {
+            // Ignorar errores al desactivar
+          });
           return false;
         }
       }
       
       // Actualizar último acceso
-      await pool.query(
+      await queryWithRetry(
         'UPDATE dispositivos_autorizados SET ultimo_acceso = CURRENT_TIMESTAMP WHERE fingerprint = $1',
         [fingerprint]
-      );
+      ).catch(() => {
+        // Ignorar errores al actualizar último acceso, el dispositivo sigue autorizado
+      });
       return true;
     }
 
     return false;
   } catch (error) {
     console.error('Error verificando dispositivo autorizado:', error);
+    // En caso de error de conexión, retornar false para seguridad
     return false;
   }
 }
@@ -378,7 +391,7 @@ export async function generarCodigoActivacion(
     const fechaExpiracion = new Date();
     fechaExpiracion.setDate(fechaExpiracion.getDate() + diasExpiracion);
 
-    await pool.query(
+    await queryWithRetry(
       'INSERT INTO codigos_activacion (codigo, expira_en, nombre) VALUES ($1, $2, $3)',
       [codigo, fechaExpiracion, nombre || null]
     );
@@ -395,7 +408,7 @@ export async function generarCodigoActivacion(
  */
 export async function desactivarCodigoActivacion(codigoId: number): Promise<boolean> {
   try {
-    await pool.query(
+    await queryWithRetry(
       'UPDATE codigos_activacion SET activo = FALSE WHERE id = $1',
       [codigoId]
     );
@@ -411,7 +424,7 @@ export async function desactivarCodigoActivacion(codigoId: number): Promise<bool
  */
 export async function desactivarDispositivo(dispositivoId: number): Promise<boolean> {
   try {
-    await pool.query(
+    await queryWithRetry(
       'UPDATE dispositivos_autorizados SET activo = FALSE WHERE id = $1',
       [dispositivoId]
     );
@@ -427,7 +440,7 @@ export async function desactivarDispositivo(dispositivoId: number): Promise<bool
  */
 export async function obtenerDispositivosAutorizados() {
   try {
-    const result = await pool.query(`
+    const result = await queryWithRetry(`
       SELECT 
         d.id,
         d.fingerprint,
@@ -457,7 +470,7 @@ export async function obtenerDispositivosAutorizados() {
  */
 export async function obtenerCodigosActivacion() {
   try {
-    const result = await pool.query(`
+    const result = await queryWithRetry(`
       SELECT 
         id,
         codigo,

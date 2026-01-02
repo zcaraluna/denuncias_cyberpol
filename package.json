@@ -10,7 +10,8 @@
     "init-db": "node scripts/init-db.js",
     "migrate": "node scripts/run-migration.js",
     "importar-usuarios": "node scripts/importar-usuarios-excel.js",
-    "eliminar-usuarios-importados": "node scripts/eliminar-usuarios-importados.js"
+    "eliminar-usuarios-importados": "node scripts/eliminar-usuarios-importados.js",
+    "vaciar-denuncias": "node scripts/vaciar-denuncias.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.2",
