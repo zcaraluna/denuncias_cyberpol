@@ -11,11 +11,11 @@
 export function formatearFechaSinTimezone(fechaStr: string | Date | null | undefined): string {
   if (!fechaStr) return ''
   
-  // Si ya es un objeto Date, extraer los componentes
+  // Si ya es un objeto Date, extraer los componentes usando UTC para evitar problemas de timezone
   if (fechaStr instanceof Date) {
-    const año = fechaStr.getFullYear()
-    const mes = String(fechaStr.getMonth() + 1).padStart(2, '0')
-    const dia = String(fechaStr.getDate()).padStart(2, '0')
+    const año = fechaStr.getUTCFullYear()
+    const mes = String(fechaStr.getUTCMonth() + 1).padStart(2, '0')
+    const dia = String(fechaStr.getUTCDate()).padStart(2, '0')
     return `${dia}/${mes}/${año}`
   }
   

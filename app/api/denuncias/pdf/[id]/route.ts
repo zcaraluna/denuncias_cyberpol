@@ -2,14 +2,20 @@ import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/lib/db'
 import { generarPDF, generarPDFFormato2, Denunciante, DatosDenuncia } from '@/lib/utils/pdf'
 
-// Función auxiliar para convertir fechas
-const formatDate = (date: any): string => {
+// Función auxiliar para convertir fechas a string YYYY-MM-DD sin problemas de timezone
+// Esta función NO formatea para mostrar, solo convierte Date objects a string YYYY-MM-DD
+const dateToString = (date: any): string => {
   if (!date) return ''
+  
+  // Si es un objeto Date, extraer componentes UTC para evitar problemas de timezone
   if (date instanceof Date) {
-    // Usar zona horaria de Paraguay
-    const { dateToParaguayString } = require('@/lib/utils/timezone')
-    return dateToParaguayString(date)
+    const año = date.getUTCFullYear()
+    const mes = String(date.getUTCMonth() + 1).padStart(2, '0')
+    const dia = String(date.getUTCDate()).padStart(2, '0')
+    return `${año}-${mes}-${dia}`
   }
+  
+  // Si es un string, retornarlo directamente (PostgreSQL DATE viene como "YYYY-MM-DD")
   return String(date)
 }
 
@@ -49,26 +55,10 @@ export async function GET(
     }
 
     const row = denunciaResult.rows[0]
-    const fechaDenuncia = formatDate(row.fecha_denuncia)
-    // Extraer el año de la fecha de denuncia de forma robusta
-    // Si la fecha es un objeto Date, extraer el año directamente
-    // Si es un string, extraer del formato YYYY-MM-DD
-    let año: string
-    if (row.fecha_denuncia instanceof Date) {
-      año = row.fecha_denuncia.getFullYear().toString()
-    } else if (typeof row.fecha_denuncia === 'string') {
-      // Si es string, puede venir en formato YYYY-MM-DD o DD/MM/YYYY
-      if (row.fecha_denuncia.includes('-')) {
-        año = row.fecha_denuncia.split('-')[0]
-      } else if (row.fecha_denuncia.includes('/')) {
-        año = row.fecha_denuncia.split('/')[2] || row.fecha_denuncia.split('/')[0]
-      } else {
-        año = new Date(row.fecha_denuncia).getFullYear().toString()
-      }
-    } else {
-      // Fallback: usar la fecha formateada
-      año = fechaDenuncia.split('-')[0]
-    }
+    // Convertir fecha_denuncia a string YYYY-MM-DD (sin formatear para mostrar)
+    const fechaDenuncia = dateToString(row.fecha_denuncia)
+    // Extraer el año directamente del formato YYYY-MM-DD
+    const año = fechaDenuncia.split('-')[0]
 
     // Preparar datos para el PDF
     const denunciante: Denunciante = {
@@ -79,7 +69,7 @@ export async function GET(
       'Nacionalidad': row.nacionalidad,
       'Estado Civil': row.estado_civil,
       'Edad': row.edad ? row.edad.toString() : '',
-      'Fecha de Nacimiento': formatDate(row.fecha_nacimiento),
+      'Fecha de Nacimiento': dateToString(row.fecha_nacimiento),
       'Lugar de Nacimiento': row.lugar_nacimiento,
       'Número de Teléfono': row.telefono,
       'Domicilio': row.domicilio,
@@ -164,23 +154,23 @@ export async function GET(
         nacionalidad: involucrado.nacionalidad,
         estadoCivil: involucrado.estado_civil,
         edad: involucrado.edad ? involucrado.edad.toString() : null,
-        fechaNacimiento: formatDate(involucrado.fecha_nacimiento),
+        fechaNacimiento: dateToString(involucrado.fecha_nacimiento),
         lugarNacimiento: involucrado.lugar_nacimiento,
         domicilio: involucrado.domicilio,
         representaA: involucrado.representa_denunciante_id
           ? mapIdToNombre.get(involucrado.representa_denunciante_id) || null
           : null,
         conCartaPoder: Boolean(involucrado.con_carta_poder),
-        cartaPoderFecha: involucrado.carta_poder_fecha ? formatDate(involucrado.carta_poder_fecha) : null,
+        cartaPoderFecha: involucrado.carta_poder_fecha ? dateToString(involucrado.carta_poder_fecha) : null,
         cartaPoderNotario: involucrado.carta_poder_notario || null,
       }))
 
     const datosDenuncia: DatosDenuncia = {
       fecha_denuncia: fechaDenuncia,
       hora_denuncia: row.hora_denuncia,
-      fecha_hecho: formatDate(row.fecha_hecho),
+      fecha_hecho: dateToString(row.fecha_hecho),
       hora_hecho: row.hora_hecho,
-      fecha_hecho_fin: row.fecha_hecho_fin ? formatDate(row.fecha_hecho_fin) : null,
+      fecha_hecho_fin: row.fecha_hecho_fin ? dateToString(row.fecha_hecho_fin) : null,
       hora_hecho_fin: row.hora_hecho_fin || null,
       tipo_denuncia: row.tipo_denuncia,
       otro_tipo: row.otro_tipo,
@@ -202,7 +192,7 @@ export async function GET(
       nacionalidad_autor: row.nacionalidad_autor,
       estado_civil_autor: row.estado_civil_autor,
       edad_autor: row.edad_autor,
-      fecha_nacimiento_autor: formatDate(row.fecha_nacimiento_autor),
+      fecha_nacimiento_autor: dateToString(row.fecha_nacimiento_autor),
       lugar_nacimiento_autor: row.lugar_nacimiento_autor,
       telefono_autor: row.telefono_autor,
       profesion_autor: row.profesion_autor,

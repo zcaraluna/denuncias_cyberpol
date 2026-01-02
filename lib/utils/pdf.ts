@@ -16,12 +16,15 @@ const datosOficina = {
 function formatDate(dateStr: string | Date | null): string {
   if (!dateStr) return ''
   
-  // Si es un objeto Date, convertirlo a string ISO
+  // Si es un objeto Date, extraer componentes directamente (sin conversión de timezone)
+  // PostgreSQL normalmente devuelve DATE como string "YYYY-MM-DD", pero si viene como Date,
+  // extraemos los componentes directamente para evitar problemas de timezone
   let dateString: string
   if (dateStr instanceof Date) {
-    const año = dateStr.getFullYear()
-    const mes = String(dateStr.getMonth() + 1).padStart(2, '0')
-    const dia = String(dateStr.getDate()).padStart(2, '0')
+    // Usar UTC para extraer componentes y evitar problemas de timezone
+    const año = dateStr.getUTCFullYear()
+    const mes = String(dateStr.getUTCMonth() + 1).padStart(2, '0')
+    const dia = String(dateStr.getUTCDate()).padStart(2, '0')
     dateString = `${año}-${mes}-${dia}`
   } else {
     dateString = String(dateStr)
