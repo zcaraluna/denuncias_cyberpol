@@ -675,7 +675,7 @@ export async function generarPDF(
       const lineasPagina = textoRestante.slice(0, lineasAEscribir)
       textoRestante = textoRestante.slice(lineasAEscribir)
 
-      doc.text(lineasPagina, 30, yActual, { align: 'justify', maxWidth: 156 })
+      doc.text(lineasPagina, 30, yActual, { align: 'left', maxWidth: 156 })
       
       // Calcular nueva posición Y
       yActual += lineasPagina.length * alturaLineaRelato
@@ -1059,7 +1059,7 @@ export async function generarPDFAmpliacion(
       const lineasPagina = textoRestante.slice(0, lineasAEscribir)
       textoRestante = textoRestante.slice(lineasAEscribir)
 
-      doc.text(lineasPagina, 30, yActual, { align: 'justify', maxWidth: 156 })
+      doc.text(lineasPagina, 30, yActual, { align: 'left', maxWidth: 156 })
       
       // Calcular nueva posición Y
       yActual += lineasPagina.length * alturaLineaRelato
@@ -1716,7 +1716,7 @@ export async function generarPDFFormato2(
       const lineasPagina = textoRelato.slice(0, lineasAEscribir)
       textoRelato = textoRelato.slice(lineasAEscribir)
 
-      doc.text(lineasPagina, 30, yActual, { align: 'justify', maxWidth: 156 })
+      doc.text(lineasPagina, 30, yActual, { align: 'left', maxWidth: 156 })
       
       yActual += lineasPagina.length * alturaLinea
 

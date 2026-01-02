@@ -18,3 +18,4 @@ WHERE estado = 'completada';
 -- en las operaciones UPDATE/INSERT de fecha_denuncia. El problema fue corregido en el código
 -- en la migración 011, y este script corrige las denuncias ya creadas.
 
+
