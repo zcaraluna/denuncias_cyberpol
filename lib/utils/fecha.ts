@@ -33,13 +33,23 @@ export function formatearFechaSinTimezone(fechaStr: string | Date | null | undef
     return fecha
   }
   
-  // Intentar parsear como Date como último recurso
+  // Si contiene 'T' (formato ISO completo con timezone), extraer solo la fecha y parsearla
+  if (fecha.includes('T')) {
+    const fechaPart = fecha.split('T')[0]
+    if (/^\d{4}-\d{2}-\d{2}$/.test(fechaPart)) {
+      const [año, mes, dia] = fechaPart.split('-')
+      return `${dia}/${mes}/${año}`
+    }
+  }
+  
+  // Intentar parsear como Date como último recurso (solo si no es formato ISO)
   try {
     const fechaDate = new Date(fecha)
     if (!isNaN(fechaDate.getTime())) {
-      const año = fechaDate.getFullYear()
-      const mes = String(fechaDate.getMonth() + 1).padStart(2, '0')
-      const dia = String(fechaDate.getDate()).padStart(2, '0')
+      // Usar UTC para evitar problemas de timezone
+      const año = fechaDate.getUTCFullYear()
+      const mes = String(fechaDate.getUTCMonth() + 1).padStart(2, '0')
+      const dia = String(fechaDate.getUTCDate()).padStart(2, '0')
       return `${dia}/${mes}/${año}`
     }
   } catch {
