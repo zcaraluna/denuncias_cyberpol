@@ -384,7 +384,7 @@ export default function PerfilUsuarioPage({ params }: { params: Promise<{ id: st
                               {denuncia.tipo_hecho}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {new Date(denuncia.fecha_denuncia).toLocaleDateString('es-ES')} {denuncia.hora_denuncia}
+                              {formatearFechaSinTimezone(denuncia.fecha_denuncia)} {denuncia.hora_denuncia}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                               <Link

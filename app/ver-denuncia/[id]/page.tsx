@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/lib/hooks/useAuth'
+import { formatearFechaSinTimezone } from '@/lib/utils/fecha'
 
 interface Ampliacion {
   id: number
@@ -375,7 +376,7 @@ export default function VerDenunciaPage({ params }: { params: Promise<{ id: stri
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-600">Fecha de Nacimiento</p>
-                  <p className="text-base text-gray-900">{new Date(denuncia.fecha_nacimiento).toLocaleDateString('es-ES')}</p>
+                  <p className="text-base text-gray-900">{formatearFechaSinTimezone(denuncia.fecha_nacimiento)}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-600">Edad</p>
@@ -434,7 +435,7 @@ export default function VerDenunciaPage({ params }: { params: Promise<{ id: stri
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-600">Fecha del Hecho</p>
-                  <p className="text-base text-gray-900">{new Date(denuncia.fecha_hecho).toLocaleDateString('es-ES')} {denuncia.hora_hecho}</p>
+                  <p className="text-base text-gray-900">{formatearFechaSinTimezone(denuncia.fecha_hecho)} {denuncia.hora_hecho}</p>
                 </div>
                 <div className="col-span-2">
                   <p className="text-sm font-medium text-gray-600">Lugar del Hecho</p>
@@ -599,7 +600,7 @@ export default function VerDenunciaPage({ params }: { params: Promise<{ id: stri
                             Ampliación Nº {ampliacion.numero_ampliacion}
                           </h3>
                           <p className="text-sm text-gray-600">
-                            Fecha: {new Date(ampliacion.fecha_ampliacion).toLocaleDateString('es-ES')} {ampliacion.hora_ampliacion}
+                            Fecha: {formatearFechaSinTimezone(ampliacion.fecha_ampliacion)} {ampliacion.hora_ampliacion}
                           </p>
                           <p className="text-sm text-gray-600">
                             Operador: {ampliacion.operador_grado} {ampliacion.operador_nombre} {ampliacion.operador_apellido}

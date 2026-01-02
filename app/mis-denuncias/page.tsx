@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/lib/hooks/useAuth'
+import { formatearFechaSinTimezone } from '@/lib/utils/fecha'
 
 interface Denuncia {
   id: number
@@ -181,7 +182,7 @@ export default function MisDenunciasPage() {
                         {denuncia.tipo_hecho}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(denuncia.fecha_denuncia).toLocaleDateString('es-ES')} {denuncia.hora_denuncia}
+                        {formatearFechaSinTimezone(denuncia.fecha_denuncia)} {denuncia.hora_denuncia}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span

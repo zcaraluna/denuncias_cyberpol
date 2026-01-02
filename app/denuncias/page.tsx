@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/lib/hooks/useAuth'
+import { formatearFechaSinTimezone } from '@/lib/utils/fecha'
 
 interface Denuncia {
   id: number
