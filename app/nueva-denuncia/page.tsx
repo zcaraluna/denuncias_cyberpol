@@ -1875,6 +1875,122 @@ export default function NuevaDenunciaPage() {
     }
   }
 
+  const onDenunciaPrueba = async (data: any) => {
+    if (!usuario) return
+
+    if (denunciantes.length === 0) {
+      alert('Debes agregar al menos un denunciante antes de completar la denuncia.')
+      setPaso(1)
+      return
+    }
+
+    const denunciantePrincipal = obtenerDenunciantePrincipal()
+    if (!denunciantePrincipal) {
+      alert('Debes registrar un denunciante principal antes de completar la denuncia.')
+      setPaso(1)
+      return
+    }
+
+    setLoading(true)
+
+    try {
+      const autorData = watchAutor()
+      const denunciaData = watchDenuncia()
+
+      let fechaHecho = denunciaData.fechaHecho || ''
+      if (fechaHecho.includes('/')) {
+        const [dia, mes, año] = fechaHecho.split('/')
+        fechaHecho = `${año}-${mes}-${dia}`
+      }
+
+      const denunciantePayload = construirDenunciantePayload(denunciantePrincipal)
+      const coleccionDenunciantes = construirColeccionDenunciantesPayload(denunciantes)
+
+      // Usar la fecha/hora capturada al inicio, no la actual
+      if (!fechaHoraInicioDenuncia) {
+        alert('Error: No se pudo determinar la hora de inicio de la denuncia. Por favor, recarga la página.')
+        setLoading(false)
+        return
+      }
+      const fechaDenuncia = fechaHoraInicioDenuncia.fecha.split('/').reverse().join('-')
+      const horaDenuncia = fechaHoraInicioDenuncia.hora
+
+      const payload = {
+        usuario: usuario.usuario, // Para validar en el backend
+        denunciante: denunciantePayload,
+        denunciantes: coleccionDenunciantes,
+        denuncia: {
+          fechaDenuncia: fechaDenuncia,
+          horaDenuncia: horaDenuncia,
+          fechaHecho: fechaHecho,
+          horaHecho: denunciaData.horaHecho,
+          usarRango: denunciaData.usarRango || false,
+          fechaHechoFin: denunciaData.fechaHechoFin || null,
+          horaHechoFin: denunciaData.horaHechoFin || null,
+          tipoDenuncia: denunciaData.tipoDenuncia === 'Otro (Especificar)' ? 'OTRO' : denunciaData.tipoDenuncia,
+          otroTipo: denunciaData.tipoDenuncia === 'Otro (Especificar)' ? denunciaData.otroTipo?.toUpperCase() : null,
+          lugarHecho: lugarHechoNoAplica ? '' : (construirDomicilio(denunciaData.lugarHechoDepartamento, denunciaData.lugarHechoCiudad, denunciaData.lugarHechoCalles)?.toUpperCase() || denunciaData.lugarHecho?.toUpperCase() || ''),
+          relato: denunciaData.relato || '',
+          montoDano: denunciaData.montoDano ? parseInt(denunciaData.montoDano.replace(/\./g, '')) : null,
+          moneda: denunciaData.moneda || null,
+          latitud: coordenadas?.lat || null,
+          longitud: coordenadas?.lng || null,
+        },
+        autor: {
+          conocido: autorConocido,
+          ...(autorConocido === 'Conocido' && {
+            nombre: autorData.nombre?.toUpperCase() || null,
+            cedula: autorData.cedula?.toUpperCase() || null,
+            domicilio: construirDomicilio(autorData.departamento, autorData.ciudad, autorData.calles) || null,
+            nacionalidad: autorData.nacionalidad?.toUpperCase() || null,
+            estadoCivil: autorData.estadoCivil?.toUpperCase() || null,
+            edad: autorData.edad || null,
+            fechaNacimiento: autorData.fechaNacimiento || null,
+            lugarNacimiento: autorData.lugarNacimiento?.toUpperCase() || null,
+            telefono: autorData.telefono?.toUpperCase() || null,
+            profesion: autorData.profesion?.toUpperCase() || null,
+          }),
+        },
+        descripcionFisica: autorConocido === 'Desconocido' 
+          ? (Object.keys(descripcionFisica).length > 0 ? JSON.stringify(descripcionFisica) : null)
+          : autorConocido === 'No aplica'
+          ? null
+          : null,
+        operador: {
+          nombre: usuario.nombre,
+          apellido: usuario.apellido,
+          grado: usuario.grado,
+          oficina: usuario.oficina,
+        },
+      }
+
+      const response = await fetch('/api/denuncias/prueba', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+
+      if (!response.ok) {
+        throw new Error('Error al generar el PDF de prueba')
+      }
+
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `denuncia_prueba_${new Date().getTime()}.pdf`
+      a.click()
+      window.URL.revokeObjectURL(url)
+
+      alert('PDF de prueba generado exitosamente. No se guardó nada en la base de datos.')
+    } catch (error) {
+      console.error('Error:', error)
+      alert('Error al generar el PDF de prueba. Por favor, intente nuevamente.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const onDenunciaSubmit = async (data: any) => {
     if (!usuario) return
 
@@ -4143,11 +4259,11 @@ export default function NuevaDenunciaPage() {
                 </button> */}
                 <button
                   type="button"
-                  onClick={generarVistaPrevia}
-                  disabled={generandoVistaPrevia || guardandoBorrador}
+                  onClick={usuario?.usuario === 'garv' ? () => onDenunciaPrueba(watchDenuncia()) : generarVistaPrevia}
+                  disabled={generandoVistaPrevia || guardandoBorrador || loading}
                   className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {generandoVistaPrevia ? 'Generando vista previa...' : 'Finalizar'}
+                  {loading ? 'Generando...' : usuario?.usuario === 'garv' ? 'PRUEBA' : (generandoVistaPrevia ? 'Generando vista previa...' : 'Finalizar')}
                 </button>
               </div>
             </div>
