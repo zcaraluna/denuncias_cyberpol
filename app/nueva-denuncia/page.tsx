@@ -3872,7 +3872,6 @@ export default function NuevaDenunciaPage() {
                       options={tiposDenunciaOptions}
                       value={tiposDenunciaOptions.find((option) => option.value === field.value) || null}
                       onChange={(option) => field.onChange(option?.value || '')}
-                      isClearable
                       placeholder="Seleccione o busque..."
                       isSearchable
                       className="text-sm"
