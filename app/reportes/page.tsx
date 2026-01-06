@@ -41,7 +41,30 @@ export default function ReportesPage() {
     if (!fecha) {
       setTiposDisponibles([])
       setTipoDenuncia('')
+      return
     }
+
+    // Cargar tipos disponibles automáticamente cuando se selecciona una fecha
+    const cargarTipos = async () => {
+      try {
+        const response = await fetch(`/api/reportes/simple?fecha=${fecha}`)
+        if (response.ok) {
+          const data = await response.json()
+          // Extraer tipos únicos de las denuncias
+          const tiposUnicos: string[] = Array.from(
+            new Set(data.map((row: ReporteRow) => row.shp).filter((tipo: string | undefined): tipo is string => Boolean(tipo)))
+          )
+          setTiposDisponibles(tiposUnicos.sort())
+        }
+      } catch (error) {
+        console.error('Error cargando tipos disponibles:', error)
+        setTiposDisponibles([])
+      }
+    }
+
+    // Debounce para evitar múltiples llamadas
+    const timeoutId = setTimeout(cargarTipos, 500)
+    return () => clearTimeout(timeoutId)
   }, [fecha])
 
   const handleBuscar = async () => {
@@ -73,8 +96,11 @@ export default function ReportesPage() {
       const tiposUnicos: string[] = Array.from(new Set(data.map((row: ReporteRow) => row.shp).filter((tipo: string | undefined): tipo is string => Boolean(tipo))))
       setTiposDisponibles(tiposUnicos.sort())
       
-      if (data.length === 0) {
-        setError(`No se encontraron denuncias para los filtros seleccionados`)
+      // Solo mostrar error si realmente no hay datos y se hizo una búsqueda
+      if (data.length === 0 && fecha) {
+        setError(`No se encontraron denuncias para la fecha ${fecha}${tipoDenuncia ? ` y tipo "${tipoDenuncia}"` : ''}`)
+      } else {
+        setError(null)
       }
     } catch (error) {
       console.error('Error:', error)
@@ -235,12 +261,15 @@ export default function ReportesPage() {
                 {!fecha && (
                   <span className="text-xs text-gray-500 ml-2">(Seleccione una fecha primero)</span>
                 )}
+                {fecha && tiposDisponibles.length === 0 && !cargando && (
+                  <span className="text-xs text-gray-500 ml-2">(Cargando tipos...)</span>
+                )}
               </label>
               <select
                 id="tipoDenuncia"
                 value={tipoDenuncia}
                 onChange={(e) => setTipoDenuncia(e.target.value)}
-                disabled={!fecha || tiposDisponibles.length === 0}
+                disabled={!fecha}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition disabled:bg-gray-100 disabled:cursor-not-allowed"
               >
                 <option value="">Todos los tipos</option>

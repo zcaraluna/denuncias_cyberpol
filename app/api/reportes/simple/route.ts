@@ -65,6 +65,19 @@ export async function GET(request: NextRequest) {
     )
 
     console.log(`Encontradas ${result.rows.length} denuncias para la fecha ${fecha}`)
+    if (result.rows.length > 0) {
+      console.log('Primera denuncia encontrada:', result.rows[0])
+    } else {
+      // Verificar si hay denuncias en esa fecha sin el filtro de estado
+      const checkResult = await pool.query(
+        `SELECT COUNT(*) as total, 
+         COUNT(CASE WHEN estado = 'completada' THEN 1 END) as completadas
+         FROM denuncias 
+         WHERE fecha_denuncia = $1::DATE`,
+        [fecha]
+      )
+      console.log('Verificación de denuncias para fecha:', checkResult.rows[0])
+    }
 
     // Procesar los resultados para mostrar el tipo específico con fallback al genérico
     // El tipo_denuncia en la BD ya es el específico (ej: "Estafa", "Robo")
