@@ -303,10 +303,11 @@ export async function POST(request: NextRequest) {
       throw new Error('No se pudo determinar el denunciante principal.')
     }
 
-    const fechaHecho = denuncia?.fechaHecho ?? null
-    const horaHecho = denuncia?.horaHecho ?? null
-    const fechaHechoFin = denuncia?.fechaHechoFin ?? null
-    const horaHechoFin = denuncia?.horaHechoFin ?? null
+    // Convertir cadenas vacías a null para campos de fecha
+    const fechaHecho = denuncia?.fechaHecho && denuncia.fechaHecho.trim() !== '' ? denuncia.fechaHecho : null
+    const horaHecho = denuncia?.horaHecho && denuncia.horaHecho.trim() !== '' ? denuncia.horaHecho : null
+    const fechaHechoFin = denuncia?.fechaHechoFin && denuncia.fechaHechoFin.trim() !== '' ? denuncia.fechaHechoFin : null
+    const horaHechoFin = denuncia?.horaHechoFin && denuncia.horaHechoFin.trim() !== '' ? denuncia.horaHechoFin : null
     const tipoDenuncia = denuncia?.tipoDenuncia ?? null
     const otroTipo = denuncia?.otroTipo ?? null
     const relato = denuncia?.relato ?? null
@@ -336,9 +337,9 @@ export async function POST(request: NextRequest) {
           denunciante_id = $1,
           fecha_denuncia = $2::DATE,
           hora_denuncia = $3,
-          fecha_hecho = $4,
+          fecha_hecho = $4::DATE,
           hora_hecho = $5,
-          fecha_hecho_fin = $6,
+          fecha_hecho_fin = $6::DATE,
           hora_hecho_fin = $7,
           tipo_denuncia = $8,
           otro_tipo = $9,
@@ -405,7 +406,7 @@ export async function POST(request: NextRequest) {
           tipo_denuncia, otro_tipo, relato, lugar_hecho, latitud, longitud,
           orden, usuario_id, oficina, operador_grado, operador_nombre,
           operador_apellido, monto_dano, moneda, hash, pdf, estado
-        ) VALUES ($1, $2::DATE, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, NULL, 'completada')
+        ) VALUES ($1, $2::DATE, $3, $4::DATE, $5, $6::DATE, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, NULL, 'completada')
         RETURNING id`,
         [
           principalId,
