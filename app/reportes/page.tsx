@@ -70,7 +70,7 @@ export default function ReportesPage() {
       setDatos(data)
       
       // Actualizar tipos disponibles basados en los resultados
-      const tiposUnicos = [...new Set(data.map((row: ReporteRow) => row.shp).filter(Boolean))]
+      const tiposUnicos = Array.from(new Set(data.map((row: ReporteRow) => row.shp).filter(Boolean)))
       setTiposDisponibles(tiposUnicos.sort())
       
       if (data.length === 0) {
