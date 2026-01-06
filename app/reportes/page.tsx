@@ -23,39 +23,26 @@ export default function ReportesPage() {
   const { usuario, loading: authLoading } = useAuth()
   const [loading, setLoading] = useState(true)
   const [fecha, setFecha] = useState('')
-  const [oficina, setOficina] = useState('')
   const [tipoDenuncia, setTipoDenuncia] = useState('')
   const [datos, setDatos] = useState<ReporteRow[]>([])
   const [cargando, setCargando] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [opcionesFiltros, setOpcionesFiltros] = useState({
-    oficinas: [] as string[],
-    tipos: [] as string[]
-  })
+  const [tiposDisponibles, setTiposDisponibles] = useState<string[]>([])
   const [sortField, setSortField] = useState<SortField>('hora_denuncia')
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
 
   useEffect(() => {
     if (!authLoading) {
       setLoading(false)
-      cargarOpcionesFiltros()
     }
   }, [authLoading])
 
-  const cargarOpcionesFiltros = async () => {
-    try {
-      const response = await fetch('/api/reportes/filtros')
-      if (response.ok) {
-        const data = await response.json()
-        setOpcionesFiltros({
-          oficinas: data.oficinas || [],
-          tipos: data.tipos || []
-        })
-      }
-    } catch (error) {
-      console.error('Error cargando opciones de filtros:', error)
+  useEffect(() => {
+    if (!fecha) {
+      setTiposDisponibles([])
+      setTipoDenuncia('')
     }
-  }
+  }, [fecha])
 
   const handleBuscar = async () => {
     if (!fecha) {
@@ -70,7 +57,6 @@ export default function ReportesPage() {
     try {
       const params = new URLSearchParams()
       params.append('fecha', fecha)
-      if (oficina) params.append('oficina', oficina)
       if (tipoDenuncia) params.append('tipoDenuncia', tipoDenuncia)
 
       const response = await fetch(`/api/reportes/simple?${params.toString()}`)
@@ -82,6 +68,10 @@ export default function ReportesPage() {
       
       console.log('Datos recibidos:', data)
       setDatos(data)
+      
+      // Actualizar tipos disponibles basados en los resultados
+      const tiposUnicos = [...new Set(data.map((row: ReporteRow) => row.shp).filter(Boolean))]
+      setTiposDisponibles(tiposUnicos.sort())
       
       if (data.length === 0) {
         setError(`No se encontraron denuncias para los filtros seleccionados`)
@@ -134,10 +124,10 @@ export default function ReportesPage() {
 
   const handleLimpiarFiltros = () => {
     setFecha('')
-    setOficina('')
     setTipoDenuncia('')
     setDatos([])
     setError(null)
+    setTiposDisponibles([])
   }
 
   if (loading) {
@@ -203,7 +193,7 @@ export default function ReportesPage() {
               </svg>
               Filtros de Búsqueda
             </h2>
-            {(fecha || oficina || tipoDenuncia) && (
+            {(fecha || tipoDenuncia) && (
               <button
                 onClick={handleLimpiarFiltros}
                 className="text-sm text-gray-600 hover:text-gray-900 flex items-center gap-1"
@@ -216,7 +206,7 @@ export default function ReportesPage() {
             )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
               <label htmlFor="fecha" className="block text-sm font-medium text-gray-700 mb-2">
                 Fecha <span className="text-red-500">*</span>
@@ -227,6 +217,7 @@ export default function ReportesPage() {
                 value={fecha}
                 onChange={(e) => {
                   setFecha(e.target.value)
+                  setTipoDenuncia('') // Limpiar tipo cuando cambia la fecha
                   setError(null)
                 }}
                 onKeyPress={(e) => {
@@ -239,36 +230,21 @@ export default function ReportesPage() {
             </div>
 
             <div>
-              <label htmlFor="oficina" className="block text-sm font-medium text-gray-700 mb-2">
-                Oficina
-              </label>
-              <select
-                id="oficina"
-                value={oficina}
-                onChange={(e) => setOficina(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-              >
-                <option value="">Todas las oficinas</option>
-                {opcionesFiltros.oficinas.map((of) => (
-                  <option key={of} value={of}>
-                    {of}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
               <label htmlFor="tipoDenuncia" className="block text-sm font-medium text-gray-700 mb-2">
                 Tipo de Denuncia
+                {!fecha && (
+                  <span className="text-xs text-gray-500 ml-2">(Seleccione una fecha primero)</span>
+                )}
               </label>
               <select
                 id="tipoDenuncia"
                 value={tipoDenuncia}
                 onChange={(e) => setTipoDenuncia(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                disabled={!fecha || tiposDisponibles.length === 0}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition disabled:bg-gray-100 disabled:cursor-not-allowed"
               >
                 <option value="">Todos los tipos</option>
-                {opcionesFiltros.tipos.map((tipo) => (
+                {tiposDisponibles.map((tipo) => (
                   <option key={tipo} value={tipo}>
                     {tipo}
                   </option>
@@ -366,12 +342,10 @@ export default function ReportesPage() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {datosOrdenados.map((row, index) => (
                     <tr key={index} className="hover:bg-blue-50 transition">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm font-semibold text-gray-900 bg-blue-100 px-2 py-1 rounded">
-                          {row.numero_denuncia}/{row.año}
-                        </span>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {row.numero_denuncia}/{row.año}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {row.hora_denuncia || '-'}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-900">
@@ -382,10 +356,8 @@ export default function ReportesPage() {
                       <td className="px-6 py-4 text-sm text-gray-900">
                         {row.denunciante || '-'}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-700">
-                        <span className="inline-block bg-gray-100 px-2 py-1 rounded text-xs">
-                          {row.interviniente || '-'}
-                        </span>
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        {row.interviniente || '-'}
                       </td>
                     </tr>
                   ))}

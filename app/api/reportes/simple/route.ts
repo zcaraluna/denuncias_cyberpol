@@ -5,7 +5,6 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const fecha = searchParams.get('fecha')
-    const oficina = searchParams.get('oficina')
     const tipoDenuncia = searchParams.get('tipoDenuncia')
 
     if (!fecha) {
@@ -24,7 +23,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    console.log('Buscando denuncias para fecha:', fecha, 'oficina:', oficina, 'tipo:', tipoDenuncia)
+    console.log('Buscando denuncias para fecha:', fecha, 'tipo:', tipoDenuncia)
 
     // Construir condiciones WHERE
     const condiciones: string[] = [
@@ -33,12 +32,6 @@ export async function GET(request: NextRequest) {
     ]
     const valores: any[] = [fecha]
     let paramIndex = 2
-
-    if (oficina) {
-      condiciones.push(`d.oficina = $${paramIndex}`)
-      valores.push(oficina)
-      paramIndex++
-    }
 
     if (tipoDenuncia) {
       condiciones.push(`d.tipo_denuncia = $${paramIndex}`)
