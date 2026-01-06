@@ -21,6 +21,7 @@ export default function ReportesPage() {
   const [fecha, setFecha] = useState('')
   const [datos, setDatos] = useState<ReporteRow[]>([])
   const [cargando, setCargando] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!authLoading) {
@@ -30,19 +31,33 @@ export default function ReportesPage() {
 
   const handleBuscar = async () => {
     if (!fecha) {
-      alert('Por favor seleccione una fecha')
+      setError('Por favor seleccione una fecha')
       return
     }
 
+    setError(null)
     setCargando(true)
+    setDatos([])
+    
     try {
       const response = await fetch(`/api/reportes/simple?fecha=${fecha}`)
-      if (!response.ok) throw new Error('Error al obtener reporte')
       const data = await response.json()
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Error al obtener reporte')
+      }
+      
+      console.log('Datos recibidos:', data)
       setDatos(data)
+      
+      if (data.length === 0) {
+        setError(`No se encontraron denuncias para la fecha ${fecha}`)
+      }
     } catch (error) {
       console.error('Error:', error)
-      alert('Error al cargar el reporte')
+      const errorMessage = error instanceof Error ? error.message : 'Error al cargar el reporte'
+      setError(errorMessage)
+      setDatos([])
     } finally {
       setCargando(false)
     }
@@ -98,23 +113,41 @@ export default function ReportesPage() {
                 type="date"
                 id="fecha"
                 value={fecha}
-                onChange={(e) => setFecha(e.target.value)}
+                onChange={(e) => {
+                  setFecha(e.target.value)
+                  setError(null)
+                }}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    handleBuscar()
+                  }
+                }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
             <button
               onClick={handleBuscar}
-              disabled={cargando}
+              disabled={cargando || !fecha}
               className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
             >
               {cargando ? 'Buscando...' : 'Buscar'}
             </button>
           </div>
+          {error && (
+            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
+              <p className="text-sm text-red-800">{error}</p>
+            </div>
+          )}
         </div>
 
         {/* Tabla de resultados */}
         {datos.length > 0 && (
           <div className="bg-white rounded-lg shadow-md overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-800">
+                Resultados: {datos.length} denuncia{datos.length !== 1 ? 's' : ''} encontrada{datos.length !== 1 ? 's' : ''}
+              </h2>
+            </div>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
@@ -139,11 +172,11 @@ export default function ReportesPage() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {datos.map((row, index) => (
                     <tr key={index} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {row.numero_denuncia}/{row.año}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {row.hora_denuncia}
+                        {row.hora_denuncia || '-'}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-900">
                         {row.shp || '-'}
@@ -159,12 +192,6 @@ export default function ReportesPage() {
                 </tbody>
               </table>
             </div>
-          </div>
-        )}
-
-        {datos.length === 0 && fecha && !cargando && (
-          <div className="bg-white rounded-lg shadow-md p-6 text-center text-gray-500">
-            No se encontraron denuncias para la fecha seleccionada.
           </div>
         )}
       </main>
