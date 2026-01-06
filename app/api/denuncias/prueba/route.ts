@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { generarPDF, Denunciante, DatosDenuncia } from '@/lib/utils/pdf'
 import pool from '@/lib/db'
+import { obtenerCapitulo } from '@/lib/data/hechos-punibles'
 
 // Función auxiliar para convertir fechas
 const formatDate = (date: any): string => {
@@ -93,6 +94,16 @@ export async function POST(request: NextRequest) {
             }))
         : []
 
+    // Convertir hecho punible específico al capítulo correspondiente para el PDF
+    // Pero mantener "OTRO" y "EXTRAVÍO DE OBJETOS Y/O DOCUMENTOS" tal cual
+    let tipoDenunciaParaPDF = data.denuncia.tipoDenuncia || ''
+    if (tipoDenunciaParaPDF && tipoDenunciaParaPDF !== 'OTRO' && tipoDenunciaParaPDF !== 'EXTRAVÍO DE OBJETOS Y/O DOCUMENTOS') {
+      const capitulo = obtenerCapitulo(tipoDenunciaParaPDF)
+      if (capitulo) {
+        tipoDenunciaParaPDF = capitulo
+      }
+    }
+
     const datosDenuncia: DatosDenuncia = {
       fecha_denuncia: fechaDenunciaFormatted,
       hora_denuncia: data.denuncia.horaDenuncia || '',
@@ -100,7 +111,7 @@ export async function POST(request: NextRequest) {
       hora_hecho: data.denuncia.horaHecho || '',
       fecha_hecho_fin: fechaHechoFin,
       hora_hecho_fin: data.denuncia.horaHechoFin || null,
-      tipo_denuncia: data.denuncia.tipoDenuncia || '',
+      tipo_denuncia: tipoDenunciaParaPDF,
       otro_tipo: data.denuncia.otroTipo || null,
       lugar_hecho: data.denuncia.lugarHecho || '',
       relato: data.denuncia.relato || '',

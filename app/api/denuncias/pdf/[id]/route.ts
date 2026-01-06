@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/lib/db'
 import { generarPDF, generarPDFFormato2, Denunciante, DatosDenuncia } from '@/lib/utils/pdf'
+import { obtenerCapitulo } from '@/lib/data/hechos-punibles'
 
 // Función auxiliar para convertir fechas a string YYYY-MM-DD sin problemas de timezone
 // Esta función NO formatea para mostrar, solo convierte Date objects a string YYYY-MM-DD
@@ -165,6 +166,16 @@ export async function GET(
         cartaPoderNotario: involucrado.carta_poder_notario || null,
       }))
 
+    // Convertir hecho punible específico al capítulo correspondiente para el PDF
+    // Pero mantener "OTRO" y "EXTRAVÍO DE OBJETOS Y/O DOCUMENTOS" tal cual
+    let tipoDenunciaParaPDF = row.tipo_denuncia
+    if (row.tipo_denuncia && row.tipo_denuncia !== 'OTRO' && row.tipo_denuncia !== 'EXTRAVÍO DE OBJETOS Y/O DOCUMENTOS') {
+      const capitulo = obtenerCapitulo(row.tipo_denuncia)
+      if (capitulo) {
+        tipoDenunciaParaPDF = capitulo
+      }
+    }
+
     const datosDenuncia: DatosDenuncia = {
       fecha_denuncia: fechaDenuncia,
       hora_denuncia: row.hora_denuncia,
@@ -172,7 +183,7 @@ export async function GET(
       hora_hecho: row.hora_hecho,
       fecha_hecho_fin: row.fecha_hecho_fin ? dateToString(row.fecha_hecho_fin) : null,
       hora_hecho_fin: row.hora_hecho_fin || null,
-      tipo_denuncia: row.tipo_denuncia,
+      tipo_denuncia: tipoDenunciaParaPDF,
       otro_tipo: row.otro_tipo,
       lugar_hecho: row.lugar_hecho,
       relato: row.relato,
