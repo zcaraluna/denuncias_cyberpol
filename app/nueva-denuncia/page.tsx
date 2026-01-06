@@ -3930,8 +3930,8 @@ export default function NuevaDenunciaPage() {
                 <div>
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-semibold text-gray-800 border-b pb-2 flex-1">
-                      Lugar del Hecho
-                    </h3>
+                    Lugar del Hecho
+                  </h3>
                     <label className="flex items-center ml-4 cursor-pointer">
                       <input
                         type="checkbox"

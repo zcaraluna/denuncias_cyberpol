@@ -5,6 +5,8 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const fecha = searchParams.get('fecha')
+    const oficina = searchParams.get('oficina')
+    const tipoDenuncia = searchParams.get('tipoDenuncia')
 
     if (!fecha) {
       return NextResponse.json(
@@ -22,7 +24,29 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    console.log('Buscando denuncias para fecha:', fecha)
+    console.log('Buscando denuncias para fecha:', fecha, 'oficina:', oficina, 'tipo:', tipoDenuncia)
+
+    // Construir condiciones WHERE
+    const condiciones: string[] = [
+      "d.fecha_denuncia = $1::DATE",
+      "d.estado = 'completada'"
+    ]
+    const valores: any[] = [fecha]
+    let paramIndex = 2
+
+    if (oficina) {
+      condiciones.push(`d.oficina = $${paramIndex}`)
+      valores.push(oficina)
+      paramIndex++
+    }
+
+    if (tipoDenuncia) {
+      condiciones.push(`d.tipo_denuncia = $${paramIndex}`)
+      valores.push(tipoDenuncia)
+      paramIndex++
+    }
+
+    const whereClause = condiciones.join(' AND ')
 
     // Obtener denuncias del día con denunciante e interviniente (personal policial)
     // Usar comparación directa de DATE en lugar de convertir a texto
@@ -37,13 +61,13 @@ export async function GET(request: NextRequest) {
           COALESCE(d.operador_grado, '') || ' ' || 
           COALESCE(d.operador_nombre, '') || ' ' || 
           COALESCE(d.operador_apellido, '')
-        ) as interviniente
+        ) as interviniente,
+        d.oficina
       FROM denuncias d
       LEFT JOIN denunciantes den ON d.denunciante_id = den.id
-      WHERE d.fecha_denuncia = $1::DATE
-        AND d.estado = 'completada'
+      WHERE ${whereClause}
       ORDER BY d.hora_denuncia ASC`,
-      [fecha]
+      valores
     )
 
     console.log(`Encontradas ${result.rows.length} denuncias para la fecha ${fecha}`)

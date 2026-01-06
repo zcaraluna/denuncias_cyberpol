@@ -529,13 +529,13 @@ export async function generarPDF(
   // Formatear fecha/hora del hecho (única o rango)
   if (tieneRango && fechaHechoFin) {
     if (datosDenuncia.lugar_hecho && datosDenuncia.lugar_hecho.trim() !== '') {
-      parrafo2 += `, ocurrido entre las ${datosDenuncia.hora_hecho} horas del ${fechaHecho} y las ${datosDenuncia.hora_hecho_fin} horas del ${fechaHechoFin}, en la dirección ${datosDenuncia.lugar_hecho.toUpperCase()}`
-    } else {
+    parrafo2 += `, ocurrido entre las ${datosDenuncia.hora_hecho} horas del ${fechaHecho} y las ${datosDenuncia.hora_hecho_fin} horas del ${fechaHechoFin}, en la dirección ${datosDenuncia.lugar_hecho.toUpperCase()}`
+  } else {
       parrafo2 += `, ocurrido entre las ${datosDenuncia.hora_hecho} horas del ${fechaHecho} y las ${datosDenuncia.hora_hecho_fin} horas del ${fechaHechoFin}`
     }
   } else {
     if (datosDenuncia.lugar_hecho && datosDenuncia.lugar_hecho.trim() !== '') {
-      parrafo2 += `, ocurrido en fecha ${fechaHecho} siendo las ${datosDenuncia.hora_hecho} aproximadamente, en la dirección ${datosDenuncia.lugar_hecho.toUpperCase()}`
+  parrafo2 += `, ocurrido en fecha ${fechaHecho} siendo las ${datosDenuncia.hora_hecho} aproximadamente, en la dirección ${datosDenuncia.lugar_hecho.toUpperCase()}`
     } else {
       parrafo2 += `, ocurrido en fecha ${fechaHecho} siendo las ${datosDenuncia.hora_hecho} aproximadamente`
     }
@@ -587,20 +587,20 @@ export async function generarPDF(
   } else if (datosDenuncia.descripcion_fisica && datosDenuncia.descripcion_fisica.trim() !== '') {
     // Autor desconocido con descripción física
     parrafo2 += ', siendo el supuesto autor una persona DESCONOCIDA por la persona denunciante'
-    try {
-      // Intentar parsear como JSON
-      const descFisicaObj = JSON.parse(datosDenuncia.descripcion_fisica)
-      const textoDesc = generarTextoDescripcionFisica(descFisicaObj)
-      if (textoDesc.trim() !== '') {
-        parrafo2 += `, a quien describe físicamente de la siguiente manera: ${textoDesc}`
-      } else {
-        parrafo2 += '.'
+      try {
+        // Intentar parsear como JSON
+        const descFisicaObj = JSON.parse(datosDenuncia.descripcion_fisica)
+        const textoDesc = generarTextoDescripcionFisica(descFisicaObj)
+        if (textoDesc.trim() !== '') {
+          parrafo2 += `, a quien describe físicamente de la siguiente manera: ${textoDesc}`
+        } else {
+          parrafo2 += '.'
+        }
+      } catch {
+        // Si no es JSON, usar como texto plano (legacy)
+        parrafo2 += `, a quien describe físicamente de la siguiente manera: ${datosDenuncia.descripcion_fisica.toUpperCase()}.`
       }
-    } catch {
-      // Si no es JSON, usar como texto plano (legacy)
-      parrafo2 += `, a quien describe físicamente de la siguiente manera: ${datosDenuncia.descripcion_fisica.toUpperCase()}.`
     }
-  }
   // Si no hay nombre_autor ni descripcion_fisica, no agregamos nada sobre el autor (caso "No aplica")
 
   const yParrafo2 = yActualIntroduccion
@@ -967,13 +967,13 @@ export async function generarPDFAmpliacion(
   // Formatear fecha/hora del hecho (única o rango) - MODIFICADO para decir "denunciado"
   if (tieneRango && fechaHechoFin) {
     if (datosDenuncia.lugar_hecho && datosDenuncia.lugar_hecho.trim() !== '') {
-      parrafo2 += `, denunciado entre las ${datosDenuncia.hora_hecho} horas del ${fechaHecho} y las ${datosDenuncia.hora_hecho_fin} horas del ${fechaHechoFin}, en la dirección ${datosDenuncia.lugar_hecho.toUpperCase()}`
-    } else {
+    parrafo2 += `, denunciado entre las ${datosDenuncia.hora_hecho} horas del ${fechaHecho} y las ${datosDenuncia.hora_hecho_fin} horas del ${fechaHechoFin}, en la dirección ${datosDenuncia.lugar_hecho.toUpperCase()}`
+  } else {
       parrafo2 += `, denunciado entre las ${datosDenuncia.hora_hecho} horas del ${fechaHecho} y las ${datosDenuncia.hora_hecho_fin} horas del ${fechaHechoFin}`
     }
   } else {
     if (datosDenuncia.lugar_hecho && datosDenuncia.lugar_hecho.trim() !== '') {
-      parrafo2 += `, denunciado en fecha ${fechaHecho} siendo las ${datosDenuncia.hora_hecho} aproximadamente, en la dirección ${datosDenuncia.lugar_hecho.toUpperCase()}`
+    parrafo2 += `, denunciado en fecha ${fechaHecho} siendo las ${datosDenuncia.hora_hecho} aproximadamente, en la dirección ${datosDenuncia.lugar_hecho.toUpperCase()}`
     } else {
       parrafo2 += `, denunciado en fecha ${fechaHecho} siendo las ${datosDenuncia.hora_hecho} aproximadamente`
     }
@@ -984,9 +984,9 @@ export async function generarPDFAmpliacion(
     // Caso 3: Autor conocido - mencionar que su identidad ya fue mencionada
     parrafo2 += `, siendo el supuesto autor ${datosDenuncia.nombre_autor.toUpperCase()}, cuya identidad ya ha sido mencionada anteriormente.`
   } else if (datosDenuncia.descripcion_fisica && datosDenuncia.descripcion_fisica.trim() !== '') {
-    // Caso 2: Desconocido con descripción física - mencionar que ya fue descrita
+      // Caso 2: Desconocido con descripción física - mencionar que ya fue descrita
     parrafo2 += ', siendo el supuesto autor una persona DESCONOCIDA por la persona denunciante, cuya descripción física ya ha sido mencionada anteriormente.'
-  }
+    }
   // Si no hay nombre_autor ni descripcion_fisica, no agregamos nada sobre el autor (caso "No aplica")
 
   const yParrafo2 = yActualIntroduccion
@@ -1320,13 +1320,13 @@ export function generarTextoPDF(
   // Formatear fecha/hora del hecho (única o rango)
   if (tieneRango && fechaHechoFin) {
     if (datosDenuncia.lugar_hecho && datosDenuncia.lugar_hecho.trim() !== '') {
-      parrafo2 += `, ocurrido entre las ${bold(datosDenuncia.hora_hecho)} horas del ${bold(fechaHecho)} y las ${bold(datosDenuncia.hora_hecho_fin || '')} horas del ${bold(fechaHechoFin)}, en la dirección ${bold(datosDenuncia.lugar_hecho.toUpperCase())}`
-    } else {
+    parrafo2 += `, ocurrido entre las ${bold(datosDenuncia.hora_hecho)} horas del ${bold(fechaHecho)} y las ${bold(datosDenuncia.hora_hecho_fin || '')} horas del ${bold(fechaHechoFin)}, en la dirección ${bold(datosDenuncia.lugar_hecho.toUpperCase())}`
+  } else {
       parrafo2 += `, ocurrido entre las ${bold(datosDenuncia.hora_hecho)} horas del ${bold(fechaHecho)} y las ${bold(datosDenuncia.hora_hecho_fin || '')} horas del ${bold(fechaHechoFin)}`
     }
   } else {
     if (datosDenuncia.lugar_hecho && datosDenuncia.lugar_hecho.trim() !== '') {
-      parrafo2 += `, ocurrido en fecha ${bold(fechaHecho)} siendo las ${bold(datosDenuncia.hora_hecho)} aproximadamente, en la dirección ${bold(datosDenuncia.lugar_hecho.toUpperCase())}`
+    parrafo2 += `, ocurrido en fecha ${bold(fechaHecho)} siendo las ${bold(datosDenuncia.hora_hecho)} aproximadamente, en la dirección ${bold(datosDenuncia.lugar_hecho.toUpperCase())}`
     } else {
       parrafo2 += `, ocurrido en fecha ${bold(fechaHecho)} siendo las ${bold(datosDenuncia.hora_hecho)} aproximadamente`
     }
@@ -1378,22 +1378,22 @@ export function generarTextoPDF(
   } else if (datosDenuncia.descripcion_fisica && datosDenuncia.descripcion_fisica.trim() !== '') {
     // Autor desconocido con descripción física
     parrafo2 += ', siendo el supuesto autor una persona DESCONOCIDA por la persona denunciante'
-    try {
-      // Intentar parsear como JSON
-      const descFisicaObj = JSON.parse(datosDenuncia.descripcion_fisica)
-      const textoDesc = generarTextoDescripcionFisica(descFisicaObj)
-      if (textoDesc.trim() !== '') {
-        // Aplicar negrita a valores en mayúsculas (opciones seleccionadas)
-        const textoConNegrita = textoDesc.replace(/([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ0-9\s\/\-\(\)]+)/g, (match) => bold(match))
-        parrafo2 += `, a quien describe físicamente de la siguiente manera: ${textoConNegrita}`
-      } else {
-        parrafo2 += '.'
+      try {
+        // Intentar parsear como JSON
+        const descFisicaObj = JSON.parse(datosDenuncia.descripcion_fisica)
+        const textoDesc = generarTextoDescripcionFisica(descFisicaObj)
+        if (textoDesc.trim() !== '') {
+          // Aplicar negrita a valores en mayúsculas (opciones seleccionadas)
+          const textoConNegrita = textoDesc.replace(/([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ0-9\s\/\-\(\)]+)/g, (match) => bold(match))
+          parrafo2 += `, a quien describe físicamente de la siguiente manera: ${textoConNegrita}`
+        } else {
+          parrafo2 += '.'
+        }
+      } catch {
+        // Si no es JSON, usar como texto plano (legacy)
+        parrafo2 += `, a quien describe físicamente de la siguiente manera: ${bold(datosDenuncia.descripcion_fisica.toUpperCase())}.`
       }
-    } catch {
-      // Si no es JSON, usar como texto plano (legacy)
-      parrafo2 += `, a quien describe físicamente de la siguiente manera: ${bold(datosDenuncia.descripcion_fisica.toUpperCase())}.`
     }
-  }
   // Si no hay nombre_autor ni descripcion_fisica, no agregamos nada sobre el autor (caso "No aplica")
 
   texto += `${parrafo2}\n\n`
