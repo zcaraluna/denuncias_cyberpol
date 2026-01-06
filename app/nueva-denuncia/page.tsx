@@ -1877,6 +1877,9 @@ export default function NuevaDenunciaPage() {
 
   const onDenunciaPrueba = async (data: any) => {
     if (!usuario) return
+    
+    // Prevenir múltiples envíos simultáneos
+    if (loading) return
 
     if (denunciantes.length === 0) {
       alert('Debes agregar al menos un denunciante antes de completar la denuncia.')
@@ -1993,6 +1996,9 @@ export default function NuevaDenunciaPage() {
 
   const onDenunciaSubmit = async (data: any) => {
     if (!usuario) return
+    
+    // Prevenir múltiples envíos simultáneos
+    if (loading) return
 
     if (denunciantes.length === 0) {
       alert('Debes agregar al menos un denunciante antes de completar la denuncia.')
