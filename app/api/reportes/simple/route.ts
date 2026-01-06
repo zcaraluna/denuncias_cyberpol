@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/lib/db'
+import { obtenerCapitulo } from '@/lib/data/hechos-punibles'
 
 export async function GET(request: NextRequest) {
   try {
@@ -65,7 +66,24 @@ export async function GET(request: NextRequest) {
 
     console.log(`Encontradas ${result.rows.length} denuncias para la fecha ${fecha}`)
 
-    return NextResponse.json(result.rows)
+    // Procesar los resultados para mostrar el tipo específico con fallback al genérico
+    // El tipo_denuncia en la BD ya es el específico (ej: "Estafa", "Robo")
+    // Si por alguna razón es un genérico, lo mostramos como fallback
+    const rowsProcessed = result.rows.map((row: any) => {
+      let shp = row.shp || ''
+      
+      // Si el tipo_denuncia es un capítulo genérico (empieza con "HECHO PUNIBLE"),
+      // lo mostramos tal cual como fallback
+      // Si es un tipo específico, lo mostramos tal cual
+      // Los casos especiales OTRO y EXTRAVÍO se muestran tal cual
+      if (!shp) {
+        shp = '-'
+      }
+      
+      return { ...row, shp }
+    })
+
+    return NextResponse.json(rowsProcessed)
   } catch (error) {
     console.error('Error obteniendo reporte simple:', error)
     return NextResponse.json(
