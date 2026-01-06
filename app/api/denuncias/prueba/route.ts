@@ -34,14 +34,20 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Obtener el siguiente número de orden para el año actual
+    // Obtener el siguiente número de orden para el año actual (reutilizando números disponibles)
     const fechaDenuncia = data.denuncia.fechaDenuncia || new Date().toISOString().split('T')[0]
     const año = fechaDenuncia.split('-')[0]
     
     const ordenResult = await pool.query(
-      `SELECT COALESCE(MAX(orden), 0) + 1 as orden
-       FROM denuncias
-       WHERE EXTRACT(YEAR FROM fecha_denuncia) = $1 AND orden >= 1`,
+      `SELECT COALESCE(
+        (SELECT MIN(n.orden_numero)
+         FROM generate_series(1, COALESCE((SELECT MAX(orden) FROM denuncias WHERE EXTRACT(YEAR FROM fecha_denuncia) = $1 AND orden >= 1), 0) + 1) AS n(orden_numero)
+         WHERE n.orden_numero NOT IN (
+           SELECT orden FROM denuncias 
+           WHERE EXTRACT(YEAR FROM fecha_denuncia) = $1 AND orden >= 1
+         )),
+        COALESCE((SELECT MAX(orden) FROM denuncias WHERE EXTRACT(YEAR FROM fecha_denuncia) = $1 AND orden >= 1), 0) + 1
+      ) as orden`,
       [año]
     )
     const numeroOrden = ordenResult.rows[0].orden

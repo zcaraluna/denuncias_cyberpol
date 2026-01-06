@@ -324,10 +324,17 @@ export async function POST(request: NextRequest) {
 
     if (borradorId) {
       const año = fechaActual.split('-')[0]
+      // Buscar el primer número de orden disponible (reutilizar si hay huecos)
       const ordenResult = await client.query(
-        `SELECT COALESCE(MAX(orden), 0) + 1 as orden
-         FROM denuncias
-         WHERE EXTRACT(YEAR FROM fecha_denuncia) = $1 AND orden >= 1`,
+        `SELECT COALESCE(
+          (SELECT MIN(n.orden_numero)
+           FROM generate_series(1, COALESCE((SELECT MAX(orden) FROM denuncias WHERE EXTRACT(YEAR FROM fecha_denuncia) = $1 AND orden >= 1), 0) + 1) AS n(orden_numero)
+           WHERE n.orden_numero NOT IN (
+             SELECT orden FROM denuncias 
+             WHERE EXTRACT(YEAR FROM fecha_denuncia) = $1 AND orden >= 1
+           )),
+          COALESCE((SELECT MAX(orden) FROM denuncias WHERE EXTRACT(YEAR FROM fecha_denuncia) = $1 AND orden >= 1), 0) + 1
+        ) as orden`,
         [año]
       )
       numeroOrden = ordenResult.rows[0].orden
@@ -377,10 +384,17 @@ export async function POST(request: NextRequest) {
       denunciaId = borradorId
     } else {
       const año = fechaActual.split('-')[0]
+      // Buscar el primer número de orden disponible (reutilizar si hay huecos)
       const ordenResult = await client.query(
-        `SELECT COALESCE(MAX(orden), 0) + 1 as orden
-         FROM denuncias
-         WHERE EXTRACT(YEAR FROM fecha_denuncia) = $1`,
+        `SELECT COALESCE(
+          (SELECT MIN(n.orden_numero)
+           FROM generate_series(1, COALESCE((SELECT MAX(orden) FROM denuncias WHERE EXTRACT(YEAR FROM fecha_denuncia) = $1 AND orden >= 1), 0) + 1) AS n(orden_numero)
+           WHERE n.orden_numero NOT IN (
+             SELECT orden FROM denuncias 
+             WHERE EXTRACT(YEAR FROM fecha_denuncia) = $1 AND orden >= 1
+           )),
+          COALESCE((SELECT MAX(orden) FROM denuncias WHERE EXTRACT(YEAR FROM fecha_denuncia) = $1 AND orden >= 1), 0) + 1
+        ) as orden`,
         [año]
       )
       numeroOrden = ordenResult.rows[0].orden
