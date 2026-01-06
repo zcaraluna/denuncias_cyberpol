@@ -55,6 +55,7 @@ export default function ReportesPage() {
   const [estadisticasGenerales, setEstadisticasGenerales] = useState<any>(null)
   const [porOperadores, setPorOperadores] = useState<any>(null)
   const [porTipo, setPorTipo] = useState<any>(null)
+  const [porHechoPunible, setPorHechoPunible] = useState<any>(null)
   const [geograficos, setGeograficos] = useState<any>(null)
   const [temporales, setTemporales] = useState<any>(null)
   const [denunciantes, setDenunciantes] = useState<any>(null)
@@ -101,10 +102,11 @@ export default function ReportesPage() {
     if (usuarioId) params.append('usuarioId', usuarioId)
 
     try {
-      const [gen, oper, tipo, geo, temp, den] = await Promise.all([
+      const [gen, oper, tipo, hecho, geo, temp, den] = await Promise.all([
         fetch(`/api/reportes/estadisticas-generales?${params}`).then(r => r.json()),
         fetch(`/api/reportes/por-operadores?${params}`).then(r => r.json()),
         fetch(`/api/reportes/por-tipo?${params}`).then(r => r.json()),
+        fetch(`/api/reportes/por-hecho-punible?${params}`).then(r => r.json()),
         fetch(`/api/reportes/geograficos?${params}`).then(r => r.json()),
         fetch(`/api/reportes/temporales?${params}`).then(r => r.json()),
         fetch(`/api/reportes/denunciantes?${params}`).then(r => r.json())
@@ -113,6 +115,7 @@ export default function ReportesPage() {
       setEstadisticasGenerales(gen)
       setPorOperadores(oper)
       setPorTipo(tipo)
+      setPorHechoPunible(hecho)
       setGeograficos(geo)
       setTemporales(temp)
       setDenunciantes(den)
@@ -268,6 +271,7 @@ export default function ReportesPage() {
               { id: 'general', label: 'General' },
               { id: 'operadores', label: 'Por Operadores' },
               { id: 'tipo', label: 'Por Tipo' },
+              { id: 'hechos-punibles', label: 'Hechos Punibles' },
               { id: 'temporal', label: 'Temporal' },
               { id: 'geografico', label: 'Geográfico' },
               { id: 'denunciantes', label: 'Denunciantes' }
@@ -584,6 +588,159 @@ export default function ReportesPage() {
                     </div>
                   </>
                 )}
+              </div>
+            )}
+
+            {/* Tab: Hechos Punibles */}
+            {tabActivo === 'hechos-punibles' && porHechoPunible && (
+              <div className="space-y-6">
+                <div className="bg-white rounded-lg shadow-md p-6">
+                  <h2 className="text-xl font-semibold text-gray-800 mb-4">Estadísticas por Hechos Punibles Específicos</h2>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Esta sección muestra estadísticas detalladas por cada hecho punible específico registrado (ej: "Robo", "Hurto", "Homicidio doloso").
+                  </p>
+                  
+                  {porHechoPunible.total === 0 ? (
+                    <div className="text-center py-8">
+                      <p className="text-gray-600">No hay datos para mostrar con los filtros seleccionados</p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <div className="bg-blue-50 rounded-lg p-4">
+                          <h3 className="text-sm font-medium text-gray-700 mb-1">Total de Denuncias</h3>
+                          <p className="text-3xl font-bold text-blue-600">{porHechoPunible.total}</p>
+                        </div>
+                        <div className="bg-green-50 rounded-lg p-4">
+                          <h3 className="text-sm font-medium text-gray-700 mb-1">Hechos Punibles Diferentes</h3>
+                          <p className="text-3xl font-bold text-green-600">{porHechoPunible.porHechoPunible?.length || 0}</p>
+                        </div>
+                      </div>
+
+                      {/* Tabla de hechos punibles */}
+                      <div className="bg-white rounded-lg shadow-md p-6">
+                        <h3 className="text-lg font-semibold text-gray-800 mb-4">Denuncias por Hecho Punible Específico</h3>
+                        <div className="overflow-x-auto">
+                          <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                              <tr>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hecho Punible</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cantidad</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Porcentaje</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Primera Denuncia</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Última Denuncia</th>
+                              </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                              {porHechoPunible.porHechoPunible && porHechoPunible.porHechoPunible.length > 0 ? (
+                                porHechoPunible.porHechoPunible.map((item: any, idx: number) => {
+                                  const porcentaje = porHechoPunible.total > 0 
+                                    ? ((parseInt(item.cantidad) * 100) / porHechoPunible.total).toFixed(2)
+                                    : '0.00'
+                                  return (
+                                    <tr key={idx} className="hover:bg-gray-50">
+                                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{idx + 1}</td>
+                                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.hecho_punible}</td>
+                                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.cantidad}</td>
+                                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{porcentaje}%</td>
+                                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        {item.primera_denuncia ? new Date(item.primera_denuncia).toLocaleDateString('es-ES') : '-'}
+                                      </td>
+                                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        {item.ultima_denuncia ? new Date(item.ultima_denuncia).toLocaleDateString('es-ES') : '-'}
+                                      </td>
+                                    </tr>
+                                  )
+                                })
+                              ) : (
+                                <tr>
+                                  <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
+                                    No hay datos para mostrar
+                                  </td>
+                                </tr>
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+
+                      {/* Gráfico de barras */}
+                      {porHechoPunible.porHechoPunible && porHechoPunible.porHechoPunible.length > 0 && (
+                        <div className="bg-white rounded-lg shadow-md p-6">
+                          <h3 className="text-lg font-semibold text-gray-800 mb-4">Top 15 Hechos Punibles</h3>
+                          <ResponsiveContainer width="100%" height={400}>
+                            <BarChart data={porHechoPunible.porHechoPunible.slice(0, 15)}>
+                              <CartesianGrid strokeDasharray="3 3" />
+                              <XAxis 
+                                dataKey="hecho_punible" 
+                                angle={-45} 
+                                textAnchor="end" 
+                                height={120}
+                                interval={0}
+                              />
+                              <YAxis />
+                              <Tooltip />
+                              <Bar dataKey="cantidad" fill="#0088FE" />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+                      )}
+
+                      {/* Estadísticas por oficina y hecho punible */}
+                      {porHechoPunible.porOficinaYHecho && porHechoPunible.porOficinaYHecho.length > 0 && (
+                        <div className="bg-white rounded-lg shadow-md p-6">
+                          <h3 className="text-lg font-semibold text-gray-800 mb-4">Hechos Punibles por Oficina</h3>
+                          <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-gray-200">
+                              <thead className="bg-gray-50">
+                                <tr>
+                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Oficina</th>
+                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hecho Punible</th>
+                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cantidad</th>
+                                </tr>
+                              </thead>
+                              <tbody className="bg-white divide-y divide-gray-200">
+                                {porHechoPunible.porOficinaYHecho.map((item: any, idx: number) => (
+                                  <tr key={idx} className="hover:bg-gray-50">
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.oficina}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.hecho_punible}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.cantidad}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Tipos especiales */}
+                      {porHechoPunible.otrosTipos && porHechoPunible.otrosTipos.length > 0 && (
+                        <div className="bg-white rounded-lg shadow-md p-6">
+                          <h3 className="text-lg font-semibold text-gray-800 mb-4">Otros Tipos Especiales</h3>
+                          <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-gray-200">
+                              <thead className="bg-gray-50">
+                                <tr>
+                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
+                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cantidad</th>
+                                </tr>
+                              </thead>
+                              <tbody className="bg-white divide-y divide-gray-200">
+                                {porHechoPunible.otrosTipos.map((item: any, idx: number) => (
+                                  <tr key={idx} className="hover:bg-gray-50">
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.tipo_especial}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.cantidad}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
               </div>
             )}
 
