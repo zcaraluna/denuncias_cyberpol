@@ -65,11 +65,6 @@ export default function ReportesPage() {
 
   useEffect(() => {
     if (usuario) {
-      // Solo superadmin y admin pueden acceder
-      if (usuario.rol !== 'superadmin' && usuario.rol !== 'admin') {
-        router.push('/dashboard')
-        return
-      }
       cargarOpcionesFiltros()
     }
     setLoading(false)
