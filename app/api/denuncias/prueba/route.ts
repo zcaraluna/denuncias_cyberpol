@@ -38,19 +38,41 @@ export async function POST(request: NextRequest) {
     const fechaDenuncia = data.denuncia.fechaDenuncia || new Date().toISOString().split('T')[0]
     const año = fechaDenuncia.split('-')[0]
     
-    const ordenResult = await pool.query(
-      `SELECT COALESCE(
-        (SELECT MIN(n.orden_numero)
-         FROM generate_series(1, COALESCE((SELECT MAX(orden) FROM denuncias WHERE EXTRACT(YEAR FROM fecha_denuncia) = $1 AND orden >= 1), 0) + 1) AS n(orden_numero)
-         WHERE n.orden_numero NOT IN (
-           SELECT orden FROM denuncias 
-           WHERE EXTRACT(YEAR FROM fecha_denuncia) = $1 AND orden >= 1
-         )),
-        COALESCE((SELECT MAX(orden) FROM denuncias WHERE EXTRACT(YEAR FROM fecha_denuncia) = $1 AND orden >= 1), 0) + 1
-      ) as orden`,
-      [año]
-    )
-    const numeroOrden = ordenResult.rows[0].orden
+    // Usar una transacción para asegurar atomicidad del cálculo del número de orden
+    const client = await pool.connect()
+    let numeroOrden = 0
+    try {
+      await client.query('BEGIN')
+      
+      // Bloquear las filas del año actual para evitar condiciones de carrera
+      await client.query(
+        `SELECT orden FROM denuncias 
+         WHERE EXTRACT(YEAR FROM fecha_denuncia) = $1 AND orden >= 1
+         FOR UPDATE`,
+        [año]
+      )
+      
+      const ordenResult = await client.query(
+        `SELECT COALESCE(
+          (SELECT MIN(n.orden_numero)
+           FROM generate_series(1, COALESCE((SELECT MAX(orden) FROM denuncias WHERE EXTRACT(YEAR FROM fecha_denuncia) = $1 AND orden >= 1), 0) + 1) AS n(orden_numero)
+           WHERE n.orden_numero NOT IN (
+             SELECT orden FROM denuncias 
+             WHERE EXTRACT(YEAR FROM fecha_denuncia) = $1 AND orden >= 1
+           )),
+          COALESCE((SELECT MAX(orden) FROM denuncias WHERE EXTRACT(YEAR FROM fecha_denuncia) = $1 AND orden >= 1), 0) + 1
+        ) as orden`,
+        [año]
+      )
+      numeroOrden = ordenResult.rows[0].orden
+      
+      await client.query('COMMIT')
+    } catch (error) {
+      await client.query('ROLLBACK')
+      throw error
+    } finally {
+      client.release()
+    }
 
     const fechaDenunciaFormatted = formatDate(data.denuncia.fechaDenuncia)
     const fechaNacimiento = formatDate(data.denunciante.fechaNacimiento)

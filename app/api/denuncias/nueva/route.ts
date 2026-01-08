@@ -324,7 +324,15 @@ export async function POST(request: NextRequest) {
 
     if (borradorId) {
       const año = fechaActual.split('-')[0]
-      // Buscar el primer número de orden disponible (reutilizar si hay huecos)
+      // Bloquear las filas del año actual para evitar condiciones de carrera
+      // Luego buscar el primer número de orden disponible (reutilizar si hay huecos)
+      await client.query(
+        `SELECT orden FROM denuncias 
+         WHERE EXTRACT(YEAR FROM fecha_denuncia) = $1 AND orden >= 1
+         FOR UPDATE`,
+        [año]
+      )
+      
       const ordenResult = await client.query(
         `SELECT COALESCE(
           (SELECT MIN(n.orden_numero)
@@ -384,7 +392,15 @@ export async function POST(request: NextRequest) {
       denunciaId = borradorId
     } else {
       const año = fechaActual.split('-')[0]
-      // Buscar el primer número de orden disponible (reutilizar si hay huecos)
+      // Bloquear las filas del año actual para evitar condiciones de carrera
+      // Luego buscar el primer número de orden disponible (reutilizar si hay huecos)
+      await client.query(
+        `SELECT orden FROM denuncias 
+         WHERE EXTRACT(YEAR FROM fecha_denuncia) = $1 AND orden >= 1
+         FOR UPDATE`,
+        [año]
+      )
+      
       const ordenResult = await client.query(
         `SELECT COALESCE(
           (SELECT MIN(n.orden_numero)
