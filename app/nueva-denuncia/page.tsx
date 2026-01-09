@@ -4243,240 +4243,242 @@ export default function NuevaDenunciaPage() {
                     </label>
                   </div>
                   {!lugarHechoNoAplica && (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Departamento *
-                      </label>
-                      <Controller
-                        name="lugarHechoDepartamento"
-                        control={controlDenuncia}
-                        render={({ field }) => (
-                          <Select
-                            options={lugarHechoDepartamentoOptions}
-                            value={lugarHechoDepartamentoOptions.find((option) => option.value === field.value) || null}
-                            onChange={(option) => field.onChange(option?.value || '')}
-                            isClearable
-                            placeholder="Seleccione..."
-                            className="text-sm"
-                            styles={{
-                              control: (base, state) => ({
-                                ...base,
-                                fontFamily: 'Inter, sans-serif',
-                                fontSize: '14px',
-                                minHeight: '42px',
-                                borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
-                                boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
-                                '&:hover': {
-                                  borderColor: '#3b82f6',
-                                },
-                              }),
-                              menu: (base) => ({
-                                ...base,
-                                fontFamily: 'Inter, sans-serif',
-                                fontSize: '14px',
-                                maxHeight: '250px',
-                                zIndex: 9999,
-                              }),
-                              menuList: (base) => ({
-                                ...base,
-                                maxHeight: '250px',
-                              }),
-                              option: (base, state) => ({
-                                ...base,
-                                fontFamily: 'Inter, sans-serif',
-                                fontSize: '14px',
-                                padding: '8px 12px',
-                                backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
-                                color: state.isSelected ? 'white' : '#1f2937',
-                                cursor: 'pointer',
-                              }),
-                              input: (base) => ({
-                                ...base,
-                                fontFamily: 'Inter, sans-serif',
-                                fontSize: '14px',
-                                margin: 0,
-                                padding: 0,
-                              }),
-                              singleValue: (base) => ({
-                                ...base,
-                                fontFamily: 'Inter, sans-serif',
-                                fontSize: '14px',
-                                color: '#1f2937',
-                              }),
-                              placeholder: (base) => ({
-                                ...base,
-                                fontFamily: 'Inter, sans-serif',
-                                fontSize: '14px',
-                                color: '#9ca3af',
-                              }),
-                            }}
-                            classNamePrefix="react-select"
+                    <>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Departamento *
+                          </label>
+                          <Controller
+                            name="lugarHechoDepartamento"
+                            control={controlDenuncia}
+                            render={({ field }) => (
+                              <Select
+                                options={lugarHechoDepartamentoOptions}
+                                value={lugarHechoDepartamentoOptions.find((option) => option.value === field.value) || null}
+                                onChange={(option) => field.onChange(option?.value || '')}
+                                isClearable
+                                placeholder="Seleccione..."
+                                className="text-sm"
+                                styles={{
+                                  control: (base, state) => ({
+                                    ...base,
+                                    fontFamily: 'Inter, sans-serif',
+                                    fontSize: '14px',
+                                    minHeight: '42px',
+                                    borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
+                                    boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
+                                    '&:hover': {
+                                      borderColor: '#3b82f6',
+                                    },
+                                  }),
+                                  menu: (base) => ({
+                                    ...base,
+                                    fontFamily: 'Inter, sans-serif',
+                                    fontSize: '14px',
+                                    maxHeight: '250px',
+                                    zIndex: 9999,
+                                  }),
+                                  menuList: (base) => ({
+                                    ...base,
+                                    maxHeight: '250px',
+                                  }),
+                                  option: (base, state) => ({
+                                    ...base,
+                                    fontFamily: 'Inter, sans-serif',
+                                    fontSize: '14px',
+                                    padding: '8px 12px',
+                                    backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
+                                    color: state.isSelected ? 'white' : '#1f2937',
+                                    cursor: 'pointer',
+                                  }),
+                                  input: (base) => ({
+                                    ...base,
+                                    fontFamily: 'Inter, sans-serif',
+                                    fontSize: '14px',
+                                    margin: 0,
+                                    padding: 0,
+                                  }),
+                                  singleValue: (base) => ({
+                                    ...base,
+                                    fontFamily: 'Inter, sans-serif',
+                                    fontSize: '14px',
+                                    color: '#1f2937',
+                                  }),
+                                  placeholder: (base) => ({
+                                    ...base,
+                                    fontFamily: 'Inter, sans-serif',
+                                    fontSize: '14px',
+                                    color: '#9ca3af',
+                                  }),
+                                }}
+                                classNamePrefix="react-select"
+                              />
+                            )}
                           />
-                        )}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Ciudad *
-                      </label>
-                      <Controller
-                        name="lugarHechoCiudad"
-                        control={controlDenuncia}
-                        render={({ field }) => (
-                          <Select
-                            options={lugarHechoCiudadOptions}
-                            value={lugarHechoCiudadOptions.find((option) => option.value === field.value) || null}
-                            onChange={(option) => field.onChange(option?.value || '')}
-                            isClearable
-                            isDisabled={!lugarHechoDepartamento}
-                            placeholder={lugarHechoDepartamento ? 'Seleccione...' : 'Seleccione un departamento primero'}
-                            className="text-sm"
-                            styles={{
-                              control: (base, state) => ({
-                                ...base,
-                                fontFamily: 'Inter, sans-serif',
-                                fontSize: '14px',
-                                minHeight: '42px',
-                                borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
-                                boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
-                                '&:hover': {
-                                  borderColor: '#3b82f6',
-                                },
-                              }),
-                              menu: (base) => ({
-                                ...base,
-                                fontFamily: 'Inter, sans-serif',
-                                fontSize: '14px',
-                                maxHeight: '250px',
-                                zIndex: 9999,
-                              }),
-                              menuList: (base) => ({
-                                ...base,
-                                maxHeight: '250px',
-                              }),
-                              option: (base, state) => ({
-                                ...base,
-                                fontFamily: 'Inter, sans-serif',
-                                fontSize: '14px',
-                                padding: '8px 12px',
-                                backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
-                                color: state.isSelected ? 'white' : '#1f2937',
-                                cursor: 'pointer',
-                              }),
-                              input: (base) => ({
-                                ...base,
-                                fontFamily: 'Inter, sans-serif',
-                                fontSize: '14px',
-                                margin: 0,
-                                padding: 0,
-                              }),
-                              singleValue: (base) => ({
-                                ...base,
-                                fontFamily: 'Inter, sans-serif',
-                                fontSize: '14px',
-                                color: '#1f2937',
-                              }),
-                              placeholder: (base) => ({
-                                ...base,
-                                fontFamily: 'Inter, sans-serif',
-                                fontSize: '14px',
-                                color: '#9ca3af',
-                              }),
-                            }}
-                            classNamePrefix="react-select"
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Ciudad *
+                          </label>
+                          <Controller
+                            name="lugarHechoCiudad"
+                            control={controlDenuncia}
+                            render={({ field }) => (
+                              <Select
+                                options={lugarHechoCiudadOptions}
+                                value={lugarHechoCiudadOptions.find((option) => option.value === field.value) || null}
+                                onChange={(option) => field.onChange(option?.value || '')}
+                                isClearable
+                                isDisabled={!lugarHechoDepartamento}
+                                placeholder={lugarHechoDepartamento ? 'Seleccione...' : 'Seleccione un departamento primero'}
+                                className="text-sm"
+                                styles={{
+                                  control: (base, state) => ({
+                                    ...base,
+                                    fontFamily: 'Inter, sans-serif',
+                                    fontSize: '14px',
+                                    minHeight: '42px',
+                                    borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
+                                    boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
+                                    '&:hover': {
+                                      borderColor: '#3b82f6',
+                                    },
+                                  }),
+                                  menu: (base) => ({
+                                    ...base,
+                                    fontFamily: 'Inter, sans-serif',
+                                    fontSize: '14px',
+                                    maxHeight: '250px',
+                                    zIndex: 9999,
+                                  }),
+                                  menuList: (base) => ({
+                                    ...base,
+                                    maxHeight: '250px',
+                                  }),
+                                  option: (base, state) => ({
+                                    ...base,
+                                    fontFamily: 'Inter, sans-serif',
+                                    fontSize: '14px',
+                                    padding: '8px 12px',
+                                    backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
+                                    color: state.isSelected ? 'white' : '#1f2937',
+                                    cursor: 'pointer',
+                                  }),
+                                  input: (base) => ({
+                                    ...base,
+                                    fontFamily: 'Inter, sans-serif',
+                                    fontSize: '14px',
+                                    margin: 0,
+                                    padding: 0,
+                                  }),
+                                  singleValue: (base) => ({
+                                    ...base,
+                                    fontFamily: 'Inter, sans-serif',
+                                    fontSize: '14px',
+                                    color: '#1f2937',
+                                  }),
+                                  placeholder: (base) => ({
+                                    ...base,
+                                    fontFamily: 'Inter, sans-serif',
+                                    fontSize: '14px',
+                                    color: '#9ca3af',
+                                  }),
+                                }}
+                                classNamePrefix="react-select"
+                              />
+                            )}
                           />
-                        )}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Barrio
-                      </label>
-                      <Controller
-                        name="lugarHechoBarrio"
-                        control={controlDenuncia}
-                        render={({ field }) => (
-                          <Select
-                            options={lugarHechoBarrioOptions}
-                            value={lugarHechoBarrioOptions.find((option) => option.value === field.value) || null}
-                            onChange={(option) => field.onChange(option?.value || '')}
-                            isClearable
-                            isDisabled={!lugarHechoCiudad}
-                            placeholder={lugarHechoCiudad ? 'Seleccione...' : 'Seleccione una ciudad primero'}
-                            className="text-sm"
-                            styles={{
-                              control: (base, state) => ({
-                                ...base,
-                                fontFamily: 'Inter, sans-serif',
-                                fontSize: '14px',
-                                minHeight: '42px',
-                                borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
-                                boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
-                                '&:hover': {
-                                  borderColor: '#3b82f6',
-                                },
-                              }),
-                              menu: (base) => ({
-                                ...base,
-                                fontFamily: 'Inter, sans-serif',
-                                fontSize: '14px',
-                                maxHeight: '250px',
-                                zIndex: 9999,
-                              }),
-                              menuList: (base) => ({
-                                ...base,
-                                maxHeight: '250px',
-                              }),
-                              option: (base, state) => ({
-                                ...base,
-                                fontFamily: 'Inter, sans-serif',
-                                fontSize: '14px',
-                                padding: '8px 12px',
-                                backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
-                                color: state.isSelected ? 'white' : '#1f2937',
-                                cursor: 'pointer',
-                              }),
-                              input: (base) => ({
-                                ...base,
-                                fontFamily: 'Inter, sans-serif',
-                                fontSize: '14px',
-                                margin: 0,
-                                padding: 0,
-                              }),
-                              singleValue: (base) => ({
-                                ...base,
-                                fontFamily: 'Inter, sans-serif',
-                                fontSize: '14px',
-                                color: '#1f2937',
-                              }),
-                              placeholder: (base) => ({
-                                ...base,
-                                fontFamily: 'Inter, sans-serif',
-                                fontSize: '14px',
-                                color: '#9ca3af',
-                              }),
-                            }}
-                            classNamePrefix="react-select"
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Barrio
+                          </label>
+                          <Controller
+                            name="lugarHechoBarrio"
+                            control={controlDenuncia}
+                            render={({ field }) => (
+                              <Select
+                                options={lugarHechoBarrioOptions}
+                                value={lugarHechoBarrioOptions.find((option) => option.value === field.value) || null}
+                                onChange={(option) => field.onChange(option?.value || '')}
+                                isClearable
+                                isDisabled={!lugarHechoCiudad}
+                                placeholder={lugarHechoCiudad ? 'Seleccione...' : 'Seleccione una ciudad primero'}
+                                className="text-sm"
+                                styles={{
+                                  control: (base, state) => ({
+                                    ...base,
+                                    fontFamily: 'Inter, sans-serif',
+                                    fontSize: '14px',
+                                    minHeight: '42px',
+                                    borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
+                                    boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
+                                    '&:hover': {
+                                      borderColor: '#3b82f6',
+                                    },
+                                  }),
+                                  menu: (base) => ({
+                                    ...base,
+                                    fontFamily: 'Inter, sans-serif',
+                                    fontSize: '14px',
+                                    maxHeight: '250px',
+                                    zIndex: 9999,
+                                  }),
+                                  menuList: (base) => ({
+                                    ...base,
+                                    maxHeight: '250px',
+                                  }),
+                                  option: (base, state) => ({
+                                    ...base,
+                                    fontFamily: 'Inter, sans-serif',
+                                    fontSize: '14px',
+                                    padding: '8px 12px',
+                                    backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
+                                    color: state.isSelected ? 'white' : '#1f2937',
+                                    cursor: 'pointer',
+                                  }),
+                                  input: (base) => ({
+                                    ...base,
+                                    fontFamily: 'Inter, sans-serif',
+                                    fontSize: '14px',
+                                    margin: 0,
+                                    padding: 0,
+                                  }),
+                                  singleValue: (base) => ({
+                                    ...base,
+                                    fontFamily: 'Inter, sans-serif',
+                                    fontSize: '14px',
+                                    color: '#1f2937',
+                                  }),
+                                  placeholder: (base) => ({
+                                    ...base,
+                                    fontFamily: 'Inter, sans-serif',
+                                    fontSize: '14px',
+                                    color: '#9ca3af',
+                                  }),
+                                }}
+                                classNamePrefix="react-select"
+                              />
+                            )}
                           />
-                        )}
-                      />
-                    </div>
-                  </div>
-                  <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Calles / Referencias *
-                    </label>
-                    <input
-                      {...registerDenuncia('lugarHechoCalles')}
-                      onChange={(e) => {
-                        convertirAMayusculas(e)
-                        registerDenuncia('lugarHechoCalles').onChange(e)
-                      }}
-                      autoComplete="off"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
-                    />
-                  </div>
+                        </div>
+                      </div>
+                      <div className="mt-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Calles / Referencias *
+                        </label>
+                        <input
+                          {...registerDenuncia('lugarHechoCalles')}
+                          onChange={(e) => {
+                            convertirAMayusculas(e)
+                            registerDenuncia('lugarHechoCalles').onChange(e)
+                          }}
+                          autoComplete="off"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
+                        />
+                      </div>
+                    </>
                   )}
                   <div className="flex gap-2 mt-4">
                     <input
