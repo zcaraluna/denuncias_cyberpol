@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
       otro_tipo: data.denuncia.otroTipo,
       lugar_hecho: data.denuncia.lugarHecho,
       relato: data.denuncia.relato,
-      orden: 999, // Número temporal para vista previa
+      orden: #, // Número temporal para vista previa
       hash: generarHash(),
       oficina: data.operador.oficina,
       grado_operador: data.operador.grado,
