@@ -43,6 +43,7 @@ Object.keys(estructura).forEach((dep) => {
   });
 });
 
+
 // Generar el código TypeScript
 let tsCode = `// Datos de barrios y localidades de Paraguay
 // Extraído de: Barrios Localidades Paraguay_2022.geojson
@@ -69,17 +70,20 @@ export const barriosParaguay: DepartamentoBarrios[] = [
 const departamentosOrdenados = Object.keys(estructura).sort();
 
 departamentosOrdenados.forEach((depNombre, depIndex) => {
-  tsCode += `  {\n    nombre: '${depNombre}',\n    ciudades: [\n`;
+  const depEscapado = JSON.stringify(depNombre);
+  tsCode += `  {\n    nombre: ${depEscapado},\n    ciudades: [\n`;
 
   // Ordenar ciudades alfabéticamente
   const ciudadesOrdenadas = Object.keys(estructura[depNombre]).sort();
 
   ciudadesOrdenadas.forEach((ciuNombre, ciuIndex) => {
-    tsCode += `      {\n        nombre: '${ciuNombre}',\n        barrios: [\n`;
+    const ciuEscapado = JSON.stringify(ciuNombre);
+    tsCode += `      {\n        nombre: ${ciuEscapado},\n        barrios: [\n`;
 
     estructura[depNombre][ciuNombre].forEach((barNombre, barIndex) => {
       const isLast = barIndex === estructura[depNombre][ciuNombre].length - 1;
-      tsCode += `          { nombre: '${barNombre}' }${isLast ? '' : ','}\n`;
+      const barEscapado = JSON.stringify(barNombre);
+      tsCode += `          { nombre: ${barEscapado} }${isLast ? '' : ','}\n`;
     });
 
     const isLastCiudad = ciuIndex === ciudadesOrdenadas.length - 1;
