@@ -87,6 +87,7 @@ export const hechosPunibles: HechoPunible[] = [
   { nombre: 'Extorsión grave y chantaje', capitulo: 'HECHO PUNIBLE CONTRA OTROS DERECHOS PATRIMONIALES' },
   { nombre: 'Estafa', capitulo: 'HECHO PUNIBLE CONTRA OTROS DERECHOS PATRIMONIALES' },
   { nombre: 'Estafa mediante sistemas informáticos', capitulo: 'HECHO PUNIBLE CONTRA OTROS DERECHOS PATRIMONIALES' },
+  { nombre: 'Acceso indebido a sistemas informáticos', capitulo: 'HECHO PUNIBLE CONTRA OTROS DERECHOS PATRIMONIALES' },
   { nombre: 'Aprovechamiento de la insolvencia', capitulo: 'HECHO PUNIBLE CONTRA OTROS DERECHOS PATRIMONIALES' },
   { nombre: 'Fraude previo a la quiebra', capitulo: 'HECHO PUNIBLE CONTRA OTROS DERECHOS PATRIMONIALES' },
   { nombre: 'Lesión de confianza', capitulo: 'HECHO PUNIBLE CONTRA OTROS DERECHOS PATRIMONIALES' },
