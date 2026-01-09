@@ -125,7 +125,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Generar PDF según el formato seleccionado
-    const pdfBuffer = await generarPDF(999, denunciante, datosDenuncia)
+    // Usar 0 para vista previa, que se mostrará como "#/AAAA"
+    const pdfBuffer = await generarPDF(0, denunciante, datosDenuncia)
 
     return new Response(new Uint8Array(pdfBuffer), {
       headers: {

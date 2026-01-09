@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
       otro_tipo: data.denuncia.otroTipo,
       lugar_hecho: data.denuncia.lugarHecho,
       relato: data.denuncia.relato,
-      orden: 999, // Número temporal para vista previa
+      orden: 0, // Número temporal para vista previa (se mostrará como "#")
       hash: 'XXXXX',
       oficina: data.operador.oficina,
       grado_operador: data.operador.grado,
@@ -119,7 +119,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Generar solo el texto del PDF
-    const textoPDF = generarTextoPDF(999, denunciante, datosDenuncia)
+    // Usar 0 para vista previa, que se mostrará como "#/AAAA"
+    const textoPDF = generarTextoPDF(0, denunciante, datosDenuncia)
 
     return NextResponse.json({ texto: textoPDF })
   } catch (error) {

@@ -622,22 +622,16 @@ export default function NuevaDenunciaPage() {
       if (dep === 'ASUNCIÓN') {
         // omit departamento, será tratado como ciudad capital
       } else if (dep === 'CENTRAL') {
-        partes.push('departamento CENTRAL')
+        partes.push('DEPARTAMENTO CENTRAL')
       } else {
-        partes.push(`departamento de ${dep}`)
+        partes.push(`DEPARTAMENTO DE ${dep}`)
       }
     }
     if (city) {
-      if (dep === 'CENTRAL') {
-        partes.push(`ciudad de ${city}`)
-      } else if (dep === 'ASUNCIÓN') {
-        partes.push(`ciudad de ${city}`)
-      } else {
-        partes.push(`ciudad de ${city}`)
-      }
+      partes.push(`CIUDAD DE ${city}`)
     }
     if (bar) {
-      partes.push(`barrio ${bar}`)
+      partes.push(`BARRIO ${bar}`)
     }
     if (calles) {
       partes.push(calles.toUpperCase())
