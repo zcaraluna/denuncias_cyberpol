@@ -35,3 +35,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# Archivos grandes de datos
+Barrios Localidades Paraguay_2022.geojson
+*.geojson

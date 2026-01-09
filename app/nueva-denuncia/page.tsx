@@ -8,6 +8,7 @@ import { z } from 'zod'
 import dynamic from 'next/dynamic'
 import Select from 'react-select'
 import { departamentosParaguay } from '@/lib/data/departamentos'
+import { obtenerBarriosPorCiudad } from '@/lib/data/barrios'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { obtenerHechosPuniblesEspecificos } from '@/lib/data/hechos-punibles'
 
@@ -32,6 +33,7 @@ const denuncianteSchema = z
     correo: z.string().optional(),
     departamento: z.string().optional(),
     ciudad: z.string().optional(),
+    barrio: z.string().optional(),
     calles: z.string().optional(),
     profesion: z.string().optional(),
     matricula: z.string().optional(),
@@ -121,6 +123,7 @@ const valoresInicialesDenunciante: DenuncianteFormValues = {
   correo: '',
   departamento: '',
   ciudad: '',
+  barrio: '',
   calles: '',
   profesion: '',
   matricula: '',
@@ -192,6 +195,7 @@ const generarDatosAleatorios = (
   rol: 'principal' | 'co-denunciante' | 'abogado',
   departamentos: typeof departamentosParaguay
 ): Partial<DenuncianteFormValues> => {
+  const { obtenerBarriosPorCiudad } = require('@/lib/data/barrios')
   const nombresAleatorios = [
     'Juan', 'María', 'Carlos', 'Ana', 'Pedro', 'Laura', 'Luis', 'Carmen',
     'Roberto', 'Patricia', 'Miguel', 'Sofía', 'José', 'Elena', 'Francisco', 'Lucía'
@@ -232,6 +236,12 @@ const generarDatosAleatorios = (
   const departamentoAleatorio = departamentos[Math.floor(Math.random() * departamentos.length)]
   const ciudadAleatoria =
     departamentoAleatorio.ciudades[Math.floor(Math.random() * departamentoAleatorio.ciudades.length)]
+  
+  // Seleccionar barrio aleatorio si está disponible
+  const barriosDisponibles = obtenerBarriosPorCiudad(departamentoAleatorio.nombre, ciudadAleatoria)
+  const barrioAleatorio = barriosDisponibles.length > 0
+    ? barriosDisponibles[Math.floor(Math.random() * barriosDisponibles.length)]
+    : ''
 
   if (rol === 'abogado') {
     const tiposDocumento = ['Cédula de Identidad Paraguaya', 'Documento de origen', 'Pasaporte']
@@ -285,6 +295,7 @@ const generarDatosAleatorios = (
     correo,
     departamento: departamentoAleatorio.nombre,
     ciudad: ciudadAleatoria,
+    barrio: barrioAleatorio,
     calles: callesAleatorias[Math.floor(Math.random() * callesAleatorias.length)],
     profesion: profesiones[Math.floor(Math.random() * profesiones.length)],
     representaA: null,
@@ -597,13 +608,14 @@ export default function NuevaDenunciaPage() {
 
   const estadosCiviles = ['Soltero/a', 'Casado/a', 'Viudo/a', 'Divorciado/a', 'Concubinato']
 
-  const DOMICILIO_REGEX_NUEVO = /DEPARTAMENTO\s+DE\s+([A-ZÁÉÍÓÚÑ\s]+?)(?:,\s*CIUDAD\s+DE\s+([A-ZÁÉÍÓÚÑ\s]+?))?(?:,\s*(.*))?\.?$/i
-  const DOMICILIO_REGEX_ANTERIOR = /DEPARTAMENTO\s*\{([^}]+)\}\s*,\s*CIUDAD DE\s*\{([^}]+)\}\s*,\s*\{([^}]+)\}/i
+  const DOMICILIO_REGEX_NUEVO = /DEPARTAMENTO\s+DE\s+([A-ZÁÉÍÓÚÑ\s]+?)(?:,\s*CIUDAD\s+DE\s+([A-ZÁÉÍÓÚÑ\s]+?))?(?:,\s*BARRIO\s+([A-ZÁÉÍÓÚÑ\s]+?))?(?:,\s*(.*))?\.?$/i
+  const DOMICILIO_REGEX_ANTERIOR = /DEPARTAMENTO\s*\{([^}]+)\}\s*,\s*CIUDAD DE\s*\{([^}]+)\}\s*(?:,\s*BARRIO\s*\{([^}]+)\})?\s*,\s*\{([^}]+)\}/i
 
-  const construirDomicilio = (departamento?: string, ciudad?: string, calles?: string) => {
+  const construirDomicilio = (departamento?: string, ciudad?: string, barrio?: string, calles?: string) => {
     const partes: string[] = []
     const dep = departamento ? departamento.toUpperCase() : ''
     const city = ciudad ? ciudad.toUpperCase() : ''
+    const bar = barrio ? barrio.toUpperCase() : ''
 
     if (dep) {
       if (dep === 'ASUNCIÓN') {
@@ -622,6 +634,9 @@ export default function NuevaDenunciaPage() {
       } else {
         partes.push(`ciudad de ${city}`)
       }
+    }
+    if (bar) {
+      partes.push(`barrio ${bar}`)
     }
     if (calles) {
       partes.push(calles.toUpperCase())
@@ -682,16 +697,18 @@ export default function NuevaDenunciaPage() {
   }
 
   const descomponerDomicilio = (domicilio: string | null | undefined) => {
-    if (!domicilio) return { departamento: '', ciudad: '', calles: '' }
+    if (!domicilio) return { departamento: '', ciudad: '', barrio: '', calles: '' }
 
     const matchNuevo = DOMICILIO_REGEX_NUEVO.exec(domicilio)
     if (matchNuevo) {
       const departamento = (matchNuevo[1] || '').trim().toUpperCase()
       const ciudad = (matchNuevo[2] || '').trim().toUpperCase()
-      const calles = (matchNuevo[3] || '').replace(/\.$/, '').trim().toUpperCase()
+      const barrio = (matchNuevo[3] || '').trim().toUpperCase()
+      const calles = (matchNuevo[4] || '').replace(/\.$/, '').trim().toUpperCase()
       return {
         departamento,
         ciudad,
+        barrio,
         calles,
       }
     }
@@ -701,11 +718,13 @@ export default function NuevaDenunciaPage() {
       return {
         departamento: matchAnterior[1].trim().toUpperCase(),
         ciudad: matchAnterior[2].trim().toUpperCase(),
-        calles: matchAnterior[3].trim().toUpperCase(),
+        barrio: (matchAnterior[3] || '').trim().toUpperCase(),
+        calles: matchAnterior[4].trim().toUpperCase(),
       }
     }
 
-    return { departamento: '', ciudad: '', calles: domicilio.replace(/\.$/, '').trim().toUpperCase() }
+    // Si no coincide con ningún patrón, intentar parsearlo como calles solamente
+    return { departamento: '', ciudad: '', barrio: '', calles: domicilio.replace(/\.$/, '').trim().toUpperCase() }
   }
 
   const {
@@ -727,6 +746,7 @@ export default function NuevaDenunciaPage() {
   const tipoDocumento = watchDenunciante('tipoDocumento')
   const departamentoSeleccionado = watchDenunciante('departamento')
   const ciudadSeleccionada = watchDenunciante('ciudad')
+  const barrioSeleccionado = watchDenunciante('barrio')
   const rolSeleccionado = watchDenunciante('rol')
   const matriculaActual = watchDenunciante('matricula')
 
@@ -1099,10 +1119,19 @@ export default function NuevaDenunciaPage() {
     return departamento.ciudades.map((ciudad) => ({ value: ciudad, label: ciudad }))
   }, [departamentoSeleccionado])
 
+  const barrioOptions = useMemo(() => {
+    if (!departamentoSeleccionado || !ciudadSeleccionada) return []
+    const barrios = obtenerBarriosPorCiudad(departamentoSeleccionado, ciudadSeleccionada)
+    return barrios.map((barrio) => ({ value: barrio, label: barrio }))
+  }, [departamentoSeleccionado, ciudadSeleccionada])
+
   useEffect(() => {
     if (!departamentoSeleccionado) {
       if (ciudadSeleccionada) {
         setValueDenunciante('ciudad', '')
+      }
+      if (barrioSeleccionado) {
+        setValueDenunciante('barrio', '')
       }
       return
     }
@@ -1110,8 +1139,21 @@ export default function NuevaDenunciaPage() {
     const departamento = departamentosParaguay.find((dep) => dep.nombre === departamentoSeleccionado)
     if (departamento && ciudadSeleccionada && !departamento.ciudades.includes(ciudadSeleccionada)) {
       setValueDenunciante('ciudad', '')
+      setValueDenunciante('barrio', '')
     }
-  }, [departamentoSeleccionado, ciudadSeleccionada, setValueDenunciante])
+  }, [departamentoSeleccionado, ciudadSeleccionada, barrioSeleccionado, setValueDenunciante])
+
+  // Efecto para resetear barrio cuando cambia la ciudad
+  useEffect(() => {
+    if (barrioSeleccionado && ciudadSeleccionada && departamentoSeleccionado) {
+      const barriosDisponibles = obtenerBarriosPorCiudad(departamentoSeleccionado, ciudadSeleccionada)
+      if (!barriosDisponibles.includes(barrioSeleccionado)) {
+        setValueDenunciante('barrio', '')
+      }
+    } else if (!ciudadSeleccionada && barrioSeleccionado) {
+      setValueDenunciante('barrio', '')
+    }
+  }, [ciudadSeleccionada, departamentoSeleccionado, barrioSeleccionado, setValueDenunciante])
 
   const {
     register: registerAutor,
@@ -1200,10 +1242,12 @@ export default function NuevaDenunciaPage() {
     const { rol: _rol, representaA: _representaA, ...datos } = data
     const departamento = datos.departamento?.toUpperCase() || ''
     const ciudad = datos.ciudad?.toUpperCase() || ''
+    const barrio = datos.barrio?.toUpperCase() || ''
     const calles = datos.calles?.toUpperCase() || ''
     const domicilio = construirDomicilio(
       departamento || undefined,
       ciudad || undefined,
+      barrio || undefined,
       calles || undefined
     )
     const edadCalculada = datos.fechaNacimiento ? calcularEdad(datos.fechaNacimiento) : ''
@@ -1297,6 +1341,7 @@ export default function NuevaDenunciaPage() {
             correo: fila.correo || '',
             departamento: domicilioParsed.departamento || '',
             ciudad: domicilioParsed.ciudad || '',
+            barrio: domicilioParsed.barrio || '',
             calles: domicilioParsed.calles || '',
             profesion: fila.profesion || '',
           matricula: fila.matricula || '',
@@ -1374,13 +1419,26 @@ export default function NuevaDenunciaPage() {
           const departamentoActual = departamentosParaguay.find((dep) => dep.nombre === domicilioParsed.departamento)
           if (departamentoActual && domicilioParsed.ciudad && departamentoActual.ciudades.includes(domicilioParsed.ciudad)) {
             setValueDenunciante('ciudad', domicilioParsed.ciudad)
+            // Intentar setear el barrio si está disponible
+            if (domicilioParsed.barrio) {
+              const barriosDisponibles = obtenerBarriosPorCiudad(domicilioParsed.departamento, domicilioParsed.ciudad)
+              if (barriosDisponibles.includes(domicilioParsed.barrio)) {
+                setValueDenunciante('barrio', domicilioParsed.barrio)
+              } else {
+                setValueDenunciante('barrio', '')
+              }
+            } else {
+              setValueDenunciante('barrio', '')
+            }
           } else {
             setValueDenunciante('ciudad', '')
+            setValueDenunciante('barrio', '')
           }
           setValueDenunciante('calles', domicilioParsed.calles || '')
         } else {
           setValueDenunciante('departamento', '')
           setValueDenunciante('ciudad', '')
+          setValueDenunciante('barrio', '')
           setValueDenunciante('calles', domicilioParsed.calles || '')
         }
 
@@ -1403,6 +1461,7 @@ export default function NuevaDenunciaPage() {
           correo: data.correo || '',
           departamento: domicilioParsed.departamento || '',
           ciudad: domicilioParsed.ciudad || '',
+          barrio: domicilioParsed.barrio || '',
           calles: domicilioParsed.calles || '',
           profesion: data.profesion || '',
           matricula: data.matricula || '',
@@ -2654,7 +2713,7 @@ export default function NuevaDenunciaPage() {
                   <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">
                     Domicilio
                   </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Departamento *
@@ -2804,6 +2863,82 @@ export default function NuevaDenunciaPage() {
                   />
                   {errorsDenunciante.ciudad && (
                     <p className="text-red-600 text-sm mt-1">{errorsDenunciante.ciudad.message as string}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Barrio
+                  </label>
+                  <Controller
+                    name="barrio"
+                    control={controlDenunciante}
+                    render={({ field }) => (
+                      <Select
+                        options={barrioOptions}
+                        value={barrioOptions.find((option) => option.value === field.value) || null}
+                        onChange={(option) => field.onChange(option?.value || '')}
+                        isClearable
+                        isDisabled={!ciudadSeleccionada}
+                        placeholder={ciudadSeleccionada ? 'Seleccione...' : 'Seleccione una ciudad primero'}
+                        className="text-sm"
+                        styles={{
+                          control: (base, state) => ({
+                            ...base,
+                            fontFamily: 'Inter, sans-serif',
+                            fontSize: '14px',
+                            minHeight: '42px',
+                            borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
+                            boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
+                            '&:hover': {
+                              borderColor: '#3b82f6',
+                            },
+                          }),
+                          menu: (base) => ({
+                            ...base,
+                            fontFamily: 'Inter, sans-serif',
+                            fontSize: '14px',
+                            maxHeight: '250px',
+                            zIndex: 9999,
+                          }),
+                          menuList: (base) => ({
+                            ...base,
+                            maxHeight: '250px',
+                          }),
+                          option: (base, state) => ({
+                            ...base,
+                            fontFamily: 'Inter, sans-serif',
+                            fontSize: '14px',
+                            padding: '8px 12px',
+                            backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
+                            color: state.isSelected ? 'white' : '#1f2937',
+                            cursor: 'pointer',
+                          }),
+                          input: (base) => ({
+                            ...base,
+                            fontFamily: 'Inter, sans-serif',
+                            fontSize: '14px',
+                            margin: 0,
+                            padding: 0,
+                          }),
+                          singleValue: (base) => ({
+                            ...base,
+                            fontFamily: 'Inter, sans-serif',
+                            fontSize: '14px',
+                            color: '#1f2937',
+                          }),
+                          placeholder: (base) => ({
+                            ...base,
+                            fontFamily: 'Inter, sans-serif',
+                            fontSize: '14px',
+                            color: '#9ca3af',
+                          }),
+                        }}
+                        classNamePrefix="react-select"
+                      />
+                    )}
+                  />
+                  {errorsDenunciante.barrio && (
+                    <p className="text-red-600 text-sm mt-1">{errorsDenunciante.barrio.message as string}</p>
                   )}
                 </div>
                 <div>
