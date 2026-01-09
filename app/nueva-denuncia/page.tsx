@@ -146,6 +146,7 @@ const denunciaSchema = z.object({
   lugarHecho: z.string().optional(),
   lugarHechoDepartamento: z.string().optional(),
   lugarHechoCiudad: z.string().optional(),
+  lugarHechoBarrio: z.string().optional(),
   lugarHechoCalles: z.string().optional(),
   lugarHechoNoAplica: z.boolean().optional(),
   relato: z.string().min(10, 'El relato debe tener al menos 10 caracteres'),
@@ -885,8 +886,15 @@ export default function NuevaDenunciaPage() {
     const ciudadAleatoria =
       departamentoAleatorio.ciudades[Math.floor(Math.random() * departamentoAleatorio.ciudades.length)]
     
+    // Seleccionar barrio aleatorio si está disponible
+    const barriosDisponibles = obtenerBarriosPorCiudad(departamentoAleatorio.nombre, ciudadAleatoria)
+    const barrioAleatorio = barriosDisponibles.length > 0
+      ? barriosDisponibles[Math.floor(Math.random() * barriosDisponibles.length)]
+      : ''
+    
     setValueAutor('departamento', departamentoAleatorio.nombre)
     setValueAutor('ciudad', ciudadAleatoria)
+    setValueAutor('barrio', barrioAleatorio)
     setValueAutor('calles', callesAleatorias[Math.floor(Math.random() * callesAleatorias.length)])
     setValueAutor('nacionalidad', nacionalidades[Math.floor(Math.random() * nacionalidades.length)])
     setValueAutor('estadoCivil', estadosCiviles[Math.floor(Math.random() * estadosCiviles.length)])
@@ -1107,6 +1115,12 @@ export default function NuevaDenunciaPage() {
     return departamento.ciudades.map((ciudad) => ({ value: ciudad, label: ciudad }))
   }, [lugarHechoDepartamento])
 
+  const lugarHechoBarrioOptions = useMemo(() => {
+    if (!lugarHechoDepartamento || !lugarHechoCiudad) return []
+    const barrios = obtenerBarriosPorCiudad(lugarHechoDepartamento, lugarHechoCiudad)
+    return barrios.map((barrio) => ({ value: barrio, label: barrio }))
+  }, [lugarHechoDepartamento, lugarHechoCiudad])
+
   const departamentoOptions = useMemo(
     () => departamentosParaguay.map((dep) => ({ value: dep.nombre, label: dep.nombre })),
     []
@@ -1167,6 +1181,7 @@ export default function NuevaDenunciaPage() {
   const fechaNacimientoAutor = watchAutor('fechaNacimiento')
   const departamentoAutor = watchAutor('departamento')
   const ciudadAutor = watchAutor('ciudad')
+  const barrioAutor = watchAutor('barrio')
   
   // Opciones de departamento y ciudad para el autor
   const departamentoAutorOptions = useMemo(
@@ -1181,11 +1196,20 @@ export default function NuevaDenunciaPage() {
     return departamento.ciudades.map((ciudad) => ({ value: ciudad, label: ciudad }))
   }, [departamentoAutor])
 
+  const barrioAutorOptions = useMemo(() => {
+    if (!departamentoAutor || !ciudadAutor) return []
+    const barrios = obtenerBarriosPorCiudad(departamentoAutor, ciudadAutor)
+    return barrios.map((barrio) => ({ value: barrio, label: barrio }))
+  }, [departamentoAutor, ciudadAutor])
+
   // Efecto para manejar cambio de departamento del autor
   useEffect(() => {
     if (!departamentoAutor) {
       if (ciudadAutor) {
         setValueAutor('ciudad', '')
+      }
+      if (barrioAutor) {
+        setValueAutor('barrio', '')
       }
       return
     }
@@ -1193,8 +1217,23 @@ export default function NuevaDenunciaPage() {
     const departamento = departamentosParaguay.find((dep) => dep.nombre === departamentoAutor)
     if (departamento && ciudadAutor && !departamento.ciudades.includes(ciudadAutor)) {
       setValueAutor('ciudad', '')
+      setValueAutor('barrio', '')
     }
-  }, [departamentoAutor, ciudadAutor, setValueAutor])
+  }, [departamentoAutor, ciudadAutor, barrioAutor, setValueAutor])
+
+  // Efecto para resetear barrio cuando cambia la ciudad del autor
+  useEffect(() => {
+    if (barrioAutor && ciudadAutor && departamentoAutor) {
+      const barriosDisponibles = obtenerBarriosPorCiudad(departamentoAutor, ciudadAutor)
+      if (!barriosDisponibles.includes(barrioAutor)) {
+        setValueAutor('barrio', '')
+      }
+    } else if (!ciudadAutor && barrioAutor) {
+      setValueAutor('barrio', '')
+    }
+  }, [ciudadAutor, departamentoAutor, barrioAutor, setValueAutor])
+
+  const lugarHechoBarrio = watchDenuncia('lugarHechoBarrio')
 
   // Efecto para manejar cambio de departamento del lugar del hecho
   useEffect(() => {
@@ -1202,25 +1241,42 @@ export default function NuevaDenunciaPage() {
       if (lugarHechoCiudad) {
         setValueDenuncia('lugarHechoCiudad', '')
       }
+      if (lugarHechoBarrio) {
+        setValueDenuncia('lugarHechoBarrio', '')
+      }
       return
     }
 
     const departamento = departamentosParaguay.find((dep) => dep.nombre === lugarHechoDepartamento)
     if (departamento && lugarHechoCiudad && !departamento.ciudades.includes(lugarHechoCiudad)) {
       setValueDenuncia('lugarHechoCiudad', '')
+      setValueDenuncia('lugarHechoBarrio', '')
     }
-  }, [lugarHechoDepartamento, lugarHechoCiudad, setValueDenuncia])
+  }, [lugarHechoDepartamento, lugarHechoCiudad, lugarHechoBarrio, setValueDenuncia])
+
+  // Efecto para resetear barrio del lugar del hecho cuando cambia la ciudad
+  useEffect(() => {
+    if (lugarHechoBarrio && lugarHechoCiudad && lugarHechoDepartamento) {
+      const barriosDisponibles = obtenerBarriosPorCiudad(lugarHechoDepartamento, lugarHechoCiudad)
+      if (!barriosDisponibles.includes(lugarHechoBarrio)) {
+        setValueDenuncia('lugarHechoBarrio', '')
+      }
+    } else if (!lugarHechoCiudad && lugarHechoBarrio) {
+      setValueDenuncia('lugarHechoBarrio', '')
+    }
+  }, [lugarHechoCiudad, lugarHechoDepartamento, lugarHechoBarrio, setValueDenuncia])
 
   // Efecto para construir lugarHecho automáticamente cuando cambian los campos
   useEffect(() => {
     const dep = watchDenuncia('lugarHechoDepartamento')
     const ciu = watchDenuncia('lugarHechoCiudad')
+    const bar = watchDenuncia('lugarHechoBarrio')
     const call = watchDenuncia('lugarHechoCalles')
-    const lugarHechoConstruido = construirDomicilio(dep, ciu, call)
+    const lugarHechoConstruido = construirDomicilio(dep, ciu, bar, call)
     if (lugarHechoConstruido) {
       setValueDenuncia('lugarHecho', lugarHechoConstruido, { shouldValidate: false })
     }
-  }, [lugarHechoDepartamento, lugarHechoCiudad, watchDenuncia('lugarHechoCalles'), setValueDenuncia])
+  }, [lugarHechoDepartamento, lugarHechoCiudad, lugarHechoBarrio, watchDenuncia('lugarHechoCalles'), setValueDenuncia])
 
   const calcularEdad = (fechaNac: string): string => {
     try {
@@ -1504,15 +1560,28 @@ export default function NuevaDenunciaPage() {
           const departamentoActual = departamentosParaguay.find((dep) => dep.nombre === lugarHechoParsed.departamento)
           if (departamentoActual && lugarHechoParsed.ciudad && departamentoActual.ciudades.includes(lugarHechoParsed.ciudad)) {
             setValueDenuncia('lugarHechoCiudad', lugarHechoParsed.ciudad)
+            // Verificar si el barrio es válido para esta ciudad
+            if (lugarHechoParsed.barrio) {
+              const barriosDisponibles = obtenerBarriosPorCiudad(lugarHechoParsed.departamento, lugarHechoParsed.ciudad)
+              if (barriosDisponibles.includes(lugarHechoParsed.barrio)) {
+                setValueDenuncia('lugarHechoBarrio', lugarHechoParsed.barrio)
+              } else {
+                setValueDenuncia('lugarHechoBarrio', '')
+              }
+            } else {
+              setValueDenuncia('lugarHechoBarrio', '')
+            }
           } else {
             setValueDenuncia('lugarHechoCiudad', '')
+            setValueDenuncia('lugarHechoBarrio', '')
           }
           setValueDenuncia('lugarHechoCalles', lugarHechoParsed.calles || '')
           // También mantener lugarHecho completo para compatibilidad
-          setValueDenuncia('lugarHecho', construirDomicilio(lugarHechoParsed.departamento, lugarHechoParsed.ciudad, lugarHechoParsed.calles))
+          setValueDenuncia('lugarHecho', construirDomicilio(lugarHechoParsed.departamento, lugarHechoParsed.ciudad, lugarHechoParsed.barrio, lugarHechoParsed.calles))
         } else {
           setValueDenuncia('lugarHechoDepartamento', '')
           setValueDenuncia('lugarHechoCiudad', '')
+          setValueDenuncia('lugarHechoBarrio', '')
           setValueDenuncia('lugarHechoCalles', lugarHechoParsed.calles || '')
           setValueDenuncia('lugarHecho', data.lugar_hecho)
         }
@@ -1541,13 +1610,26 @@ export default function NuevaDenunciaPage() {
               const departamentoActual = departamentosParaguay.find((dep) => dep.nombre === domicilioAutorParsed.departamento)
               if (departamentoActual && domicilioAutorParsed.ciudad && departamentoActual.ciudades.includes(domicilioAutorParsed.ciudad)) {
                 setValueAutor('ciudad', domicilioAutorParsed.ciudad)
+                // Verificar si el barrio es válido para esta ciudad
+                if (domicilioAutorParsed.barrio) {
+                  const barriosDisponibles = obtenerBarriosPorCiudad(domicilioAutorParsed.departamento, domicilioAutorParsed.ciudad)
+                  if (barriosDisponibles.includes(domicilioAutorParsed.barrio)) {
+                    setValueAutor('barrio', domicilioAutorParsed.barrio)
+                  } else {
+                    setValueAutor('barrio', '')
+                  }
+                } else {
+                  setValueAutor('barrio', '')
+                }
               } else {
                 setValueAutor('ciudad', '')
+                setValueAutor('barrio', '')
               }
               setValueAutor('calles', domicilioAutorParsed.calles || '')
             } else {
               setValueAutor('departamento', '')
               setValueAutor('ciudad', '')
+              setValueAutor('barrio', '')
               setValueAutor('calles', domicilioAutorParsed.calles || '')
             }
             setValueAutor('nacionalidad', primerAutor.nacionalidad_autor)
@@ -1725,7 +1807,7 @@ export default function NuevaDenunciaPage() {
           horaHechoFin: denunciaData.horaHechoFin || null,
           tipoDenuncia: denunciaData.tipoDenuncia === 'Otro (Especificar)' ? 'OTRO' : denunciaData.tipoDenuncia,
           otroTipo: denunciaData.tipoDenuncia === 'Otro (Especificar)' ? denunciaData.otroTipo?.toUpperCase() : null,
-          lugarHecho: lugarHechoNoAplica ? '' : (construirDomicilio(denunciaData.lugarHechoDepartamento, denunciaData.lugarHechoCiudad, denunciaData.lugarHechoCalles)?.toUpperCase() || denunciaData.lugarHecho?.toUpperCase() || ''),
+          lugarHecho: lugarHechoNoAplica ? '' : (construirDomicilio(denunciaData.lugarHechoDepartamento, denunciaData.lugarHechoCiudad, denunciaData.lugarHechoBarrio, denunciaData.lugarHechoCalles)?.toUpperCase() || denunciaData.lugarHecho?.toUpperCase() || ''),
           relato: denunciaData.relato || '',
           montoDano: denunciaData.montoDano ? parseInt(denunciaData.montoDano.replace(/\./g, '')) : null,
           moneda: denunciaData.moneda || null,
@@ -1737,7 +1819,7 @@ export default function NuevaDenunciaPage() {
           ...(autorConocido === 'Conocido' && {
             nombre: autorData.nombre?.toUpperCase() || null,
             cedula: autorData.cedula?.toUpperCase() || null,
-            domicilio: construirDomicilio(autorData.departamento, autorData.ciudad, autorData.calles) || null,
+            domicilio: construirDomicilio(autorData.departamento, autorData.ciudad, autorData.barrio, autorData.calles) || null,
             nacionalidad: autorData.nacionalidad?.toUpperCase() || null,
             estadoCivil: autorData.estadoCivil?.toUpperCase() || null,
             edad: autorData.edad || null,
@@ -1843,7 +1925,7 @@ export default function NuevaDenunciaPage() {
           horaHechoFin: denunciaData.horaHechoFin || null,
           tipoDenuncia: denunciaData.tipoDenuncia === 'Otro (Especificar)' ? 'OTRO' : denunciaData.tipoDenuncia,
           otroTipo: denunciaData.tipoDenuncia === 'Otro (Especificar)' ? denunciaData.otroTipo?.toUpperCase() : null,
-          lugarHecho: lugarHechoNoAplica ? '' : (construirDomicilio(denunciaData.lugarHechoDepartamento, denunciaData.lugarHechoCiudad, denunciaData.lugarHechoCalles)?.toUpperCase() || denunciaData.lugarHecho?.toUpperCase() || ''),
+          lugarHecho: lugarHechoNoAplica ? '' : (construirDomicilio(denunciaData.lugarHechoDepartamento, denunciaData.lugarHechoCiudad, denunciaData.lugarHechoBarrio, denunciaData.lugarHechoCalles)?.toUpperCase() || denunciaData.lugarHecho?.toUpperCase() || ''),
           relato: denunciaData.relato || '',
           montoDano: denunciaData.montoDano ? parseInt(denunciaData.montoDano.replace(/\./g, '')) : null,
           moneda: denunciaData.moneda || null,
@@ -1855,7 +1937,7 @@ export default function NuevaDenunciaPage() {
           ...(autorConocido === 'Conocido' && {
             nombre: autorData.nombre?.toUpperCase() || null,
             cedula: autorData.cedula?.toUpperCase() || null,
-            domicilio: construirDomicilio(autorData.departamento, autorData.ciudad, autorData.calles) || null,
+            domicilio: construirDomicilio(autorData.departamento, autorData.ciudad, autorData.barrio, autorData.calles) || null,
             nacionalidad: autorData.nacionalidad?.toUpperCase() || null,
             estadoCivil: autorData.estadoCivil?.toUpperCase() || null,
             edad: autorData.edad || null,
@@ -1956,7 +2038,7 @@ export default function NuevaDenunciaPage() {
           horaHechoFin: denunciaData.horaHechoFin || null,
           tipoDenuncia: denunciaData.tipoDenuncia === 'Otro (Especificar)' ? 'OTRO' : denunciaData.tipoDenuncia,
           otroTipo: denunciaData.tipoDenuncia === 'Otro (Especificar)' ? denunciaData.otroTipo?.toUpperCase() : null,
-          lugarHecho: lugarHechoNoAplica ? '' : (construirDomicilio(denunciaData.lugarHechoDepartamento, denunciaData.lugarHechoCiudad, denunciaData.lugarHechoCalles)?.toUpperCase() || denunciaData.lugarHecho?.toUpperCase() || ''),
+          lugarHecho: lugarHechoNoAplica ? '' : (construirDomicilio(denunciaData.lugarHechoDepartamento, denunciaData.lugarHechoCiudad, denunciaData.lugarHechoBarrio, denunciaData.lugarHechoCalles)?.toUpperCase() || denunciaData.lugarHecho?.toUpperCase() || ''),
           relato: denunciaData.relato || '',
           montoDano: denunciaData.montoDano ? parseInt(denunciaData.montoDano.replace(/\./g, '')) : null,
           moneda: denunciaData.moneda || null,
@@ -1968,7 +2050,7 @@ export default function NuevaDenunciaPage() {
           ...(autorConocido === 'Conocido' && {
             nombre: autorData.nombre?.toUpperCase() || null,
             cedula: autorData.cedula?.toUpperCase() || null,
-            domicilio: construirDomicilio(autorData.departamento, autorData.ciudad, autorData.calles) || null,
+            domicilio: construirDomicilio(autorData.departamento, autorData.ciudad, autorData.barrio, autorData.calles) || null,
             nacionalidad: autorData.nacionalidad?.toUpperCase() || null,
             estadoCivil: autorData.estadoCivil?.toUpperCase() || null,
             edad: autorData.edad || null,
@@ -2079,7 +2161,7 @@ export default function NuevaDenunciaPage() {
           horaHechoFin: denunciaData.horaHechoFin || null,
           tipoDenuncia: denunciaData.tipoDenuncia === 'Otro (Especificar)' ? 'OTRO' : denunciaData.tipoDenuncia,
           otroTipo: denunciaData.tipoDenuncia === 'Otro (Especificar)' ? denunciaData.otroTipo?.toUpperCase() : null,
-          lugarHecho: lugarHechoNoAplica ? '' : (construirDomicilio(denunciaData.lugarHechoDepartamento, denunciaData.lugarHechoCiudad, denunciaData.lugarHechoCalles)?.toUpperCase() || denunciaData.lugarHecho?.toUpperCase() || ''),
+          lugarHecho: lugarHechoNoAplica ? '' : (construirDomicilio(denunciaData.lugarHechoDepartamento, denunciaData.lugarHechoCiudad, denunciaData.lugarHechoBarrio, denunciaData.lugarHechoCalles)?.toUpperCase() || denunciaData.lugarHecho?.toUpperCase() || ''),
           relato: denunciaData.relato || '',
           montoDano: denunciaData.montoDano ? parseInt(denunciaData.montoDano.replace(/\./g, '')) : null,
           moneda: denunciaData.moneda || null,
@@ -2091,7 +2173,7 @@ export default function NuevaDenunciaPage() {
           ...(autorConocido === 'Conocido' && {
             nombre: autorData.nombre?.toUpperCase() || null,
             cedula: autorData.cedula?.toUpperCase() || null,
-            domicilio: construirDomicilio(autorData.departamento, autorData.ciudad, autorData.calles) || null,
+            domicilio: construirDomicilio(autorData.departamento, autorData.ciudad, autorData.barrio, autorData.calles) || null,
             nacionalidad: autorData.nacionalidad?.toUpperCase() || null,
             estadoCivil: autorData.estadoCivil?.toUpperCase() || null,
             edad: autorData.edad || null,
@@ -2190,7 +2272,7 @@ export default function NuevaDenunciaPage() {
           horaHecho: denunciaData.horaHecho || '',
           tipoDenuncia: denunciaData.tipoDenuncia === 'Otro (Especificar)' ? 'OTRO' : denunciaData.tipoDenuncia || '',
           otroTipo: denunciaData.tipoDenuncia === 'Otro (Especificar)' ? denunciaData.otroTipo?.toUpperCase() : null,
-          lugarHecho: lugarHechoNoAplica ? '' : (construirDomicilio(denunciaData.lugarHechoDepartamento, denunciaData.lugarHechoCiudad, denunciaData.lugarHechoCalles)?.toUpperCase() || denunciaData.lugarHecho?.toUpperCase() || ''),
+          lugarHecho: lugarHechoNoAplica ? '' : (construirDomicilio(denunciaData.lugarHechoDepartamento, denunciaData.lugarHechoCiudad, denunciaData.lugarHechoBarrio, denunciaData.lugarHechoCalles)?.toUpperCase() || denunciaData.lugarHecho?.toUpperCase() || ''),
           relato: denunciaData.relato || '',
           montoDano: denunciaData.montoDano ? parseInt(denunciaData.montoDano.replace(/\./g, '')) : null,
           moneda: denunciaData.moneda || null,
@@ -2202,7 +2284,7 @@ export default function NuevaDenunciaPage() {
           ...(autorConocido === 'Conocido' && {
             nombre: autorData.nombre?.toUpperCase() || null,
             cedula: autorData.cedula?.toUpperCase() || null,
-            domicilio: construirDomicilio(autorData.departamento, autorData.ciudad, autorData.calles) || null,
+            domicilio: construirDomicilio(autorData.departamento, autorData.ciudad, autorData.barrio, autorData.calles) || null,
             nacionalidad: autorData.nacionalidad?.toUpperCase() || null,
             estadoCivil: autorData.estadoCivil?.toUpperCase() || null,
             edad: autorData.edad || null,
@@ -2713,7 +2795,7 @@ export default function NuevaDenunciaPage() {
                   <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">
                     Domicilio
                   </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Departamento *
@@ -2941,7 +3023,8 @@ export default function NuevaDenunciaPage() {
                     <p className="text-red-600 text-sm mt-1">{errorsDenunciante.barrio.message as string}</p>
                   )}
                 </div>
-                <div>
+                </div>
+                <div className="mt-4">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Calles / Referencias *
                   </label>
@@ -2957,7 +3040,6 @@ export default function NuevaDenunciaPage() {
                   {errorsDenunciante.calles && (
                     <p className="text-red-600 text-sm mt-1">{errorsDenunciante.calles.message as string}</p>
                   )}
-                </div>
                 </div>
                 </div>
               )}
@@ -3353,18 +3435,91 @@ export default function NuevaDenunciaPage() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Calles / Referencias
+                        Barrio
                       </label>
-                      <input
-                        {...registerAutor('calles')}
-                        onChange={(e) => {
-                          convertirAMayusculas(e)
-                          registerAutor('calles').onChange(e)
-                        }}
-                        autoComplete="off"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
+                      <Controller
+                        name="barrio"
+                        control={controlAutor}
+                        render={({ field }) => (
+                          <Select
+                            options={barrioAutorOptions}
+                            value={barrioAutorOptions.find((option) => option.value === field.value) || null}
+                            onChange={(option) => field.onChange(option?.value || '')}
+                            isClearable
+                            isDisabled={!ciudadAutor}
+                            placeholder={ciudadAutor ? 'Seleccione...' : 'Seleccione una ciudad primero'}
+                            className="text-sm"
+                            styles={{
+                              control: (base, state) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                minHeight: '42px',
+                                borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
+                                boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
+                                '&:hover': {
+                                  borderColor: '#3b82f6',
+                                },
+                              }),
+                              menu: (base) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                maxHeight: '250px',
+                                zIndex: 9999,
+                              }),
+                              menuList: (base) => ({
+                                ...base,
+                                maxHeight: '250px',
+                              }),
+                              option: (base, state) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                padding: '8px 12px',
+                                backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
+                                color: state.isSelected ? 'white' : '#1f2937',
+                                cursor: 'pointer',
+                              }),
+                              input: (base) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                margin: 0,
+                                padding: 0,
+                              }),
+                              singleValue: (base) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                color: '#1f2937',
+                              }),
+                              placeholder: (base) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                color: '#9ca3af',
+                              }),
+                            }}
+                            classNamePrefix="react-select"
+                          />
+                        )}
                       />
                     </div>
+                  </div>
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Calles / Referencias
+                    </label>
+                    <input
+                      {...registerAutor('calles')}
+                      onChange={(e) => {
+                        convertirAMayusculas(e)
+                        registerAutor('calles').onChange(e)
+                      }}
+                      autoComplete="off"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
+                    />
                   </div>
                 </div>
 
@@ -4076,6 +4231,7 @@ export default function NuevaDenunciaPage() {
                           if (e.target.checked) {
                             setValueDenuncia('lugarHechoDepartamento', '')
                             setValueDenuncia('lugarHechoCiudad', '')
+                            setValueDenuncia('lugarHechoBarrio', '')
                             setValueDenuncia('lugarHechoCalles', '')
                             setValueDenuncia('lugarHecho', '')
                             setCoordenadas(null)
@@ -4235,18 +4391,91 @@ export default function NuevaDenunciaPage() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Calles / Referencias *
+                        Barrio
                       </label>
-                      <input
-                        {...registerDenuncia('lugarHechoCalles')}
-                        onChange={(e) => {
-                          convertirAMayusculas(e)
-                          registerDenuncia('lugarHechoCalles').onChange(e)
-                        }}
-                        autoComplete="off"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
+                      <Controller
+                        name="lugarHechoBarrio"
+                        control={controlDenuncia}
+                        render={({ field }) => (
+                          <Select
+                            options={lugarHechoBarrioOptions}
+                            value={lugarHechoBarrioOptions.find((option) => option.value === field.value) || null}
+                            onChange={(option) => field.onChange(option?.value || '')}
+                            isClearable
+                            isDisabled={!lugarHechoCiudad}
+                            placeholder={lugarHechoCiudad ? 'Seleccione...' : 'Seleccione una ciudad primero'}
+                            className="text-sm"
+                            styles={{
+                              control: (base, state) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                minHeight: '42px',
+                                borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
+                                boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
+                                '&:hover': {
+                                  borderColor: '#3b82f6',
+                                },
+                              }),
+                              menu: (base) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                maxHeight: '250px',
+                                zIndex: 9999,
+                              }),
+                              menuList: (base) => ({
+                                ...base,
+                                maxHeight: '250px',
+                              }),
+                              option: (base, state) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                padding: '8px 12px',
+                                backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
+                                color: state.isSelected ? 'white' : '#1f2937',
+                                cursor: 'pointer',
+                              }),
+                              input: (base) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                margin: 0,
+                                padding: 0,
+                              }),
+                              singleValue: (base) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                color: '#1f2937',
+                              }),
+                              placeholder: (base) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                color: '#9ca3af',
+                              }),
+                            }}
+                            classNamePrefix="react-select"
+                          />
+                        )}
                       />
                     </div>
+                  </div>
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Calles / Referencias *
+                    </label>
+                    <input
+                      {...registerDenuncia('lugarHechoCalles')}
+                      onChange={(e) => {
+                        convertirAMayusculas(e)
+                        registerDenuncia('lugarHechoCalles').onChange(e)
+                      }}
+                      autoComplete="off"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
+                    />
                   </div>
                   )}
                   <div className="flex gap-2 mt-4">
