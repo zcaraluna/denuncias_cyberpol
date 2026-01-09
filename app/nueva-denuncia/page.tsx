@@ -100,6 +100,7 @@ const denuncianteSchema = z
       }
       requiereValor(Boolean(data.departamento?.trim()), ['departamento'], 'Seleccione un departamento')
       requiereValor(Boolean(data.ciudad?.trim()), ['ciudad'], 'Seleccione una ciudad')
+      requiereValor(Boolean(data.barrio?.trim()), ['barrio'], 'Seleccione un barrio')
       requiereValor(Boolean(data.calles?.trim()), ['calles'], 'Ingrese las calles o dirección')
     }
   })
@@ -177,6 +178,34 @@ const denunciaSchema = z.object({
         path: ['lugarHecho'],
         code: z.ZodIssueCode.custom,
         message: 'Este campo es obligatorio',
+      })
+    }
+    if (!data.lugarHechoDepartamento || data.lugarHechoDepartamento.trim() === '') {
+      ctx.addIssue({
+        path: ['lugarHechoDepartamento'],
+        code: z.ZodIssueCode.custom,
+        message: 'Seleccione un departamento',
+      })
+    }
+    if (!data.lugarHechoCiudad || data.lugarHechoCiudad.trim() === '') {
+      ctx.addIssue({
+        path: ['lugarHechoCiudad'],
+        code: z.ZodIssueCode.custom,
+        message: 'Seleccione una ciudad',
+      })
+    }
+    if (!data.lugarHechoBarrio || data.lugarHechoBarrio.trim() === '') {
+      ctx.addIssue({
+        path: ['lugarHechoBarrio'],
+        code: z.ZodIssueCode.custom,
+        message: 'Seleccione un barrio',
+      })
+    }
+    if (!data.lugarHechoCalles || data.lugarHechoCalles.trim() === '') {
+      ctx.addIssue({
+        path: ['lugarHechoCalles'],
+        code: z.ZodIssueCode.custom,
+        message: 'Ingrese las calles o dirección',
       })
     }
   }
@@ -2943,7 +2972,7 @@ export default function NuevaDenunciaPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Barrio
+                    Barrio *
                   </label>
                   <Controller
                     name="barrio"
@@ -2953,7 +2982,6 @@ export default function NuevaDenunciaPage() {
                         options={barrioOptions}
                         value={barrioOptions.find((option) => option.value === field.value) || null}
                         onChange={(option) => field.onChange(option?.value || '')}
-                        isClearable
                         isDisabled={!ciudadSeleccionada}
                         placeholder={ciudadSeleccionada ? 'Seleccione...' : 'Seleccione una ciudad primero'}
                         className="text-sm"
@@ -4386,7 +4414,7 @@ export default function NuevaDenunciaPage() {
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Barrio
+                            Barrio *
                           </label>
                           <Controller
                             name="lugarHechoBarrio"
@@ -4396,7 +4424,6 @@ export default function NuevaDenunciaPage() {
                                 options={lugarHechoBarrioOptions}
                                 value={lugarHechoBarrioOptions.find((option) => option.value === field.value) || null}
                                 onChange={(option) => field.onChange(option?.value || '')}
-                                isClearable
                                 isDisabled={!lugarHechoCiudad}
                                 placeholder={lugarHechoCiudad ? 'Seleccione...' : 'Seleccione una ciudad primero'}
                                 className="text-sm"
