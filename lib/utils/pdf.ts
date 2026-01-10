@@ -1120,14 +1120,24 @@ export async function generarPDFAmpliacion(
   doc.setFontSize(10)
   doc.setFont('helvetica', 'normal')
   
-  doc.text(operadorAmpliacion.nombre.toUpperCase(), 48, yFirmas + 7, {
-    align: 'center',
+  // Concatenar nombre completo y dividir en múltiples líneas si es necesario
+  const nombreCompletoOperador = `${operadorAmpliacion.nombre || ''} ${operadorAmpliacion.apellido || ''}`.trim().toUpperCase()
+  const nombreLineasOperador = doc.splitTextToSize(nombreCompletoOperador, 36)
+  let yNombreOperador = yFirmas + 7
+  nombreLineasOperador.forEach((linea: string) => {
+    doc.text(linea, 48, yNombreOperador, {
+      align: 'center',
+    })
+    yNombreOperador += 5 // Espacio entre líneas
   })
-  doc.text(operadorAmpliacion.grado.toUpperCase(), 48, yFirmas + 12, {
+  
+  // Ajustar posición del grado según la cantidad de líneas del nombre
+  const yGradoOperador = yNombreOperador
+  doc.text((operadorAmpliacion.grado || '').toUpperCase(), 48, yGradoOperador, {
     align: 'center',
   })
   doc.setFont('helvetica', 'bold')
-  doc.text('INTERVINIENTE', 48, yFirmas + 17, { align: 'center' })
+  doc.text('INTERVINIENTE', 48, yGradoOperador + 5, { align: 'center' })
 
   // Centro - QR y Hash (usar el hash de la denuncia original)
   try {

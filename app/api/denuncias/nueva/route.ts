@@ -429,7 +429,7 @@ export async function POST(request: NextRequest) {
           }
         }
       }
-      
+
       const insertDenuncia = await client.query(
         `INSERT INTO denuncias (
           denunciante_id, fecha_denuncia, hora_denuncia, fecha_hecho, hora_hecho, fecha_hecho_fin, hora_hecho_fin,
