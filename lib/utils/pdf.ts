@@ -298,7 +298,7 @@ const describirCoDenunciante = (item: DenuncianteInvolucrado) => {
   if (item.profesion) partes.push(`PROFESIÓN: ${item.profesion.toUpperCase()}`)
   if (item.telefono) partes.push(`TEL.: ${item.telefono.toUpperCase()}`)
   if (item.correo) partes.push(`CORREO: ${item.correo}`)
-  return `${item.nombres.toUpperCase()}${partes.length ? ` (${partes.join(', ')})` : ''}`
+  return `${(item.nombres || '').toUpperCase()}${partes.length ? ` (${partes.join(', ')})` : ''}`
 }
 
 const describirAbogado = (item: DenuncianteInvolucrado) => {
@@ -330,7 +330,7 @@ const describirCoDenuncianteIntro = (item: DenuncianteInvolucrado) => {
   const correo = item.correo && item.correo.trim() !== '' ? item.correo : null
 
   const partes: string[] = [
-    `${item.nombres.toUpperCase()}, con ${documento}, de nacionalidad ${nacionalidad}, estado civil ${estadoCivil}, ${edad}, fecha de nacimiento ${fechaNacimiento}, en ${lugarNacimiento}, domiciliado en ${domicilio}`
+    `${(item.nombres || '').toUpperCase()}, con ${documento}, de nacionalidad ${nacionalidad}, estado civil ${estadoCivil}, ${edad}, fecha de nacimiento ${fechaNacimiento}, en ${lugarNacimiento}, domiciliado en ${domicilio}`
   ]
   if (telefono) partes.push(`teléfono ${telefono}`)
   if (correo) partes.push(`correo electrónico ${correo}`)
@@ -449,7 +449,7 @@ export async function generarPDF(
     if (correo) partesAbogado.push(`correo electrónico ${correo}`)
     
     const profesionDenunciante = denunciante['Profesión'] && denunciante['Profesión'].trim() !== '' ? `, de profesión ${denunciante['Profesión'].toUpperCase()}` : ''
-    parrafoIntroduccion = `En la Sala de Denuncias de la Dirección Contra Hechos Punibles Económicos y Financieros, Oficina ${datosDenuncia.oficina.toUpperCase()}, en fecha ${fechaDenuncia} siendo las ${datosDenuncia.hora_denuncia}, ante mí ${datosDenuncia.grado_operador.toUpperCase()} ${datosDenuncia.nombre_operador.toUpperCase()}, concurre ${partesAbogado.join(', ')}, ${cartaPoderTexto}, en representación de ${denunciante['Nombres y Apellidos'].toUpperCase()}, con ${denunciante['Tipo de Documento'] || 'Cédula de Identidad Paraguaya'} número ${(denunciante['Número de Documento'] || denunciante['Cédula de Identidad']).toUpperCase()}, de nacionalidad ${denunciante['Nacionalidad'].toUpperCase()}, estado civil ${denunciante['Estado Civil'].toUpperCase()}, ${denunciante['Edad']} años de edad, fecha de nacimiento ${fechaNacimiento}, en ${denunciante['Lugar de Nacimiento'].toUpperCase()}${denunciante['Domicilio'] ? `, domiciliado en ${denunciante['Domicilio'].toUpperCase()}` : ''}${profesionDenunciante}`
+    parrafoIntroduccion = `En la Sala de Denuncias de la Dirección Contra Hechos Punibles Económicos y Financieros, Oficina ${(datosDenuncia.oficina || '').toUpperCase()}, en fecha ${fechaDenuncia} siendo las ${datosDenuncia.hora_denuncia || ''}, ante mí ${(datosDenuncia.grado_operador || '').toUpperCase()} ${(datosDenuncia.nombre_operador || '').toUpperCase()}, concurre ${partesAbogado.join(', ')}, ${cartaPoderTexto}, en representación de ${(denunciante['Nombres y Apellidos'] || '').toUpperCase()}, con ${denunciante['Tipo de Documento'] || 'Cédula de Identidad Paraguaya'} número ${((denunciante['Número de Documento'] || denunciante['Cédula de Identidad'] || '')).toUpperCase()}, de nacionalidad ${(denunciante['Nacionalidad'] || '').toUpperCase()}, estado civil ${(denunciante['Estado Civil'] || '').toUpperCase()}, ${denunciante['Edad'] || ''} años de edad, fecha de nacimiento ${fechaNacimiento}, en ${(denunciante['Lugar de Nacimiento'] || '').toUpperCase()}${denunciante['Domicilio'] ? `, domiciliado en ${(denunciante['Domicilio'] || '').toUpperCase()}` : ''}${profesionDenunciante}`
     
     if (coDenunciantes.length > 0) {
       const listadoCo = coDenunciantes.map(describirCoDenuncianteIntro).join('; ')
@@ -473,7 +473,7 @@ export async function generarPDF(
         : null
 
     const partesDenunciante: string[] = [
-      `${denunciante['Nombres y Apellidos'].toUpperCase()}, con ${denunciante['Tipo de Documento'] || 'Cédula de Identidad Paraguaya'} número ${(denunciante['Número de Documento'] || denunciante['Cédula de Identidad']).toUpperCase()}, de nacionalidad ${denunciante['Nacionalidad'].toUpperCase()}, estado civil ${denunciante['Estado Civil'].toUpperCase()}, ${denunciante['Edad']} años de edad, fecha de nacimiento ${fechaNacimiento}, en ${denunciante['Lugar de Nacimiento'].toUpperCase()}${denunciante['Domicilio'] ? `, domiciliado en ${denunciante['Domicilio'].toUpperCase()}` : ''}`
+      `${(denunciante['Nombres y Apellidos'] || '').toUpperCase()}, con ${denunciante['Tipo de Documento'] || 'Cédula de Identidad Paraguaya'} número ${((denunciante['Número de Documento'] || denunciante['Cédula de Identidad'] || '')).toUpperCase()}, de nacionalidad ${(denunciante['Nacionalidad'] || '').toUpperCase()}, estado civil ${(denunciante['Estado Civil'] || '').toUpperCase()}, ${denunciante['Edad'] || ''} años de edad, fecha de nacimiento ${fechaNacimiento}, en ${(denunciante['Lugar de Nacimiento'] || '').toUpperCase()}${denunciante['Domicilio'] ? `, domiciliado en ${(denunciante['Domicilio'] || '').toUpperCase()}` : ''}`
     ]
     if (profesionPrincipal) {
       partesDenunciante.push(`de profesión ${profesionPrincipal}`)
@@ -485,7 +485,7 @@ export async function generarPDF(
       partesDenunciante.push(`correo electrónico ${correoPrincipal}`)
     }
     
-    parrafoIntroduccion = `En la Sala de Denuncias de la Dirección Contra Hechos Punibles Económicos y Financieros, Oficina ${datosDenuncia.oficina.toUpperCase()}, en fecha ${fechaDenuncia} siendo las ${datosDenuncia.hora_denuncia}, ante mí ${datosDenuncia.grado_operador.toUpperCase()} ${datosDenuncia.nombre_operador.toUpperCase()}, concurre ${partesDenunciante.join(', ')}`
+    parrafoIntroduccion = `En la Sala de Denuncias de la Dirección Contra Hechos Punibles Económicos y Financieros, Oficina ${(datosDenuncia.oficina || '').toUpperCase()}, en fecha ${fechaDenuncia} siendo las ${datosDenuncia.hora_denuncia || ''}, ante mí ${(datosDenuncia.grado_operador || '').toUpperCase()} ${(datosDenuncia.nombre_operador || '').toUpperCase()}, concurre ${partesDenunciante.join(', ')}`
 
     if (coDenunciantes.length > 0) {
       const listadoCo = coDenunciantes.map(describirCoDenuncianteIntro).join('; ')
@@ -522,7 +522,7 @@ export async function generarPDF(
 
   // Segundo párrafo
   const hayCoDenunciantes = coDenunciantes.length > 0
-  const tipoDenunciaUpper = datosDenuncia.tipo_denuncia.toUpperCase()
+  const tipoDenunciaUpper = (datosDenuncia.tipo_denuncia || '').toUpperCase()
   const esExtravio = tipoDenunciaUpper === 'EXTRAVÍO DE OBJETOS Y/O DOCUMENTOS'
   const textoSupuesto = esExtravio ? '' : 'un supuesto '
   let parrafo2 = `Que por la presente ${hayCoDenunciantes ? 'vienen' : 'viene'} a realizar una denuncia sobre ${textoSupuesto}${tipoDenunciaUpper}`
@@ -532,7 +532,7 @@ export async function generarPDF(
   ) {
     parrafo2 = parrafo2.replace(
       'OTRO',
-      `OTRO (${datosDenuncia.otro_tipo.toUpperCase()})`
+      `OTRO (${(datosDenuncia.otro_tipo || '').toUpperCase()})`
     )
   }
   // Formatear fecha/hora del hecho (única o rango)
@@ -895,7 +895,7 @@ export async function generarPDFAmpliacion(
     if (correo) partesAbogado.push(`correo electrónico ${correo}`)
     
     const profesionDenunciante = denunciante['Profesión'] && denunciante['Profesión'].trim() !== '' ? `, de profesión ${denunciante['Profesión'].toUpperCase()}` : ''
-    parrafoIntroduccion = `En la Sala de Denuncias de la Dirección Contra Hechos Punibles Económicos y Financieros, Oficina ${datosDenuncia.oficina.toUpperCase()}, en fecha ${formatDate(fechaAmpliacion)} siendo las ${horaAmpliacion}, ante mí ${operadorAmpliacion.grado.toUpperCase()} ${operadorAmpliacion.nombre.toUpperCase()} ${operadorAmpliacion.apellido.toUpperCase()}, concurre ${partesAbogado.join(', ')}, ${cartaPoderTexto}, en representación de ${denunciante['Nombres y Apellidos'].toUpperCase()}, con ${denunciante['Tipo de Documento'] || 'Cédula de Identidad Paraguaya'} número ${(denunciante['Número de Documento'] || denunciante['Cédula de Identidad']).toUpperCase()}, de nacionalidad ${denunciante['Nacionalidad'].toUpperCase()}, estado civil ${denunciante['Estado Civil'].toUpperCase()}, ${denunciante['Edad']} años de edad, fecha de nacimiento ${fechaNacimiento}, en ${denunciante['Lugar de Nacimiento'].toUpperCase()}${denunciante['Domicilio'] ? `, domiciliado en ${denunciante['Domicilio'].toUpperCase()}` : ''}${profesionDenunciante}`
+    parrafoIntroduccion = `En la Sala de Denuncias de la Dirección Contra Hechos Punibles Económicos y Financieros, Oficina ${(datosDenuncia.oficina || '').toUpperCase()}, en fecha ${formatDate(fechaAmpliacion)} siendo las ${horaAmpliacion || ''}, ante mí ${(operadorAmpliacion.grado || '').toUpperCase()} ${(operadorAmpliacion.nombre || '').toUpperCase()} ${(operadorAmpliacion.apellido || '').toUpperCase()}, concurre ${partesAbogado.join(', ')}, ${cartaPoderTexto}, en representación de ${(denunciante['Nombres y Apellidos'] || '').toUpperCase()}, con ${denunciante['Tipo de Documento'] || 'Cédula de Identidad Paraguaya'} número ${((denunciante['Número de Documento'] || denunciante['Cédula de Identidad'] || '')).toUpperCase()}, de nacionalidad ${(denunciante['Nacionalidad'] || '').toUpperCase()}, estado civil ${(denunciante['Estado Civil'] || '').toUpperCase()}, ${denunciante['Edad'] || ''} años de edad, fecha de nacimiento ${fechaNacimiento}, en ${(denunciante['Lugar de Nacimiento'] || '').toUpperCase()}${denunciante['Domicilio'] ? `, domiciliado en ${(denunciante['Domicilio'] || '').toUpperCase()}` : ''}${profesionDenunciante}`
     
     if (coDenunciantes.length > 0) {
       const listadoCo = coDenunciantes.map(describirCoDenuncianteIntro).join('; ')
@@ -919,7 +919,7 @@ export async function generarPDFAmpliacion(
         : null
 
     const partesDenunciante: string[] = [
-      `${denunciante['Nombres y Apellidos'].toUpperCase()}, con ${denunciante['Tipo de Documento'] || 'Cédula de Identidad Paraguaya'} número ${(denunciante['Número de Documento'] || denunciante['Cédula de Identidad']).toUpperCase()}, de nacionalidad ${denunciante['Nacionalidad'].toUpperCase()}, estado civil ${denunciante['Estado Civil'].toUpperCase()}, ${denunciante['Edad']} años de edad, fecha de nacimiento ${fechaNacimiento}, en ${denunciante['Lugar de Nacimiento'].toUpperCase()}${denunciante['Domicilio'] ? `, domiciliado en ${denunciante['Domicilio'].toUpperCase()}` : ''}`
+      `${(denunciante['Nombres y Apellidos'] || '').toUpperCase()}, con ${denunciante['Tipo de Documento'] || 'Cédula de Identidad Paraguaya'} número ${((denunciante['Número de Documento'] || denunciante['Cédula de Identidad'] || '')).toUpperCase()}, de nacionalidad ${(denunciante['Nacionalidad'] || '').toUpperCase()}, estado civil ${(denunciante['Estado Civil'] || '').toUpperCase()}, ${denunciante['Edad'] || ''} años de edad, fecha de nacimiento ${fechaNacimiento}, en ${(denunciante['Lugar de Nacimiento'] || '').toUpperCase()}${denunciante['Domicilio'] ? `, domiciliado en ${(denunciante['Domicilio'] || '').toUpperCase()}` : ''}`
     ]
     if (profesionPrincipal) {
       partesDenunciante.push(`de profesión ${profesionPrincipal}`)
@@ -968,7 +968,7 @@ export async function generarPDFAmpliacion(
 
   // Segundo párrafo - MODIFICADO para ampliación
   const hayCoDenunciantes = coDenunciantes.length > 0
-  const tipoDenunciaUpper = datosDenuncia.tipo_denuncia.toUpperCase()
+  const tipoDenunciaUpper = (datosDenuncia.tipo_denuncia || '').toUpperCase()
   const esExtravio = tipoDenunciaUpper === 'EXTRAVÍO DE OBJETOS Y/O DOCUMENTOS'
   const textoSupuesto = esExtravio ? 'el ' : 'el supuesto '
   let parrafo2 = `Que por la presente ${hayCoDenunciantes ? 'vienen' : 'viene'} a realizar una ampliación de denuncia sobre ${textoSupuesto}${tipoDenunciaUpper}`
@@ -978,7 +978,7 @@ export async function generarPDFAmpliacion(
   ) {
     parrafo2 = parrafo2.replace(
       'OTRO',
-      `OTRO (${datosDenuncia.otro_tipo.toUpperCase()})`
+      `OTRO (${(datosDenuncia.otro_tipo || '').toUpperCase()})`
     )
   }
   // Formatear fecha/hora del hecho (única o rango) - MODIFICADO para decir "denunciado"
@@ -1257,7 +1257,7 @@ export function generarTextoPDF(
     if (correo) partesAbogado.push(`correo electrónico ${bold(correo)}`)
     
     const profesionDenunciante = denunciante['Profesión'] && denunciante['Profesión'].trim() !== '' ? `, de profesión ${bold(denunciante['Profesión'].toUpperCase())}` : ''
-    parrafoIntroduccion = `En la Sala de Denuncias de la Dirección Contra Hechos Punibles Económicos y Financieros, Oficina ${bold(datosDenuncia.oficina.toUpperCase())}, en fecha ${bold(fechaDenuncia)} siendo las ${bold(datosDenuncia.hora_denuncia)}, ante mí ${bold(datosDenuncia.grado_operador.toUpperCase())} ${bold(datosDenuncia.nombre_operador.toUpperCase())}, concurre ${partesAbogado.join(', ')}, ${cartaPoderTexto}, en representación de ${bold(denunciante['Nombres y Apellidos'].toUpperCase())}, con ${bold(denunciante['Tipo de Documento'] || 'Cédula de Identidad Paraguaya')} número ${bold((denunciante['Número de Documento'] || denunciante['Cédula de Identidad']).toUpperCase())}, de nacionalidad ${bold(denunciante['Nacionalidad'].toUpperCase())}, estado civil ${bold(denunciante['Estado Civil'].toUpperCase())}, ${bold(denunciante['Edad'])} años de edad, fecha de nacimiento ${bold(fechaNacimiento)}, en ${bold(denunciante['Lugar de Nacimiento'].toUpperCase())}${denunciante['Domicilio'] ? `, domiciliado en ${bold(denunciante['Domicilio'])}` : ''}${profesionDenunciante}`
+    parrafoIntroduccion = `En la Sala de Denuncias de la Dirección Contra Hechos Punibles Económicos y Financieros, Oficina ${bold((datosDenuncia.oficina || '').toUpperCase())}, en fecha ${bold(fechaDenuncia)} siendo las ${bold(datosDenuncia.hora_denuncia || '')}, ante mí ${bold((datosDenuncia.grado_operador || '').toUpperCase())} ${bold((datosDenuncia.nombre_operador || '').toUpperCase())}, concurre ${partesAbogado.join(', ')}, ${cartaPoderTexto}, en representación de ${bold((denunciante['Nombres y Apellidos'] || '').toUpperCase())}, con ${bold(denunciante['Tipo de Documento'] || 'Cédula de Identidad Paraguaya')} número ${bold(((denunciante['Número de Documento'] || denunciante['Cédula de Identidad'] || '')).toUpperCase())}, de nacionalidad ${bold((denunciante['Nacionalidad'] || '').toUpperCase())}, estado civil ${bold((denunciante['Estado Civil'] || '').toUpperCase())}, ${bold(denunciante['Edad'] || '')} años de edad, fecha de nacimiento ${bold(fechaNacimiento)}, en ${bold((denunciante['Lugar de Nacimiento'] || '').toUpperCase())}${denunciante['Domicilio'] ? `, domiciliado en ${bold((denunciante['Domicilio'] || '').toUpperCase())}` : ''}${profesionDenunciante}`
     
     if (coDenunciantes.length > 0) {
       const listadoCo = coDenunciantes.map(item => {
@@ -1285,7 +1285,7 @@ export function generarTextoPDF(
         : null
 
     const partesDenunciante: string[] = [
-      `${bold(denunciante['Nombres y Apellidos'].toUpperCase())}, con ${bold(denunciante['Tipo de Documento'] || 'Cédula de Identidad Paraguaya')} número ${bold((denunciante['Número de Documento'] || denunciante['Cédula de Identidad']).toUpperCase())}, de nacionalidad ${bold(denunciante['Nacionalidad'].toUpperCase())}, estado civil ${bold(denunciante['Estado Civil'].toUpperCase())}, ${bold(denunciante['Edad'])} años de edad, fecha de nacimiento ${bold(fechaNacimiento)}, en ${bold(denunciante['Lugar de Nacimiento'].toUpperCase())}${denunciante['Domicilio'] ? `, domiciliado en ${bold(denunciante['Domicilio'].toUpperCase())}` : ''}`
+      `${bold((denunciante['Nombres y Apellidos'] || '').toUpperCase())}, con ${bold(denunciante['Tipo de Documento'] || 'Cédula de Identidad Paraguaya')} número ${bold(((denunciante['Número de Documento'] || denunciante['Cédula de Identidad'] || '')).toUpperCase())}, de nacionalidad ${bold((denunciante['Nacionalidad'] || '').toUpperCase())}, estado civil ${bold((denunciante['Estado Civil'] || '').toUpperCase())}, ${bold(denunciante['Edad'] || '')} años de edad, fecha de nacimiento ${bold(fechaNacimiento)}, en ${bold((denunciante['Lugar de Nacimiento'] || '').toUpperCase())}${denunciante['Domicilio'] ? `, domiciliado en ${bold((denunciante['Domicilio'] || '').toUpperCase())}` : ''}`
     ]
     if (profesionPrincipal) {
       partesDenunciante.push(`de profesión ${bold(profesionPrincipal)}`)
@@ -1297,7 +1297,7 @@ export function generarTextoPDF(
       partesDenunciante.push(`correo electrónico ${bold(correoPrincipal)}`)
     }
     
-    parrafoIntroduccion = `En la Sala de Denuncias de la Dirección Contra Hechos Punibles Económicos y Financieros, Oficina ${bold(datosDenuncia.oficina.toUpperCase())}, en fecha ${bold(fechaDenuncia)} siendo las ${bold(datosDenuncia.hora_denuncia)}, ante mí ${bold(datosDenuncia.grado_operador.toUpperCase())} ${bold(datosDenuncia.nombre_operador.toUpperCase())}, concurre ${partesDenunciante.join(', ')}`
+    parrafoIntroduccion = `En la Sala de Denuncias de la Dirección Contra Hechos Punibles Económicos y Financieros, Oficina ${bold((datosDenuncia.oficina || '').toUpperCase())}, en fecha ${bold(fechaDenuncia)} siendo las ${bold(datosDenuncia.hora_denuncia || '')}, ante mí ${bold((datosDenuncia.grado_operador || '').toUpperCase())} ${bold((datosDenuncia.nombre_operador || '').toUpperCase())}, concurre ${partesDenunciante.join(', ')}`
 
     if (coDenunciantes.length > 0) {
       const listadoCo = coDenunciantes.map(item => {
@@ -1330,7 +1330,7 @@ export function generarTextoPDF(
 
   // Segundo párrafo
   const hayCoDenunciantes = coDenunciantes.length > 0
-  const tipoDenunciaUpper = datosDenuncia.tipo_denuncia.toUpperCase()
+  const tipoDenunciaUpper = (datosDenuncia.tipo_denuncia || '').toUpperCase()
   const esExtravio = tipoDenunciaUpper === 'EXTRAVÍO DE OBJETOS Y/O DOCUMENTOS'
   const textoSupuesto = esExtravio ? '' : 'un supuesto '
   let parrafo2 = `Que por la presente ${hayCoDenunciantes ? 'vienen' : 'viene'} a realizar una denuncia sobre ${textoSupuesto}${bold(tipoDenunciaUpper)}`
@@ -1340,7 +1340,7 @@ export function generarTextoPDF(
   ) {
     parrafo2 = parrafo2.replace(
       bold('OTRO'),
-      `${bold('OTRO')} (${bold(datosDenuncia.otro_tipo.toUpperCase())})`
+      `${bold('OTRO')} (${bold((datosDenuncia.otro_tipo || '').toUpperCase())})`
     )
   }
   // Formatear fecha/hora del hecho (única o rango)
