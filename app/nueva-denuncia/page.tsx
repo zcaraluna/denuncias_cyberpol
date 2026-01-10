@@ -433,8 +433,8 @@ export default function NuevaDenunciaPage() {
   // Usar hechos punibles específicos en lugar de capítulos genéricos
   const tiposDenuncia = [
     ...obtenerHechosPuniblesEspecificos(),
-    'EXTRAVÍO DE OBJETOS Y/O DOCUMENTOS',
-    'Otro (Especificar)'
+    'EXTRAVÍO DE OBJETOS Y/O DOCUMENTOS'
+    // 'Otro (Especificar)' - Deshabilitado temporalmente
   ]
 
   const bancos = [
