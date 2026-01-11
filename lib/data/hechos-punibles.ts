@@ -183,6 +183,9 @@ export const hechosPunibles: HechoPunible[] = [
   { nombre: 'Soborno agravado', capitulo: 'HECHO PUNIBLE CONTRA EL EJERCICIO DE FUNCIONES PUBLICAS' },
   { nombre: 'Exacción', capitulo: 'HECHO PUNIBLE CONTRA EL EJERCICIO DE FUNCIONES PUBLICAS' },
   { nombre: 'Enriquecimiento ilícito', capitulo: 'HECHO PUNIBLE CONTRA EL EJERCICIO DE FUNCIONES PUBLICAS' },
+
+  // CASO ESPECIAL: Hecho punible a determinar
+  { nombre: 'HECHO PUNIBLE A DETERMINAR', capitulo: 'HECHO PUNIBLE A DETERMINAR' },
 ]
 
 // Función para obtener el capítulo correspondiente a un hecho punible específico
