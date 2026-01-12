@@ -31,15 +31,21 @@ export default function DenunciasPage() {
   const [denunciasPorCedula, setDenunciasPorCedula] = useState<Denuncia[]>([])
   const [mostrarResultadosCedula, setMostrarResultadosCedula] = useState(false)
   
-  // Estados para filtros y paginación
+  // Estados temporales para filtros (valores que el usuario está escribiendo)
+  const [filtroNombreTemp, setFiltroNombreTemp] = useState('')
+  const [filtroCedulaTemp, setFiltroCedulaTemp] = useState('')
+  const [filtroTipoTemp, setFiltroTipoTemp] = useState('')
+  const [filtroFechaDesdeTemp, setFiltroFechaDesdeTemp] = useState('')
+  const [filtroFechaHastaTemp, setFiltroFechaHastaTemp] = useState('')
+  
+  // Estados aplicados para filtros (valores que realmente se usan para filtrar)
   const [filtroNombre, setFiltroNombre] = useState('')
   const [filtroCedula, setFiltroCedula] = useState('')
   const [filtroTipo, setFiltroTipo] = useState('')
   const [filtroFechaDesde, setFiltroFechaDesde] = useState('')
   const [filtroFechaHasta, setFiltroFechaHasta] = useState('')
+  
   const [mostrarSelectorFecha, setMostrarSelectorFecha] = useState(false)
-  const [fechaDesdeTemp, setFechaDesdeTemp] = useState('')
-  const [fechaHastaTemp, setFechaHastaTemp] = useState('')
   const [paginaActual, setPaginaActual] = useState(1)
   const itemsPorPagina = 10
 
@@ -70,14 +76,24 @@ export default function DenunciasPage() {
     }
   }, [usuario])
 
+  // Sincronizar estados temporales con aplicados al cargar
+  useEffect(() => {
+    setFiltroNombreTemp(filtroNombre)
+    setFiltroCedulaTemp(filtroCedula)
+    setFiltroTipoTemp(filtroTipo)
+    setFiltroFechaDesdeTemp(filtroFechaDesde)
+    setFiltroFechaHastaTemp(filtroFechaHasta)
+  }, []) // Solo al montar el componente
+
   // Cerrar selector de fechas al hacer click fuera
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement
       if (mostrarSelectorFecha && !target.closest('.selector-fecha-container')) {
         setMostrarSelectorFecha(false)
-        setFechaDesdeTemp(filtroFechaDesde)
-        setFechaHastaTemp(filtroFechaHasta)
+        // Restaurar valores temporales a los aplicados
+        setFiltroFechaDesdeTemp(filtroFechaDesde)
+        setFiltroFechaHastaTemp(filtroFechaHasta)
       }
     }
 
@@ -190,32 +206,43 @@ export default function DenunciasPage() {
   const indiceFin = indiceInicio + itemsPorPagina
   const denunciasPaginaActual = denunciasFiltradas.slice(indiceInicio, indiceFin)
 
-  // Resetear página cuando cambian los filtros
+  // Resetear página cuando cambian los filtros aplicados
   useEffect(() => {
     setPaginaActual(1)
   }, [filtroNombre, filtroCedula, filtroTipo, filtroFechaDesde, filtroFechaHasta])
 
+  const aplicarFiltros = () => {
+    setFiltroNombre(filtroNombreTemp)
+    setFiltroCedula(filtroCedulaTemp)
+    setFiltroTipo(filtroTipoTemp)
+    setFiltroFechaDesde(filtroFechaDesdeTemp)
+    setFiltroFechaHasta(filtroFechaHastaTemp)
+    setPaginaActual(1)
+  }
+
   const limpiarFiltros = () => {
+    setFiltroNombreTemp('')
+    setFiltroCedulaTemp('')
+    setFiltroTipoTemp('')
+    setFiltroFechaDesdeTemp('')
+    setFiltroFechaHastaTemp('')
     setFiltroNombre('')
     setFiltroCedula('')
     setFiltroTipo('')
     setFiltroFechaDesde('')
     setFiltroFechaHasta('')
-    setFechaDesdeTemp('')
-    setFechaHastaTemp('')
     setMostrarSelectorFecha(false)
     setPaginaActual(1)
   }
 
   const aplicarFiltroFecha = () => {
-    setFiltroFechaDesde(fechaDesdeTemp)
-    setFiltroFechaHasta(fechaHastaTemp)
+    // Los valores ya están en los estados temporales, solo cerramos el selector
     setMostrarSelectorFecha(false)
   }
 
   const cancelarFiltroFecha = () => {
-    setFechaDesdeTemp(filtroFechaDesde)
-    setFechaHastaTemp(filtroFechaHasta)
+    setFiltroFechaDesdeTemp(filtroFechaDesde)
+    setFiltroFechaHastaTemp(filtroFechaHasta)
     setMostrarSelectorFecha(false)
   }
 
@@ -271,8 +298,9 @@ export default function DenunciasPage() {
                     </label>
                     <input
                       type="text"
-                      value={filtroNombre}
-                      onChange={(e) => setFiltroNombre(e.target.value)}
+                      value={filtroNombreTemp}
+                      onChange={(e) => setFiltroNombreTemp(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && aplicarFiltros()}
                       placeholder="Buscar por nombre..."
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
@@ -283,8 +311,9 @@ export default function DenunciasPage() {
                     </label>
                     <input
                       type="text"
-                      value={filtroCedula}
-                      onChange={(e) => setFiltroCedula(e.target.value)}
+                      value={filtroCedulaTemp}
+                      onChange={(e) => setFiltroCedulaTemp(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && aplicarFiltros()}
                       placeholder="Buscar por cédula..."
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
@@ -295,8 +324,8 @@ export default function DenunciasPage() {
                     </label>
                     <Select
                       options={opcionesTipos}
-                      value={opcionesTipos.find(opcion => opcion.value === filtroTipo) || opcionesTipos[0]}
-                      onChange={(option) => setFiltroTipo(option?.value || '')}
+                      value={opcionesTipos.find(opcion => opcion.value === filtroTipoTemp) || opcionesTipos[0]}
+                      onChange={(option) => setFiltroTipoTemp(option?.value || '')}
                       isSearchable
                       placeholder="Buscar tipo..."
                       className="text-sm"
@@ -364,16 +393,18 @@ export default function DenunciasPage() {
                     <button
                       type="button"
                       onClick={() => {
-                        setFechaDesdeTemp(filtroFechaDesde)
-                        setFechaHastaTemp(filtroFechaHasta)
+                        if (!mostrarSelectorFecha) {
+                          setFiltroFechaDesdeTemp(filtroFechaDesdeTemp || filtroFechaDesde)
+                          setFiltroFechaHastaTemp(filtroFechaHastaTemp || filtroFechaHasta)
+                        }
                         setMostrarSelectorFecha(!mostrarSelectorFecha)
                       }}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-left bg-white hover:bg-gray-50 transition"
                     >
-                      {filtroFechaDesde && filtroFechaHasta
-                        ? `${filtroFechaDesde} - ${filtroFechaHasta}`
-                        : filtroFechaDesde
-                        ? `Desde: ${filtroFechaDesde}`
+                      {filtroFechaDesdeTemp && filtroFechaHastaTemp
+                        ? `${filtroFechaDesdeTemp} - ${filtroFechaHastaTemp}`
+                        : filtroFechaDesdeTemp
+                        ? `Desde: ${filtroFechaDesdeTemp}`
                         : 'Seleccionar rango de fechas'}
                     </button>
                     
@@ -386,8 +417,8 @@ export default function DenunciasPage() {
                             </label>
                             <input
                               type="date"
-                              value={fechaDesdeTemp}
-                              onChange={(e) => setFechaDesdeTemp(e.target.value)}
+                              value={filtroFechaDesdeTemp}
+                              onChange={(e) => setFiltroFechaDesdeTemp(e.target.value)}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             />
                           </div>
@@ -397,9 +428,9 @@ export default function DenunciasPage() {
                             </label>
                             <input
                               type="date"
-                              value={fechaHastaTemp}
-                              onChange={(e) => setFechaHastaTemp(e.target.value)}
-                              min={fechaDesdeTemp || undefined}
+                              value={filtroFechaHastaTemp}
+                              onChange={(e) => setFiltroFechaHastaTemp(e.target.value)}
+                              min={filtroFechaDesdeTemp || undefined}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             />
                           </div>
@@ -422,12 +453,18 @@ export default function DenunciasPage() {
                     )}
                   </div>
                 </div>
-                <div className="mt-4 flex justify-end">
+                <div className="mt-4 flex justify-end gap-2">
                   <button
                     onClick={limpiarFiltros}
                     className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition"
                   >
                     Limpiar Filtros
+                  </button>
+                  <button
+                    onClick={aplicarFiltros}
+                    className="px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition"
+                  >
+                    Buscar
                   </button>
                 </div>
               </div>
@@ -511,26 +548,26 @@ export default function DenunciasPage() {
                       <button
                         onClick={() => setPaginaActual(prev => Math.max(1, prev - 1))}
                         disabled={paginaActual === 1}
-                        className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition flex items-center gap-1"
+                        className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition flex items-center gap-2 font-medium text-gray-700 bg-white"
                         aria-label="Página anterior"
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                         </svg>
                         <span>Anterior</span>
                       </button>
-                      <span className="px-4 py-2 text-gray-700">
+                      <div className="px-4 py-2 text-gray-700 font-medium">
                         Página {paginaActual} de {totalPaginas}
-                      </span>
+                      </div>
                       <button
                         onClick={() => setPaginaActual(prev => Math.min(totalPaginas, prev + 1))}
                         disabled={paginaActual === totalPaginas}
-                        className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition flex items-center gap-1"
+                        className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition flex items-center gap-2 font-medium text-gray-700 bg-white"
                         aria-label="Página siguiente"
                       >
                         <span>Siguiente</span>
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        <svg className="w-5 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                         </svg>
                       </button>
                     </div>
