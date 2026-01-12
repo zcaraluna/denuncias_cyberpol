@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState, useRef } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -373,6 +373,9 @@ export default function NuevaDenunciaPage() {
   const [modoPruebas, setModoPruebas] = useState(false)
   // Capturar fecha y hora cuando se inicia la creación de la denuncia (no al finalizar)
   const [fechaHoraInicioDenuncia, setFechaHoraInicioDenuncia] = useState<{ fecha: string; hora: string } | null>(null)
+  
+  // Ref para prevenir múltiples envíos simultáneos
+  const isSubmittingRef = useRef(false)
 
   // Cargar estado del modo pruebas desde localStorage
   useEffect(() => {
@@ -2126,8 +2129,11 @@ export default function NuevaDenunciaPage() {
   const onDenunciaSubmit = async (data: any) => {
     if (!usuario) return
     
-    // Prevenir múltiples envíos simultáneos
-    if (loading) return
+    // Prevenir múltiples envíos simultáneos - verificación inmediata con ref
+    if (isSubmittingRef.current || loading) {
+      console.log('Envío bloqueado: ya hay un envío en proceso')
+      return
+    }
 
     if (denunciantes.length === 0) {
       alert('Debes agregar al menos un denunciante antes de completar la denuncia.')
@@ -2142,6 +2148,8 @@ export default function NuevaDenunciaPage() {
       return
     }
 
+    // Establecer flag inmediatamente (sincrónico)
+    isSubmittingRef.current = true
     setLoading(true)
 
     try {
@@ -2221,16 +2229,30 @@ export default function NuevaDenunciaPage() {
       })
 
       if (!response.ok) {
-        throw new Error('Error al guardar la denuncia')
+        const errorData = await response.json().catch(() => ({}))
+        
+        // Manejar error de rate limiting (429)
+        if (response.status === 429) {
+          const mensaje = errorData.error || 'Debe esperar al menos un minuto entre la creación de denuncias completadas.'
+          alert(mensaje)
+          isSubmittingRef.current = false
+          setLoading(false)
+          return
+        }
+        
+        throw new Error(errorData.error || 'Error al guardar la denuncia')
       }
 
       const result = await response.json()
 
       router.push(`/nueva-denuncia/confirmacion?id=${result.id}`)
+      // En caso de éxito, el componente se desmonta con la redirección, así que no necesitamos resetear
     } catch (error) {
       console.error('Error:', error)
-      alert('Error al guardar la denuncia. Por favor, intente nuevamente.')
-    } finally {
+      const mensajeError = error instanceof Error ? error.message : 'Error al guardar la denuncia. Por favor, intente nuevamente.'
+      alert(mensajeError)
+      // Resetear flag en caso de error para permitir reintento
+      isSubmittingRef.current = false
       setLoading(false)
     }
   }
@@ -4711,12 +4733,16 @@ export default function NuevaDenunciaPage() {
               </button>
               <button
                 onClick={async () => {
+                  // Prevenir clics múltiples
+                  if (isSubmittingRef.current || loading) {
+                    return
+                  }
                   setMostrarModalVistaPrevia(false)
                   const denunciaData = watchDenuncia()
                   // Llamar directamente a onDenunciaSubmit
                   await onDenunciaSubmit(denunciaData)
                 }}
-                disabled={loading}
+                disabled={isSubmittingRef.current || loading}
                 className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:transform-none"
               >
                 {loading ? (
