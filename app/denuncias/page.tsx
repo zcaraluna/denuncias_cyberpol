@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { formatearFechaSinTimezone } from '@/lib/utils/fecha'
@@ -29,6 +29,15 @@ export default function DenunciasPage() {
   const [error, setError] = useState<string | null>(null)
   const [denunciasPorCedula, setDenunciasPorCedula] = useState<Denuncia[]>([])
   const [mostrarResultadosCedula, setMostrarResultadosCedula] = useState(false)
+  
+  // Estados para filtros y paginación
+  const [filtroNombre, setFiltroNombre] = useState('')
+  const [filtroCedula, setFiltroCedula] = useState('')
+  const [filtroTipo, setFiltroTipo] = useState('')
+  const [filtroFechaDesde, setFiltroFechaDesde] = useState('')
+  const [filtroFechaHasta, setFiltroFechaHasta] = useState('')
+  const [paginaActual, setPaginaActual] = useState(1)
+  const itemsPorPagina = 10
 
   const cargarDenuncias = async () => {
     if (!usuario) return
@@ -108,6 +117,61 @@ export default function DenunciasPage() {
     router.push(`/ver-denuncia/${id}`)
   }
 
+  // Obtener tipos únicos para el filtro
+  const tiposDisponibles = useMemo(() => {
+    const tipos = new Set(denuncias.map(d => d.tipo_hecho).filter(Boolean))
+    return Array.from(tipos).sort()
+  }, [denuncias])
+
+  // Filtrar denuncias
+  const denunciasFiltradas = useMemo(() => {
+    return denuncias.filter(denuncia => {
+      const nombreMatch = !filtroNombre || 
+        denuncia.nombre_denunciante.toLowerCase().includes(filtroNombre.toLowerCase())
+      const cedulaMatch = !filtroCedula || 
+        denuncia.cedula_denunciante.includes(filtroCedula)
+      const tipoMatch = !filtroTipo || 
+        denuncia.tipo_hecho === filtroTipo
+      
+      let fechaMatch = true
+      if (filtroFechaDesde || filtroFechaHasta) {
+        const fechaDenuncia = new Date(denuncia.fecha_denuncia)
+        if (filtroFechaDesde) {
+          const fechaDesde = new Date(filtroFechaDesde)
+          fechaDesde.setHours(0, 0, 0, 0)
+          if (fechaDenuncia < fechaDesde) fechaMatch = false
+        }
+        if (filtroFechaHasta) {
+          const fechaHasta = new Date(filtroFechaHasta)
+          fechaHasta.setHours(23, 59, 59, 999)
+          if (fechaDenuncia > fechaHasta) fechaMatch = false
+        }
+      }
+      
+      return nombreMatch && cedulaMatch && tipoMatch && fechaMatch
+    })
+  }, [denuncias, filtroNombre, filtroCedula, filtroTipo, filtroFechaDesde, filtroFechaHasta])
+
+  // Calcular paginación
+  const totalPaginas = Math.ceil(denunciasFiltradas.length / itemsPorPagina)
+  const indiceInicio = (paginaActual - 1) * itemsPorPagina
+  const indiceFin = indiceInicio + itemsPorPagina
+  const denunciasPaginaActual = denunciasFiltradas.slice(indiceInicio, indiceFin)
+
+  // Resetear página cuando cambian los filtros
+  useEffect(() => {
+    setPaginaActual(1)
+  }, [filtroNombre, filtroCedula, filtroTipo, filtroFechaDesde, filtroFechaHasta])
+
+  const limpiarFiltros = () => {
+    setFiltroNombre('')
+    setFiltroCedula('')
+    setFiltroTipo('')
+    setFiltroFechaDesde('')
+    setFiltroFechaHasta('')
+    setPaginaActual(1)
+  }
+
   if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -150,80 +214,179 @@ export default function DenunciasPage() {
               <p className="text-gray-600">Lista completa de denuncias del sistema</p>
             </div>
 
+            {/* Filtros */}
+            {denuncias.length > 0 && (
+              <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Nombre
+                    </label>
+                    <input
+                      type="text"
+                      value={filtroNombre}
+                      onChange={(e) => setFiltroNombre(e.target.value)}
+                      placeholder="Buscar por nombre..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Cédula
+                    </label>
+                    <input
+                      type="text"
+                      value={filtroCedula}
+                      onChange={(e) => setFiltroCedula(e.target.value)}
+                      placeholder="Buscar por cédula..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Tipo
+                    </label>
+                    <select
+                      value={filtroTipo}
+                      onChange={(e) => setFiltroTipo(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="">Todos los tipos</option>
+                      {tiposDisponibles.map(tipo => (
+                        <option key={tipo} value={tipo}>{tipo}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Fecha Desde
+                    </label>
+                    <input
+                      type="date"
+                      value={filtroFechaDesde}
+                      onChange={(e) => setFiltroFechaDesde(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Fecha Hasta
+                    </label>
+                    <input
+                      type="date"
+                      value={filtroFechaHasta}
+                      onChange={(e) => setFiltroFechaHasta(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+                <div className="mt-4 flex justify-end">
+                  <button
+                    onClick={limpiarFiltros}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition"
+                  >
+                    Limpiar Filtros
+                  </button>
+                </div>
+              </div>
+            )}
+
             {denuncias.length === 0 ? (
               <div className="bg-white rounded-lg shadow-md p-8 text-center">
                 <p className="text-gray-600">No hay denuncias registradas</p>
               </div>
-            ) : (
-              <div className="bg-white rounded-lg shadow-md overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          #
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          DENUNCIANTE
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          CÉDULA
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          TIPO
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          FECHA Y HORA
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          ESTADO
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          ACCIONES
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {denuncias.map((denuncia) => (
-                        <tr key={denuncia.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {denuncia.numero_orden}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {denuncia.nombre_denunciante}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {denuncia.cedula_denunciante}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {denuncia.tipo_hecho}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {formatearFechaSinTimezone(denuncia.fecha_denuncia)} {denuncia.hora_denuncia}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              denuncia.estado === 'completada'
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-yellow-100 text-yellow-800'
-                            }`}>
-                              {denuncia.estado === 'completada' ? 'Completada' : 'Borrador'}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <button
-                              onClick={() => verDenuncia(denuncia.id)}
-                              className="text-blue-600 hover:text-blue-900"
-                            >
-                              Ver Denuncia
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+            ) : denunciasFiltradas.length === 0 ? (
+              <div className="bg-white rounded-lg shadow-md p-8 text-center">
+                <p className="text-gray-600">No se encontraron denuncias con los filtros aplicados</p>
               </div>
+            ) : (
+              <>
+                <div className="bg-white rounded-lg shadow-md overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            #
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            DENUNCIANTE
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            CÉDULA
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            TIPO
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            FECHA Y HORA
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            ACCIONES
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {denunciasPaginaActual.map((denuncia) => (
+                          <tr key={denuncia.id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {denuncia.numero_orden}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {denuncia.nombre_denunciante}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {denuncia.cedula_denunciante}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {denuncia.tipo_hecho}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {formatearFechaSinTimezone(denuncia.fecha_denuncia)} {denuncia.hora_denuncia}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                              <button
+                                onClick={() => verDenuncia(denuncia.id)}
+                                className="text-blue-600 hover:text-blue-900"
+                              >
+                                Ver Denuncia
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Paginación */}
+                {totalPaginas > 1 && (
+                  <div className="mt-6 flex items-center justify-between bg-white rounded-lg shadow-md p-4">
+                    <div className="text-sm text-gray-700">
+                      Mostrando {indiceInicio + 1} a {Math.min(indiceFin, denunciasFiltradas.length)} de {denunciasFiltradas.length} denuncias
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setPaginaActual(prev => Math.max(1, prev - 1))}
+                        disabled={paginaActual === 1}
+                        className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition"
+                      >
+                        Anterior
+                      </button>
+                      <span className="px-4 py-2 text-gray-700">
+                        Página {paginaActual} de {totalPaginas}
+                      </span>
+                      <button
+                        onClick={() => setPaginaActual(prev => Math.min(totalPaginas, prev + 1))}
+                        disabled={paginaActual === totalPaginas}
+                        className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition"
+                      >
+                        Siguiente
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </>
         ) : (
