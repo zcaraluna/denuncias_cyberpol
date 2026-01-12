@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { useEffect, useState, useMemo } from 'react'
 import Link from 'next/link'
+import Select from 'react-select'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { formatearFechaSinTimezone } from '@/lib/utils/fecha'
 
@@ -36,6 +37,9 @@ export default function DenunciasPage() {
   const [filtroTipo, setFiltroTipo] = useState('')
   const [filtroFechaDesde, setFiltroFechaDesde] = useState('')
   const [filtroFechaHasta, setFiltroFechaHasta] = useState('')
+  const [mostrarSelectorFecha, setMostrarSelectorFecha] = useState(false)
+  const [fechaDesdeTemp, setFechaDesdeTemp] = useState('')
+  const [fechaHastaTemp, setFechaHastaTemp] = useState('')
   const [paginaActual, setPaginaActual] = useState(1)
   const itemsPorPagina = 10
 
@@ -65,6 +69,26 @@ export default function DenunciasPage() {
       }
     }
   }, [usuario])
+
+  // Cerrar selector de fechas al hacer click fuera
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement
+      if (mostrarSelectorFecha && !target.closest('.selector-fecha-container')) {
+        setMostrarSelectorFecha(false)
+        setFechaDesdeTemp(filtroFechaDesde)
+        setFechaHastaTemp(filtroFechaHasta)
+      }
+    }
+
+    if (mostrarSelectorFecha) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [mostrarSelectorFecha, filtroFechaDesde, filtroFechaHasta])
 
 
   const buscarPorHash = async () => {
@@ -117,11 +141,19 @@ export default function DenunciasPage() {
     router.push(`/ver-denuncia/${id}`)
   }
 
-  // Obtener tipos únicos para el filtro
+  // Obtener tipos únicos para el filtro (en mayúsculas)
   const tiposDisponibles = useMemo(() => {
-    const tipos = new Set(denuncias.map(d => d.tipo_hecho).filter(Boolean))
+    const tipos = new Set(denuncias.map(d => d.tipo_hecho?.toUpperCase() || '').filter(Boolean))
     return Array.from(tipos).sort()
   }, [denuncias])
+
+  // Opciones para react-select
+  const opcionesTipos = useMemo(() => {
+    return [
+      { value: '', label: 'TODOS LOS TIPOS' },
+      ...tiposDisponibles.map(tipo => ({ value: tipo, label: tipo }))
+    ]
+  }, [tiposDisponibles])
 
   // Filtrar denuncias
   const denunciasFiltradas = useMemo(() => {
@@ -131,7 +163,7 @@ export default function DenunciasPage() {
       const cedulaMatch = !filtroCedula || 
         denuncia.cedula_denunciante.includes(filtroCedula)
       const tipoMatch = !filtroTipo || 
-        denuncia.tipo_hecho === filtroTipo
+        denuncia.tipo_hecho?.toUpperCase() === filtroTipo
       
       let fechaMatch = true
       if (filtroFechaDesde || filtroFechaHasta) {
@@ -169,7 +201,22 @@ export default function DenunciasPage() {
     setFiltroTipo('')
     setFiltroFechaDesde('')
     setFiltroFechaHasta('')
+    setFechaDesdeTemp('')
+    setFechaHastaTemp('')
+    setMostrarSelectorFecha(false)
     setPaginaActual(1)
+  }
+
+  const aplicarFiltroFecha = () => {
+    setFiltroFechaDesde(fechaDesdeTemp)
+    setFiltroFechaHasta(fechaHastaTemp)
+    setMostrarSelectorFecha(false)
+  }
+
+  const cancelarFiltroFecha = () => {
+    setFechaDesdeTemp(filtroFechaDesde)
+    setFechaHastaTemp(filtroFechaHasta)
+    setMostrarSelectorFecha(false)
   }
 
   if (authLoading || loading) {
@@ -217,7 +264,7 @@ export default function DenunciasPage() {
             {/* Filtros */}
             {denuncias.length > 0 && (
               <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Nombre
@@ -246,38 +293,133 @@ export default function DenunciasPage() {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Tipo
                     </label>
-                    <select
-                      value={filtroTipo}
-                      onChange={(e) => setFiltroTipo(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    <Select
+                      options={opcionesTipos}
+                      value={opcionesTipos.find(opcion => opcion.value === filtroTipo) || opcionesTipos[0]}
+                      onChange={(option) => setFiltroTipo(option?.value || '')}
+                      isSearchable
+                      placeholder="Buscar tipo..."
+                      className="text-sm"
+                      classNamePrefix="react-select"
+                      styles={{
+                        control: (base, state) => ({
+                          ...base,
+                          fontFamily: 'Inter, sans-serif',
+                          fontSize: '14px',
+                          minHeight: '42px',
+                          borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
+                          boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
+                          '&:hover': {
+                            borderColor: '#3b82f6',
+                          },
+                        }),
+                        menu: (base) => ({
+                          ...base,
+                          fontFamily: 'Inter, sans-serif',
+                          fontSize: '14px',
+                          maxHeight: '250px',
+                          zIndex: 9999,
+                        }),
+                        menuList: (base) => ({
+                          ...base,
+                          maxHeight: '250px',
+                        }),
+                        option: (base, state) => ({
+                          ...base,
+                          fontFamily: 'Inter, sans-serif',
+                          fontSize: '14px',
+                          padding: '8px 12px',
+                          backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
+                          color: state.isSelected ? 'white' : '#1f2937',
+                          cursor: 'pointer',
+                          textTransform: 'uppercase',
+                        }),
+                        input: (base) => ({
+                          ...base,
+                          fontFamily: 'Inter, sans-serif',
+                          fontSize: '14px',
+                          margin: 0,
+                          padding: 0,
+                        }),
+                        singleValue: (base) => ({
+                          ...base,
+                          fontFamily: 'Inter, sans-serif',
+                          fontSize: '14px',
+                          color: '#1f2937',
+                          textTransform: 'uppercase',
+                        }),
+                        placeholder: (base) => ({
+                          ...base,
+                          fontFamily: 'Inter, sans-serif',
+                          fontSize: '14px',
+                          color: '#9ca3af',
+                        }),
+                      }}
+                    />
+                  </div>
+                  <div className="relative selector-fecha-container">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Rango de Fechas
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFechaDesdeTemp(filtroFechaDesde)
+                        setFechaHastaTemp(filtroFechaHasta)
+                        setMostrarSelectorFecha(!mostrarSelectorFecha)
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-left bg-white hover:bg-gray-50 transition"
                     >
-                      <option value="">Todos los tipos</option>
-                      {tiposDisponibles.map(tipo => (
-                        <option key={tipo} value={tipo}>{tipo}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Fecha Desde
-                    </label>
-                    <input
-                      type="date"
-                      value={filtroFechaDesde}
-                      onChange={(e) => setFiltroFechaDesde(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Fecha Hasta
-                    </label>
-                    <input
-                      type="date"
-                      value={filtroFechaHasta}
-                      onChange={(e) => setFiltroFechaHasta(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
+                      {filtroFechaDesde && filtroFechaHasta
+                        ? `${filtroFechaDesde} - ${filtroFechaHasta}`
+                        : filtroFechaDesde
+                        ? `Desde: ${filtroFechaDesde}`
+                        : 'Seleccionar rango de fechas'}
+                    </button>
+                    
+                    {mostrarSelectorFecha && (
+                      <div className="absolute z-50 mt-2 left-0 right-0 md:left-auto md:right-0 bg-white border border-gray-300 rounded-lg shadow-lg p-4 w-full md:w-auto md:min-w-[320px] selector-fecha-container">
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Fecha Desde
+                            </label>
+                            <input
+                              type="date"
+                              value={fechaDesdeTemp}
+                              onChange={(e) => setFechaDesdeTemp(e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Fecha Hasta
+                            </label>
+                            <input
+                              type="date"
+                              value={fechaHastaTemp}
+                              onChange={(e) => setFechaHastaTemp(e.target.value)}
+                              min={fechaDesdeTemp || undefined}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                          </div>
+                          <div className="flex gap-2 justify-end pt-2 border-t border-gray-200">
+                            <button
+                              onClick={cancelarFiltroFecha}
+                              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition"
+                            >
+                              Cancelar
+                            </button>
+                            <button
+                              onClick={aplicarFiltroFecha}
+                              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition"
+                            >
+                              Aplicar
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="mt-4 flex justify-end">
@@ -338,8 +480,8 @@ export default function DenunciasPage() {
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                               {denuncia.cedula_denunciante}
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {denuncia.tipo_hecho}
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 uppercase">
+                              {denuncia.tipo_hecho?.toUpperCase() || ''}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                               {formatearFechaSinTimezone(denuncia.fecha_denuncia)} {denuncia.hora_denuncia}
@@ -369,9 +511,13 @@ export default function DenunciasPage() {
                       <button
                         onClick={() => setPaginaActual(prev => Math.max(1, prev - 1))}
                         disabled={paginaActual === 1}
-                        className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition"
+                        className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition flex items-center gap-1"
+                        aria-label="Página anterior"
                       >
-                        Anterior
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        </svg>
+                        <span>Anterior</span>
                       </button>
                       <span className="px-4 py-2 text-gray-700">
                         Página {paginaActual} de {totalPaginas}
@@ -379,9 +525,13 @@ export default function DenunciasPage() {
                       <button
                         onClick={() => setPaginaActual(prev => Math.min(totalPaginas, prev + 1))}
                         disabled={paginaActual === totalPaginas}
-                        className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition"
+                        className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition flex items-center gap-1"
+                        aria-label="Página siguiente"
                       >
-                        Siguiente
+                        <span>Siguiente</span>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
                       </button>
                     </div>
                   </div>
@@ -487,8 +637,8 @@ export default function DenunciasPage() {
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             {denuncia.nombre_denunciante}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {denuncia.tipo_hecho}
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 uppercase">
+                            {denuncia.tipo_hecho?.toUpperCase() || ''}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             {formatearFechaSinTimezone(denuncia.fecha_denuncia)} {denuncia.hora_denuncia}
