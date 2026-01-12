@@ -3773,7 +3773,7 @@ export const barriosParaguay: DepartamentoBarrios[] = [
         ]
       },
       {
-        nombre: "J. AUGUSTO SALDÍVAR",
+        nombre: "JULIÁN AUGUSTO SALDÍVAR",
         barrios: [
           { nombre: "ALDANA CAÑADA" },
           { nombre: "COMPAÑIA 7" },

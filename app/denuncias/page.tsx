@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState, useMemo } from 'react'
 import Link from 'next/link'
 import Select from 'react-select'
+import DateRangePicker from '@/components/DateRangePicker'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { formatearFechaSinTimezone } from '@/lib/utils/fecha'
 
@@ -45,7 +46,6 @@ export default function DenunciasPage() {
   const [filtroFechaDesde, setFiltroFechaDesde] = useState('')
   const [filtroFechaHasta, setFiltroFechaHasta] = useState('')
   
-  const [mostrarSelectorFecha, setMostrarSelectorFecha] = useState(false)
   const [paginaActual, setPaginaActual] = useState(1)
   const itemsPorPagina = 10
 
@@ -85,26 +85,6 @@ export default function DenunciasPage() {
     setFiltroFechaHastaTemp(filtroFechaHasta)
   }, []) // Solo al montar el componente
 
-  // Cerrar selector de fechas al hacer click fuera
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as HTMLElement
-      if (mostrarSelectorFecha && !target.closest('.selector-fecha-container')) {
-        setMostrarSelectorFecha(false)
-        // Restaurar valores temporales a los aplicados
-        setFiltroFechaDesdeTemp(filtroFechaDesde)
-        setFiltroFechaHastaTemp(filtroFechaHasta)
-      }
-    }
-
-    if (mostrarSelectorFecha) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [mostrarSelectorFecha, filtroFechaDesde, filtroFechaHasta])
 
 
   const buscarPorHash = async () => {
@@ -231,19 +211,17 @@ export default function DenunciasPage() {
     setFiltroTipo('')
     setFiltroFechaDesde('')
     setFiltroFechaHasta('')
-    setMostrarSelectorFecha(false)
     setPaginaActual(1)
   }
 
-  const aplicarFiltroFecha = () => {
-    // Los valores ya están en los estados temporales, solo cerramos el selector
-    setMostrarSelectorFecha(false)
+  const handleFechaApply = () => {
+    // Los valores ya se actualizan en el componente DateRangePicker
   }
 
-  const cancelarFiltroFecha = () => {
+  const handleFechaCancel = () => {
+    // Restaurar valores temporales a los aplicados
     setFiltroFechaDesdeTemp(filtroFechaDesde)
     setFiltroFechaHastaTemp(filtroFechaHasta)
-    setMostrarSelectorFecha(false)
   }
 
   if (authLoading || loading) {
@@ -386,71 +364,18 @@ export default function DenunciasPage() {
                       }}
                     />
                   </div>
-                  <div className="relative selector-fecha-container">
+                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Rango de Fechas
                     </label>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (!mostrarSelectorFecha) {
-                          setFiltroFechaDesdeTemp(filtroFechaDesdeTemp || filtroFechaDesde)
-                          setFiltroFechaHastaTemp(filtroFechaHastaTemp || filtroFechaHasta)
-                        }
-                        setMostrarSelectorFecha(!mostrarSelectorFecha)
-                      }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-left bg-white hover:bg-gray-50 transition"
-                    >
-                      {filtroFechaDesdeTemp && filtroFechaHastaTemp
-                        ? `${filtroFechaDesdeTemp} - ${filtroFechaHastaTemp}`
-                        : filtroFechaDesdeTemp
-                        ? `Desde: ${filtroFechaDesdeTemp}`
-                        : 'Seleccionar rango de fechas'}
-                    </button>
-                    
-                    {mostrarSelectorFecha && (
-                      <div className="absolute z-50 mt-2 left-0 right-0 md:left-auto md:right-0 bg-white border border-gray-300 rounded-lg shadow-lg p-4 w-full md:w-auto md:min-w-[320px] selector-fecha-container">
-                        <div className="space-y-4">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Fecha Desde
-                            </label>
-                            <input
-                              type="date"
-                              value={filtroFechaDesdeTemp}
-                              onChange={(e) => setFiltroFechaDesdeTemp(e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Fecha Hasta
-                            </label>
-                            <input
-                              type="date"
-                              value={filtroFechaHastaTemp}
-                              onChange={(e) => setFiltroFechaHastaTemp(e.target.value)}
-                              min={filtroFechaDesdeTemp || undefined}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            />
-                          </div>
-                          <div className="flex gap-2 justify-end pt-2 border-t border-gray-200">
-                            <button
-                              onClick={cancelarFiltroFecha}
-                              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition"
-                            >
-                              Cancelar
-                            </button>
-                            <button
-                              onClick={aplicarFiltroFecha}
-                              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition"
-                            >
-                              Aplicar
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    )}
+                    <DateRangePicker
+                      startDate={filtroFechaDesdeTemp}
+                      endDate={filtroFechaHastaTemp}
+                      onStartDateChange={setFiltroFechaDesdeTemp}
+                      onEndDateChange={setFiltroFechaHastaTemp}
+                      onApply={handleFechaApply}
+                      onCancel={handleFechaCancel}
+                    />
                   </div>
                 </div>
                 <div className="mt-4 flex justify-end gap-2">
