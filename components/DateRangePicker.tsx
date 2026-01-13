@@ -52,19 +52,31 @@ export default function DateRangePicker({
   const handleQuickSelect = (days: number) => {
     const end = new Date()
     const start = subDays(end, days - 1)
-    setTempStartDate(format(start, 'yyyy-MM-dd'))
-    setTempEndDate(format(end, 'yyyy-MM-dd'))
+    // Formatear fechas usando componentes locales para evitar problemas de zona horaria
+    const formatLocalDate = (date: Date) => {
+      const year = date.getFullYear()
+      const month = String(date.getMonth() + 1).padStart(2, '0')
+      const day = String(date.getDate()).padStart(2, '0')
+      return `${year}-${month}-${day}`
+    }
+    setTempStartDate(formatLocalDate(start))
+    setTempEndDate(formatLocalDate(end))
   }
 
   const handleDateClick = (date: Date) => {
-    const dateStr = format(date, 'yyyy-MM-dd')
+    // Usar la fecha local sin problemas de zona horaria
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    const dateStr = `${year}-${month}-${day}`
     
     if (selectingStart || !tempStartDate) {
       setTempStartDate(dateStr)
       setTempEndDate('')
       setSelectingStart(false)
     } else {
-      if (new Date(dateStr) < new Date(tempStartDate)) {
+      // Comparar fechas como strings para evitar problemas de zona horaria
+      if (dateStr < tempStartDate) {
         setTempEndDate(tempStartDate)
         setTempStartDate(dateStr)
       } else {
@@ -88,21 +100,31 @@ export default function DateRangePicker({
     setIsOpen(false)
   }
 
+  // Función auxiliar para parsear fecha sin problemas de zona horaria
+  const parseLocalDate = (dateStr: string): Date => {
+    const [year, month, day] = dateStr.split('-').map(Number)
+    return new Date(year, month - 1, day)
+  }
+
   const isDateInRange = (date: Date) => {
     if (!tempStartDate || !tempEndDate) return false
-    const start = new Date(tempStartDate)
-    const end = new Date(tempEndDate)
+    const start = parseLocalDate(tempStartDate)
+    const end = parseLocalDate(tempEndDate)
+    // Ajustar endDate al final del día para incluir todo el día
+    end.setHours(23, 59, 59, 999)
     return isWithinInterval(date, { start, end })
   }
 
   const isDateStart = (date: Date) => {
     if (!tempStartDate) return false
-    return isSameDay(date, new Date(tempStartDate))
+    const startDate = parseLocalDate(tempStartDate)
+    return isSameDay(date, startDate)
   }
 
   const isDateEnd = (date: Date) => {
     if (!tempEndDate) return false
-    return isSameDay(date, new Date(tempEndDate))
+    const endDate = parseLocalDate(tempEndDate)
+    return isSameDay(date, endDate)
   }
 
   const monthStart = startOfMonth(currentMonth)
@@ -126,12 +148,12 @@ export default function DateRangePicker({
   const formatDateRangeSpanish = () => {
     if (!tempStartDate && !tempEndDate) return 'Seleccionar rango de fechas'
     if (tempStartDate && !tempEndDate) {
-      const date = new Date(tempStartDate)
+      const date = parseLocalDate(tempStartDate)
       return `${date.getDate()} ${monthAbbr[date.getMonth()]}`
     }
     if (tempStartDate && tempEndDate) {
-      const start = new Date(tempStartDate)
-      const end = new Date(tempEndDate)
+      const start = parseLocalDate(tempStartDate)
+      const end = parseLocalDate(tempEndDate)
       const startStr = `${start.getDate()} ${monthAbbr[start.getMonth()]}`
       const endStr = `${end.getDate()} ${monthAbbr[end.getMonth()]}`
       return `${startStr} - ${endStr}`
