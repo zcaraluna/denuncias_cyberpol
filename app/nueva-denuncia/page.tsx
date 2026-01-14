@@ -259,7 +259,7 @@ const generarDatosAleatorios = (
   const departamentoAleatorio = departamentos[Math.floor(Math.random() * departamentos.length)]
   const ciudadAleatoria =
     departamentoAleatorio.ciudades[Math.floor(Math.random() * departamentoAleatorio.ciudades.length)]
-  
+
   // Seleccionar barrio aleatorio si está disponible
   const barriosDisponibles = obtenerBarriosPorCiudad(departamentoAleatorio.nombre, ciudadAleatoria)
   const barrioAleatorio = barriosDisponibles.length > 0
@@ -366,7 +366,7 @@ export default function NuevaDenunciaPage() {
   const [modoPruebas, setModoPruebas] = useState(false)
   // Capturar fecha y hora cuando se inicia la creación de la denuncia (no al finalizar)
   const [fechaHoraInicioDenuncia, setFechaHoraInicioDenuncia] = useState<{ fecha: string; hora: string } | null>(null)
-  
+
   // Ref para prevenir múltiples envíos simultáneos
   const isSubmittingRef = useRef(false)
 
@@ -406,17 +406,17 @@ export default function NuevaDenunciaPage() {
       } catch (error) {
         // Si falla, usar fecha/hora del cliente
         const now = new Date()
-        const fecha = now.toLocaleDateString('es-PY', { 
-          day: '2-digit', 
-          month: '2-digit', 
-          year: 'numeric', 
-          timeZone: 'America/Asuncion' 
+        const fecha = now.toLocaleDateString('es-PY', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          timeZone: 'America/Asuncion'
         })
-        const hora = now.toLocaleTimeString('es-PY', { 
-          hour: '2-digit', 
-          minute: '2-digit', 
-          hour12: false, 
-          timeZone: 'America/Asuncion' 
+        const hora = now.toLocaleTimeString('es-PY', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false,
+          timeZone: 'America/Asuncion'
         })
         setFechaHoraInicioDenuncia({ fecha, hora })
       }
@@ -668,23 +668,23 @@ export default function NuevaDenunciaPage() {
   // Función para generar el texto de descripción física a partir de los valores seleccionados
   const generarTextoDescripcionFisica = (desc: typeof descripcionFisica): string => {
     const partes: string[] = []
-    
+
     // 1. Constitución física
     const constitucion: string[] = []
     if (desc.altura) constitucion.push(`altura ${desc.altura}`)
     if (desc.complexion) constitucion.push(`complexión ${desc.complexion}`)
     if (desc.postura) constitucion.push(`postura ${desc.postura}`)
     if (constitucion.length > 0) partes.push(`Constitución física: ${constitucion.join(', ')}.`)
-    
+
     // 2. Forma del rostro
     if (desc.formaRostro) partes.push(`Forma del rostro: ${desc.formaRostro}.`)
-    
+
     // 3. Piel
     const piel: string[] = []
     if (desc.tonoPiel) piel.push(`tono ${desc.tonoPiel}`)
     if (desc.texturaPiel) piel.push(`textura ${desc.texturaPiel}`)
     if (piel.length > 0) partes.push(`Piel: ${piel.join(', ')}.`)
-    
+
     // 4. Cabello
     const cabello: string[] = []
     if (desc.colorCabello) {
@@ -698,7 +698,7 @@ export default function NuevaDenunciaPage() {
     if (desc.texturaCabello) cabello.push(`textura ${desc.texturaCabello}`)
     if (desc.peinado) cabello.push(`peinado ${desc.peinado}`)
     if (cabello.length > 0) partes.push(`Cabello: ${cabello.join(', ')}.`)
-    
+
     // 5. Ojos
     const ojos: string[] = []
     if (desc.formaOjos) ojos.push(`forma ${desc.formaOjos}`)
@@ -707,12 +707,12 @@ export default function NuevaDenunciaPage() {
       ojos.push(desc.caracteristicasOjos.join(', '))
     }
     if (ojos.length > 0) partes.push(`Ojos: ${ojos.join(', ')}.`)
-    
+
     // 6. Otros rasgos distintivos
     if (desc.otrosRasgos && desc.otrosRasgos.length > 0) {
       partes.push(`Otros rasgos distintivos: ${desc.otrosRasgos.join(', ')}.`)
     }
-    
+
     return partes.join(' ')
   }
 
@@ -839,14 +839,14 @@ export default function NuevaDenunciaPage() {
   const completarFormularioAutomatico = () => {
     const rolActual = watchDenunciante('rol') || 'principal'
     const datos = generarDatosAleatorios(rolActual as 'principal' | 'co-denunciante' | 'abogado', departamentosParaguay)
-    
+
     // Completar todos los campos con los datos aleatorios
     Object.entries(datos).forEach(([key, value]) => {
       if (value !== null && value !== undefined) {
         setValueDenunciante(key as keyof DenuncianteFormValues, value as any)
       }
     })
-    
+
     // Calcular edad si hay fecha de nacimiento
     if (datos.fechaNacimiento && !esAbogado) {
       const edadCalculada = calcularEdad(datos.fechaNacimiento)
@@ -904,13 +904,13 @@ export default function NuevaDenunciaPage() {
     const departamentoAleatorio = departamentosParaguay[Math.floor(Math.random() * departamentosParaguay.length)]
     const ciudadAleatoria =
       departamentoAleatorio.ciudades[Math.floor(Math.random() * departamentoAleatorio.ciudades.length)]
-    
+
     // Seleccionar barrio aleatorio si está disponible
     const barriosDisponibles = obtenerBarriosPorCiudad(departamentoAleatorio.nombre, ciudadAleatoria)
     const barrioAleatorio = barriosDisponibles.length > 0
       ? barriosDisponibles[Math.floor(Math.random() * barriosDisponibles.length)]
       : ''
-    
+
     setValueAutor('departamento', departamentoAleatorio.nombre)
     setValueAutor('ciudad', ciudadAleatoria)
     setValueAutor('barrio', barrioAleatorio)
@@ -1201,13 +1201,13 @@ export default function NuevaDenunciaPage() {
   const departamentoAutor = watchAutor('departamento')
   const ciudadAutor = watchAutor('ciudad')
   const barrioAutor = watchAutor('barrio')
-  
+
   // Opciones de departamento y ciudad para el autor
   const departamentoAutorOptions = useMemo(
     () => departamentosParaguay.map((dep) => ({ value: dep.nombre, label: dep.nombre })),
     []
   )
-  
+
   const ciudadAutorOptions = useMemo(() => {
     if (!departamentoAutor) return []
     const departamento = departamentosParaguay.find((dep) => dep.nombre === departamentoAutor)
@@ -1370,10 +1370,10 @@ export default function NuevaDenunciaPage() {
     try {
       const response = await fetch(`/api/denuncias/ver/${id}`, { cache: 'no-store' })
       if (!response.ok) return
-      
+
       const data = await response.json()
       setBorradorId(data.id)
-      
+
       // Restaurar la fecha/hora original del borrador si existe
       if (data.fecha_denuncia && data.hora_denuncia) {
         // Convertir fecha de YYYY-MM-DD a DD/MM/YYYY para el formato esperado
@@ -1381,7 +1381,7 @@ export default function NuevaDenunciaPage() {
         const fechaFormateada = `${fechaParts[2]}/${fechaParts[1]}/${fechaParts[0]}`
         setFechaHoraInicioDenuncia({ fecha: fechaFormateada, hora: data.hora_denuncia })
       }
-      
+
       const involucradosApi = Array.isArray(data.denunciantes_involucrados)
         ? data.denunciantes_involucrados
         : []
@@ -1419,7 +1419,7 @@ export default function NuevaDenunciaPage() {
             barrio: domicilioParsed.barrio || '',
             calles: domicilioParsed.calles || '',
             profesion: fila.profesion || '',
-          matricula: fila.matricula || '',
+            matricula: fila.matricula || '',
             rol: (fila.rol as RolDenunciante) || 'co-denunciante',
             representaA:
               fila.rol === 'abogado' && fila.representa_denunciante_id
@@ -1547,7 +1547,7 @@ export default function NuevaDenunciaPage() {
         setDenunciantes(listaDenunciantes)
         setDenuncianteEnEdicionId(idGenerado)
       }
-      
+
       // Cargar datos de la denuncia
       if (data.fecha_hecho) {
         // Formatear fecha del hecho al formato YYYY-MM-DD
@@ -1573,7 +1573,7 @@ export default function NuevaDenunciaPage() {
         const lugarHechoParsed = descomponerDomicilio(data.lugar_hecho)
         const departamentoLugarValido =
           lugarHechoParsed.departamento && departamentosParaguay.some((dep) => dep.nombre === lugarHechoParsed.departamento)
-        
+
         if (departamentoLugarValido) {
           setValueDenuncia('lugarHechoDepartamento', lugarHechoParsed.departamento)
           const departamentoActual = departamentosParaguay.find((dep) => dep.nombre === lugarHechoParsed.departamento)
@@ -1611,67 +1611,67 @@ export default function NuevaDenunciaPage() {
           setCoordenadas({ lat: parseFloat(data.latitud), lng: parseFloat(data.longitud) })
         }
       }
-      
+
       // Cargar datos del autor
       if (data.supuestos_autores && data.supuestos_autores.length > 0) {
-          const primerAutor = data.supuestos_autores.find((a: any) => a.autor_conocido === 'Conocido')
-          if (primerAutor) {
-            setAutorConocido('Conocido')
-            setValueAutor('nombre', primerAutor.nombre_autor)
-            setValueAutor('cedula', primerAutor.cedula_autor)
-            // Cargar domicilio del autor (descomponer)
-            const domicilioAutorParsed = descomponerDomicilio(primerAutor.domicilio_autor)
-            const departamentoAutorValido =
-              domicilioAutorParsed.departamento && departamentosParaguay.some((dep) => dep.nombre === domicilioAutorParsed.departamento)
-            
-            if (departamentoAutorValido) {
-              setValueAutor('departamento', domicilioAutorParsed.departamento)
-              const departamentoActual = departamentosParaguay.find((dep) => dep.nombre === domicilioAutorParsed.departamento)
-              if (departamentoActual && domicilioAutorParsed.ciudad && departamentoActual.ciudades.includes(domicilioAutorParsed.ciudad)) {
-                setValueAutor('ciudad', domicilioAutorParsed.ciudad)
-                // Verificar si el barrio es válido para esta ciudad
-                if (domicilioAutorParsed.barrio) {
-                  const barriosDisponibles = obtenerBarriosPorCiudad(domicilioAutorParsed.departamento, domicilioAutorParsed.ciudad)
-                  if (barriosDisponibles.includes(domicilioAutorParsed.barrio)) {
-                    setValueAutor('barrio', domicilioAutorParsed.barrio)
-                  } else {
-                    setValueAutor('barrio', '')
-                  }
+        const primerAutor = data.supuestos_autores.find((a: any) => a.autor_conocido === 'Conocido')
+        if (primerAutor) {
+          setAutorConocido('Conocido')
+          setValueAutor('nombre', primerAutor.nombre_autor)
+          setValueAutor('cedula', primerAutor.cedula_autor)
+          // Cargar domicilio del autor (descomponer)
+          const domicilioAutorParsed = descomponerDomicilio(primerAutor.domicilio_autor)
+          const departamentoAutorValido =
+            domicilioAutorParsed.departamento && departamentosParaguay.some((dep) => dep.nombre === domicilioAutorParsed.departamento)
+
+          if (departamentoAutorValido) {
+            setValueAutor('departamento', domicilioAutorParsed.departamento)
+            const departamentoActual = departamentosParaguay.find((dep) => dep.nombre === domicilioAutorParsed.departamento)
+            if (departamentoActual && domicilioAutorParsed.ciudad && departamentoActual.ciudades.includes(domicilioAutorParsed.ciudad)) {
+              setValueAutor('ciudad', domicilioAutorParsed.ciudad)
+              // Verificar si el barrio es válido para esta ciudad
+              if (domicilioAutorParsed.barrio) {
+                const barriosDisponibles = obtenerBarriosPorCiudad(domicilioAutorParsed.departamento, domicilioAutorParsed.ciudad)
+                if (barriosDisponibles.includes(domicilioAutorParsed.barrio)) {
+                  setValueAutor('barrio', domicilioAutorParsed.barrio)
                 } else {
                   setValueAutor('barrio', '')
                 }
               } else {
-                setValueAutor('ciudad', '')
                 setValueAutor('barrio', '')
               }
-              setValueAutor('calles', domicilioAutorParsed.calles || '')
             } else {
-              setValueAutor('departamento', '')
               setValueAutor('ciudad', '')
               setValueAutor('barrio', '')
-              setValueAutor('calles', domicilioAutorParsed.calles || '')
             }
-            setValueAutor('nacionalidad', primerAutor.nacionalidad_autor)
-            setValueAutor('estadoCivil', primerAutor.estado_civil_autor)
-            setValueAutor('edad', primerAutor.edad_autor?.toString())
-            // Formatear fecha de nacimiento del autor al formato YYYY-MM-DD
-            if (primerAutor.fecha_nacimiento_autor) {
-              const fechaNacAutor = new Date(primerAutor.fecha_nacimiento_autor)
-              const fechaFormateadaAutor = fechaNacAutor.toISOString().split('T')[0]
-              setValueAutor('fechaNacimiento', fechaFormateadaAutor)
-            }
-            setValueAutor('lugarNacimiento', primerAutor.lugar_nacimiento_autor)
-            setValueAutor('telefono', primerAutor.telefono_autor)
-            setValueAutor('profesion', primerAutor.profesion_autor)
+            setValueAutor('calles', domicilioAutorParsed.calles || '')
+          } else {
+            setValueAutor('departamento', '')
+            setValueAutor('ciudad', '')
+            setValueAutor('barrio', '')
+            setValueAutor('calles', domicilioAutorParsed.calles || '')
           }
-        
+          setValueAutor('nacionalidad', primerAutor.nacionalidad_autor)
+          setValueAutor('estadoCivil', primerAutor.estado_civil_autor)
+          setValueAutor('edad', primerAutor.edad_autor?.toString())
+          // Formatear fecha de nacimiento del autor al formato YYYY-MM-DD
+          if (primerAutor.fecha_nacimiento_autor) {
+            const fechaNacAutor = new Date(primerAutor.fecha_nacimiento_autor)
+            const fechaFormateadaAutor = fechaNacAutor.toISOString().split('T')[0]
+            setValueAutor('fechaNacimiento', fechaFormateadaAutor)
+          }
+          setValueAutor('lugarNacimiento', primerAutor.lugar_nacimiento_autor)
+          setValueAutor('telefono', primerAutor.telefono_autor)
+          setValueAutor('profesion', primerAutor.profesion_autor)
+        }
+
         // Cargar descripción física
         const autorDesconocido = data.supuestos_autores.find((a: any) => a.autor_conocido === 'Desconocido')
         if (autorDesconocido && autorDesconocido.descripcion_fisica) {
           setAutorConocido('Desconocido')
           try {
-            const descFisica = typeof autorDesconocido.descripcion_fisica === 'string' 
-              ? JSON.parse(autorDesconocido.descripcion_fisica) 
+            const descFisica = typeof autorDesconocido.descripcion_fisica === 'string'
+              ? JSON.parse(autorDesconocido.descripcion_fisica)
               : autorDesconocido.descripcion_fisica
             setDescripcionFisica(descFisica || {})
           } catch {
@@ -1683,7 +1683,7 @@ export default function NuevaDenunciaPage() {
         // Si no hay supuestos_autores, significa que es "No aplica"
         setAutorConocido('No aplica')
       }
-      
+
       // Cargar lugar del hecho "No aplica"
       if (!data.lugar_hecho || data.lugar_hecho.trim() === '') {
         setLugarHechoNoAplica(true)
@@ -1848,11 +1848,11 @@ export default function NuevaDenunciaPage() {
             profesion: autorData.profesion?.toUpperCase() || null,
           }),
         },
-        descripcionFisica: autorConocido === 'Desconocido' 
+        descripcionFisica: autorConocido === 'Desconocido'
           ? (Object.keys(descripcionFisica).length > 0 ? JSON.stringify(descripcionFisica) : null)
           : autorConocido === 'No aplica'
-          ? null
-          : null,
+            ? null
+            : null,
         operador: {
           nombre: usuario.nombre,
           apellido: usuario.apellido,
@@ -1966,11 +1966,11 @@ export default function NuevaDenunciaPage() {
             profesion: autorData.profesion?.toUpperCase() || null,
           }),
         },
-        descripcionFisica: autorConocido === 'Desconocido' 
+        descripcionFisica: autorConocido === 'Desconocido'
           ? (Object.keys(descripcionFisica).length > 0 ? JSON.stringify(descripcionFisica) : null)
           : autorConocido === 'No aplica'
-          ? null
-          : null,
+            ? null
+            : null,
         operador: {
           nombre: usuario.nombre,
           apellido: usuario.apellido,
@@ -2002,7 +2002,7 @@ export default function NuevaDenunciaPage() {
 
   const onDenunciaPrueba = async (data: any) => {
     if (!usuario) return
-    
+
     // Prevenir múltiples envíos simultáneos
     if (loading) return
 
@@ -2079,11 +2079,11 @@ export default function NuevaDenunciaPage() {
             profesion: autorData.profesion?.toUpperCase() || null,
           }),
         },
-        descripcionFisica: autorConocido === 'Desconocido' 
+        descripcionFisica: autorConocido === 'Desconocido'
           ? (Object.keys(descripcionFisica).length > 0 ? JSON.stringify(descripcionFisica) : null)
           : autorConocido === 'No aplica'
-          ? null
-          : null,
+            ? null
+            : null,
         operador: {
           nombre: usuario.nombre,
           apellido: usuario.apellido,
@@ -2121,7 +2121,7 @@ export default function NuevaDenunciaPage() {
 
   const onDenunciaSubmit = async (data: any) => {
     if (!usuario) return
-    
+
     // Prevenir múltiples envíos simultáneos - verificación inmediata con ref
     if (isSubmittingRef.current || loading) {
       console.log('Envío bloqueado: ya hay un envío en proceso')
@@ -2207,11 +2207,11 @@ export default function NuevaDenunciaPage() {
             profesion: autorData.profesion?.toUpperCase() || null,
           }),
         },
-        descripcionFisica: autorConocido === 'Desconocido' 
+        descripcionFisica: autorConocido === 'Desconocido'
           ? (Object.keys(descripcionFisica).length > 0 ? JSON.stringify(descripcionFisica) : null)
           : autorConocido === 'No aplica'
-          ? null
-          : null,
+            ? null
+            : null,
         usuarioId: usuario.id,
       }
 
@@ -2223,7 +2223,7 @@ export default function NuevaDenunciaPage() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
-        
+
         // Manejar error de rate limiting (429)
         if (response.status === 429) {
           const mensaje = errorData.error || 'Debe esperar al menos un minuto entre la creación de denuncias completadas.'
@@ -2232,7 +2232,7 @@ export default function NuevaDenunciaPage() {
           setLoading(false)
           return
         }
-        
+
         throw new Error(errorData.error || 'Error al guardar la denuncia')
       }
 
@@ -2277,10 +2277,10 @@ export default function NuevaDenunciaPage() {
       }
       const fechaActual = fechaHoraInicioDenuncia.fecha.split('/').reverse().join('-')
       const hora = fechaHoraInicioDenuncia.hora
-      
+
       const autorData = watchAutor()
       const denunciaData = watchDenuncia()
-      
+
       // Convertir fecha de hecho si viene en formato YYYY-MM-DD
       let fechaHecho = denunciaData.fechaHecho
       if (fechaHecho && fechaHecho.includes('-')) {
@@ -2332,11 +2332,11 @@ export default function NuevaDenunciaPage() {
             profesion: autorData.profesion?.toUpperCase() || null,
           }),
         },
-        descripcionFisica: autorConocido === 'Desconocido' 
+        descripcionFisica: autorConocido === 'Desconocido'
           ? (Object.keys(descripcionFisica).length > 0 ? JSON.stringify(descripcionFisica) : null)
           : autorConocido === 'No aplica'
-          ? null
-          : null,
+            ? null
+            : null,
         usuarioId: usuario.id,
         borradorId: borradorId,
       }
@@ -2353,7 +2353,7 @@ export default function NuevaDenunciaPage() {
 
       const result = await response.json()
       setBorradorId(result.id)
-      
+
       setMostrarModalBorrador(true)
     } catch (error) {
       console.error('Error:', error)
@@ -2412,11 +2412,10 @@ export default function NuevaDenunciaPage() {
               <React.Fragment key={step.num}>
                 <div className="flex flex-col items-center relative">
                   <div
-                    className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
-                      paso >= step.num
+                    className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${paso >= step.num
                         ? 'bg-blue-600 border-blue-600 text-white'
                         : 'bg-white border-gray-300 text-gray-500'
-                    }`}
+                      }`}
                   >
                     {step.num}
                   </div>
@@ -2426,9 +2425,8 @@ export default function NuevaDenunciaPage() {
                 </div>
                 {index < 2 && (
                   <div
-                    className={`flex-1 h-1 mx-2 ${
-                      paso > step.num ? 'bg-blue-600' : 'bg-gray-300'
-                    }`}
+                    className={`flex-1 h-1 mx-2 ${paso > step.num ? 'bg-blue-600' : 'bg-gray-300'
+                      }`}
                   />
                 )}
               </React.Fragment>
@@ -2481,7 +2479,7 @@ export default function NuevaDenunciaPage() {
                 {errorsDenunciante.rol && (
                   <p className="text-red-600 text-sm mt-1">{errorsDenunciante.rol.message as string}</p>
                 )}
-                
+
                 {/* Botón temporal para completar automáticamente (SOLO PARA PRUEBAS) */}
                 {modoPruebas && (
                   <button
@@ -2570,10 +2568,10 @@ export default function NuevaDenunciaPage() {
                       }}
                       autoComplete="off"
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
-                  />
+                    />
                     {errorsDenunciante.matricula && (
                       <p className="text-red-600 text-sm mt-1">{errorsDenunciante.matricula.message as string}</p>
-                  )}
+                    )}
                   </div>
                 )}
               </div>
@@ -2599,59 +2597,59 @@ export default function NuevaDenunciaPage() {
                           isSearchable
                           placeholder="Buscar nacionalidad..."
                           className="text-sm"
-                        styles={{
-                          control: (base, state) => ({
-                            ...base,
-                            fontFamily: 'Inter, sans-serif',
-                            fontSize: '14px',
-                            minHeight: '42px',
-                            borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
-                            boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
-                            '&:hover': {
-                              borderColor: '#3b82f6',
-                            },
-                          }),
-                          menu: (base) => ({
-                            ...base,
-                            fontFamily: 'Inter, sans-serif',
-                            fontSize: '14px',
-                            maxHeight: '250px',
-                            zIndex: 9999,
-                          }),
-                          menuList: (base) => ({
-                            ...base,
-                            maxHeight: '250px',
-                          }),
-                          option: (base, state) => ({
-                            ...base,
-                            fontFamily: 'Inter, sans-serif',
-                            fontSize: '14px',
-                            padding: '8px 12px',
-                            backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
-                            color: state.isSelected ? 'white' : '#1f2937',
-                            cursor: 'pointer',
-                          }),
-                          input: (base) => ({
-                            ...base,
-                            fontFamily: 'Inter, sans-serif',
-                            fontSize: '14px',
-                            margin: 0,
-                            padding: 0,
-                          }),
-                          singleValue: (base) => ({
-                            ...base,
-                            fontFamily: 'Inter, sans-serif',
-                            fontSize: '14px',
-                            color: '#1f2937',
-                          }),
-                          placeholder: (base) => ({
-                            ...base,
-                            fontFamily: 'Inter, sans-serif',
-                            fontSize: '14px',
-                            color: '#9ca3af',
-                          }),
-                        }}
-                        classNamePrefix="react-select"
+                          styles={{
+                            control: (base, state) => ({
+                              ...base,
+                              fontFamily: 'Inter, sans-serif',
+                              fontSize: '14px',
+                              minHeight: '42px',
+                              borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
+                              boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
+                              '&:hover': {
+                                borderColor: '#3b82f6',
+                              },
+                            }),
+                            menu: (base) => ({
+                              ...base,
+                              fontFamily: 'Inter, sans-serif',
+                              fontSize: '14px',
+                              maxHeight: '250px',
+                              zIndex: 9999,
+                            }),
+                            menuList: (base) => ({
+                              ...base,
+                              maxHeight: '250px',
+                            }),
+                            option: (base, state) => ({
+                              ...base,
+                              fontFamily: 'Inter, sans-serif',
+                              fontSize: '14px',
+                              padding: '8px 12px',
+                              backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
+                              color: state.isSelected ? 'white' : '#1f2937',
+                              cursor: 'pointer',
+                            }),
+                            input: (base) => ({
+                              ...base,
+                              fontFamily: 'Inter, sans-serif',
+                              fontSize: '14px',
+                              margin: 0,
+                              padding: 0,
+                            }),
+                            singleValue: (base) => ({
+                              ...base,
+                              fontFamily: 'Inter, sans-serif',
+                              fontSize: '14px',
+                              color: '#1f2937',
+                            }),
+                            placeholder: (base) => ({
+                              ...base,
+                              fontFamily: 'Inter, sans-serif',
+                              fontSize: '14px',
+                              color: '#9ca3af',
+                            }),
+                          }}
+                          classNamePrefix="react-select"
                         />
                       )
                     }}
@@ -2834,250 +2832,251 @@ export default function NuevaDenunciaPage() {
                     Domicilio
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Departamento *
-                  </label>
-                  <Controller
-                    name="departamento"
-                    control={controlDenunciante}
-                    render={({ field }) => (
-                      <Select
-                        options={departamentoOptions}
-                        value={departamentoOptions.find((option) => option.value === field.value) || null}
-                        onChange={(option) => field.onChange(option?.value || '')}
-                        isClearable
-                        placeholder="Seleccione..."
-                        className="text-sm"
-                        styles={{
-                          control: (base, state) => ({
-                            ...base,
-                            fontFamily: 'Inter, sans-serif',
-                            fontSize: '14px',
-                            minHeight: '42px',
-                            borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
-                            boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
-                            '&:hover': {
-                              borderColor: '#3b82f6',
-                            },
-                          }),
-                          menu: (base) => ({
-                            ...base,
-                            fontFamily: 'Inter, sans-serif',
-                            fontSize: '14px',
-                            maxHeight: '250px',
-                            zIndex: 9999,
-                          }),
-                          menuList: (base) => ({
-                            ...base,
-                            maxHeight: '250px',
-                          }),
-                          option: (base, state) => ({
-                            ...base,
-                            fontFamily: 'Inter, sans-serif',
-                            fontSize: '14px',
-                            padding: '8px 12px',
-                            backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
-                            color: state.isSelected ? 'white' : '#1f2937',
-                            cursor: 'pointer',
-                          }),
-                          input: (base) => ({
-                            ...base,
-                            fontFamily: 'Inter, sans-serif',
-                            fontSize: '14px',
-                            margin: 0,
-                            padding: 0,
-                          }),
-                          singleValue: (base) => ({
-                            ...base,
-                            fontFamily: 'Inter, sans-serif',
-                            fontSize: '14px',
-                            color: '#1f2937',
-                          }),
-                          placeholder: (base) => ({
-                            ...base,
-                            fontFamily: 'Inter, sans-serif',
-                            fontSize: '14px',
-                            color: '#9ca3af',
-                          }),
-                        }}
-                        classNamePrefix="react-select"
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Departamento *
+                      </label>
+                      <Controller
+                        name="departamento"
+                        control={controlDenunciante}
+                        render={({ field }) => (
+                          <Select
+                            options={departamentoOptions}
+                            value={departamentoOptions.find((option) => option.value === field.value) || null}
+                            onChange={(option) => field.onChange(option?.value || '')}
+                            isClearable
+                            placeholder="Seleccione..."
+                            className="text-sm"
+                            styles={{
+                              control: (base, state) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                minHeight: '42px',
+                                borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
+                                boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
+                                '&:hover': {
+                                  borderColor: '#3b82f6',
+                                },
+                              }),
+                              menu: (base) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                maxHeight: '250px',
+                                zIndex: 9999,
+                              }),
+                              menuList: (base) => ({
+                                ...base,
+                                maxHeight: '250px',
+                              }),
+                              option: (base, state) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                padding: '8px 12px',
+                                backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
+                                color: state.isSelected ? 'white' : '#1f2937',
+                                cursor: 'pointer',
+                              }),
+                              input: (base) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                margin: 0,
+                                padding: 0,
+                              }),
+                              singleValue: (base) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                color: '#1f2937',
+                              }),
+                              placeholder: (base) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                color: '#9ca3af',
+                              }),
+                            }}
+                            classNamePrefix="react-select"
+                          />
+                        )}
                       />
-                    )}
-                  />
-                  {errorsDenunciante.departamento && (
-                    <p className="text-red-600 text-sm mt-1">{errorsDenunciante.departamento.message as string}</p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Ciudad *
-                  </label>
-                  <Controller
-                    name="ciudad"
-                    control={controlDenunciante}
-                    render={({ field }) => (
-                      <Select
-                        options={ciudadOptions}
-                        value={ciudadOptions.find((option) => option.value === field.value) || null}
-                        onChange={(option) => field.onChange(option?.value || '')}
-                        isClearable
-                        isDisabled={!departamentoSeleccionado}
-                        placeholder={departamentoSeleccionado ? 'Seleccione...' : 'Seleccione un departamento primero'}
-                        className="text-sm"
-                        styles={{
-                          control: (base, state) => ({
-                            ...base,
-                            fontFamily: 'Inter, sans-serif',
-                            fontSize: '14px',
-                            minHeight: '42px',
-                            borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
-                            boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
-                            '&:hover': {
-                              borderColor: '#3b82f6',
-                            },
-                          }),
-                          menu: (base) => ({
-                            ...base,
-                            fontFamily: 'Inter, sans-serif',
-                            fontSize: '14px',
-                            maxHeight: '250px',
-                            zIndex: 9999,
-                          }),
-                          menuList: (base) => ({
-                            ...base,
-                            maxHeight: '250px',
-                          }),
-                          option: (base, state) => ({
-                            ...base,
-                            fontFamily: 'Inter, sans-serif',
-                            fontSize: '14px',
-                            padding: '8px 12px',
-                            backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
-                            color: state.isSelected ? 'white' : '#1f2937',
-                            cursor: 'pointer',
-                          }),
-                          input: (base) => ({
-                            ...base,
-                            fontFamily: 'Inter, sans-serif',
-                            fontSize: '14px',
-                            margin: 0,
-                            padding: 0,
-                          }),
-                          singleValue: (base) => ({
-                            ...base,
-                            fontFamily: 'Inter, sans-serif',
-                            fontSize: '14px',
-                            color: '#1f2937',
-                          }),
-                          placeholder: (base) => ({
-                            ...base,
-                            fontFamily: 'Inter, sans-serif',
-                            fontSize: '14px',
-                            color: '#9ca3af',
-                          }),
-                        }}
-                        classNamePrefix="react-select"
+                      {errorsDenunciante.departamento && (
+                        <p className="text-red-600 text-sm mt-1">{errorsDenunciante.departamento.message as string}</p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Ciudad *
+                      </label>
+                      <Controller
+                        name="ciudad"
+                        control={controlDenunciante}
+                        render={({ field }) => (
+                          <Select
+                            options={ciudadOptions}
+                            value={ciudadOptions.find((option) => option.value === field.value) || null}
+                            onChange={(option) => field.onChange(option?.value || '')}
+                            isClearable
+                            isDisabled={!departamentoSeleccionado}
+                            placeholder={departamentoSeleccionado ? 'Seleccione...' : 'Seleccione un departamento primero'}
+                            className="text-sm"
+                            styles={{
+                              control: (base, state) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                minHeight: '42px',
+                                borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
+                                boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
+                                '&:hover': {
+                                  borderColor: '#3b82f6',
+                                },
+                              }),
+                              menu: (base) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                maxHeight: '250px',
+                                zIndex: 9999,
+                              }),
+                              menuList: (base) => ({
+                                ...base,
+                                maxHeight: '250px',
+                              }),
+                              option: (base, state) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                padding: '8px 12px',
+                                backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
+                                color: state.isSelected ? 'white' : '#1f2937',
+                                cursor: 'pointer',
+                              }),
+                              input: (base) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                margin: 0,
+                                padding: 0,
+                              }),
+                              singleValue: (base) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                color: '#1f2937',
+                              }),
+                              placeholder: (base) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                color: '#9ca3af',
+                              }),
+                            }}
+                            classNamePrefix="react-select"
+                          />
+                        )}
                       />
-                    )}
-                  />
-                  {errorsDenunciante.ciudad && (
-                    <p className="text-red-600 text-sm mt-1">{errorsDenunciante.ciudad.message as string}</p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Barrio
-                  </label>
-                  <Controller
-                    name="barrio"
-                    control={controlDenunciante}
-                    render={({ field }) => (
-                      <Select
-                        options={barrioOptions}
-                        value={barrioOptions.find((option) => option.value === field.value) || null}
-                        onChange={(option) => field.onChange(option?.value || '')}
-                        isDisabled={!ciudadSeleccionada}
-                        placeholder={ciudadSeleccionada ? 'Seleccione...' : 'Seleccione una ciudad primero'}
-                        className="text-sm"
-                        styles={{
-                          control: (base, state) => ({
-                            ...base,
-                            fontFamily: 'Inter, sans-serif',
-                            fontSize: '14px',
-                            minHeight: '42px',
-                            borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
-                            boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
-                            '&:hover': {
-                              borderColor: '#3b82f6',
-                            },
-                          }),
-                          menu: (base) => ({
-                            ...base,
-                            fontFamily: 'Inter, sans-serif',
-                            fontSize: '14px',
-                            maxHeight: '250px',
-                            zIndex: 9999,
-                          }),
-                          menuList: (base) => ({
-                            ...base,
-                            maxHeight: '250px',
-                          }),
-                          option: (base, state) => ({
-                            ...base,
-                            fontFamily: 'Inter, sans-serif',
-                            fontSize: '14px',
-                            padding: '8px 12px',
-                            backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
-                            color: state.isSelected ? 'white' : '#1f2937',
-                            cursor: 'pointer',
-                          }),
-                          input: (base) => ({
-                            ...base,
-                            fontFamily: 'Inter, sans-serif',
-                            fontSize: '14px',
-                            margin: 0,
-                            padding: 0,
-                          }),
-                          singleValue: (base) => ({
-                            ...base,
-                            fontFamily: 'Inter, sans-serif',
-                            fontSize: '14px',
-                            color: '#1f2937',
-                          }),
-                          placeholder: (base) => ({
-                            ...base,
-                            fontFamily: 'Inter, sans-serif',
-                            fontSize: '14px',
-                            color: '#9ca3af',
-                          }),
-                        }}
-                        classNamePrefix="react-select"
+                      {errorsDenunciante.ciudad && (
+                        <p className="text-red-600 text-sm mt-1">{errorsDenunciante.ciudad.message as string}</p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Barrio
+                      </label>
+                      <Controller
+                        name="barrio"
+                        control={controlDenunciante}
+                        render={({ field }) => (
+                          <Select
+                            options={barrioOptions}
+                            value={barrioOptions.find((option) => option.value === field.value) || null}
+                            onChange={(option) => field.onChange(option?.value || '')}
+                            isClearable
+                            isDisabled={!ciudadSeleccionada}
+                            placeholder={ciudadSeleccionada ? 'Seleccione...' : 'Seleccione una ciudad primero'}
+                            className="text-sm"
+                            styles={{
+                              control: (base, state) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                minHeight: '42px',
+                                borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
+                                boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
+                                '&:hover': {
+                                  borderColor: '#3b82f6',
+                                },
+                              }),
+                              menu: (base) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                maxHeight: '250px',
+                                zIndex: 9999,
+                              }),
+                              menuList: (base) => ({
+                                ...base,
+                                maxHeight: '250px',
+                              }),
+                              option: (base, state) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                padding: '8px 12px',
+                                backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
+                                color: state.isSelected ? 'white' : '#1f2937',
+                                cursor: 'pointer',
+                              }),
+                              input: (base) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                margin: 0,
+                                padding: 0,
+                              }),
+                              singleValue: (base) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                color: '#1f2937',
+                              }),
+                              placeholder: (base) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                color: '#9ca3af',
+                              }),
+                            }}
+                            classNamePrefix="react-select"
+                          />
+                        )}
                       />
+                      {errorsDenunciante.barrio && (
+                        <p className="text-red-600 text-sm mt-1">{errorsDenunciante.barrio.message as string}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Calles / Referencias *
+                    </label>
+                    <input
+                      {...registerDenunciante('calles')}
+                      onChange={(e) => {
+                        convertirAMayusculas(e)
+                        registerDenunciante('calles').onChange(e)
+                      }}
+                      autoComplete="off"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
+                    />
+                    {errorsDenunciante.calles && (
+                      <p className="text-red-600 text-sm mt-1">{errorsDenunciante.calles.message as string}</p>
                     )}
-                  />
-                  {errorsDenunciante.barrio && (
-                    <p className="text-red-600 text-sm mt-1">{errorsDenunciante.barrio.message as string}</p>
-                  )}
-                </div>
-                </div>
-                <div className="mt-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Calles / Referencias *
-                  </label>
-                  <input
-                    {...registerDenunciante('calles')}
-                    onChange={(e) => {
-                      convertirAMayusculas(e)
-                      registerDenunciante('calles').onChange(e)
-                    }}
-                    autoComplete="off"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
-                  />
-                  {errorsDenunciante.calles && (
-                    <p className="text-red-600 text-sm mt-1">{errorsDenunciante.calles.message as string}</p>
-                  )}
-                </div>
+                  </div>
                 </div>
               )}
 
@@ -3124,9 +3123,8 @@ export default function NuevaDenunciaPage() {
                       return (
                         <div
                           key={denunciante.id}
-                          className={`rounded-lg border p-4 transition ${
-                            esEdicionActual ? 'border-blue-400 bg-blue-50' : 'border-gray-200 bg-white'
-                          }`}
+                          className={`rounded-lg border p-4 transition ${esEdicionActual ? 'border-blue-400 bg-blue-50' : 'border-gray-200 bg-white'
+                            }`}
                         >
                           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                             <div>
@@ -3138,8 +3136,8 @@ export default function NuevaDenunciaPage() {
                                 {denunciante.rol === 'principal'
                                   ? 'Denunciante principal'
                                   : denunciante.rol === 'co-denunciante'
-                                  ? 'Co-denunciante'
-                                  : 'Abogado / representante legal'}
+                                    ? 'Co-denunciante'
+                                    : 'Abogado / representante legal'}
                               </p>
                               {denunciante.rol === 'abogado' && representado && (
                                 <p className="text-sm text-gray-600">
@@ -3680,9 +3678,8 @@ export default function NuevaDenunciaPage() {
                       {...registerAutor('edad')}
                       type="number"
                       readOnly={!!fechaNacimientoAutor}
-                      className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                        fechaNacimientoAutor ? 'bg-gray-100 cursor-not-allowed' : ''
-                      }`}
+                      className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${fechaNacimientoAutor ? 'bg-gray-100 cursor-not-allowed' : ''
+                        }`}
                     />
                   </div>
                 </div>
@@ -4059,7 +4056,7 @@ export default function NuevaDenunciaPage() {
                   El hecho ocurrió en un rango de fechas/horas (fecha/hora desconocida)
                 </label>
               </div>
-              
+
               {!usarRango ? (
                 // Fecha y hora única
                 <div className="grid grid-cols-2 gap-4">
@@ -4257,8 +4254,8 @@ export default function NuevaDenunciaPage() {
                 <div>
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-semibold text-gray-800 border-b pb-2 flex-1">
-                    Lugar del Hecho
-                  </h3>
+                      Lugar del Hecho
+                    </h3>
                     <label className="flex items-center ml-4 cursor-pointer">
                       <input
                         type="checkbox"
@@ -4439,6 +4436,7 @@ export default function NuevaDenunciaPage() {
                                 options={lugarHechoBarrioOptions}
                                 value={lugarHechoBarrioOptions.find((option) => option.value === field.value) || null}
                                 onChange={(option) => field.onChange(option?.value || '')}
+                                isClearable
                                 isDisabled={!lugarHechoCiudad}
                                 placeholder={lugarHechoCiudad ? 'Seleccione...' : 'Seleccione una ciudad primero'}
                                 className="text-sm"
@@ -4700,13 +4698,13 @@ export default function NuevaDenunciaPage() {
                 </svg>
               </button>
             </div>
-            
+
             {/* Contenido con scroll */}
             <div className="flex-1 overflow-y-auto bg-gradient-to-br from-gray-50 to-gray-100">
               <div className="p-8">
                 <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-10 max-w-4xl mx-auto">
                   <div className="prose prose-lg max-w-none font-lato" style={{ fontFamily: 'var(--font-lato), Lato, sans-serif' }}>
-                    <div 
+                    <div
                       className="text-[15px] text-gray-900 leading-[1.8] tracking-wide antialiased font-lato"
                       style={{ fontFamily: 'var(--font-lato), Lato, sans-serif' }}
                       dangerouslySetInnerHTML={{ __html: textoVistaPrevia.replace(/\n/g, '<br />') }}
@@ -4715,7 +4713,7 @@ export default function NuevaDenunciaPage() {
                 </div>
               </div>
             </div>
-            
+
             {/* Footer con botones */}
             <div className="flex gap-4 px-8 py-6 bg-white border-t border-gray-200 rounded-b-2xl">
               <button
