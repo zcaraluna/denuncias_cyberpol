@@ -100,7 +100,6 @@ const denuncianteSchema = z
       }
       requiereValor(Boolean(data.departamento?.trim()), ['departamento'], 'Seleccione un departamento')
       requiereValor(Boolean(data.ciudad?.trim()), ['ciudad'], 'Seleccione una ciudad')
-      requiereValor(Boolean(data.barrio?.trim()), ['barrio'], 'Seleccione un barrio')
       requiereValor(Boolean(data.calles?.trim()), ['calles'], 'Ingrese las calles o dirección')
     }
   })
@@ -194,13 +193,7 @@ const denunciaSchema = z.object({
         message: 'Seleccione una ciudad',
       })
     }
-    if (!data.lugarHechoBarrio || data.lugarHechoBarrio.trim() === '') {
-      ctx.addIssue({
-        path: ['lugarHechoBarrio'],
-        code: z.ZodIssueCode.custom,
-        message: 'Seleccione un barrio',
-      })
-    }
+
     if (!data.lugarHechoCalles || data.lugarHechoCalles.trim() === '') {
       ctx.addIssue({
         path: ['lugarHechoCalles'],
@@ -2994,7 +2987,7 @@ export default function NuevaDenunciaPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Barrio *
+                    Barrio
                   </label>
                   <Controller
                     name="barrio"
@@ -4436,7 +4429,7 @@ export default function NuevaDenunciaPage() {
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Barrio *
+                            Barrio
                           </label>
                           <Controller
                             name="lugarHechoBarrio"
