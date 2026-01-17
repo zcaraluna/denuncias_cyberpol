@@ -1,6 +1,6 @@
 # Sistema de Denuncias Policiales - CYBERPOL
 
-Plataforma web moderna para la gestión de denuncias policiales desarrollada con Next.js y PostgreSQL.
+Plataforma web moderna para la gestión de denuncias policiales desarrollada con Next.js y PostgreSQL
 
 ## Características
 
