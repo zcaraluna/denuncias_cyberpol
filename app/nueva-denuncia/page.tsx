@@ -1690,6 +1690,9 @@ export default function NuevaDenunciaPage() {
       } else {
         setLugarHechoNoAplica(false)
       }
+
+      // Ir directamente al paso 2 (relato) cuando se carga un borrador
+      setPaso(2)
     } catch (error) {
       console.error('Error cargando borrador:', error)
     }
@@ -2352,7 +2355,7 @@ export default function NuevaDenunciaPage() {
       }
 
       const result = await response.json()
-      setBorradorId(result.id)
+      setBorradorId(result.borradorId)
 
       setMostrarModalBorrador(true)
     } catch (error) {
@@ -2413,8 +2416,8 @@ export default function NuevaDenunciaPage() {
                 <div className="flex flex-col items-center relative">
                   <div
                     className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${paso >= step.num
-                        ? 'bg-blue-600 border-blue-600 text-white'
-                        : 'bg-white border-gray-300 text-gray-500'
+                      ? 'bg-blue-600 border-blue-600 text-white'
+                      : 'bg-white border-gray-300 text-gray-500'
                       }`}
                   >
                     {step.num}
