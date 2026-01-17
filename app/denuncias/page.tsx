@@ -1,9 +1,8 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import Select from 'react-select'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { formatearFechaSinTimezone } from '@/lib/utils/fecha'
 
@@ -30,24 +29,6 @@ export default function DenunciasPage() {
   const [error, setError] = useState<string | null>(null)
   const [denunciasPorCedula, setDenunciasPorCedula] = useState<Denuncia[]>([])
   const [mostrarResultadosCedula, setMostrarResultadosCedula] = useState(false)
-  
-  // Estados temporales para filtros (valores que el usuario está escribiendo)
-  const [filtroNombreTemp, setFiltroNombreTemp] = useState('')
-  const [filtroCedulaTemp, setFiltroCedulaTemp] = useState('')
-  const [filtroTipoTemp, setFiltroTipoTemp] = useState('')
-  const [filtroFechaDesdeTemp, setFiltroFechaDesdeTemp] = useState('')
-  const [filtroFechaHastaTemp, setFiltroFechaHastaTemp] = useState('')
-  
-  // Estados aplicados para filtros (valores que realmente se usan para filtrar)
-  const [filtroNombre, setFiltroNombre] = useState('')
-  const [filtroCedula, setFiltroCedula] = useState('')
-  const [filtroTipo, setFiltroTipo] = useState('')
-  const [filtroFechaDesde, setFiltroFechaDesde] = useState('')
-  const [filtroFechaHasta, setFiltroFechaHasta] = useState('')
-  
-  const [mostrarSelectorFecha, setMostrarSelectorFecha] = useState(false)
-  const [paginaActual, setPaginaActual] = useState(1)
-  const itemsPorPagina = 10
 
   const cargarDenuncias = async () => {
     if (!usuario) return
@@ -75,36 +56,6 @@ export default function DenunciasPage() {
       }
     }
   }, [usuario])
-
-  // Sincronizar estados temporales con aplicados al cargar
-  useEffect(() => {
-    setFiltroNombreTemp(filtroNombre)
-    setFiltroCedulaTemp(filtroCedula)
-    setFiltroTipoTemp(filtroTipo)
-    setFiltroFechaDesdeTemp(filtroFechaDesde)
-    setFiltroFechaHastaTemp(filtroFechaHasta)
-  }, []) // Solo al montar el componente
-
-  // Cerrar selector de fechas al hacer click fuera
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as HTMLElement
-      if (mostrarSelectorFecha && !target.closest('.selector-fecha-container')) {
-        setMostrarSelectorFecha(false)
-        // Restaurar valores temporales a los aplicados
-        setFiltroFechaDesdeTemp(filtroFechaDesde)
-        setFiltroFechaHastaTemp(filtroFechaHasta)
-      }
-    }
-
-    if (mostrarSelectorFecha) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [mostrarSelectorFecha, filtroFechaDesde, filtroFechaHasta])
 
 
   const buscarPorHash = async () => {
@@ -157,95 +108,6 @@ export default function DenunciasPage() {
     router.push(`/ver-denuncia/${id}`)
   }
 
-  // Obtener tipos únicos para el filtro (en mayúsculas)
-  const tiposDisponibles = useMemo(() => {
-    const tipos = new Set(denuncias.map(d => d.tipo_hecho?.toUpperCase() || '').filter(Boolean))
-    return Array.from(tipos).sort()
-  }, [denuncias])
-
-  // Opciones para react-select
-  const opcionesTipos = useMemo(() => {
-    return [
-      { value: '', label: 'TODOS LOS TIPOS' },
-      ...tiposDisponibles.map(tipo => ({ value: tipo, label: tipo }))
-    ]
-  }, [tiposDisponibles])
-
-  // Filtrar denuncias
-  const denunciasFiltradas = useMemo(() => {
-    return denuncias.filter(denuncia => {
-      const nombreMatch = !filtroNombre || 
-        denuncia.nombre_denunciante.toLowerCase().includes(filtroNombre.toLowerCase())
-      const cedulaMatch = !filtroCedula || 
-        denuncia.cedula_denunciante.includes(filtroCedula)
-      const tipoMatch = !filtroTipo || 
-        denuncia.tipo_hecho?.toUpperCase() === filtroTipo
-      
-      let fechaMatch = true
-      if (filtroFechaDesde || filtroFechaHasta) {
-        const fechaDenuncia = new Date(denuncia.fecha_denuncia)
-        if (filtroFechaDesde) {
-          const fechaDesde = new Date(filtroFechaDesde)
-          fechaDesde.setHours(0, 0, 0, 0)
-          if (fechaDenuncia < fechaDesde) fechaMatch = false
-        }
-        if (filtroFechaHasta) {
-          const fechaHasta = new Date(filtroFechaHasta)
-          fechaHasta.setHours(23, 59, 59, 999)
-          if (fechaDenuncia > fechaHasta) fechaMatch = false
-        }
-      }
-      
-      return nombreMatch && cedulaMatch && tipoMatch && fechaMatch
-    })
-  }, [denuncias, filtroNombre, filtroCedula, filtroTipo, filtroFechaDesde, filtroFechaHasta])
-
-  // Calcular paginación
-  const totalPaginas = Math.ceil(denunciasFiltradas.length / itemsPorPagina)
-  const indiceInicio = (paginaActual - 1) * itemsPorPagina
-  const indiceFin = indiceInicio + itemsPorPagina
-  const denunciasPaginaActual = denunciasFiltradas.slice(indiceInicio, indiceFin)
-
-  // Resetear página cuando cambian los filtros aplicados
-  useEffect(() => {
-    setPaginaActual(1)
-  }, [filtroNombre, filtroCedula, filtroTipo, filtroFechaDesde, filtroFechaHasta])
-
-  const aplicarFiltros = () => {
-    setFiltroNombre(filtroNombreTemp)
-    setFiltroCedula(filtroCedulaTemp)
-    setFiltroTipo(filtroTipoTemp)
-    setFiltroFechaDesde(filtroFechaDesdeTemp)
-    setFiltroFechaHasta(filtroFechaHastaTemp)
-    setPaginaActual(1)
-  }
-
-  const limpiarFiltros = () => {
-    setFiltroNombreTemp('')
-    setFiltroCedulaTemp('')
-    setFiltroTipoTemp('')
-    setFiltroFechaDesdeTemp('')
-    setFiltroFechaHastaTemp('')
-    setFiltroNombre('')
-    setFiltroCedula('')
-    setFiltroTipo('')
-    setFiltroFechaDesde('')
-    setFiltroFechaHasta('')
-    setMostrarSelectorFecha(false)
-    setPaginaActual(1)
-  }
-
-  const aplicarFiltroFecha = () => {
-    // Los valores ya están en los estados temporales, solo cerramos el selector
-    setMostrarSelectorFecha(false)
-  }
-
-  const cancelarFiltroFecha = () => {
-    setFiltroFechaDesdeTemp(filtroFechaDesde)
-    setFiltroFechaHastaTemp(filtroFechaHasta)
-    setMostrarSelectorFecha(false)
-  }
-
   if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -288,292 +150,80 @@ export default function DenunciasPage() {
               <p className="text-gray-600">Lista completa de denuncias del sistema</p>
             </div>
 
-            {/* Filtros */}
-            {denuncias.length > 0 && (
-              <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Nombre
-                    </label>
-                    <input
-                      type="text"
-                      value={filtroNombreTemp}
-                      onChange={(e) => setFiltroNombreTemp(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && aplicarFiltros()}
-                      placeholder="Buscar por nombre..."
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Cédula
-                    </label>
-                    <input
-                      type="text"
-                      value={filtroCedulaTemp}
-                      onChange={(e) => setFiltroCedulaTemp(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && aplicarFiltros()}
-                      placeholder="Buscar por cédula..."
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Tipo
-                    </label>
-                    <Select
-                      options={opcionesTipos}
-                      value={opcionesTipos.find(opcion => opcion.value === filtroTipoTemp) || opcionesTipos[0]}
-                      onChange={(option) => setFiltroTipoTemp(option?.value || '')}
-                      isSearchable
-                      placeholder="Buscar tipo..."
-                      className="text-sm"
-                      classNamePrefix="react-select"
-                      styles={{
-                        control: (base, state) => ({
-                          ...base,
-                          fontFamily: 'Inter, sans-serif',
-                          fontSize: '14px',
-                          minHeight: '42px',
-                          borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
-                          boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
-                          '&:hover': {
-                            borderColor: '#3b82f6',
-                          },
-                        }),
-                        menu: (base) => ({
-                          ...base,
-                          fontFamily: 'Inter, sans-serif',
-                          fontSize: '14px',
-                          maxHeight: '250px',
-                          zIndex: 9999,
-                        }),
-                        menuList: (base) => ({
-                          ...base,
-                          maxHeight: '250px',
-                        }),
-                        option: (base, state) => ({
-                          ...base,
-                          fontFamily: 'Inter, sans-serif',
-                          fontSize: '14px',
-                          padding: '8px 12px',
-                          backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
-                          color: state.isSelected ? 'white' : '#1f2937',
-                          cursor: 'pointer',
-                          textTransform: 'uppercase',
-                        }),
-                        input: (base) => ({
-                          ...base,
-                          fontFamily: 'Inter, sans-serif',
-                          fontSize: '14px',
-                          margin: 0,
-                          padding: 0,
-                        }),
-                        singleValue: (base) => ({
-                          ...base,
-                          fontFamily: 'Inter, sans-serif',
-                          fontSize: '14px',
-                          color: '#1f2937',
-                          textTransform: 'uppercase',
-                        }),
-                        placeholder: (base) => ({
-                          ...base,
-                          fontFamily: 'Inter, sans-serif',
-                          fontSize: '14px',
-                          color: '#9ca3af',
-                        }),
-                      }}
-                    />
-                  </div>
-                  <div className="relative selector-fecha-container">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Rango de Fechas
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (!mostrarSelectorFecha) {
-                          setFiltroFechaDesdeTemp(filtroFechaDesdeTemp || filtroFechaDesde)
-                          setFiltroFechaHastaTemp(filtroFechaHastaTemp || filtroFechaHasta)
-                        }
-                        setMostrarSelectorFecha(!mostrarSelectorFecha)
-                      }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-left bg-white hover:bg-gray-50 transition"
-                    >
-                      {filtroFechaDesdeTemp && filtroFechaHastaTemp
-                        ? `${filtroFechaDesdeTemp} - ${filtroFechaHastaTemp}`
-                        : filtroFechaDesdeTemp
-                        ? `Desde: ${filtroFechaDesdeTemp}`
-                        : 'Seleccionar rango de fechas'}
-                    </button>
-                    
-                    {mostrarSelectorFecha && (
-                      <div className="absolute z-50 mt-2 left-0 right-0 md:left-auto md:right-0 bg-white border border-gray-300 rounded-lg shadow-lg p-4 w-full md:w-auto md:min-w-[320px] selector-fecha-container">
-                        <div className="space-y-4">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Fecha Desde
-                            </label>
-                            <input
-                              type="date"
-                              value={filtroFechaDesdeTemp}
-                              onChange={(e) => setFiltroFechaDesdeTemp(e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Fecha Hasta
-                            </label>
-                            <input
-                              type="date"
-                              value={filtroFechaHastaTemp}
-                              onChange={(e) => setFiltroFechaHastaTemp(e.target.value)}
-                              min={filtroFechaDesdeTemp || undefined}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            />
-                          </div>
-                          <div className="flex gap-2 justify-end pt-2 border-t border-gray-200">
-                            <button
-                              onClick={cancelarFiltroFecha}
-                              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition"
-                            >
-                              Cancelar
-                            </button>
-                            <button
-                              onClick={aplicarFiltroFecha}
-                              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition"
-                            >
-                              Aplicar
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className="mt-4 flex justify-end gap-2">
-                  <button
-                    onClick={limpiarFiltros}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition"
-                  >
-                    Limpiar Filtros
-                  </button>
-                  <button
-                    onClick={aplicarFiltros}
-                    className="px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition"
-                  >
-                    Buscar
-                  </button>
-                </div>
-              </div>
-            )}
-
             {denuncias.length === 0 ? (
               <div className="bg-white rounded-lg shadow-md p-8 text-center">
                 <p className="text-gray-600">No hay denuncias registradas</p>
               </div>
-            ) : denunciasFiltradas.length === 0 ? (
-              <div className="bg-white rounded-lg shadow-md p-8 text-center">
-                <p className="text-gray-600">No se encontraron denuncias con los filtros aplicados</p>
-              </div>
             ) : (
-              <>
-                <div className="bg-white rounded-lg shadow-md overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            #
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            DENUNCIANTE
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            CÉDULA
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            TIPO
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            FECHA Y HORA
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            ACCIONES
-                          </th>
+              <div className="bg-white rounded-lg shadow-md overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          #
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          DENUNCIANTE
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          CÉDULA
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          TIPO
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          FECHA Y HORA
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          ESTADO
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          ACCIONES
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {denuncias.map((denuncia) => (
+                        <tr key={denuncia.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {denuncia.numero_orden}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {denuncia.nombre_denunciante}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {denuncia.cedula_denunciante}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {denuncia.tipo_hecho}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {formatearFechaSinTimezone(denuncia.fecha_denuncia)} {denuncia.hora_denuncia}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              denuncia.estado === 'completada'
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-yellow-100 text-yellow-800'
+                            }`}>
+                              {denuncia.estado === 'completada' ? 'Completada' : 'Borrador'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <button
+                              onClick={() => verDenuncia(denuncia.id)}
+                              className="text-blue-600 hover:text-blue-900"
+                            >
+                              Ver Denuncia
+                            </button>
+                          </td>
                         </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {denunciasPaginaActual.map((denuncia) => (
-                          <tr key={denuncia.id} className="hover:bg-gray-50">
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {denuncia.numero_orden}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {denuncia.nombre_denunciante}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {denuncia.cedula_denunciante}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 uppercase">
-                              {denuncia.tipo_hecho?.toUpperCase() || ''}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {formatearFechaSinTimezone(denuncia.fecha_denuncia)} {denuncia.hora_denuncia}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                              <button
-                                onClick={() => verDenuncia(denuncia.id)}
-                                className="text-blue-600 hover:text-blue-900"
-                              >
-                                Ver Denuncia
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-
-                {/* Paginación */}
-                {totalPaginas > 1 && (
-                  <div className="mt-6 flex items-center justify-between bg-white rounded-lg shadow-md p-4">
-                    <div className="text-sm text-gray-700">
-                      Mostrando {indiceInicio + 1} a {Math.min(indiceFin, denunciasFiltradas.length)} de {denunciasFiltradas.length} denuncias
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setPaginaActual(prev => Math.max(1, prev - 1))}
-                        disabled={paginaActual === 1}
-                        className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition flex items-center gap-2 font-medium text-gray-700 bg-white"
-                        aria-label="Página anterior"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                        </svg>
-                        <span>Anterior</span>
-                      </button>
-                      <div className="px-4 py-2 text-gray-700 font-medium">
-                        Página {paginaActual} de {totalPaginas}
-                      </div>
-                      <button
-                        onClick={() => setPaginaActual(prev => Math.min(totalPaginas, prev + 1))}
-                        disabled={paginaActual === totalPaginas}
-                        className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition flex items-center gap-2 font-medium text-gray-700 bg-white"
-                        aria-label="Página siguiente"
-                      >
-                        <span>Siguiente</span>
-                        <svg className="w-5 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </>
+              </div>
             )}
           </>
         ) : (
@@ -674,8 +324,8 @@ export default function DenunciasPage() {
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             {denuncia.nombre_denunciante}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 uppercase">
-                            {denuncia.tipo_hecho?.toUpperCase() || ''}
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {denuncia.tipo_hecho}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             {formatearFechaSinTimezone(denuncia.fecha_denuncia)} {denuncia.hora_denuncia}

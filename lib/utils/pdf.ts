@@ -1126,8 +1126,8 @@ export async function generarPDFAmpliacion(
   let yNombreOperador = yFirmas + 7
   nombreLineasOperador.forEach((linea: string) => {
     doc.text(linea, 48, yNombreOperador, {
-      align: 'center',
-    })
+    align: 'center',
+  })
     yNombreOperador += 5 // Espacio entre líneas
   })
   
