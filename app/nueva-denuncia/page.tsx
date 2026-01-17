@@ -1033,9 +1033,24 @@ export default function NuevaDenunciaPage() {
     const registro = denunciantes.find((denunciante) => denunciante.id === id)
     if (!registro) return
     setDenuncianteEnEdicionId(id)
+
+    // Parsear el domicilio completo en sus componentes
+    const domicilioCompleto = [
+      registro.departamento,
+      registro.ciudad,
+      registro.barrio,
+      registro.calles
+    ].filter(Boolean).join(', ')
+
+    const domicilioParsed = descomponerDomicilio(domicilioCompleto)
+
     const { id: _id, ...resto } = registro
     resetDenunciante({
       ...resto,
+      departamento: domicilioParsed.departamento || '',
+      ciudad: domicilioParsed.ciudad || '',
+      barrio: domicilioParsed.barrio || '',
+      calles: domicilioParsed.calles || '',
       representaA: registro.rol === 'abogado' ? registro.representaA : null,
     })
   }
@@ -1691,8 +1706,8 @@ export default function NuevaDenunciaPage() {
         setLugarHechoNoAplica(false)
       }
 
-      // Ir directamente al paso 2 (relato) cuando se carga un borrador
-      setPaso(2)
+      // Ir directamente al paso 3 (relato) cuando se carga un borrador
+      setPaso(3)
     } catch (error) {
       console.error('Error cargando borrador:', error)
     }
