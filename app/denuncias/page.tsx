@@ -1,8 +1,10 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import Link from 'next/link'
+import Select from 'react-select'
+import DateRangePicker from '@/components/DateRangePicker'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { formatearFechaSinTimezone } from '@/lib/utils/fecha'
 
@@ -29,6 +31,23 @@ export default function DenunciasPage() {
   const [error, setError] = useState<string | null>(null)
   const [denunciasPorCedula, setDenunciasPorCedula] = useState<Denuncia[]>([])
   const [mostrarResultadosCedula, setMostrarResultadosCedula] = useState(false)
+  
+  // Estados temporales para filtros (valores que el usuario está escribiendo)
+  const [filtroNombreTemp, setFiltroNombreTemp] = useState('')
+  const [filtroCedulaTemp, setFiltroCedulaTemp] = useState('')
+  const [filtroTipoTemp, setFiltroTipoTemp] = useState('')
+  const [filtroFechaDesdeTemp, setFiltroFechaDesdeTemp] = useState('')
+  const [filtroFechaHastaTemp, setFiltroFechaHastaTemp] = useState('')
+  
+  // Estados aplicados para filtros (valores que realmente se usan para filtrar)
+  const [filtroNombre, setFiltroNombre] = useState('')
+  const [filtroCedula, setFiltroCedula] = useState('')
+  const [filtroTipo, setFiltroTipo] = useState('')
+  const [filtroFechaDesde, setFiltroFechaDesde] = useState('')
+  const [filtroFechaHasta, setFiltroFechaHasta] = useState('')
+  
+  const [paginaActual, setPaginaActual] = useState(1)
+  const itemsPorPagina = 10
 
   const cargarDenuncias = async () => {
     if (!usuario) return
@@ -56,6 +75,16 @@ export default function DenunciasPage() {
       }
     }
   }, [usuario])
+
+
+  // Sincronizar estados temporales con aplicados al cargar
+  useEffect(() => {
+    setFiltroNombreTemp(filtroNombre)
+    setFiltroCedulaTemp(filtroCedula)
+    setFiltroTipoTemp(filtroTipo)
+    setFiltroFechaDesdeTemp(filtroFechaDesde)
+    setFiltroFechaHastaTemp(filtroFechaHasta)
+  }, []) // Solo al montar el componente
 
 
   const buscarPorHash = async () => {
@@ -108,6 +137,92 @@ export default function DenunciasPage() {
     router.push(`/ver-denuncia/${id}`)
   }
 
+  // Obtener tipos únicos para el filtro (en mayúsculas)
+  const tiposDisponibles = useMemo(() => {
+    const tipos = new Set(denuncias.map(d => d.tipo_hecho?.toUpperCase() || '').filter(Boolean))
+    return Array.from(tipos).sort()
+  }, [denuncias])
+
+  // Opciones para react-select
+  const opcionesTipos = useMemo(() => {
+    return [
+      { value: '', label: 'TODOS LOS TIPOS' },
+      ...tiposDisponibles.map(tipo => ({ value: tipo, label: tipo }))
+    ]
+  }, [tiposDisponibles])
+
+  // Filtrar denuncias
+  const denunciasFiltradas = useMemo(() => {
+    return denuncias.filter(denuncia => {
+      const nombreMatch = !filtroNombre || 
+        denuncia.nombre_denunciante.toLowerCase().includes(filtroNombre.toLowerCase())
+      const cedulaMatch = !filtroCedula || 
+        denuncia.cedula_denunciante.includes(filtroCedula)
+      const tipoMatch = !filtroTipo || 
+        denuncia.tipo_hecho?.toUpperCase() === filtroTipo
+      
+      let fechaMatch = true
+      if (filtroFechaDesde || filtroFechaHasta) {
+        const fechaDenuncia = new Date(denuncia.fecha_denuncia)
+        if (filtroFechaDesde) {
+          const fechaDesde = new Date(filtroFechaDesde)
+          fechaDesde.setHours(0, 0, 0, 0)
+          if (fechaDenuncia < fechaDesde) fechaMatch = false
+        }
+        if (filtroFechaHasta) {
+          const fechaHasta = new Date(filtroFechaHasta)
+          fechaHasta.setHours(23, 59, 59, 999)
+          if (fechaDenuncia > fechaHasta) fechaMatch = false
+        }
+      }
+      
+      return nombreMatch && cedulaMatch && tipoMatch && fechaMatch
+    })
+  }, [denuncias, filtroNombre, filtroCedula, filtroTipo, filtroFechaDesde, filtroFechaHasta])
+
+  // Calcular paginación
+  const totalPaginas = Math.ceil(denunciasFiltradas.length / itemsPorPagina)
+  const indiceInicio = (paginaActual - 1) * itemsPorPagina
+  const indiceFin = indiceInicio + itemsPorPagina
+  const denunciasPaginaActual = denunciasFiltradas.slice(indiceInicio, indiceFin)
+
+  // Resetear página cuando cambian los filtros aplicados
+  useEffect(() => {
+    setPaginaActual(1)
+  }, [filtroNombre, filtroCedula, filtroTipo, filtroFechaDesde, filtroFechaHasta])
+
+  const aplicarFiltros = () => {
+    setFiltroNombre(filtroNombreTemp)
+    setFiltroCedula(filtroCedulaTemp)
+    setFiltroTipo(filtroTipoTemp)
+    setFiltroFechaDesde(filtroFechaDesdeTemp)
+    setFiltroFechaHasta(filtroFechaHastaTemp)
+    setPaginaActual(1)
+  }
+
+  const limpiarFiltros = () => {
+    setFiltroNombreTemp('')
+    setFiltroCedulaTemp('')
+    setFiltroTipoTemp('')
+    setFiltroFechaDesdeTemp('')
+    setFiltroFechaHastaTemp('')
+    setFiltroNombre('')
+    setFiltroCedula('')
+    setFiltroTipo('')
+    setFiltroFechaDesde('')
+    setFiltroFechaHasta('')
+    setPaginaActual(1)
+  }
+
+  const handleFechaApply = () => {
+    // Los valores ya se actualizan en el componente DateRangePicker
+  }
+
+  const handleFechaCancel = () => {
+    // Restaurar valores temporales a los aplicados
+    setFiltroFechaDesdeTemp(filtroFechaDesde)
+    setFiltroFechaHastaTemp(filtroFechaHasta)
+  }
   if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -150,6 +265,134 @@ export default function DenunciasPage() {
               <p className="text-gray-600">Lista completa de denuncias del sistema</p>
             </div>
 
+            {/* Filtros */}
+            {denuncias.length > 0 && (
+              <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Nombre
+                    </label>
+                    <input
+                      type="text"
+                      value={filtroNombreTemp}
+                      onChange={(e) => setFiltroNombreTemp(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && aplicarFiltros()}
+                      placeholder="Buscar por nombre..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Cédula
+                    </label>
+                    <input
+                      type="text"
+                      value={filtroCedulaTemp}
+                      onChange={(e) => setFiltroCedulaTemp(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && aplicarFiltros()}
+                      placeholder="Buscar por cédula..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Tipo
+                    </label>
+                    <Select
+                      options={opcionesTipos}
+                      value={opcionesTipos.find(opcion => opcion.value === filtroTipoTemp) || opcionesTipos[0]}
+                      onChange={(option) => setFiltroTipoTemp(option?.value || '')}
+                      isSearchable
+                      placeholder="Buscar tipo..."
+                      className="text-sm"
+                      classNamePrefix="react-select"
+                      styles={{
+                        control: (base, state) => ({
+                          ...base,
+                          fontFamily: 'Inter, sans-serif',
+                          fontSize: '14px',
+                          minHeight: '42px',
+                          borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
+                          boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
+                          '&:hover': {
+                            borderColor: '#3b82f6',
+                          },
+                        }),
+                        menu: (base) => ({
+                          ...base,
+                          fontFamily: 'Inter, sans-serif',
+                          fontSize: '14px',
+                          maxHeight: '250px',
+                          zIndex: 9999,
+                        }),
+                        menuList: (base) => ({
+                          ...base,
+                          maxHeight: '250px',
+                        }),
+                        option: (base, state) => ({
+                          ...base,
+                          fontFamily: 'Inter, sans-serif',
+                          fontSize: '14px',
+                          padding: '8px 12px',
+                          backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
+                          color: state.isSelected ? 'white' : '#1f2937',
+                          cursor: 'pointer',
+                          textTransform: 'uppercase',
+                        }),
+                        input: (base) => ({
+                          ...base,
+                          fontFamily: 'Inter, sans-serif',
+                          fontSize: '14px',
+                          margin: 0,
+                          padding: 0,
+                        }),
+                        singleValue: (base) => ({
+                          ...base,
+                          fontFamily: 'Inter, sans-serif',
+                          fontSize: '14px',
+                          color: '#1f2937',
+                          textTransform: 'uppercase',
+                        }),
+                        placeholder: (base) => ({
+                          ...base,
+                          fontFamily: 'Inter, sans-serif',
+                          fontSize: '14px',
+                          color: '#9ca3af',
+                        }),
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Rango de Fechas
+                    </label>
+                    <DateRangePicker
+                      startDate={filtroFechaDesdeTemp}
+                      endDate={filtroFechaHastaTemp}
+                      onStartDateChange={setFiltroFechaDesdeTemp}
+                      onEndDateChange={setFiltroFechaHastaTemp}
+                      onApply={handleFechaApply}
+                      onCancel={handleFechaCancel}
+                    />
+                  </div>
+                </div>
+                <div className="mt-4 flex justify-end gap-2">
+                  <button
+                    onClick={limpiarFiltros}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition"
+                  >
+                    Limpiar Filtros
+                  </button>
+                  <button
+                    onClick={aplicarFiltros}
+                    className="px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition"
+                  >
+                    Buscar
+                  </button>
+                </div>
+              </div>
+            )}
             {denuncias.length === 0 ? (
               <div className="bg-white rounded-lg shadow-md p-8 text-center">
                 <p className="text-gray-600">No hay denuncias registradas</p>

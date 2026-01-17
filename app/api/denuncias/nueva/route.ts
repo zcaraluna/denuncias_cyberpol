@@ -263,6 +263,38 @@ export async function POST(request: NextRequest) {
 
     const usuario = usuarioResult.rows[0]
     
+    // Validar que el usuario no haya creado una denuncia completada en el último minuto
+    // Usamos creado_en que es el timestamp exacto de cuando se insertó el registro
+    const validacionTiempoResult = await client.query(
+      `SELECT id, creado_en, fecha_denuncia, hora_denuncia 
+       FROM denuncias 
+       WHERE usuario_id = $1 
+         AND estado = 'completada'
+         AND creado_en > NOW() - INTERVAL '1 minute'
+       ORDER BY creado_en DESC
+       LIMIT 1`,
+      [usuarioId]
+    )
+    
+    if (validacionTiempoResult.rows.length > 0) {
+      const ultimaDenuncia = validacionTiempoResult.rows[0]
+      const tiempoRestante = Math.ceil(
+        (new Date(ultimaDenuncia.creado_en).getTime() + 60000 - Date.now()) / 1000
+      )
+      await client.query('ROLLBACK')
+      client.release()
+      return NextResponse.json(
+        { 
+          error: `Debe esperar al menos un minuto entre la creación de denuncias completadas. Por favor, intente nuevamente en ${tiempoRestante > 0 ? `aproximadamente ${tiempoRestante} segundos` : 'unos momentos'}.`,
+          ultimaDenuncia: {
+            id: ultimaDenuncia.id,
+            creadoEn: ultimaDenuncia.creado_en
+          }
+        },
+        { status: 429 } // 429 Too Many Requests
+      )
+    }
+    
     // Usar la fecha/hora enviada desde el frontend (capturada al iniciar la denuncia)
     // Si no viene, usar la fecha/hora actual como fallback
     let fechaActual: string
