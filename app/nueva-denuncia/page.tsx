@@ -1686,15 +1686,19 @@ export default function NuevaDenunciaPage() {
 
         // Cargar descripción física
         const autorDesconocido = data.supuestos_autores.find((a: any) => a.autor_conocido === 'Desconocido')
-        if (autorDesconocido && autorDesconocido.descripcion_fisica) {
+        if (autorDesconocido) {
           setAutorConocido('Desconocido')
-          try {
-            const descFisica = typeof autorDesconocido.descripcion_fisica === 'string'
-              ? JSON.parse(autorDesconocido.descripcion_fisica)
-              : autorDesconocido.descripcion_fisica
-            setDescripcionFisica(descFisica || {})
-          } catch {
-            // Si no es JSON válido, intentar como texto plano (legacy)
+          if (autorDesconocido.descripcion_fisica) {
+            try {
+              const descFisica = typeof autorDesconocido.descripcion_fisica === 'string'
+                ? JSON.parse(autorDesconocido.descripcion_fisica)
+                : autorDesconocido.descripcion_fisica
+              setDescripcionFisica(descFisica || {})
+            } catch {
+              // Si no es JSON válido, intentar como texto plano (legacy)
+              setDescripcionFisica({})
+            }
+          } else {
             setDescripcionFisica({})
           }
         }
