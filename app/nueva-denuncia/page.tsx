@@ -1034,23 +1034,16 @@ export default function NuevaDenunciaPage() {
     if (!registro) return
     setDenuncianteEnEdicionId(id)
 
-    // Parsear el domicilio completo en sus componentes
-    const domicilioCompleto = [
-      registro.departamento,
-      registro.ciudad,
-      registro.barrio,
-      registro.calles
-    ].filter(Boolean).join(', ')
-
-    const domicilioParsed = descomponerDomicilio(domicilioCompleto)
+    console.log('=== EDITANDO DENUNCIANTE ===')
+    console.log('Registro completo:', registro)
+    console.log('Departamento:', registro.departamento)
+    console.log('Ciudad:', registro.ciudad)
+    console.log('Barrio:', registro.barrio)
+    console.log('Calles:', registro.calles)
 
     const { id: _id, ...resto } = registro
     resetDenunciante({
       ...resto,
-      departamento: domicilioParsed.departamento || '',
-      ciudad: domicilioParsed.ciudad || '',
-      barrio: domicilioParsed.barrio || '',
-      calles: domicilioParsed.calles || '',
       representaA: registro.rol === 'abogado' ? registro.representaA : null,
     })
   }
