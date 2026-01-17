@@ -719,32 +719,43 @@ export default function NuevaDenunciaPage() {
   const descomponerDomicilio = (domicilio: string | null | undefined) => {
     if (!domicilio) return { departamento: '', ciudad: '', barrio: '', calles: '' }
 
-    const matchNuevo = DOMICILIO_REGEX_NUEVO.exec(domicilio)
-    if (matchNuevo) {
-      const departamento = (matchNuevo[1] || '').trim().toUpperCase()
-      const ciudad = (matchNuevo[2] || '').trim().toUpperCase()
-      const barrio = (matchNuevo[3] || '').trim().toUpperCase()
-      const calles = (matchNuevo[4] || '').replace(/\.$/, '').trim().toUpperCase()
-      return {
-        departamento,
-        ciudad,
-        barrio,
-        calles,
+    const domicilioUpper = domicilio.toUpperCase().trim()
+
+    // Separar por comas
+    const partes = domicilioUpper.split(',').map(p => p.trim())
+
+    let departamento = ''
+    let ciudad = ''
+    let barrio = ''
+    const partesCalles: string[] = []
+
+    for (const parte of partes) {
+      if (parte === 'DEPARTAMENTO CENTRAL') {
+        departamento = 'CENTRAL'
+      } else if (parte.startsWith('DEPARTAMENTO DE ')) {
+        departamento = parte.substring('DEPARTAMENTO DE '.length)
+      } else if (parte.startsWith('CIUDAD DE ')) {
+        ciudad = parte.substring('CIUDAD DE '.length)
+      } else if (parte.startsWith('BARRIO ')) {
+        barrio = parte.substring('BARRIO '.length)
+      } else {
+        // Todo lo que no coincida con los prefijos se considera calle/referencia
+        partesCalles.push(parte)
       }
     }
 
-    const matchAnterior = DOMICILIO_REGEX_ANTERIOR.exec(domicilio)
-    if (matchAnterior) {
-      return {
-        departamento: matchAnterior[1].trim().toUpperCase(),
-        ciudad: matchAnterior[2].trim().toUpperCase(),
-        barrio: (matchAnterior[3] || '').trim().toUpperCase(),
-        calles: matchAnterior[4].trim().toUpperCase(),
-      }
-    }
+    // Si encontramos al menos un componente estructurado (o si era solo calles)
+    const calles = partesCalles.join(', ').replace(/\.$/, '')
 
-    // Si no coincide con ningún patrón, intentar parsearlo como calles solamente
-    return { departamento: '', ciudad: '', barrio: '', calles: domicilio.replace(/\.$/, '').trim().toUpperCase() }
+    // Si no se encontró nada estructurado y no hay calles, devolver como estaba
+    // Pero si se encontró algo, devolvemos lo parseado
+
+    return {
+      departamento,
+      ciudad,
+      barrio,
+      calles
+    }
   }
 
   const {
