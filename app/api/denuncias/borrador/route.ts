@@ -75,7 +75,7 @@ async function upsertDenunciante(client: any, datos: DenuncianteDatos) {
 
   const aplicarUpdate = async (denuncianteId: number) => {
     await client.query(
-        `UPDATE denunciantes SET
+      `UPDATE denunciantes SET
           nombres = $1,
           tipo_documento = $2,
           nacionalidad = $3,
@@ -89,21 +89,21 @@ async function upsertDenunciante(client: any, datos: DenuncianteDatos) {
           profesion = $11,
           matricula = $12
         WHERE id = $13`,
-        [
-          nombres,
-          tipoDocumento,
-          nacionalidad,
-          estadoCivil,
-          edad,
-          fechaNacimiento,
-          lugarNacimiento,
-          domicilio,
-          telefono,
-          correo,
-          profesion,
-          matricula,
-          denuncianteId
-        ]
+      [
+        nombres,
+        tipoDocumento,
+        nacionalidad,
+        estadoCivil,
+        edad,
+        fechaNacimiento,
+        lugarNacimiento,
+        domicilio,
+        telefono,
+        correo,
+        profesion,
+        matricula,
+        denuncianteId
+      ]
     )
     return denuncianteId
   }
@@ -394,8 +394,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Guardar descripción física si el autor es desconocido
-    if (autor.conocido === 'Desconocido' && descripcionFisica && descripcionFisica.trim() !== '') {
+    // Guardar siempre si es Desconocido, con descripcionFisica opcional
+    if (autor.conocido === 'Desconocido') {
       await client.query(
         `INSERT INTO supuestos_autores (
           denuncia_id, autor_conocido, descripcion_fisica
@@ -403,7 +403,7 @@ export async function POST(request: NextRequest) {
         [
           borradorIdParam,
           'Desconocido',
-          normalizarTexto(descripcionFisica)
+          (descripcionFisica && descripcionFisica.trim() !== '') ? normalizarTexto(descripcionFisica) : null
         ]
       )
     }

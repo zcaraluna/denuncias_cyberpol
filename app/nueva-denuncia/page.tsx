@@ -719,32 +719,43 @@ export default function NuevaDenunciaPage() {
   const descomponerDomicilio = (domicilio: string | null | undefined) => {
     if (!domicilio) return { departamento: '', ciudad: '', barrio: '', calles: '' }
 
-    const matchNuevo = DOMICILIO_REGEX_NUEVO.exec(domicilio)
-    if (matchNuevo) {
-      const departamento = (matchNuevo[1] || '').trim().toUpperCase()
-      const ciudad = (matchNuevo[2] || '').trim().toUpperCase()
-      const barrio = (matchNuevo[3] || '').trim().toUpperCase()
-      const calles = (matchNuevo[4] || '').replace(/\.$/, '').trim().toUpperCase()
-      return {
-        departamento,
-        ciudad,
-        barrio,
-        calles,
+    const domicilioUpper = domicilio.toUpperCase().trim()
+
+    // Separar por comas
+    const partes = domicilioUpper.split(',').map(p => p.trim())
+
+    let departamento = ''
+    let ciudad = ''
+    let barrio = ''
+    const partesCalles: string[] = []
+
+    for (const parte of partes) {
+      if (parte === 'DEPARTAMENTO CENTRAL') {
+        departamento = 'CENTRAL'
+      } else if (parte.startsWith('DEPARTAMENTO DE ')) {
+        departamento = parte.substring('DEPARTAMENTO DE '.length)
+      } else if (parte.startsWith('CIUDAD DE ')) {
+        ciudad = parte.substring('CIUDAD DE '.length)
+      } else if (parte.startsWith('BARRIO ')) {
+        barrio = parte.substring('BARRIO '.length)
+      } else {
+        // Todo lo que no coincida con los prefijos se considera calle/referencia
+        partesCalles.push(parte)
       }
     }
 
-    const matchAnterior = DOMICILIO_REGEX_ANTERIOR.exec(domicilio)
-    if (matchAnterior) {
-      return {
-        departamento: matchAnterior[1].trim().toUpperCase(),
-        ciudad: matchAnterior[2].trim().toUpperCase(),
-        barrio: (matchAnterior[3] || '').trim().toUpperCase(),
-        calles: matchAnterior[4].trim().toUpperCase(),
-      }
-    }
+    // Si encontramos al menos un componente estructurado (o si era solo calles)
+    const calles = partesCalles.join(', ').replace(/\.$/, '')
 
-    // Si no coincide con ningún patrón, intentar parsearlo como calles solamente
-    return { departamento: '', ciudad: '', barrio: '', calles: domicilio.replace(/\.$/, '').trim().toUpperCase() }
+    // Si no se encontró nada estructurado y no hay calles, devolver como estaba
+    // Pero si se encontró algo, devolvemos lo parseado
+
+    return {
+      departamento,
+      ciudad,
+      barrio,
+      calles
+    }
   }
 
   const {
@@ -1033,6 +1044,14 @@ export default function NuevaDenunciaPage() {
     const registro = denunciantes.find((denunciante) => denunciante.id === id)
     if (!registro) return
     setDenuncianteEnEdicionId(id)
+
+    console.log('=== EDITANDO DENUNCIANTE ===')
+    console.log('Registro completo:', registro)
+    console.log('Departamento:', registro.departamento)
+    console.log('Ciudad:', registro.ciudad)
+    console.log('Barrio:', registro.barrio)
+    console.log('Calles:', registro.calles)
+
     const { id: _id, ...resto } = registro
     resetDenunciante({
       ...resto,
@@ -1667,15 +1686,19 @@ export default function NuevaDenunciaPage() {
 
         // Cargar descripción física
         const autorDesconocido = data.supuestos_autores.find((a: any) => a.autor_conocido === 'Desconocido')
-        if (autorDesconocido && autorDesconocido.descripcion_fisica) {
+        if (autorDesconocido) {
           setAutorConocido('Desconocido')
-          try {
-            const descFisica = typeof autorDesconocido.descripcion_fisica === 'string'
-              ? JSON.parse(autorDesconocido.descripcion_fisica)
-              : autorDesconocido.descripcion_fisica
-            setDescripcionFisica(descFisica || {})
-          } catch {
-            // Si no es JSON válido, intentar como texto plano (legacy)
+          if (autorDesconocido.descripcion_fisica) {
+            try {
+              const descFisica = typeof autorDesconocido.descripcion_fisica === 'string'
+                ? JSON.parse(autorDesconocido.descripcion_fisica)
+                : autorDesconocido.descripcion_fisica
+              setDescripcionFisica(descFisica || {})
+            } catch {
+              // Si no es JSON válido, intentar como texto plano (legacy)
+              setDescripcionFisica({})
+            }
+          } else {
             setDescripcionFisica({})
           }
         }
@@ -1690,6 +1713,9 @@ export default function NuevaDenunciaPage() {
       } else {
         setLugarHechoNoAplica(false)
       }
+
+      // Ir directamente al paso 3 (relato) cuando se carga un borrador
+      setPaso(3)
     } catch (error) {
       console.error('Error cargando borrador:', error)
     }
@@ -2352,7 +2378,7 @@ export default function NuevaDenunciaPage() {
       }
 
       const result = await response.json()
-      setBorradorId(result.id)
+      setBorradorId(result.borradorId)
 
       setMostrarModalBorrador(true)
     } catch (error) {
@@ -2413,8 +2439,8 @@ export default function NuevaDenunciaPage() {
                 <div className="flex flex-col items-center relative">
                   <div
                     className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${paso >= step.num
-                        ? 'bg-blue-600 border-blue-600 text-white'
-                        : 'bg-white border-gray-300 text-gray-500'
+                      ? 'bg-blue-600 border-blue-600 text-white'
+                      : 'bg-white border-gray-300 text-gray-500'
                       }`}
                   >
                     {step.num}
