@@ -56,7 +56,14 @@ export async function GET(request: NextRequest) {
         den.cedula,
         COUNT(d.id) as cantidad,
         ARRAY_AGG(d.orden || '/' || EXTRACT(YEAR FROM d.fecha_denuncia)::integer) as numeros_denuncia,
-        ARRAY_AGG(COALESCE(d.tipo_denuncia, 'SIN ESPECIFICAR')) as tipos
+        ARRAY_AGG(COALESCE(d.tipo_denuncia, 'SIN ESPECIFICAR')) as tipos,
+        ARRAY_AGG(
+          TRIM(
+            COALESCE(d.operador_grado, '') || ' ' || 
+            COALESCE(d.operador_nombre, '') || ' ' || 
+            COALESCE(d.operador_apellido, '')
+          )
+        ) as oficiales
       FROM denuncias d
       JOIN denunciantes den ON d.denunciante_id = den.id
       WHERE d.fecha_denuncia BETWEEN $1::DATE AND $2::DATE

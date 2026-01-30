@@ -28,6 +28,7 @@ interface Recurrente {
   cantidad: number
   numeros_denuncia: string[]
   tipos: string[]
+  oficiales: string[]
 }
 
 interface DatosMensuales {
@@ -582,10 +583,18 @@ export default function ReportesPage() {
                           </div>
                           <div className="mt-3 space-y-2">
                             {rec.numeros_denuncia.map((num, i) => (
-                              <div key={i} className="flex items-center gap-2 text-sm text-gray-600 bg-white p-2 rounded border border-gray-100">
-                                <span className="font-mono font-bold text-blue-600">{num}</span>
-                                <span className="text-gray-400">|</span>
-                                <span className="truncate">{rec.tipos[i]}</span>
+                              <div key={i} className="flex flex-col gap-1 text-sm text-gray-600 bg-white p-2.5 rounded-lg border border-gray-100 shadow-sm">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-mono font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded text-xs">{num}</span>
+                                  <span className="text-gray-300">|</span>
+                                  <span className="truncate font-medium">{rec.tipos[i]}</span>
+                                </div>
+                                {rec.oficiales && rec.oficiales[i] && (
+                                  <div className="text-[10px] text-gray-500 pl-1">
+                                    <span className="font-semibold text-gray-400 mr-1">Oficial:</span>
+                                    {rec.oficiales[i]}
+                                  </div>
+                                )}
                               </div>
                             ))}
                           </div>
