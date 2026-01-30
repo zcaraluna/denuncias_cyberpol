@@ -617,7 +617,6 @@ export default function ReportesPage() {
                                 </div>
                                 {rec.oficiales && rec.oficiales[i] && (
                                   <div className="text-[10px] text-gray-500 pl-1">
-                                    <span className="font-semibold text-gray-400 mr-1">Interviniente:</span>
                                     {rec.oficiales[i]}
                                   </div>
                                 )}
