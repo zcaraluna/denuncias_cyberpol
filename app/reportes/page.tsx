@@ -28,6 +28,7 @@ interface Recurrente {
   cantidad: number
   numeros_denuncia: string[]
   tipos: string[]
+  fechas: string[]
   oficiales: string[]
 }
 
@@ -588,10 +589,16 @@ export default function ReportesPage() {
                                   <span className="font-mono font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded text-xs">{num}</span>
                                   <span className="text-gray-300">|</span>
                                   <span className="truncate font-medium">{rec.tipos[i]}</span>
+                                  {rec.fechas && rec.fechas[i] && (
+                                    <>
+                                      <span className="text-gray-300">|</span>
+                                      <span className="text-xs text-gray-400 font-medium whitespace-nowrap">{rec.fechas[i]}</span>
+                                    </>
+                                  )}
                                 </div>
                                 {rec.oficiales && rec.oficiales[i] && (
                                   <div className="text-[10px] text-gray-500 pl-1">
-                                    <span className="font-semibold text-gray-400 mr-1">Oficial:</span>
+                                    <span className="font-semibold text-gray-400 mr-1">Interviniente:</span>
                                     {rec.oficiales[i]}
                                   </div>
                                 )}
