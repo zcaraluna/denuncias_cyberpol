@@ -311,28 +311,6 @@ export default function ReportesPage() {
               Resumen Mensual
             </button>
           </div>
-
-          {/* Toggle General/Específico */}
-          <div className="flex bg-white p-1 rounded-xl shadow-sm border border-gray-200 md:max-w-xs">
-            <button
-              onClick={() => setMostrarGeneral(false)}
-              className={`px-4 py-2 text-xs font-bold rounded-lg transition-all uppercase ${!mostrarGeneral
-                ? 'bg-indigo-100 text-indigo-700'
-                : 'text-gray-500 hover:bg-gray-50'
-                }`}
-            >
-              Específico
-            </button>
-            <button
-              onClick={() => setMostrarGeneral(true)}
-              className={`px-4 py-2 text-xs font-bold rounded-lg transition-all uppercase ${mostrarGeneral
-                ? 'bg-indigo-100 text-indigo-700'
-                : 'text-gray-500 hover:bg-gray-50'
-                }`}
-            >
-              General
-            </button>
-          </div>
         </div>
 
         {/* Panel de Filtros */}
@@ -470,9 +448,32 @@ export default function ReportesPage() {
                 </svg>
                 Resultados
               </h2>
-              <span className="px-3 py-1 bg-blue-600 text-white text-sm font-medium rounded-full">
-                {datosOrdenados.length} denuncia{datosOrdenados.length !== 1 ? 's' : ''}
-              </span>
+              <div className="flex items-center gap-4">
+                {/* Toggle en tabla */}
+                <div className="flex bg-white p-0.5 rounded-lg shadow-sm border border-gray-200">
+                  <button
+                    onClick={() => setMostrarGeneral(false)}
+                    className={`px-2 py-1 text-[10px] font-bold rounded-md transition-all uppercase ${!mostrarGeneral
+                      ? 'bg-indigo-100 text-indigo-700'
+                      : 'text-gray-500 hover:bg-gray-50'
+                      }`}
+                  >
+                    Espec.
+                  </button>
+                  <button
+                    onClick={() => setMostrarGeneral(true)}
+                    className={`px-2 py-1 text-[10px] font-bold rounded-md transition-all uppercase ${mostrarGeneral
+                      ? 'bg-indigo-100 text-indigo-700'
+                      : 'text-gray-500 hover:bg-gray-50'
+                      }`}
+                  >
+                    Gral.
+                  </button>
+                </div>
+                <span className="px-3 py-1 bg-blue-600 text-white text-sm font-medium rounded-full">
+                  {datosOrdenados.length} denuncia{datosOrdenados.length !== 1 ? 's' : ''}
+                </span>
+              </div>
             </div>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
@@ -517,8 +518,29 @@ export default function ReportesPage() {
               <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
                 <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 flex justify-between items-center">
                   <h3 className="text-lg font-semibold text-gray-800">
-                    Desglose por Tipos ({mostrarGeneral ? 'General' : 'Específico'})
+                    Desglose por Tipos
                   </h3>
+                  {/* Toggle en tabla */}
+                  <div className="flex bg-white p-0.5 rounded-lg shadow-sm border border-gray-200">
+                    <button
+                      onClick={() => setMostrarGeneral(false)}
+                      className={`px-3 py-1 text-xs font-bold rounded-md transition-all uppercase ${!mostrarGeneral
+                        ? 'bg-indigo-100 text-indigo-700'
+                        : 'text-gray-500 hover:bg-gray-50'
+                        }`}
+                    >
+                      Específico
+                    </button>
+                    <button
+                      onClick={() => setMostrarGeneral(true)}
+                      className={`px-3 py-1 text-xs font-bold rounded-md transition-all uppercase ${mostrarGeneral
+                        ? 'bg-indigo-100 text-indigo-700'
+                        : 'text-gray-500 hover:bg-gray-50'
+                        }`}
+                    >
+                      General
+                    </button>
+                  </div>
                 </div>
                 <div className="p-0">
                   <table className="min-w-full divide-y divide-gray-200">
