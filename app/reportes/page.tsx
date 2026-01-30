@@ -47,7 +47,7 @@ export default function ReportesPage() {
   const { usuario, loading: authLoading } = useAuth()
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<Tab>('diario')
-  const [mostrarGeneral, setMostrarGeneral] = useState(false)
+  const [mostrarGeneral, setMostrarGeneral] = useState(true)
 
   // Estado para reporte diario
   const [fecha, setFecha] = useState('')
