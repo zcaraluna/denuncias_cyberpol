@@ -79,21 +79,17 @@ export async function GET(request: NextRequest) {
       console.log('Verificación de denuncias para fecha:', checkResult.rows[0])
     }
 
-    // Procesar los resultados para mostrar el tipo específico con fallback al genérico
-    // El tipo_denuncia en la BD ya es el específico (ej: "Estafa", "Robo")
-    // Si por alguna razón es un genérico, lo mostramos como fallback
+    // Procesar los resultados para mostrar el tipo específico y el general
     const rowsProcessed = result.rows.map((row: any) => {
-      let shp = row.shp || ''
-      
-      // Si el tipo_denuncia es un capítulo genérico (empieza con "HECHO PUNIBLE"),
-      // lo mostramos tal cual como fallback
-      // Si es un tipo específico, lo mostramos tal cual
-      // Los casos especiales OTRO y EXTRAVÍO se muestran tal cual
-      if (!shp) {
-        shp = '-'
+      const tipoEspecifico = row.shp || 'SIN ESPECIFICAR'
+      const tipoGeneral = obtenerCapitulo(tipoEspecifico) || tipoEspecifico
+
+      return {
+        ...row,
+        shp: tipoEspecifico, // Mantenemos shp para compatibilidad
+        tipo_especifico: tipoEspecifico,
+        tipo_general: tipoGeneral
       }
-      
-      return { ...row, shp }
     })
 
     return NextResponse.json(rowsProcessed)

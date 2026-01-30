@@ -9,7 +9,9 @@ interface ReporteRow {
   numero_denuncia: number
   año: number
   hora_denuncia: string
-  shp: string
+  shp: string // Para compatibilidad
+  tipo_especifico?: string
+  tipo_general?: string
   denunciante: string
   interviniente: string
   oficina?: string
@@ -29,7 +31,8 @@ interface Recurrente {
 }
 
 interface DatosMensuales {
-  resumen_tipos: ResumenTipo[]
+  resumen_especifico: ResumenTipo[]
+  resumen_general: ResumenTipo[]
   denunciantes_recurrentes: Recurrente[]
 }
 
@@ -42,6 +45,7 @@ export default function ReportesPage() {
   const { usuario, loading: authLoading } = useAuth()
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<Tab>('diario')
+  const [mostrarGeneral, setMostrarGeneral] = useState(false)
 
   // Estado para reporte diario
   const [fecha, setFecha] = useState('')
@@ -153,7 +157,7 @@ export default function ReportesPage() {
 
       setDatosMensuales(data)
 
-      if (data.resumen_tipos.length === 0) {
+      if (data.resumen_especifico.length === 0 && data.resumen_general.length === 0) {
         setError(`No se encontraron denuncias para el período ${mes}/${año}`)
       }
     } catch (error) {
@@ -285,26 +289,50 @@ export default function ReportesPage() {
       </nav>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Pestañas */}
-        <div className="flex space-x-1 mb-6 bg-white p-1 rounded-xl shadow-sm border border-gray-200 max-w-md">
-          <button
-            onClick={() => setActiveTab('diario')}
-            className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all ${activeTab === 'diario'
-              ? 'bg-blue-600 text-white shadow-md'
-              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
-          >
-            Búsqueda Diaria
-          </button>
-          <button
-            onClick={() => setActiveTab('mensual')}
-            className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all ${activeTab === 'mensual'
-              ? 'bg-blue-600 text-white shadow-md'
-              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
-          >
-            Resumen Mensual
-          </button>
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+          {/* Pestañas */}
+          <div className="flex space-x-1 bg-white p-1 rounded-xl shadow-sm border border-gray-200 w-full md:max-w-md">
+            <button
+              onClick={() => setActiveTab('diario')}
+              className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all ${activeTab === 'diario'
+                ? 'bg-blue-600 text-white shadow-md'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+            >
+              Búsqueda Diaria
+            </button>
+            <button
+              onClick={() => setActiveTab('mensual')}
+              className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all ${activeTab === 'mensual'
+                ? 'bg-blue-600 text-white shadow-md'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+            >
+              Resumen Mensual
+            </button>
+          </div>
+
+          {/* Toggle General/Específico */}
+          <div className="flex bg-white p-1 rounded-xl shadow-sm border border-gray-200 md:max-w-xs">
+            <button
+              onClick={() => setMostrarGeneral(false)}
+              className={`px-4 py-2 text-xs font-bold rounded-lg transition-all uppercase ${!mostrarGeneral
+                ? 'bg-indigo-100 text-indigo-700'
+                : 'text-gray-500 hover:bg-gray-50'
+                }`}
+            >
+              Específico
+            </button>
+            <button
+              onClick={() => setMostrarGeneral(true)}
+              className={`px-4 py-2 text-xs font-bold rounded-lg transition-all uppercase ${mostrarGeneral
+                ? 'bg-indigo-100 text-indigo-700'
+                : 'text-gray-500 hover:bg-gray-50'
+                }`}
+            >
+              General
+            </button>
+          </div>
         </div>
 
         {/* Panel de Filtros */}
@@ -466,7 +494,11 @@ export default function ReportesPage() {
                     <tr key={index} className="hover:bg-blue-50 transition">
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{row.numero_denuncia}/{row.año}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{row.hora_denuncia || '-'}</td>
-                      <td className="px-6 py-4 text-sm text-gray-900"><span className="inline-block max-w-xs truncate" title={row.shp || ''}>{row.shp || '-'}</span></td>
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        <span className={`inline-block px-2 py-1 rounded-md text-xs font-medium ${mostrarGeneral ? 'bg-indigo-50 text-indigo-700 border border-indigo-100' : 'bg-blue-50 text-blue-700 border border-blue-100'}`}>
+                          {mostrarGeneral ? (row.tipo_general || row.tipo_especifico || row.shp) : (row.tipo_especifico || row.shp || '-')}
+                        </span>
+                      </td>
                       <td className="px-6 py-4 text-sm text-gray-900">{row.denunciante || '-'}</td>
                       <td className="px-6 py-4 text-sm text-gray-900">{row.interviniente || '-'}</td>
                     </tr>
@@ -483,8 +515,10 @@ export default function ReportesPage() {
             {/* Resumen por Tipos */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-                <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
-                  <h3 className="text-lg font-semibold text-gray-800">Tipos de Denuncia</h3>
+                <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 flex justify-between items-center">
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    Desglose por Tipos ({mostrarGeneral ? 'General' : 'Específico'})
+                  </h3>
                 </div>
                 <div className="p-0">
                   <table className="min-w-full divide-y divide-gray-200">
@@ -495,10 +529,10 @@ export default function ReportesPage() {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {datosMensuales.resumen_tipos.map((tipo, idx) => (
-                        <tr key={idx} className="hover:bg-gray-50">
+                      {(mostrarGeneral ? datosMensuales.resumen_general : datosMensuales.resumen_especifico).map((tipo: ResumenTipo, idx: number) => (
+                        <tr key={idx} className="hover:bg-gray-50 transition">
                           <td className="px-6 py-3 text-sm text-gray-700">{tipo.tipo}</td>
-                          <td className="px-6 py-3 text-sm text-gray-900 text-right font-semibold">{tipo.total}</td>
+                          <td className="px-6 py-3 text-sm text-gray-900 text-right font-bold text-lg">{tipo.total}</td>
                         </tr>
                       ))}
                     </tbody>
