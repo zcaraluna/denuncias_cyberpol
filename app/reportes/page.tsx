@@ -268,6 +268,25 @@ export default function ReportesPage() {
 
   const años = Array.from({ length: 5 }, (_, i) => (new Date().getFullYear() - i).toString())
 
+  const formatearFecha = (fechaStr: string) => {
+    // fechaStr viene como "YYYY-MM-DD HH:MM:SS" (o similar)
+    try {
+      if (!fechaStr) return ''
+      const parts = fechaStr.split(' ')
+      const datePart = parts[0]
+      const timePart = parts[1] ? parts[1].substring(0, 5) : '' // Tomar solo HH:MM
+
+      const [year, month, day] = datePart.split('-').map(Number)
+
+      const date = new Date(year, month - 1, day)
+      const dias = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
+
+      return `${dias[date.getDay()]}. ${day.toString().padStart(2, '0')} - ${timePart}`
+    } catch (e) {
+      return fechaStr
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <nav className="bg-white shadow-lg border-b border-gray-200">
@@ -592,7 +611,7 @@ export default function ReportesPage() {
                                   {rec.fechas && rec.fechas[i] && (
                                     <>
                                       <span className="text-gray-300">|</span>
-                                      <span className="text-xs text-gray-400 font-medium whitespace-nowrap">{rec.fechas[i]}</span>
+                                      <span className="text-xs text-gray-400 font-medium whitespace-nowrap">{formatearFecha(rec.fechas[i])}</span>
                                     </>
                                   )}
                                 </div>

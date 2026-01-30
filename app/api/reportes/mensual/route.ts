@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
         COUNT(d.id) as cantidad,
         ARRAY_AGG(d.orden || '/' || EXTRACT(YEAR FROM d.fecha_denuncia)::integer) as numeros_denuncia,
         ARRAY_AGG(COALESCE(d.tipo_denuncia, 'SIN ESPECIFICAR')) as tipos,
-        ARRAY_AGG(TO_CHAR(d.fecha_denuncia, 'DD/MM') || ' ' || COALESCE(d.hora_denuncia, '')) as fechas,
+        ARRAY_AGG(TO_CHAR(d.fecha_denuncia, 'YYYY-MM-DD') || ' ' || COALESCE(d.hora_denuncia, '')) as fechas,
         ARRAY_AGG(
           TRIM(
             COALESCE(d.operador_grado, '') || ' ' || 
