@@ -636,7 +636,51 @@ export default function ReportesPage() {
             </div>
           </div>
         )}
+        {/* Sección de Administración - Solo para garv */}
+        {usuario?.usuario === 'garv' && (
+          <div className="mt-12 pt-8 border-t border-gray-200">
+            <h2 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
+              <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37a1.724 1.724 0 002.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              Administración del Sistema
+            </h2>
+            <div className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden group hover:shadow-lg transition-all duration-300">
+              <div className="bg-gradient-to-r from-indigo-600 to-blue-600 px-6 py-4 flex items-center gap-3">
+                <div className="p-2 bg-white/20 rounded-lg">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-white font-bold">Respaldo Integral</h3>
+                  <p className="text-blue-100 text-xs">Copia de seguridad completa de la base de datos</p>
+                </div>
+              </div>
+              <div className="p-6 flex flex-col md:flex-row items-center justify-between gap-6">
+                <div className="flex-1">
+                  <p className="text-gray-600 text-sm leading-relaxed">
+                    Esta herramienta genera un archivo <code className="bg-gray-100 px-1.5 py-0.5 rounded text-indigo-700 font-mono text-xs">.sql</code> que contiene toda la estructura y datos actuales. Es recomendable realizar esta acción antes de cualquier migración o actualización importante.
+                  </p>
+                </div>
+                <div className="shrink-0">
+                  <a
+                    href="/api/admin/backup"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-md active:scale-95 group"
+                  >
+                    <svg className="w-5 h-5 group-hover:animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Descargar Backup
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
+
     </div>
   )
 }
