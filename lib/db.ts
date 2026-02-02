@@ -1,6 +1,15 @@
 import { Pool } from 'pg';
 
-const connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL || '';
+// Forzar la desactivación de la validación de certificados TLS a nivel global para este proceso
+// Esto soluciona los errores de 'self-signed certificate' en entornos con poolers (Supabase/Neon)
+if (process.env.NODE_ENV !== 'production') {
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+}
+
+let connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL || '';
+
+// Limpiar sslmode=require de la cadena para que no interfiera con la configuración del driver de JS
+connectionString = connectionString.replace('sslmode=require', 'sslmode=disable');
 
 // Configuración de SSL: Desactivar validación de certificados para conexiones remotas (necesario para Supabase/Poolers)
 const isLocal = connectionString.includes('localhost') || connectionString.includes('127.0.0.1');
