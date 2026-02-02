@@ -1,6 +1,6 @@
 import { Pool } from 'pg';
 
-const connectionString = process.env.DATABASE_URL || '';
+const connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL || '';
 // Solo usar SSL si la URL lo especifica explícitamente
 const useSSL = connectionString.includes('sslmode=require') || connectionString.includes('ssl=true');
 
@@ -34,16 +34,16 @@ export async function queryWithRetry(
       return result;
     } catch (error: any) {
       // Si es un error de conexión y aún hay reintentos disponibles
-      const isConnectionError = 
-        error.code === 'ECONNRESET' || 
-        error.code === 'ECONNREFUSED' || 
+      const isConnectionError =
+        error.code === 'ECONNRESET' ||
+        error.code === 'ECONNREFUSED' ||
         error.code === 'ETIMEDOUT' ||
         error.code === 'ENOTFOUND' ||
         error.code === 'EPIPE' ||
         error.message?.includes('Connection terminated') ||
         error.message?.includes('Connection closed') ||
         error.message?.includes('socket hang up');
-      
+
       if (isConnectionError && i < retries - 1) {
         console.log(`Error de conexión detectado (${error.code}), reintentando query (intento ${i + 1}/${retries})...`);
         // Esperar un poco antes de reintentar (backoff exponencial)
