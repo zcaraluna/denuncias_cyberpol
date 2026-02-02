@@ -1,18 +1,19 @@
 import { Pool } from 'pg';
 
 const connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL || '';
-// Solo usar SSL si la URL lo especifica explícitamente
-const useSSL = connectionString.includes('sslmode=require') || connectionString.includes('ssl=true');
+
+// Configuración de SSL: Desactivar validación de certificados para conexiones remotas (necesario para Supabase/Poolers)
+const isLocal = connectionString.includes('localhost') || connectionString.includes('127.0.0.1');
+const sslConfig = isLocal ? false : { rejectUnauthorized: false };
 
 const pool = new Pool({
   connectionString,
-  ssl: useSSL ? { rejectUnauthorized: false } : false,
+  ssl: sslConfig,
   // Configuración para entornos serverless (Vercel)
-  max: 1, // Máximo 1 conexión por instancia (importante para serverless)
-  idleTimeoutMillis: 30000, // Cerrar conexiones inactivas después de 30 segundos
-  connectionTimeoutMillis: 10000, // Timeout de conexión de 10 segundos
-  // Manejar errores de conexión
-  allowExitOnIdle: true, // Permitir que el proceso termine cuando no hay conexiones activas
+  max: 1,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 10000,
+  allowExitOnIdle: true,
 });
 
 // Manejar errores de conexión y reconectar automáticamente
