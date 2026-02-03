@@ -176,11 +176,9 @@ function ConfirmacionPage() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
               onClick={handleDescargarPDF}
-              disabled
-              className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-medium opacity-50 cursor-not-allowed"
-              title="Generación de PDF temporalmente deshabilitada"
+              className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-medium shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5 active:translate-y-0"
             >
-              Descargar PDF (Deshabilitado)
+              Descargar PDF
             </button>
             <button
               onClick={() => router.push('/nueva-denuncia')}

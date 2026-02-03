@@ -4642,7 +4642,7 @@ export default function NuevaDenunciaPage() {
                 </div>
 
                 <p className="text-xs text-blue-600 mb-4 bg-white/60 p-3 rounded-lg border border-blue-100/50 leading-relaxed shadow-sm">
-                  Los siguientes campos se solicitan <strong>únicamente con fines estadísticos</strong> para ayudar a cuantificar el impacto de los hechos punibles informáticos en nuestro país. Esta información <strong>no se incluirá en el acta formal de la denuncia</strong>.
+                  El siguiente campo se solicita <strong>únicamente con fines estadísticos</strong> para ayudar a cuantificar el impacto de los hechos punibles denunciados en esta Dirección. Esta información <strong>no se incluirá en el acta formal de la denuncia</strong>.
                 </p>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
