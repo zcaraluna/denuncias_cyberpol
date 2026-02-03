@@ -189,7 +189,7 @@ function generarParrafoAbogadoRepresentante(
             En la Sala de Denuncias de la Dirección Contra Hechos Punibles Económicos y Financieros, Oficina ASUNCIÓN, en fecha{' '}
             <Text style={{ fontWeight: 'bold' }}>{formatFecha(denuncia.fecha_denuncia)}</Text> siendo las{' '}
             <Text style={{ fontWeight: 'bold' }}>{toSafeString(denuncia.hora_denuncia)}</Text>, ante mí{' '}
-            <Text style={{ fontWeight: 'bold' }}>{operador || 'PERSONAL POLICIAL INTERVINIENTE'}</Text>, concurre el/la profesional{' '}
+            <Text style={{ fontWeight: 'bold' }}>{operador || 'PERSONAL POLICIAL INTERVINIENTE'}</Text>, concurre{' '}
             <Text style={{ fontWeight: 'bold' }}>{toSafeString(abogado.nombres).toUpperCase()}</Text>, con{' '}
             {renderDatosPersonales(abogado as DenuncianteData)}, actuando en su carácter de{' '}
             <Text style={{ fontWeight: 'bold' }}>REPRESENTANTE LEGAL</Text> de{' '}
@@ -204,7 +204,7 @@ function generarParrafoAbogadoRepresentante(
                     {abogado.carta_poder_notario ? ` ante el Escribano ${abogado.carta_poder_notario.toUpperCase()}` : ''}
                 </Text>
             ) : null}
-            , y exponen cuanto sigue:
+            , y expone cuanto sigue:
         </Text>
     );
 }
@@ -225,13 +225,13 @@ function generarParrafoMultiple(
             En la Sala de Denuncias de la Dirección Contra Hechos Punibles Económicos y Financieros, Oficina ASUNCIÓN, en fecha{' '}
             <Text style={{ fontWeight: 'bold' }}>{formatFecha(denuncia.fecha_denuncia)}</Text> siendo las{' '}
             <Text style={{ fontWeight: 'bold' }}>{toSafeString(denuncia.hora_denuncia)}</Text>, ante mí{' '}
-            <Text style={{ fontWeight: 'bold' }}>{operador || 'PERSONAL POLICIAL INTERVINIENTE'}</Text>, concurren los ciudadanos: el/la Sr/a{' '}
+            <Text style={{ fontWeight: 'bold' }}>{operador || 'PERSONAL POLICIAL INTERVINIENTE'}</Text>, concurren los ciudadanos:{' '}
             <Text style={{ fontWeight: 'bold' }}>{toSafeString(denunciantePrincipal.nombres).toUpperCase()}</Text>, con{' '}
             {renderDatosPersonales(denunciantePrincipal)}
 
             {coDenunciantes.map((cd, index) => (
                 <Text key={`coden-${index}`}>
-                    ; asimismo el/la Sr/a{' '}
+                    ; asimismo{' '}
                     <Text style={{ fontWeight: 'bold' }}>{toSafeString(cd.nombres).toUpperCase()}</Text>, con{' '}
                     {renderDatosPersonales(cd)}
                 </Text>
@@ -240,7 +240,7 @@ function generarParrafoMultiple(
             {/* Abogados */}
             {abogado ? (
                 <Text>
-                    ; asistido por el/la profesional{' '}
+                    ; asistido por{' '}
                     <Text style={{ fontWeight: 'bold' }}>{toSafeString(abogado.nombres).toUpperCase()}</Text>, en su carácter de{' '}
                     <Text style={{ fontWeight: 'bold' }}>ABOGADO ASISTENTE</Text>
                     {abogado.matricula ? `, matrícula N° ` : ''}
@@ -251,7 +251,7 @@ function generarParrafoMultiple(
 
             {abogadoConCartaPoder ? (
                 <Text>
-                    ; y el/la profesional{' '}
+                    ; y{' '}
                     <Text style={{ fontWeight: 'bold' }}>{toSafeString(abogadoConCartaPoder.nombres).toUpperCase()}</Text>, en su carácter de{' '}
                     <Text style={{ fontWeight: 'bold' }}>REPRESENTANTE LEGAL</Text> de{' '}
                     <Text style={{ fontWeight: 'bold' }}>{toSafeString(denunciantePrincipal.nombres).toUpperCase()}</Text>
@@ -286,9 +286,9 @@ function generarParrafoSimple(
     return (
         <Text style={styles.paragraph}>
             En la Sala de Denuncias de la Dirección Contra Hechos Punibles Económicos y Financieros, Oficina ASUNCIÓN, en fecha{' '}
-            <Text style={{ fontWeight: 'bold' }}>{formatFecha(denuncia.fecha_denuncia)}</Text> siendo las{' '}
+            <Text style={{ fontWeight: 'bold' }}>{formatFecha(denuncia.fecha_denuncia)}</Text> being the{' '}
             <Text style={{ fontWeight: 'bold' }}>{toSafeString(denuncia.hora_denuncia)}</Text>, ante mí{' '}
-            <Text style={{ fontWeight: 'bold' }}>{operador || 'PERSONAL POLICIAL INTERVINIENTE'}</Text>, concurre el/la Sr/a{' '}
+            <Text style={{ fontWeight: 'bold' }}>{operador || 'PERSONAL POLICIAL INTERVINIENTE'}</Text>, concurre{' '}
             <Text style={{ fontWeight: 'bold' }}>{toSafeString(denunciante.nombres).toUpperCase()}</Text>, con{' '}
             {renderDatosPersonales(denunciante)}, y expone cuanto sigue:
         </Text>
