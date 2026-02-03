@@ -2,7 +2,7 @@ import React from 'react';
 import { Text } from '@react-pdf/renderer';
 
 /**
- * TIPOS DE DATOSAAAAAAAAAAAAAAA
+ * TIPOS DE DATOSAAAAAAAAAAAAAAaaA
  */
 interface DenuncianteData {
     nombres: string;
