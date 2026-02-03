@@ -93,6 +93,17 @@ export async function GET(
             operador_grado: String(denuncia.operador_grado || ''),
             operador_nombre: String(denuncia.operador_nombre || ''),
             operador_apellido: String(denuncia.operador_apellido || ''),
+
+            // DEBUG: Log operator data
+            ...(console.log('[PDF DEBUG] Operator data from DB:', {
+                grado: denuncia.operador_grado,
+                nombre: denuncia.operador_nombre,
+                apellido: denuncia.operador_apellido,
+                grado_converted: String(denuncia.operador_grado || ''),
+                nombre_converted: String(denuncia.operador_nombre || ''),
+                apellido_converted: String(denuncia.operador_apellido || '')
+            }), {}),
+
             nombres_denunciante: String(denuncia.nombres_denunciante),
             cedula: String(denuncia.cedula),
             tipo_documento: denuncia.tipo_documento ? String(denuncia.tipo_documento) : undefined,
