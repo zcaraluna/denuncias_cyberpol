@@ -11,11 +11,19 @@ if (fs.existsSync(envPath)) {
   require('dotenv').config();
 }
 
-const connectionString = process.env.DATABASE_URL ? process.env.DATABASE_URL.replace('sslmode=require', '') : undefined;
+// Desactivar validación de certificados TLS
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+
+let connectionString = process.env.DATABASE_URL || '';
+// Limpiar sslmode=require de la cadena para que no interfiera con el driver de JS
+connectionString = connectionString.replace('sslmode=require', 'sslmode=disable');
+
+const isLocal = connectionString.includes('localhost') || connectionString.includes('127.0.0.1');
+const sslConfig = isLocal ? false : { rejectUnauthorized: false };
 
 const pool = new Pool({
-  connectionString: connectionString,
-  ssl: { rejectUnauthorized: false },
+  connectionString,
+  ssl: sslConfig,
 });
 
 async function generarCodigoActivacion(diasExpiracion = 30, nombre = null) {
