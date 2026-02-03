@@ -334,6 +334,11 @@ export default function NuevaDenunciaPage() {
   const [guardandoBorrador, setGuardandoBorrador] = useState(false)
   const [borradorId, setBorradorId] = useState<number | null>(null)
   const [mostrarModalBorrador, setMostrarModalBorrador] = useState(false)
+
+  // Estados para modal de error (No bloqueante)
+  const [mostrarModalError, setMostrarModalError] = useState(false)
+  const [mensajeError, setMensajeError] = useState('')
+  const [mensajeErrorTitulo, setMensajeErrorTitulo] = useState('Error')
   const [descripcionFisica, setDescripcionFisica] = useState<{
     altura?: string
     complexion?: string
@@ -1929,14 +1934,18 @@ export default function NuevaDenunciaPage() {
     if (!usuario) return
 
     if (denunciantes.length === 0) {
-      alert('Debes agregar al menos un denunciante antes de completar la denuncia.')
+      setMensajeErrorTitulo('Faltan Denunciantes')
+      setMensajeError('Debes agregar al menos un denunciante antes de completar la denuncia.')
+      setMostrarModalError(true)
       setPaso(1)
       return
     }
 
     const denunciantePrincipal = obtenerDenunciantePrincipal()
     if (!denunciantePrincipal) {
-      alert('Debes registrar un denunciante principal antes de completar la denuncia.')
+      setMensajeErrorTitulo('Falta Denunciante Principal')
+      setMensajeError('Debes registrar un denunciante principal antes de completar la denuncia.')
+      setMostrarModalError(true)
       setPaso(1)
       return
     }
@@ -1962,7 +1971,9 @@ export default function NuevaDenunciaPage() {
         .map(key => etiquetasCampos[key] || key)
         .join(', ')
 
-      alert(`Por favor, complete los siguientes campos obligatorios antes de continuar:\n\n${camposFaltantes}`)
+      setMensajeErrorTitulo('Campos Obligatorios')
+      setMensajeError(`Por favor, complete los siguientes campos obligatorios antes de continuar:\n\n${camposFaltantes}`)
+      setMostrarModalError(true)
       return
     }
 
@@ -4741,6 +4752,37 @@ export default function NuevaDenunciaPage() {
                 className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-medium"
               >
                 Ir al Inicio
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Error (No Bloqueante) */}
+      {mostrarModalError && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 animate-fadeIn p-4">
+          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4 border-l-4 border-red-500 transform transition-all scale-100">
+            <div className="flex items-start mb-4">
+              <div className="flex-shrink-0">
+                <svg className="h-6 w-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div className="ml-3 w-full">
+                <h3 className="text-lg font-medium text-gray-900 leading-6">
+                  {mensajeErrorTitulo}
+                </h3>
+                <div className="mt-2 text-sm text-gray-600 whitespace-pre-wrap">
+                  {mensajeError}
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end pt-3">
+              <button
+                onClick={() => setMostrarModalError(false)}
+                className="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 shadow-sm transition-colors duration-200"
+              >
+                Entendido
               </button>
             </div>
           </div>
