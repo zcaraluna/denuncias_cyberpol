@@ -150,8 +150,6 @@ export default function VerDenunciaPage({ params }: { params: Promise<{ id: stri
   const [denuncia, setDenuncia] = useState<DenunciaCompleta | null>(null)
   const [ampliaciones, setAmpliaciones] = useState<Ampliacion[]>([])
   const [loading, setLoading] = useState(true)
-  const [mostrarModalPDF, setMostrarModalPDF] = useState(false)
-  const [tipoPapelSeleccionado, setTipoPapelSeleccionado] = useState<'oficio' | 'a4'>('oficio')
   const [denunciaId, setDenunciaId] = useState<string>('')
   const [mostrarModalEliminar, setMostrarModalEliminar] = useState(false)
   const [eliminando, setEliminando] = useState(false)
@@ -216,8 +214,8 @@ export default function VerDenunciaPage({ params }: { params: Promise<{ id: stri
     }
   }
 
-  const descargarPDFAmpliacion = (ampliacionId: number, tipoPapel: 'oficio' | 'a4' = 'oficio') => {
-    window.open(`/api/denuncias/ampliacion/pdf/${ampliacionId}?tipo=${tipoPapel}`, '_blank')
+  const descargarPDFAmpliacion = (ampliacionId: number) => {
+    window.open(`/api/denuncias/ampliacion/pdf/${ampliacionId}?tipo=oficio`, '_blank')
   }
 
   const handleLogout = () => {
@@ -225,18 +223,13 @@ export default function VerDenunciaPage({ params }: { params: Promise<{ id: stri
     router.push('/')
   }
 
-  const abrirModalPDF = () => {
+  const descargarPDF = () => {
     if (denuncia?.estado !== 'completada') {
       alert('Solo se puede ver el PDF de denuncias completadas')
       return
     }
-    setMostrarModalPDF(true)
-  }
-
-  const descargarPDF = () => {
     if (!usuario) return
-    window.open(`/api/denuncias/pdf/${denunciaId}?tipo=${tipoPapelSeleccionado}&usuario_id=${usuario.id}`, '_blank')
-    setMostrarModalPDF(false)
+    window.open(`/api/denuncias/pdf/${denunciaId}?tipo=oficio&usuario_id=${usuario.id}`, '_blank')
   }
 
   const continuarBorrador = () => {
@@ -338,7 +331,7 @@ export default function VerDenunciaPage({ params }: { params: Promise<{ id: stri
                     Ampliar Denuncia
                   </Link>
                   <button
-                    onClick={abrirModalPDF}
+                    onClick={descargarPDF}
                     className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 font-medium"
                   >
                     Ver PDF
@@ -606,20 +599,10 @@ export default function VerDenunciaPage({ params }: { params: Promise<{ id: stri
                         </div>
                         <div className="flex gap-2">
                           <button
-                            onClick={() => descargarPDFAmpliacion(ampliacion.id, 'oficio')}
-                            disabled
-                            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 text-sm font-medium opacity-50 cursor-not-allowed"
-                            title="Generación de PDF temporalmente deshabilitada"
+                            onClick={() => descargarPDFAmpliacion(ampliacion.id)}
+                            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 text-sm font-medium"
                           >
-                            PDF Oficio (Deshabilitado)
-                          </button>
-                          <button
-                            onClick={() => descargarPDFAmpliacion(ampliacion.id, 'a4')}
-                            disabled
-                            className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 text-sm font-medium opacity-50 cursor-not-allowed"
-                            title="Generación de PDF temporalmente deshabilitada"
-                          >
-                            PDF A4 (Deshabilitado)
+                            Ver PDF
                           </button>
                         </div>
                       </div>
@@ -635,64 +618,6 @@ export default function VerDenunciaPage({ params }: { params: Promise<{ id: stri
           </div>
         </div>
       </main>
-
-      {/* Modal de selección de tipo de papel */}
-      {mostrarModalPDF && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full mx-4">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">Seleccionar Formato de Papel</h3>
-            <p className="text-gray-600 mb-6">Elija el formato de papel para la impresión</p>
-
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-3">Formato de Papel</label>
-              <div className="space-y-3">
-                <label className="flex items-center p-4 border-2 border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition">
-                  <input
-                    type="radio"
-                    value="oficio"
-                    checked={tipoPapelSeleccionado === 'oficio'}
-                    onChange={(e) => setTipoPapelSeleccionado(e.target.value as 'oficio' | 'a4')}
-                    className="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500"
-                  />
-                  <div>
-                    <div className="font-medium text-gray-900">Formato Oficio (8.5" x 13")</div>
-                    <div className="text-sm text-gray-500">Formato estándar institucional</div>
-                  </div>
-                </label>
-
-                <label className="flex items-center p-4 border-2 border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition">
-                  <input
-                    type="radio"
-                    value="a4"
-                    checked={tipoPapelSeleccionado === 'a4'}
-                    onChange={(e) => setTipoPapelSeleccionado(e.target.value as 'oficio' | 'a4')}
-                    className="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500"
-                  />
-                  <div>
-                    <div className="font-medium text-gray-900">Formato A4 (8.27" x 11.69")</div>
-                    <div className="text-sm text-gray-500">Formato internacional estándar</div>
-                  </div>
-                </label>
-              </div>
-            </div>
-
-            <div className="flex gap-4">
-              <button
-                onClick={() => setMostrarModalPDF(false)}
-                className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 font-medium"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={descargarPDF}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-medium"
-              >
-                Continuar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Modal de confirmación de eliminación */}
       {mostrarModalEliminar && (
