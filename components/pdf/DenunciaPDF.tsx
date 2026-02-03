@@ -45,11 +45,11 @@ interface DenunciaData {
 
 interface DenunciaPDFProps {
     denuncia: DenunciaData;
-    pageSize?: 'LEGAL';
+    pageSize?: any;
 }
 
-// Componente que retorna Document completo - Tamaño Oficio (LEGAL)
-const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 'LEGAL' }) => {
+// Componente que retorna Document completo - Tamaño Oficio (8.5 x 13 inches = 612 x 936 points)
+const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = [612, 936] }) => {
     // CRÍTICO: Función helper para convertir CUALQUIER valor a string seguro
     const toSafeString = (value: any): string => {
         if (value === null || value === undefined) return '';

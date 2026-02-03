@@ -111,7 +111,7 @@ export async function GET(
         const pdfBuffer = await renderToBuffer(
             React.createElement(DenunciaPDFDocument, {
                 denuncia: denunciaData,
-                pageSize: 'LEGAL'
+                pageSize: [612, 936]
             })
         );
 
