@@ -172,17 +172,11 @@ const denunciaSchema = z.object({
   }
   // Validar lugar del hecho solo si "No aplica" no está marcado
   if (!data.lugarHechoNoAplica) {
-    if (!data.lugarHecho || data.lugarHecho.trim() === '') {
-      ctx.addIssue({
-        path: ['lugarHecho'],
-        code: z.ZodIssueCode.custom,
-        message: 'Este campo es obligatorio',
-      })
-    }
     if (!data.lugarHechoDepartamento || data.lugarHechoDepartamento.trim() === '') {
       ctx.addIssue({
         path: ['lugarHechoDepartamento'],
         code: z.ZodIssueCode.custom,
+
         message: 'Seleccione un departamento',
       })
     }
@@ -1931,9 +1925,26 @@ export default function NuevaDenunciaPage() {
 
     const esValido = await triggerDenuncia()
     if (!esValido) {
-      // Los errores ya se mostrarán en el formulario gracias a react-hook-form
-      // Podemos hacer un scroll al primer error o simplemente notificar
-      alert('Por favor verifique los campos obligatorios marcados en rojo antes de continuar.')
+      // Mapeo de nombres de campos a etiquetas legibles
+      const etiquetasCampos: Record<string, string> = {
+        fechaHecho: 'Fecha del Hecho',
+        horaHecho: 'Hora del Hecho',
+        tipoDenuncia: 'Tipo de Denuncia',
+        lugarHechoDepartamento: 'Departamento',
+        lugarHechoCiudad: 'Ciudad',
+        lugarHechoBarrio: 'Barrio',
+        lugarHechoCalles: 'Calles',
+        relato: 'Relato del Hecho',
+        otroTipo: 'Especificar Otro Tipo',
+        fechaHechoFin: 'Fecha de Fin',
+        horaHechoFin: 'Hora de Fin'
+      }
+
+      const camposFaltantes = Object.keys(errorsDenuncia)
+        .map(key => etiquetasCampos[key] || key)
+        .join(', ')
+
+      alert(`Por favor, complete los siguientes campos obligatorios antes de continuar:\n\n${camposFaltantes}`)
       return
     }
 
