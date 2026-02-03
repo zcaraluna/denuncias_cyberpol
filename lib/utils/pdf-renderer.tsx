@@ -199,6 +199,6 @@ export async function renderDenunciaPdf(
             operadorFirma,
             denuncianteFirma,
             logos,
-        })
+        }) as React.ReactElement<any>
     )
 }

@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Document, Page, StyleSheet, Font } from '@react-pdf/renderer'
+import { Document, Page, StyleSheet } from '@react-pdf/renderer'
 import { EncabezadoPdf } from './EncabezadoPdf'
 import { AvisoLegalPdf } from './AvisoLegalPdf'
 import { CuerpoDenunciaPdf } from './CuerpoDenunciaPdf'
@@ -14,16 +14,35 @@ const styles = StyleSheet.create({
     },
 })
 
-operadorFirma: any
-denuncianteFirma: any
-logos: {
-    policia: string
-    dchef: string
-    gobierno: string
-}
+export interface DocumentoDenunciaPdfProps {
+    numeroOrden: number
+    año: string
+    denunciante: Denunciante
+    datosDenuncia: DatosDenuncia
+    oficinaDatos: any
+    parrafoIntroduccion: any[]
+    parrafoHecho: any[]
+    relatoCompleto: string
+    qrDataUrl: string
+    operadorFirma: any
+    denuncianteFirma: any
+    logos: {
+        policia: string
+        dchef: string
+        gobierno: string
+    }
 }
 
-qrDataUrl,
+export const DocumentoDenunciaPdf = ({
+    numeroOrden,
+    año,
+    denunciante,
+    datosDenuncia,
+    oficinaDatos,
+    parrafoIntroduccion,
+    parrafoHecho,
+    relatoCompleto,
+    qrDataUrl,
     operadorFirma,
     denuncianteFirma,
     logos,
