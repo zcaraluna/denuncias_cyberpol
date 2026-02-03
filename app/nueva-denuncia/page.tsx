@@ -4323,10 +4323,14 @@ export default function NuevaDenunciaPage() {
                     <label className="flex items-center ml-4 cursor-pointer">
                       <input
                         type="checkbox"
+                        {...registerDenuncia('lugarHechoNoAplica')}
                         checked={lugarHechoNoAplica}
                         onChange={(e) => {
+                          registerDenuncia('lugarHechoNoAplica').onChange(e)
                           setLugarHechoNoAplica(e.target.checked)
+                          // value is updated by register, but we also want custom logic
                           setValueDenuncia('lugarHechoNoAplica', e.target.checked)
+
                           if (e.target.checked) {
                             setValueDenuncia('lugarHechoDepartamento', '')
                             setValueDenuncia('lugarHechoCiudad', '')
