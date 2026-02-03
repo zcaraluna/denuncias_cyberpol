@@ -1,3 +1,4 @@
+import React from 'react'
 import { Text, View, Image, StyleSheet } from '@react-pdf/renderer'
 import path from 'path'
 import fs from 'fs'
@@ -92,15 +93,15 @@ export const EncabezadoPdf = ({ titulo, oficina, oficinaDatos }: EncabezadoPdfPr
                     DIRECCIÓN CONTRA HECHOS PUNIBLES ECONÓMICOS Y FINANCIEROS
                 </Text>
                 <Text style={styles.subTitle}>SALA DE DENUNCIAS</Text>
-                <Text style={styles.infoText}>Dirección: {oficinaDatos.direccion}</Text>
+                <Text style={styles.infoText}>Dirección: {String(oficinaDatos.direccion || '')}</Text>
                 <Text style={styles.infoText}>
-                    Teléfono: {oficinaDatos.telefono}   Fax: {oficinaDatos.fax}
+                    Teléfono: {String(oficinaDatos.telefono || '')}   Fax: {String(oficinaDatos.fax || '')}
                 </Text>
-                <Text style={styles.infoText}>E-mail: {oficinaDatos.email}</Text>
+                <Text style={styles.infoText}>E-mail: {String(oficinaDatos.email || '')}</Text>
             </View>
 
             <View style={styles.separator} />
-            <Text style={styles.actaTitle}>{titulo}</Text>
+            <Text style={styles.actaTitle}>{String(titulo || '')}</Text>
         </View>
     )
 }

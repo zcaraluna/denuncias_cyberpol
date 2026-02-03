@@ -1,3 +1,4 @@
+import React from 'react'
 import { Text, View, StyleSheet } from '@react-pdf/renderer'
 import { DatosDenuncia, Denunciante } from '../../utils/pdf'
 
@@ -40,14 +41,14 @@ export const CuerpoDenunciaPdf = ({
             {/* Párrafo Introductorio */}
             <Text style={styles.paragraph}>
                 {parrafoIntroduccion.map((f, i) => (
-                    <Text key={i} style={f.bold ? styles.bold : {}}>{f.texto}</Text>
+                    <Text key={i} style={f.bold ? styles.bold : {}}>{String(f.texto || '')}</Text>
                 ))}
             </Text>
 
             {/* Párrafo del Hecho */}
             <Text style={styles.paragraph}>
                 {parrafoHecho.map((f, i) => (
-                    <Text key={i} style={f.bold ? styles.bold : {}}>{f.texto}</Text>
+                    <Text key={i} style={f.bold ? styles.bold : {}}>{String(f.texto || '')}</Text>
                 ))}
             </Text>
 
@@ -58,7 +59,7 @@ export const CuerpoDenunciaPdf = ({
 
             {/* Relato */}
             <Text style={[styles.paragraph, styles.italic]}>
-                {relato}
+                {String(relato || '')}
             </Text>
         </View>
     )

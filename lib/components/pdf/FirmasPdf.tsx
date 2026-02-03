@@ -1,3 +1,4 @@
+import React from 'react'
 import { Text, View, Image, StyleSheet } from '@react-pdf/renderer'
 
 const styles = StyleSheet.create({
@@ -71,23 +72,23 @@ export const FirmasPdf = ({ operador, denunciante, qrDataUrl, hash }: FirmasPdfP
                 {/* Columna Izquierda: Operador */}
                 <View style={styles.col}>
                     <View style={styles.linea} />
-                    <Text style={styles.nombreText}>{operador.nombre.toUpperCase()}</Text>
-                    <Text style={styles.nombreText}>{operador.grado.toUpperCase()}</Text>
-                    <Text style={styles.etiquetaBold}>{operador.etiqueta}</Text>
+                    <Text style={styles.nombreText}>{String(operador.nombre || '').toUpperCase()}</Text>
+                    <Text style={styles.nombreText}>{String(operador.grado || '').toUpperCase()}</Text>
+                    <Text style={styles.etiquetaBold}>{String(operador.etiqueta || '')}</Text>
                 </View>
 
                 {/* Columna Centro: QR y Hash */}
                 <View style={styles.colCentro}>
                     {qrDataUrl && <Image src={qrDataUrl} style={styles.qrImage} />}
-                    <Text style={styles.hashText}>{hash}</Text>
+                    <Text style={styles.hashText}>{String(hash || '')}</Text>
                 </View>
 
                 {/* Columna Derecha: Denunciante */}
                 <View style={styles.col}>
                     <View style={styles.linea} />
-                    <Text style={styles.nombreText}>{denunciante.nombre.toUpperCase()}</Text>
-                    <Text style={styles.nombreText}>{denunciante.documento.toUpperCase()}</Text>
-                    <Text style={styles.etiquetaBold}>{denunciante.etiqueta}</Text>
+                    <Text style={styles.nombreText}>{String(denunciante.nombre || '').toUpperCase()}</Text>
+                    <Text style={styles.nombreText}>{String(denunciante.documento || '').toUpperCase()}</Text>
+                    <Text style={styles.etiquetaBold}>{String(denunciante.etiqueta || '')}</Text>
                 </View>
             </View>
         </View>

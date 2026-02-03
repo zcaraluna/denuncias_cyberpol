@@ -1,3 +1,4 @@
+import React from 'react'
 import { Document, Page, StyleSheet, Font } from '@react-pdf/renderer'
 import { EncabezadoPdf } from './EncabezadoPdf'
 import { AvisoLegalPdf } from './AvisoLegalPdf'
