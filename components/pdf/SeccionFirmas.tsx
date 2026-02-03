@@ -6,7 +6,7 @@ const styles = StyleSheet.create({
         marginTop: 40,
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'flex-start',
+        alignItems: 'center',
         paddingHorizontal: 10,
     },
     column: {
@@ -18,7 +18,6 @@ const styles = StyleSheet.create({
         flexDirection: 'column',
         alignItems: 'center',
         width: '40%',
-        marginTop: -10,
     },
     line: {
         borderTopWidth: 1,
