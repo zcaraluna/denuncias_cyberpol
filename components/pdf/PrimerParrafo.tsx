@@ -229,7 +229,7 @@ function generarParrafoConAbogado(
             <Text style={{ fontWeight: 'bold' }}>{toSafeString(abogado.nombres).toUpperCase()}</Text>, en su carácter de{' '}
             <Text style={{ fontWeight: 'bold' }}>ABOGADO ASISTENTE </Text>
             {renderDatosAbogado(abogado)}
-            , quienes de común acuerdo exponen cuanto sigue:
+            , y expone cuanto sigue:
         </Text>
     );
 }

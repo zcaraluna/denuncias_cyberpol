@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
             if (abogado.matricula) html += `, matrícula N° <strong>${toSafeString(abogado.matricula)}</strong>`;
             html += `, con ${renderDatosPersonales(abogado)}`;
 
-            html += `, quienes de común acuerdo exponen cuanto sigue:`;
+            html += `, y expone cuanto sigue:`;
 
         } else if (totalComparecientes > 1) {
             // CASO 2: Múltiples comparecientes
