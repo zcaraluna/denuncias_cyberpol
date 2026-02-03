@@ -195,6 +195,7 @@ function ConfirmacionPage() {
               Ir al Inicio
             </button>
           </div>
+        </div>
       </main>
     </div>
   )
