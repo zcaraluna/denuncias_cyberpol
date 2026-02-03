@@ -1125,6 +1125,7 @@ export default function NuevaDenunciaPage() {
     watch: watchDenuncia,
     control: controlDenuncia,
     setValue: setValueDenuncia,
+    trigger: triggerDenuncia,
   } = useForm<z.infer<typeof denunciaSchema>>({
     resolver: zodResolver(denunciaSchema),
   })
@@ -1925,6 +1926,14 @@ export default function NuevaDenunciaPage() {
     if (!denunciantePrincipal) {
       alert('Debes registrar un denunciante principal antes de completar la denuncia.')
       setPaso(1)
+      return
+    }
+
+    const esValido = await triggerDenuncia()
+    if (!esValido) {
+      // Los errores ya se mostrarán en el formulario gracias a react-hook-form
+      // Podemos hacer un scroll al primer error o simplemente notificar
+      alert('Por favor verifique los campos obligatorios marcados en rojo antes de continuar.')
       return
     }
 
