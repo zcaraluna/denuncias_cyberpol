@@ -150,7 +150,7 @@ const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 
 
                     <View style={styles.row}>
                         <Text style={styles.label}>Fecha de Nacimiento:</Text>
-                        <Text style={styles.value}>{denuncia.fecha_nacimiento}</Text>
+                        <Text style={styles.value}>{toSafeString(denuncia.fecha_nacimiento)}</Text>
                     </View>
 
                     <View style={styles.row}>
@@ -218,7 +218,7 @@ const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 
 
                     <View style={styles.row}>
                         <Text style={styles.label}>Fecha del Hecho:</Text>
-                        <Text style={styles.value}>{denuncia.fecha_hecho} {denuncia.hora_hecho}</Text>
+                        <Text style={styles.value}>{toSafeString(denuncia.fecha_hecho)} {toSafeString(denuncia.hora_hecho)}</Text>
                     </View>
 
                     <View style={styles.fullWidth}>
