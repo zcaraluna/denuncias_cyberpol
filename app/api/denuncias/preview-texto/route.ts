@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
                 telefono: denunciantePrincipal.telefono
             })}`;
 
-            html += `; asistido por <strong>${toSafeString(abogado.nombres).toUpperCase()}</strong>, en su carácter de <strong>ABOGADO ASISTENTE </strong>`;
+            html += `; con la asistencia técnica de <strong>${toSafeString(abogado.nombres).toUpperCase()}</strong>, en su carácter de <strong>ABOGADO ASISTENTE </strong>`;
             if (abogado.matricula) html += `, matrícula N° <strong>${toSafeString(abogado.matricula)}</strong>`;
             html += `, con ${renderDatosPersonales(abogado)}`;
 
@@ -140,7 +140,7 @@ export async function POST(request: NextRequest) {
             });
 
             if (abogado) {
-                html += `; asistido por <strong>${toSafeString(abogado.nombres).toUpperCase()}</strong>, en su carácter de <strong>ABOGADO ASISTENTE</strong>`;
+                html += `; con la asistencia técnica de <strong>${toSafeString(abogado.nombres).toUpperCase()}</strong>, en su carácter de <strong>ABOGADO ASISTENTE </strong>`;
                 if (abogado.matricula) html += `, matrícula N° <strong>${toSafeString(abogado.matricula)}</strong>`;
                 html += `, con ${renderDatosPersonales(abogado)}`;
             }

@@ -225,7 +225,7 @@ function generarParrafoConAbogado(
             <Text style={{ fontWeight: 'bold' }}>{operador || 'PERSONAL POLICIAL INTERVINIENTE'}</Text>, concurre{' '}
             <Text style={{ fontWeight: 'bold' }}>{toSafeString(denunciante.nombres).toUpperCase()}</Text>, con{' '}
             {renderDatosPersonales(denunciante)}
-            ; asistido por{' '}
+            ; con la asistencia técnica de{' '}
             <Text style={{ fontWeight: 'bold' }}>{toSafeString(abogado.nombres).toUpperCase()}</Text>, en su carácter de{' '}
             <Text style={{ fontWeight: 'bold' }}>ABOGADO ASISTENTE </Text>
             {renderDatosAbogado(abogado)}
@@ -303,7 +303,7 @@ function generarParrafoMultiple(
             {/* Abogados */}
             {abogado ? (
                 <Text>
-                    ; asistido por{' '}
+                    ; con la asistencia técnica de{' '}
                     <Text style={{ fontWeight: 'bold' }}>{toSafeString(abogado.nombres).toUpperCase()}</Text>, en su carácter de{' '}
                     <Text style={{ fontWeight: 'bold' }}>ABOGADO ASISTENTE </Text>
                     {/* El resto de datos ya los maneja renderDatosAbogado */}
