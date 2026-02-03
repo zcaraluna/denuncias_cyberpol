@@ -13,7 +13,7 @@ buildProcess.stdout.on('data', (data) => {
   stdoutBuffer += data.toString();
   const lines = stdoutBuffer.split('\n');
   stdoutBuffer = lines.pop() || ''; // Guardar línea incompleta
-  
+
   lines.forEach(line => {
     if (!line.includes('[baseline-browser-mapping]')) {
       process.stdout.write(line + '\n');
@@ -26,7 +26,7 @@ buildProcess.stderr.on('data', (data) => {
   stderrBuffer += data.toString();
   const lines = stderrBuffer.split('\n');
   stderrBuffer = lines.pop() || ''; // Guardar línea incompleta
-  
+
   lines.forEach(line => {
     if (!line.includes('[baseline-browser-mapping]')) {
       process.stderr.write(line + '\n');
@@ -44,4 +44,3 @@ buildProcess.on('close', (code) => {
   }
   process.exit(code);
 });
-
