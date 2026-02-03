@@ -60,9 +60,8 @@ export const DocumentoDenunciaPdf = ({
                     oficinaDatos={oficinaDatos}
                     logos={logos}
                 />
-
+                {/* 
                 <AvisoLegalPdf />
-
                 <CuerpoDenunciaPdf
                     denunciante={denunciante}
                     datosDenuncia={datosDenuncia}
@@ -70,13 +69,13 @@ export const DocumentoDenunciaPdf = ({
                     parrafoHecho={parrafoHecho}
                     relato={relatoCompleto}
                 />
-
                 <FirmasPdf
                     operador={operadorFirma}
                     denunciante={denuncianteFirma}
                     qrDataUrl={qrDataUrl}
                     hash={datosDenuncia.hash}
                 />
+                */}
             </Page>
         </Document>
     )
