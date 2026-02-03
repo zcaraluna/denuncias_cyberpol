@@ -1,9 +1,6 @@
 import * as React from 'react'
 import { Document, Page, StyleSheet } from '@react-pdf/renderer'
 import { EncabezadoPdf } from './EncabezadoPdf'
-import { AvisoLegalPdf } from './AvisoLegalPdf'
-import { CuerpoDenunciaPdf } from './CuerpoDenunciaPdf'
-import { FirmasPdf } from './FirmasPdf'
 import { DatosDenuncia, Denunciante } from '../../utils/pdf'
 
 const styles = StyleSheet.create({
@@ -17,15 +14,8 @@ const styles = StyleSheet.create({
 export interface DocumentoDenunciaPdfProps {
     numeroOrden: number
     año: string
-    denunciante: Denunciante
     datosDenuncia: DatosDenuncia
     oficinaDatos: any
-    parrafoIntroduccion: any[]
-    parrafoHecho: any[]
-    relatoCompleto: string
-    qrDataUrl: string
-    operadorFirma: any
-    denuncianteFirma: any
     logos: {
         policia: string
         dchef: string
@@ -36,18 +26,11 @@ export interface DocumentoDenunciaPdfProps {
 export const DocumentoDenunciaPdf = ({
     numeroOrden,
     año,
-    denunciante,
     datosDenuncia,
     oficinaDatos,
-    parrafoIntroduccion,
-    parrafoHecho,
-    relatoCompleto,
-    qrDataUrl,
-    operadorFirma,
-    denuncianteFirma,
     logos,
 }: DocumentoDenunciaPdfProps) => {
-    const pageSize = datosDenuncia.tipo_papel === 'a4' ? 'A4' : ([612.28, 935.43] as [number, number]) // Oficio aproximado en pt (216x330mm)
+    const pageSize = datosDenuncia.tipo_papel === 'a4' ? 'A4' : ([612.28, 935.43] as [number, number])
 
     const titulo = `ACTA DE DENUNCIA Nº ${numeroOrden === 0 ? '#' : numeroOrden}/${año}`
 
@@ -60,22 +43,6 @@ export const DocumentoDenunciaPdf = ({
                     oficinaDatos={oficinaDatos}
                     logos={logos}
                 />
-                {/* 
-                <AvisoLegalPdf />
-                <CuerpoDenunciaPdf
-                    denunciante={denunciante}
-                    datosDenuncia={datosDenuncia}
-                    parrafoIntroduccion={parrafoIntroduccion}
-                    parrafoHecho={parrafoHecho}
-                    relato={relatoCompleto}
-                />
-                <FirmasPdf
-                    operador={operadorFirma}
-                    denunciante={denuncianteFirma}
-                    qrDataUrl={qrDataUrl}
-                    hash={datosDenuncia.hash}
-                />
-                */}
             </Page>
         </Document>
     )
