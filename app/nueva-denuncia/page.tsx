@@ -1122,6 +1122,24 @@ export default function NuevaDenunciaPage() {
     trigger: triggerDenuncia,
   } = useForm<z.infer<typeof denunciaSchema>>({
     resolver: zodResolver(denunciaSchema),
+    defaultValues: {
+      fechaHecho: '',
+      horaHecho: '',
+      usarRango: false,
+      fechaHechoFin: '',
+      horaHechoFin: '',
+      tipoDenuncia: '',
+      otroTipo: '',
+      lugarHecho: '',
+      lugarHechoDepartamento: '',
+      lugarHechoCiudad: '',
+      lugarHechoBarrio: '',
+      lugarHechoCalles: '',
+      lugarHechoNoAplica: false,
+      relato: '',
+      montoDano: '',
+      moneda: '',
+    }
   })
 
   const tipoDenuncia = watchDenuncia('tipoDenuncia')
