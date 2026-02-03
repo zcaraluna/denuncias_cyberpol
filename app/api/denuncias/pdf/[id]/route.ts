@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import { renderToBuffer } from '@react-pdf/renderer';
-import DenunciaPDF from '@/components/pdf/DenunciaPDF';
+import { Document } from '@react-pdf/renderer';
+import DenunciaPDFPage from '@/components/pdf/DenunciaPDF';
 import React from 'react';
 
 export async function GET(
@@ -86,12 +87,16 @@ export async function GET(
         // Determinar el tamaño de página
         const pageSize = tipo === 'a4' ? 'A4' : 'LETTER';
 
-        // Generar el PDF usando renderToBuffer
+        // Generar el PDF usando renderToBuffer con Document wrapper
         const pdfBuffer = await renderToBuffer(
-            React.createElement(DenunciaPDF, {
-                denuncia: denunciaData,
-                pageSize: pageSize as 'A4' | 'LETTER',
-            })
+            React.createElement(
+                Document,
+                {},
+                React.createElement(DenunciaPDFPage, {
+                    denuncia: denunciaData,
+                    pageSize: pageSize as 'A4' | 'LETTER',
+                })
+            )
         );
 
         // Convertir Buffer a Uint8Array para NextResponse
