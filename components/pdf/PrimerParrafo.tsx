@@ -119,15 +119,24 @@ function renderDatosPersonales(persona: DenuncianteData): React.ReactNode {
     return (
         <Text>
             {toSafeString(persona.tipo_documento || 'Cédula de Identidad Paraguaya')} número{' '}
-            <Text style={{ fontWeight: 'bold' }}>{toSafeString(persona.cedula)}</Text>, de nacionalidad{' '}
-            <Text style={{ fontWeight: 'bold' }}>{toSafeString(persona.nacionalidad).toUpperCase()}</Text>, estado civil{' '}
-            <Text style={{ fontWeight: 'bold' }}>{toSafeString(persona.estado_civil).toUpperCase()}</Text>,{' '}
-            <Text style={{ fontWeight: 'bold' }}>{persona.edad || '---'}</Text> años de edad, fecha de nacimiento{' '}
-            <Text style={{ fontWeight: 'bold' }}>{formatFecha(persona.fecha_nacimiento)}</Text>, en{' '}
-            <Text style={{ fontWeight: 'bold' }}>{toSafeString(persona.lugar_nacimiento).toUpperCase()}</Text>, domiciliado en{' '}
-            <Text style={{ fontWeight: 'bold' }}>{toSafeString(persona.domicilio || 'SIN DATOS').toUpperCase()}</Text>, de profesión{' '}
-            <Text style={{ fontWeight: 'bold' }}>{toSafeString(persona.profesion || 'SIN PROFESIÓN').toUpperCase()}</Text>, teléfono{' '}
-            <Text style={{ fontWeight: 'bold' }}>{toSafeString(persona.telefono)}</Text>
+            <Text style={{ fontWeight: 'bold' }}>{toSafeString(persona.cedula)}</Text>
+            {persona.nacionalidad ? ', de nacionalidad ' : ''}
+            {persona.nacionalidad ? <Text style={{ fontWeight: 'bold' }}>{toSafeString(persona.nacionalidad).toUpperCase()}</Text> : ''}
+            {persona.estado_civil ? ', estado civil ' : ''}
+            {persona.estado_civil ? <Text style={{ fontWeight: 'bold' }}>{toSafeString(persona.estado_civil).toUpperCase()}</Text> : ''}
+            {persona.edad ? ', ' : ''}
+            {persona.edad ? <Text style={{ fontWeight: 'bold' }}>{persona.edad}</Text> : ''}
+            {persona.edad ? ' años de edad' : ''}
+            {persona.fecha_nacimiento ? ', fecha de nacimiento ' : ''}
+            {persona.fecha_nacimiento ? <Text style={{ fontWeight: 'bold' }}>{formatFecha(persona.fecha_nacimiento)}</Text> : ''}
+            {persona.lugar_nacimiento ? ', en ' : ''}
+            {persona.lugar_nacimiento ? <Text style={{ fontWeight: 'bold' }}>{toSafeString(persona.lugar_nacimiento).toUpperCase()}</Text> : ''}
+            {persona.domicilio ? ', domiciliado en ' : ''}
+            {persona.domicilio ? <Text style={{ fontWeight: 'bold' }}>{toSafeString(persona.domicilio).toUpperCase()}</Text> : ''}
+            {persona.profesion ? ', de profesión ' : ''}
+            {persona.profesion ? <Text style={{ fontWeight: 'bold' }}>{toSafeString(persona.profesion).toUpperCase()}</Text> : ''}
+            {persona.telefono ? ', teléfono ' : ''}
+            {persona.telefono ? <Text style={{ fontWeight: 'bold' }}>{toSafeString(persona.telefono)}</Text> : ''}
         </Text>
     );
 }
