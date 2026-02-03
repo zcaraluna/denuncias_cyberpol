@@ -7,7 +7,7 @@ interface CierreDenunciaProps {
 
 export const CierreDenuncia: React.FC<CierreDenunciaProps> = ({ styles }) => {
     return (
-        <View style={{ marginTop: 20 }}>
+        <View style={{ marginTop: 0 }}>
             <Text style={styles.paragraph}>
                 NO HABIENDO NADA MÁS QUE AGREGAR SE DA POR TERMINADA EL ACTA,
                 PREVIA LECTURA Y RATIFICACIÓN DE SU CONTENIDO, FIRMANDO AL PIE
