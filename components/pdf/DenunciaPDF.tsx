@@ -105,6 +105,13 @@ interface DenunciaPDFProps {
 
 // Componente que retorna Document completo
 const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 'LETTER' }) => {
+    // CRÍTICO: Función helper para convertir CUALQUIER valor a string seguro
+    const toSafeString = (value: any): string => {
+        if (value === null || value === undefined) return '';
+        if (value instanceof Date) return value.toISOString().split('T')[0];
+        return String(value);
+    };
+
     // CRÍTICO: Manejar fecha_denuncia como Date o string
     const getYear = (fecha: any): number => {
         if (!fecha) return new Date().getFullYear();
