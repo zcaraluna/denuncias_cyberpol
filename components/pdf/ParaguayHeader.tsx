@@ -5,7 +5,7 @@ const styles = StyleSheet.create({
     headerContainer: {
         flexDirection: 'column',
         alignItems: 'center',
-        marginBottom: 20,
+        marginBottom: 5,
     },
     topRow: {
         flexDirection: 'row',
@@ -57,8 +57,8 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1.5,
         borderBottomColor: '#000',
         width: '100%',
-        marginTop: 10,
-        marginBottom: 15,
+        marginTop: 6,
+        marginBottom: 6,
     },
     documentId: {
         fontSize: 11,
