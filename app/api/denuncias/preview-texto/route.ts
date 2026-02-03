@@ -97,6 +97,28 @@ export async function POST(request: NextRequest) {
             }
             html += `, y expone cuanto sigue:`;
 
+        } else if (!abogadoConCartaPoder && coDenunciantes.length === 0 && abogado) {
+            // CASO ESPECIAL: 1 Denunciante + 1 Abogado Asistente (Singular)
+            html += `concurre <strong>${toSafeString(denunciantePrincipal.nombres).toUpperCase()}</strong>, con ${renderDatosPersonales({
+                nombres: denunciantePrincipal.nombres,
+                cedula: denunciantePrincipal.numeroDocumento,
+                tipo_documento: denunciantePrincipal.tipoDocumento,
+                nacionalidad: denunciantePrincipal.nacionalidad,
+                estado_civil: denunciantePrincipal.estadoCivil,
+                edad: denunciantePrincipal.edad,
+                fecha_nacimiento: denunciantePrincipal.fechaNacimiento,
+                lugar_nacimiento: denunciantePrincipal.lugarNacimiento,
+                domicilio: denunciantePrincipal.domicilio,
+                profesion: denunciantePrincipal.profesion,
+                telefono: denunciantePrincipal.telefono
+            })}`;
+
+            html += `; asistido por <strong>${toSafeString(abogado.nombres).toUpperCase()}</strong>, en su carácter de <strong>ABOGADO ASISTENTE </strong>`;
+            if (abogado.matricula) html += `, matrícula N° <strong>${toSafeString(abogado.matricula)}</strong>`;
+            html += `, con ${renderDatosPersonales(abogado)}`;
+
+            html += `, quienes de común acuerdo exponen cuanto sigue:`;
+
         } else if (totalComparecientes > 1) {
             // CASO 2: Múltiples comparecientes
             html += `concurren los ciudadanos: <strong>${toSafeString(denunciantePrincipal.nombres).toUpperCase()}</strong>, con ${renderDatosPersonales({

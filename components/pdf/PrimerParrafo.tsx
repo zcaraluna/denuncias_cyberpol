@@ -179,6 +179,17 @@ export function generarPrimerParrafo(
         );
     }
 
+    // Caso especial: 1 Denunciante + 1 Abogado Asistente (sin co-denunciantes)
+    if (analisis.coDenunciantes.length === 0 && analisis.abogado && !analisis.abogadoConCartaPoder) {
+        return generarParrafoConAbogado(
+            denuncia,
+            analisis.denunciantePrincipal,
+            analisis.abogado,
+            operadorNombreCompleto,
+            styles
+        );
+    }
+
     if (analisis.totalComparecientes > 1) {
         return generarParrafoMultiple(
             denuncia,
@@ -193,6 +204,33 @@ export function generarPrimerParrafo(
         analisis.denunciantePrincipal,
         operadorNombreCompleto,
         styles
+    );
+}
+
+/**
+ * CASO ESPECIAL: 1 Denunciante + 1 Abogado Asistente
+ */
+function generarParrafoConAbogado(
+    denuncia: DenunciaData,
+    denunciante: DenuncianteData,
+    abogado: InvolucradoData,
+    operador: string,
+    styles: any
+): React.ReactElement {
+    return (
+        <Text style={styles.paragraph}>
+            En la Sala de Denuncias de la Dirección Contra Hechos Punibles Económicos y Financieros, Oficina ASUNCIÓN, en fecha{' '}
+            <Text style={{ fontWeight: 'bold' }}>{formatFecha(denuncia.fecha_denuncia)}</Text> siendo las{' '}
+            <Text style={{ fontWeight: 'bold' }}>{toSafeString(denuncia.hora_denuncia)}</Text>, ante mí{' '}
+            <Text style={{ fontWeight: 'bold' }}>{operador || 'PERSONAL POLICIAL INTERVINIENTE'}</Text>, concurre{' '}
+            <Text style={{ fontWeight: 'bold' }}>{toSafeString(denunciante.nombres).toUpperCase()}</Text>, con{' '}
+            {renderDatosPersonales(denunciante)}
+            ; asistido por{' '}
+            <Text style={{ fontWeight: 'bold' }}>{toSafeString(abogado.nombres).toUpperCase()}</Text>, en su carácter de{' '}
+            <Text style={{ fontWeight: 'bold' }}>ABOGADO ASISTENTE </Text>
+            {renderDatosAbogado(abogado)}
+            , quienes de común acuerdo exponen cuanto sigue:
+        </Text>
     );
 }
 
