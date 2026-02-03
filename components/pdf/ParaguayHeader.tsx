@@ -15,12 +15,12 @@ const styles = StyleSheet.create({
         marginBottom: 15,
     },
     logoLateral: {
-        width: 70,
-        height: 70,
+        width: 60,
+        height: 60,
     },
     logoCentral: {
-        width: 90,
-        height: 90,
+        width: 110,
+        height: 110,
     },
     titleSection: {
         textAlign: 'center',
@@ -65,11 +65,11 @@ const ParaguayHeader: React.FC<ParaguayHeaderProps> = ({ numeroActa, año }) => 
 
     return (
         <View style={styles.headerContainer}>
-            {/* Fila de Logos: Izquierda (Gobierno), Centro (DCHEF), Derecha (Policía) */}
+            {/* Fila de Logos: Izquierda (Policía), Centro (DCHEF), Derecha (Gobierno) */}
             <View style={styles.topRow}>
-                <Image style={styles.logoLateral} src={`${baseUrl}/gobiernonacional.jpg`} />
-                <Image style={styles.logoCentral} src={`${baseUrl}/dchef.png`} />
                 <Image style={styles.logoLateral} src={`${baseUrl}/policianacional.png`} />
+                <Image style={styles.logoCentral} src={`${baseUrl}/dchef.png`} />
+                <Image style={styles.logoLateral} src={`${baseUrl}/gobiernonacional.jpg`} />
             </View>
 
             {/* Bloque de Texto Informativo */}
