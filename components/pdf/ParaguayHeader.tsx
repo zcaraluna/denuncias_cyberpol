@@ -12,11 +12,11 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'flex-start',
         width: '100%',
-        marginBottom: 15,
+        marginBottom: 5,
     },
     logoIzquierda: {
         width: 100,
-        height: 30,
+        height: 40,
     },
     logoDerecha: {
         width: 120,
