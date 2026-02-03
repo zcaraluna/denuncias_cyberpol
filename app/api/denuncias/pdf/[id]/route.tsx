@@ -14,6 +14,29 @@ export async function GET(
         const { searchParams } = new URL(request.url);
         const tipo = searchParams.get('tipo') || 'oficio';
 
+        // 1. Obtener el usuario actual de la cookie de sesión
+        const usuarioSesionCookie = request.cookies.get('usuario_sesion')?.value;
+        let operadorActual = null;
+        if (usuarioSesionCookie) {
+            try {
+                operadorActual = JSON.parse(decodeURIComponent(usuarioSesionCookie));
+            } catch (e) {
+                console.error('Error parseando sesión:', e);
+            }
+        }
+
+        // 2. Incrementar contador de impresiones y obtener valor previo
+        const updateResult = await pool.query(
+            `UPDATE denuncias 
+             SET cantidad_impresiones = cantidad_impresiones + 1 
+             WHERE id = $1 
+             RETURNING cantidad_impresiones`,
+            [id]
+        );
+
+        const impresionesTotal = updateResult.rows[0]?.cantidad_impresiones || 1;
+        const isDuplicate = impresionesTotal > 1;
+
         // Obtener datos de la base de datos (Unificado y robusto)
         const denunciaResult = await pool.query(
             `SELECT 
@@ -165,6 +188,12 @@ export async function GET(
                 matricula: inv.matricula ? String(inv.matricula) : undefined,
             })),
             qr_code_url: await QRCode.toDataURL(`${request.headers.get('x-forwarded-proto') || 'https'}://${request.headers.get('host')}/verificar/${denuncia.hash}`),
+            is_duplicate: isDuplicate,
+            operador_actual: operadorActual ? {
+                nombre: String(operadorActual.nombre),
+                apellido: String(operadorActual.apellido),
+                grado: String(operadorActual.grado)
+            } : undefined
         };
 
         // Determinar el tamaño de página

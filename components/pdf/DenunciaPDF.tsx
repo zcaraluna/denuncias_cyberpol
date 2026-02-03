@@ -76,6 +76,12 @@ interface DenunciaData {
     telefono: string;
     relato?: string;
     denunciantes_involucrados?: InvolucradoData[];
+    is_duplicate?: boolean;
+    operador_actual?: {
+        nombre: string;
+        apellido: string;
+        grado: string;
+    };
     [key: string]: any;
 }
 
@@ -120,6 +126,13 @@ const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 
                     LA PRESENTE ACTA SE REALIZA CONFORME A LOS SIGUIENTES: ARTÍCULO 284. "DENUNCIA", ARTÍCULO 285. "FORMA Y CONTENIDO", ARTÍCULO 289. "DENUNCIA ANTE LA POLICÍA" DE LA LEY 1286/98 "CODIGO PROCESAL PENAL".
                 </Text>
 
+                {/* Aviso de Duplicado (Opcional) */}
+                {denuncia.is_duplicate && (
+                    <Text style={[styles.legalNotice, { marginTop: -5 }]}>
+                        LA PRESENTE ES UNA IMPRESIÓN DUPLICADA SOLICITADA EXCLUSIVAMENTE POR LA PERSONA DENUNCIANTE PARA LOS FINES QUE HUBIERE LUGAR.
+                    </Text>
+                )}
+
                 {/* Primer Párrafo - NUEVO SISTEMA MULTI-PARTE */}
                 {generarPrimerParrafo(denuncia as any, styles)}
 
@@ -149,6 +162,8 @@ const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 
                     } : undefined}
                     hash={denuncia.hash}
                     qrCodeUrl={denuncia.qr_code_url || ''}
+                    isDuplicate={denuncia.is_duplicate}
+                    operadorActual={denuncia.operador_actual}
                 />
             </Page>
         </Document>

@@ -64,6 +64,12 @@ interface SeccionFirmasProps {
     };
     hash: string;
     qrCodeUrl: string;
+    isDuplicate?: boolean;
+    operadorActual?: {
+        nombre: string;
+        apellido: string;
+        grado: string;
+    };
 }
 
 export const SeccionFirmas: React.FC<SeccionFirmasProps> = ({
@@ -71,18 +77,24 @@ export const SeccionFirmas: React.FC<SeccionFirmasProps> = ({
     denunciante,
     abogadoRep,
     hash,
-    qrCodeUrl
+    qrCodeUrl,
+    isDuplicate,
+    operadorActual
 }) => {
+    // Definir qué datos de personal mostrar en la firma
+    const personal = (isDuplicate && operadorActual) ? operadorActual : operador;
+    const etiquetaCargo = isDuplicate ? 'PERSONAL AUTORIZADO' : 'PERSONAL INTERVINIENTE';
+
     return (
         <View style={styles.signatureContainer} wrap={false}>
-            {/* Columna Izquierda (Observador): Personal Interviniente */}
+            {/* Columna Izquierda (Observador): Personal Interviniente o Autorizado */}
             <View style={styles.column}>
                 <View style={styles.line} />
                 <Text style={styles.nameText}>
-                    {operador.nombre.toUpperCase()} {operador.apellido.toUpperCase()}
+                    {personal.nombre.toUpperCase()} {personal.apellido.toUpperCase()}
                 </Text>
-                <Text style={styles.labelHistory}>{operador.grado.toUpperCase()}</Text>
-                <Text style={styles.labelHistory}>PERSONAL INTERVINIENTE</Text>
+                <Text style={styles.labelHistory}>{personal.grado.toUpperCase()}</Text>
+                <Text style={styles.labelHistory}>{etiquetaCargo}</Text>
             </View>
 
             {/* Columna Central: QR y HASH */}
