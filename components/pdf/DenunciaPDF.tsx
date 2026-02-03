@@ -22,16 +22,16 @@ const styles = StyleSheet.create({
     legalNotice: {
         fontSize: 8,
         fontStyle: 'italic',
-        marginTop: 10,
-        marginBottom: 8,
+        marginTop: 5,
+        marginBottom: 10,
         textAlign: 'justify',
-        lineHeight: 1.4,
+        lineHeight: 1.3,
     },
     paragraph: {
         fontSize: 10,
         textAlign: 'justify',
-        lineHeight: 1.5,
-        marginBottom: 6,
+        lineHeight: 1.4,
+        marginBottom: 8,
     },
 });
 
