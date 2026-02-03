@@ -4,24 +4,24 @@ import ParaguayHeader from './ParaguayHeader';
 
 const styles = StyleSheet.create({
     page: {
-        paddingTop: 15,
-        paddingBottom: 20,
-        paddingHorizontal: 30,
+        paddingTop: 72,  // 2.54cm = ~72pt
+        paddingBottom: 72,
+        paddingHorizontal: 72,
         fontSize: 10,
         fontFamily: 'Helvetica',
     },
     legalNotice: {
         fontSize: 8,
         fontStyle: 'italic',
-        marginBottom: 15,
+        marginBottom: 8,
         textAlign: 'justify',
         lineHeight: 1.4,
     },
     paragraph: {
         fontSize: 10,
         textAlign: 'justify',
-        lineHeight: 1.6,
-        marginBottom: 10,
+        lineHeight: 1.5,
+        marginBottom: 6,
     },
 });
 
@@ -81,8 +81,6 @@ const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 
         return fechaStr;
     };
 
-    const primerParrafo = `En la Sala de Denuncias de la Dirección Contra Hechos Punibles Económicos y Financieros, Oficina ASUNCIÓN, en fecha ${formatFecha(denuncia.fecha_denuncia)} siendo las ${toSafeString(denuncia.hora_denuncia)}, ante mí SUBOFICIAL AYUDANTE ANGEL GABRIEL CARVALLO FLORENTIN, concurre ${toSafeString(denuncia.nombres_denunciante).toUpperCase()}, con ${toSafeString(denuncia.tipo_documento || 'Cédula de Identidad Paraguaya')} número ${toSafeString(denuncia.cedula)}, de nacionalidad ${toSafeString(denuncia.nacionalidad).toUpperCase()}, estado civil ${toSafeString(denuncia.estado_civil).toUpperCase()}, ${denuncia.edad} años de edad, fecha de nacimiento ${formatFecha(denuncia.fecha_nacimiento)}, en ${toSafeString(denuncia.lugar_nacimiento).toUpperCase()}, domiciliado en ${toSafeString(denuncia.domicilio).toUpperCase()}, de profesión ${toSafeString(denuncia.profesion).toUpperCase()}, teléfono ${toSafeString(denuncia.telefono)}, y expone cuanto sigue:`;
-
     return (
         <Document>
             <Page size={pageSize} style={styles.page}>
@@ -93,9 +91,22 @@ const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 
                     LA PRESENTE ACTA SE REALIZA CONFORME A LOS SIGUIENTES: ARTÍCULO 284. "DENUNCIA", ARTÍCULO 285. "FORMA Y CONTENIDO", ARTÍCULO 289. "DENUNCIA ANTE LA POLICÍA" DE LA LEY 1286/98 "CODIGO PROCESAL PENAL".
                 </Text>
 
-                {/* Primer Párrafo */}
+                {/* Primer Párrafo con datos en negrita */}
                 <Text style={styles.paragraph}>
-                    {primerParrafo}
+                    En la Sala de Denuncias de la Dirección Contra Hechos Punibles Económicos y Financieros, Oficina ASUNCIÓN, en fecha{' '}
+                    <Text style={{ fontWeight: 'bold' }}>{formatFecha(denuncia.fecha_denuncia)}</Text> siendo las{' '}
+                    <Text style={{ fontWeight: 'bold' }}>{toSafeString(denuncia.hora_denuncia)}</Text>, ante mí SUBOFICIAL AYUDANTE ANGEL GABRIEL CARVALLO FLORENTIN, concurre{' '}
+                    <Text style={{ fontWeight: 'bold' }}>{toSafeString(denuncia.nombres_denunciante).toUpperCase()}</Text>, con{' '}
+                    {toSafeString(denuncia.tipo_documento || 'Cédula de Identidad Paraguaya')} número{' '}
+                    <Text style={{ fontWeight: 'bold' }}>{toSafeString(denuncia.cedula)}</Text>, de nacionalidad{' '}
+                    <Text style={{ fontWeight: 'bold' }}>{toSafeString(denuncia.nacionalidad).toUpperCase()}</Text>, estado civil{' '}
+                    <Text style={{ fontWeight: 'bold' }}>{toSafeString(denuncia.estado_civil).toUpperCase()}</Text>,{' '}
+                    <Text style={{ fontWeight: 'bold' }}>{denuncia.edad}</Text> años de edad, fecha de nacimiento{' '}
+                    <Text style={{ fontWeight: 'bold' }}>{formatFecha(denuncia.fecha_nacimiento)}</Text>, en{' '}
+                    <Text style={{ fontWeight: 'bold' }}>{toSafeString(denuncia.lugar_nacimiento).toUpperCase()}</Text>, domiciliado en{' '}
+                    <Text style={{ fontWeight: 'bold' }}>{toSafeString(denuncia.domicilio).toUpperCase()}</Text>, de profesión{' '}
+                    <Text style={{ fontWeight: 'bold' }}>{toSafeString(denuncia.profesion).toUpperCase()}</Text>, teléfono{' '}
+                    <Text style={{ fontWeight: 'bold' }}>{toSafeString(denuncia.telefono)}</Text>, y expone cuanto sigue:
                 </Text>
             </Page>
         </Document>
