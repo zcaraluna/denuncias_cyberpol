@@ -4,7 +4,9 @@ import ParaguayHeader from './ParaguayHeader';
 
 const styles = StyleSheet.create({
     page: {
-        padding: 30,
+        paddingTop: 15,
+        paddingBottom: 20,
+        paddingHorizontal: 30,
         fontSize: 10,
         fontFamily: 'Helvetica',
     },
@@ -35,7 +37,6 @@ const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 
         if (!fecha) return new Date().getFullYear();
         if (fecha instanceof Date) return fecha.getFullYear();
         if (typeof fecha === 'string') {
-            // Si es string, extraer año
             const parts = fecha.split('-');
             return parseInt(parts[0], 10);
         }

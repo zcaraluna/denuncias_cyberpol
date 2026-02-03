@@ -5,26 +5,22 @@ const styles = StyleSheet.create({
     headerContainer: {
         flexDirection: 'column',
         alignItems: 'center',
-        paddingHorizontal: 30,
-        paddingTop: 20,
-        marginBottom: 10,
+        marginBottom: 20,
     },
     topRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'center',
+        alignItems: 'flex-start',
         width: '100%',
-        marginBottom: 10,
+        marginBottom: 15,
     },
     logoLateral: {
-        width: 80,
-        height: 80,
-        objectFit: 'contain',
+        width: 70,
+        height: 70,
     },
     logoCentral: {
-        width: 100,
-        height: 100,
-        objectFit: 'contain',
+        width: 90,
+        height: 90,
     },
     titleSection: {
         textAlign: 'center',
@@ -63,28 +59,33 @@ interface ParaguayHeaderProps {
     año: number;
 }
 
-const ParaguayHeader: React.FC<ParaguayHeaderProps> = ({ numeroActa, año }) => (
-    <View style={styles.headerContainer}>
-        {/* Fila de Logos: Izquierda (Gobierno), Centro (DCHEF), Derecha (Policía) */}
-        <View style={styles.topRow}>
-            <Image style={styles.logoLateral} src="/gobiernonacional.jpg" />
-            <Image style={styles.logoCentral} src="/dchef.png" />
-            <Image style={styles.logoLateral} src="/policianacional.png" />
-        </View>
+const ParaguayHeader: React.FC<ParaguayHeaderProps> = ({ numeroActa, año }) => {
+    // Usar URLs absolutas para que funcionen en Vercel
+    const baseUrl = 'https://denuncias-cyberpol.vercel.app';
 
-        {/* Bloque de Texto Informativo */}
-        <View style={styles.titleSection}>
-            <Text style={styles.mainTitle}>DIRECCIÓN CONTRA HECHOS PUNIBLES ECONÓMICOS Y FINANCIEROS</Text>
-            <Text style={styles.subTitle}>SALA DE DENUNCIAS</Text>
-            <Text style={styles.infoText}>Dirección: E. V. Haedo 725 casi O'Leary</Text>
-            <Text style={styles.infoText}>Teléfono: (021) 443-159 Fax: (021) 443-126 (021) 441-111</Text>
-            <Text style={styles.infoText}>E-mail: ayudantia@delitoseconomicos.gov.py</Text>
-        </View>
+    return (
+        <View style={styles.headerContainer}>
+            {/* Fila de Logos: Izquierda (Gobierno), Centro (DCHEF), Derecha (Policía) */}
+            <View style={styles.topRow}>
+                <Image style={styles.logoLateral} src={`${baseUrl}/gobiernonacional.jpg`} />
+                <Image style={styles.logoCentral} src={`${baseUrl}/dchef.png`} />
+                <Image style={styles.logoLateral} src={`${baseUrl}/policianacional.png`} />
+            </View>
 
-        {/* Línea Divisoria y Número de Acta */}
-        <View style={styles.divider} />
-        <Text style={styles.documentId}>ACTA DE DENUNCIA N° {numeroActa}/{año}</Text>
-    </View>
-);
+            {/* Bloque de Texto Informativo */}
+            <View style={styles.titleSection}>
+                <Text style={styles.mainTitle}>DIRECCIÓN CONTRA HECHOS PUNIBLES ECONÓMICOS Y FINANCIEROS</Text>
+                <Text style={styles.subTitle}>SALA DE DENUNCIAS</Text>
+                <Text style={styles.infoText}>Dirección: E. V. Haedo 725 casi O'Leary</Text>
+                <Text style={styles.infoText}>Teléfono: (021) 443-159 Fax: (021) 443-126 (021) 441-111</Text>
+                <Text style={styles.infoText}>E-mail: ayudantia@delitoseconomicos.gov.py</Text>
+            </View>
+
+            {/* Línea Divisoria y Número de Acta */}
+            <View style={styles.divider} />
+            <Text style={styles.documentId}>ACTA DE DENUNCIA N° {numeroActa}/{año}</Text>
+        </View>
+    );
+};
 
 export default ParaguayHeader;
