@@ -231,9 +231,9 @@ export async function POST(request: NextRequest) {
             authorText = `, perpetrado presumiblemente por el ciudadano <strong>${nombre}</strong>${ci}${dom}`;
         } else if (body.autor && body.autor.conocido === 'Desconocido') {
             const desc = formatDescripcionFisicaHtml(body.descripcionFisica);
-            authorText = `, perpetrado presumiblemente por <strong>persona/s</strong> de las siguientes características: ${desc || 'SIN DATOS'}`;
-        } else {
-            authorText = ', perpetrado presumiblemente por <strong>PERSONA/S DESCONOCIDA/S</strong>';
+            authorText = desc
+                ? `, perpetrado presumiblemente por <strong>persona/s</strong> de las siguientes características: ${desc}`
+                : `, perpetrado presumiblemente por <strong>persona/s desconocida/s</strong>`;
         }
 
         html += `<p class="text-justify mb-4">Que por la presente viene a realizar una denuncia sobre un supuesto <strong>${crimeType}</strong>, ocurrido ${dateText}, ${locationText}${authorText}.</p>`;

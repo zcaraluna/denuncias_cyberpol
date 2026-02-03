@@ -83,12 +83,10 @@ export function generarSegundoParrafo(
 
     // Lógica de Autores
     let authorText = '';
-    const autores = denuncia.supuestos_autores || [];
+    const autoresValidos = (denuncia.supuestos_autores || []).filter(a => a.autor_conocido !== 'No aplica');
 
-    if (autores.length === 0 || autores.every(a => a.autor_conocido === 'No aplica')) {
-        authorText = ', perpetrado presumiblemente por PERSONA/S DESCONOCIDA/S';
-    } else {
-        const descripciones = autores.map((autor, index) => {
+    if (autoresValidos.length > 0) {
+        const descripciones = autoresValidos.map((autor, index) => {
             if (autor.autor_conocido === 'Conocido') {
                 const nombre = toSafeString(autor.nombre_autor).toUpperCase();
                 const ci = autor.cedula_autor ? `, con C.I. N° ${autor.cedula_autor}` : '';
@@ -96,8 +94,10 @@ export function generarSegundoParrafo(
                 return `el ciudadano ${nombre}${ci}${dom}`;
             } else {
                 const descFisica = formatDescripcionFisica(autor.descripcion_fisica);
-                const prefijo = autores.length > 1 ? `Persona ${index + 1}` : 'persona/s';
-                return `${prefijo} de las siguientes características: ${descFisica || 'SIN DATOS'}`;
+                const prefijo = autoresValidos.length > 1 ? `Persona ${index + 1}` : 'persona/s';
+                return descFisica
+                    ? `${prefijo} de las siguientes características: ${descFisica}`
+                    : `persona/s desconocida/s`;
             }
         });
 
