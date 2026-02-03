@@ -197,7 +197,7 @@ export async function POST(request: NextRequest) {
             ? 'en dirección <strong>NO APLICA</strong>'
             : `en la dirección <strong>${toSafeString(denuncia.lugarHecho).toUpperCase()}</strong>`;
 
-        html += `<p class="text-justify mb-4">Que por la presente viene a realizar una denuncia sobre un supuesto <strong>HECHO PUNIBLE CONTRA ${crimeType}</strong>, ocurrido ${dateText}, ${locationText}.</p>`;
+        html += `<p class="text-justify mb-4">Que por la presente viene a realizar una denuncia sobre un supuesto <strong>${crimeType}</strong>, ocurrido ${dateText}, ${locationText}.</p>`;
 
         // Agregar relato
         if (denuncia.relato) {

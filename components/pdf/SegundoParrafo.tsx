@@ -54,7 +54,7 @@ export function generarSegundoParrafo(
 
     return (
         <Text style={styles.paragraph}>
-            Que por la presente viene a realizar una denuncia sobre un supuesto <Text style={{ fontWeight: 'bold' }}>HECHO PUNIBLE CONTRA {crimeType}</Text>, ocurrido {dateText}, {locationText}.
+            Que por la presente viene a realizar una denuncia sobre un supuesto <Text style={{ fontWeight: 'bold' }}>{crimeType}</Text>, ocurrido {dateText}, {locationText}.
         </Text>
     );
 }
