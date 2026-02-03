@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/lib/db'
 import { generarPDF, generarPDFFormato2, Denunciante, DatosDenuncia } from '@/lib/utils/pdf'
+import { renderDenunciaPdf } from '@/lib/utils/pdf-renderer'
 import { obtenerCapitulo } from '@/lib/data/hechos-punibles'
 
 // Función auxiliar para convertir fechas a string YYYY-MM-DD sin problemas de timezone
 // Esta función NO formatea para mostrar, solo convierte Date objects a string YYYY-MM-DD
 const dateToString = (date: any): string => {
   if (!date) return ''
-  
+
   // Si es un objeto Date, extraer componentes UTC para evitar problemas de timezone
   if (date instanceof Date) {
     const año = date.getUTCFullYear()
@@ -15,7 +16,7 @@ const dateToString = (date: any): string => {
     const dia = String(date.getUTCDate()).padStart(2, '0')
     return `${año}-${mes}-${dia}`
   }
-  
+
   // Si es un string, retornarlo directamente (PostgreSQL DATE viene como "YYYY-MM-DD")
   return String(date)
 }
@@ -80,7 +81,7 @@ export async function GET(
 
     // Verificar si el usuario que descarga es diferente del que tomó la denuncia
     const esOperadorAutorizado = usuarioIdActual && row.usuario_id && usuarioIdActual !== row.usuario_id.toString()
-    
+
     // Si es un operador autorizado diferente, obtener sus datos
     let operadorAutorizado = null
     if (esOperadorAutorizado && usuarioIdActual) {
@@ -214,7 +215,7 @@ export async function GET(
     }
 
     // Generar PDF según el formato seleccionado
-    const pdfBuffer = await generarPDF(row.orden, denunciante, datosDenuncia)
+    const pdfBuffer = await renderDenunciaPdf(row.orden, denunciante, datosDenuncia)
 
     return new Response(new Uint8Array(pdfBuffer), {
       headers: {
