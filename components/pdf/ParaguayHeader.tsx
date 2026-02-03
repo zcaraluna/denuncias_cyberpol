@@ -16,7 +16,7 @@ const styles = StyleSheet.create({
     },
     logoIzquierda: {
         width: 120,
-        height: 60,
+        height: 45,
     },
     logoDerecha: {
         width: 120,
