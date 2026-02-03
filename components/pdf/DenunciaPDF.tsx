@@ -1,5 +1,5 @@
 import React from 'react';
-import { Document, Page, Text, View, StyleSheet, pdf } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet, renderToStream } from '@react-pdf/renderer';
 import ParaguayHeader from './ParaguayHeader';
 
 const styles = StyleSheet.create({
@@ -319,10 +319,40 @@ const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 
     );
 };
 
-// Función helper para generar el PDF
+// Función helper para generar el PDF usando renderToStream
 export const generateDenunciaPDF = async (denuncia: DenunciaData, pageSize: 'LETTER' | 'A4' = 'LETTER') => {
-    const blob = await pdf(<DenunciaPDFDocument denuncia={denuncia} pageSize={pageSize} />).toBlob();
-    return Buffer.from(await blob.arrayBuffer());
+    console.log('[generateDenunciaPDF] Iniciando generación con renderToStream...');
+
+    try {
+        const stream = await renderToStream(
+            <DenunciaPDFDocument denuncia={denuncia} pageSize={pageSize} />
+        );
+
+        console.log('[generateDenunciaPDF] Stream creado, convirtiendo a buffer...');
+
+        // Convertir stream a buffer
+        const chunks: Uint8Array[] = [];
+
+        return new Promise<Buffer>((resolve, reject) => {
+            stream.on('data', (chunk: Uint8Array) => {
+                chunks.push(chunk);
+            });
+
+            stream.on('end', () => {
+                const buffer = Buffer.concat(chunks);
+                console.log(`[generateDenunciaPDF] ✅ Buffer creado: ${buffer.length} bytes`);
+                resolve(buffer);
+            });
+
+            stream.on('error', (error: Error) => {
+                console.error('[generateDenunciaPDF] ❌ Error en stream:', error);
+                reject(error);
+            });
+        });
+    } catch (error) {
+        console.error('[generateDenunciaPDF] ❌ Error al crear stream:', error);
+        throw error;
+    }
 };
 
 export default DenunciaPDFDocument;
