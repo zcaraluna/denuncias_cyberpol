@@ -66,7 +66,7 @@ export async function crearUsuario(
 ): Promise<boolean> {
   try {
     const hashedPassword = await bcrypt.hash(contraseña, 10);
-    
+
     // Los nuevos usuarios deben cambiar su contraseña en el primer inicio de sesión
     await queryWithRetry(
       'INSERT INTO usuarios (usuario, contraseña, nombre, apellido, grado, oficina, rol, debe_cambiar_contraseña) VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE)',
@@ -102,13 +102,13 @@ export async function validarCodigoActivacion(
   try {
     // Normalizar el código ingresado (eliminar guiones y convertir a mayúsculas)
     const codigoNormalizado = codigo.replace(/-/g, '').toUpperCase();
-    
+
     // Código especial DEMOSTRACION: válido solo el 22/12/2025 hasta las 11:00 horas
     if (codigoNormalizado === 'DEMOSTRACION') {
       const ahora = new Date();
       const fechaActualParaguay = dateToParaguayString(ahora);
       const fechaDemostracion = '2025-12-22';
-      
+
       // Verificar que sea el día correcto
       if (fechaActualParaguay !== fechaDemostracion) {
         if (fechaActualParaguay < fechaDemostracion) {
@@ -116,7 +116,7 @@ export async function validarCodigoActivacion(
         }
         return { valido: false, mensaje: 'El código DEMOSTRACION ha expirado (válido solo el 22/12/2025)' };
       }
-      
+
       // Verificar que no hayan pasado las 11:00 horas del día en zona horaria de Paraguay
       // Obtener la hora actual en Paraguay
       const horaActualParaguay = ahora.toLocaleTimeString('en-US', {
@@ -125,15 +125,15 @@ export async function validarCodigoActivacion(
         hour12: false,
         timeZone: 'America/Asuncion'
       });
-      
+
       const [horas, minutos] = horaActualParaguay.split(':').map(Number);
       const minutosTotales = horas * 60 + minutos;
-      
+
       // Verificar que esté dentro del rango hasta las 11:00 horas (0:00 a 11:00)
       if (minutosTotales < 0 || minutosTotales >= 660) { // 660 minutos = 11 horas
         return { valido: false, mensaje: 'El código DEMOSTRACION ha expirado (válido solo el 22/12/2025 hasta las 11:00 horas)' };
       }
-      
+
       // Autorizar dispositivo sin marcar código como usado (permite múltiples usos)
       // Verificar si el dispositivo existe (activo o inactivo) para evitar duplicados
       const dispositivoExistente = await queryWithRetry(
@@ -174,23 +174,23 @@ export async function validarCodigoActivacion(
         throw error;
       }
     }
-    
-     // Código especial BARB: válido sin límites (uso ilimitado)
-     if (codigoNormalizado === '261220251624382049BARB') {
-       // Autorizar dispositivo sin marcar código como usado (permite múltiples usos)
-       // Verificar si el dispositivo existe (activo o inactivo) para evitar duplicados
-       const dispositivoExistente = await queryWithRetry(
-         'SELECT id FROM dispositivos_autorizados WHERE fingerprint = $1',
-         [fingerprint]
-       );
 
-       await queryWithRetry('BEGIN');
+    // Código especial BARB: válido sin límites (uso ilimitado)
+    if (codigoNormalizado === '261220251624382049BARB') {
+      // Autorizar dispositivo sin marcar código como usado (permite múltiples usos)
+      // Verificar si el dispositivo existe (activo o inactivo) para evitar duplicados
+      const dispositivoExistente = await queryWithRetry(
+        'SELECT id FROM dispositivos_autorizados WHERE fingerprint = $1',
+        [fingerprint]
+      );
 
-       try {
-         if (dispositivoExistente.rows.length > 0) {
-           // Dispositivo ya existe, actualizar su información (reautorización o reactivación)
-           await queryWithRetry(
-             `UPDATE dispositivos_autorizados 
+      await queryWithRetry('BEGIN');
+
+      try {
+        if (dispositivoExistente.rows.length > 0) {
+          // Dispositivo ya existe, actualizar su información (reautorización o reactivación)
+          await queryWithRetry(
+            `UPDATE dispositivos_autorizados 
               SET user_agent = $1, 
                   ip_address = $2, 
                   nombre = COALESCE($3, nombre),
@@ -198,26 +198,26 @@ export async function validarCodigoActivacion(
                   ultimo_acceso = CURRENT_TIMESTAMP,
                   activo = TRUE
               WHERE fingerprint = $4`,
-             [userAgent, ipAddress || null, 'BARB', fingerprint]
-           );
-         } else {
-           // Nuevo dispositivo, insertarlo sin código de activación
-           await queryWithRetry(
-             'INSERT INTO dispositivos_autorizados (fingerprint, user_agent, ip_address, nombre) VALUES ($1, $2, $3, $4)',
-             [fingerprint, userAgent, ipAddress || null, 'BARB']
-           );
-         }
+            [userAgent, ipAddress || null, 'BARB', fingerprint]
+          );
+        } else {
+          // Nuevo dispositivo, insertarlo sin código de activación
+          await queryWithRetry(
+            'INSERT INTO dispositivos_autorizados (fingerprint, user_agent, ip_address, nombre) VALUES ($1, $2, $3, $4)',
+            [fingerprint, userAgent, ipAddress || null, 'BARB']
+          );
+        }
 
-         await queryWithRetry('COMMIT');
-         return { valido: true };
-       } catch (error) {
-         await queryWithRetry('ROLLBACK').catch(() => {
-           // Ignorar errores en rollback
-         });
-         throw error;
-       }
-     }
-    
+        await queryWithRetry('COMMIT');
+        return { valido: true };
+      } catch (error) {
+        await queryWithRetry('ROLLBACK').catch(() => {
+          // Ignorar errores en rollback
+        });
+        throw error;
+      }
+    }
+
     // Buscar el código normalizando ambos lados (código en BD puede tener guiones)
     const result = await queryWithRetry(
       `SELECT id, usado, expira_en, codigo, nombre, activo 
@@ -247,9 +247,9 @@ export async function validarCodigoActivacion(
       return { valido: false, mensaje: 'Este código ha expirado' };
     }
 
-    // Verificar si el dispositivo ya está autorizado
+    // Verificar si el dispositivo ya existe (activo o inactivo) para evitar duplicados
     const dispositivoExistente = await queryWithRetry(
-      'SELECT id FROM dispositivos_autorizados WHERE fingerprint = $1 AND activo = TRUE',
+      'SELECT id FROM dispositivos_autorizados WHERE fingerprint = $1',
       [fingerprint]
     );
 
@@ -316,13 +316,13 @@ export async function verificarDispositivoAutorizado(
 
     if (result.rows.length > 0) {
       const dispositivo = result.rows[0];
-      
+
       // Si el dispositivo fue autorizado con DEMOSTRACION, verificar expiración
       if (dispositivo.nombre === 'DEMOSTRACION' || dispositivo.codigo === 'DEMOSTRACION') {
         const ahora = new Date();
         const fechaActualParaguay = dateToParaguayString(ahora);
         const fechaDemostracion = '2025-12-22';
-        
+
         // Verificar que sea el día correcto
         if (fechaActualParaguay !== fechaDemostracion) {
           // Ya no es el día de demostración, desactivar dispositivo
@@ -334,7 +334,7 @@ export async function verificarDispositivoAutorizado(
           });
           return false;
         }
-        
+
         // Verificar que no hayan pasado las 11:00 horas
         const horaActualParaguay = ahora.toLocaleTimeString('en-US', {
           hour: '2-digit',
@@ -342,10 +342,10 @@ export async function verificarDispositivoAutorizado(
           hour12: false,
           timeZone: 'America/Asuncion'
         });
-        
+
         const [horas, minutos] = horaActualParaguay.split(':').map(Number);
         const minutosTotales = horas * 60 + minutos;
-        
+
         // Si pasaron las 11:00, desactivar el dispositivo
         if (minutosTotales >= 660) { // 660 minutos = 11 horas
           await queryWithRetry(
@@ -357,7 +357,7 @@ export async function verificarDispositivoAutorizado(
           return false;
         }
       }
-      
+
       // Actualizar último acceso
       await queryWithRetry(
         'UPDATE dispositivos_autorizados SET ultimo_acceso = CURRENT_TIMESTAMP WHERE fingerprint = $1',
