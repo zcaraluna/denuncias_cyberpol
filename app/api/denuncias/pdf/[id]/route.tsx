@@ -93,10 +93,16 @@ export async function GET(
                 ? denuncia.fecha_hecho.toISOString().split('T')[0]
                 : String(denuncia.fecha_hecho),
             hora_hecho: String(denuncia.hora_hecho || ''),
+            usar_rango: Boolean(denuncia.usar_rango),
+            fecha_hecho_fin: denuncia.fecha_hecho_fin instanceof Date
+                ? denuncia.fecha_hecho_fin.toISOString().split('T')[0]
+                : (denuncia.fecha_hecho_fin ? String(denuncia.fecha_hecho_fin) : undefined),
+            hora_hecho_fin: denuncia.hora_hecho_fin ? String(denuncia.hora_hecho_fin) : undefined,
             tipo_denuncia: String(denuncia.tipo_denuncia),
             otro_tipo: denuncia.otro_tipo ? String(denuncia.otro_tipo) : undefined,
             relato: String(denuncia.relato),
             lugar_hecho: String(denuncia.lugar_hecho),
+            lugar_hecho_no_aplica: Boolean(denuncia.lugar_hecho_no_aplica),
             latitud: denuncia.latitud,
             longitud: denuncia.longitud,
             monto_dano: denuncia.monto_dano,

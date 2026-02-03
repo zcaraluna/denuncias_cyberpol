@@ -178,6 +178,22 @@ export async function POST(request: NextRequest) {
 
         html += `</p>`;
 
+        // CASO: Segundo Párrafo (Hecho, Fecha y Lugar)
+        let crimeType = toSafeString(denuncia.tipoDenuncia).toUpperCase();
+        if (crimeType === 'OTRO' || crimeType === 'OTRO (ESPECIFICAR)') {
+            crimeType = toSafeString(denuncia.otroTipo).toUpperCase();
+        }
+
+        const dateText = denuncia.usarRango && denuncia.fechaHechoFin
+            ? `entre la fecha <strong>${formatFecha(denuncia.fechaHecho)}</strong> siendo las <strong>${toSafeString(denuncia.horaHecho)}</strong> aproximadamente y la fecha <strong>${formatFecha(denuncia.fechaHechoFin)}</strong> siendo las <strong>${toSafeString(denuncia.horaHechoFin)}</strong> aproximadamente`
+            : `en fecha <strong>${formatFecha(denuncia.fechaHecho)}</strong> siendo las <strong>${toSafeString(denuncia.horaHecho)}</strong> aproximadamente`;
+
+        const locationText = denuncia.lugarHechoNoAplica
+            ? 'en dirección <strong>NO APLICA</strong>'
+            : `en la dirección <strong>${toSafeString(denuncia.lugarHecho).toUpperCase()}</strong>`;
+
+        html += `<p class="text-justify mb-4">Que por la presente viene a realizar una denuncia sobre un supuesto <strong>HECHO PUNIBLE CONTRA ${crimeType}</strong>, ocurrido ${dateText}, ${locationText}.</p>`;
+
         // Agregar relato
         if (denuncia.relato) {
             html += `<p class="mb-4 text-justify whitespace-pre-wrap">${denuncia.relato}</p>`;

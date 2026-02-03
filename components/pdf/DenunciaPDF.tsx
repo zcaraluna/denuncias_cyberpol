@@ -2,6 +2,7 @@ import React from 'react';
 import { Document, Page, StyleSheet, Text, View } from '@react-pdf/renderer';
 import ParaguayHeader from './ParaguayHeader';
 import { generarPrimerParrafo } from './PrimerParrafo';
+import { generarSegundoParrafo } from './SegundoParrafo';
 
 const styles = StyleSheet.create({
     page: {
@@ -30,6 +31,15 @@ interface DenunciaData {
     orden: number;
     fecha_denuncia: any;
     hora_denuncia: string;
+    fecha_hecho: any;
+    hora_hecho: string;
+    usar_rango?: boolean;
+    fecha_hecho_fin?: any;
+    hora_hecho_fin?: string;
+    tipo_denuncia: string;
+    otro_tipo?: string;
+    lugar_hecho: string;
+    lugar_hecho_no_aplica?: boolean;
     operador_grado?: string;
     operador_nombre?: string;
     operador_apellido?: string;
@@ -87,6 +97,9 @@ const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 
 
                 {/* Primer Párrafo - NUEVO SISTEMA MULTI-PARTE */}
                 {generarPrimerParrafo(denuncia, styles)}
+
+                {/* Segundo Párrafo - Hecho, Fecha y Lugar */}
+                {generarSegundoParrafo(denuncia, styles)}
             </Page>
         </Document>
     );
