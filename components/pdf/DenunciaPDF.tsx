@@ -117,7 +117,11 @@ const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 
                 <TercerParrafo relato={denuncia.relato || ''} styles={styles} />
 
                 {/* Cierre de Acta */}
-                <CierreDenuncia styles={styles} />
+                {(() => {
+                    const involucrados = denuncia.denunciantes_involucrados || [];
+                    const totalPersonas = 1 + involucrados.length;
+                    return <CierreDenuncia totalPersonas={totalPersonas} styles={styles} />;
+                })()}
             </Page>
         </Document>
     );
