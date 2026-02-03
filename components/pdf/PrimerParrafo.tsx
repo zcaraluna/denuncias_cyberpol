@@ -77,7 +77,7 @@ interface AnalisisParticipantes {
     totalComparecientes: number;
 }
 
-function analizarParticipantes(denuncia: DenunciaData): AnalisisParticipantes {
+export function analizarParticipantes(denuncia: DenunciaData): AnalisisParticipantes {
     const involucrados = denuncia.denunciantes_involucrados || [];
 
     // Denunciante principal

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Document, Page, StyleSheet, Text, View } from '@react-pdf/renderer';
 import ParaguayHeader from './ParaguayHeader';
-import { generarPrimerParrafo } from './PrimerParrafo';
+import { generarPrimerParrafo, analizarParticipantes } from './PrimerParrafo';
 import { generarSegundoParrafo } from './SegundoParrafo';
 import { TercerParrafo } from './TercerParrafo';
 import { CierreDenuncia } from './CierreDenuncia';
@@ -36,6 +36,14 @@ const styles = StyleSheet.create({
     },
 });
 
+interface InvolucradoData {
+    rol: 'principal' | 'co-denunciante' | 'abogado';
+    con_carta_poder: boolean;
+    nombres: string;
+    cedula: string;
+    [key: string]: any;
+}
+
 interface DenunciaData {
     orden: number;
     fecha_denuncia: any;
@@ -63,7 +71,7 @@ interface DenunciaData {
     profesion?: string;
     telefono: string;
     relato?: string;
-    denunciantes_involucrados?: any[];
+    denunciantes_involucrados?: InvolucradoData[];
     [key: string]: any;
 }
 
@@ -93,6 +101,7 @@ const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 
     };
 
     const año = getYear(denuncia.fecha_denuncia);
+    const analisis = analizarParticipantes(denuncia as any);
 
     return (
         <Document>
@@ -108,20 +117,16 @@ const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 
                 </Text>
 
                 {/* Primer Párrafo - NUEVO SISTEMA MULTI-PARTE */}
-                {generarPrimerParrafo(denuncia, styles)}
+                {generarPrimerParrafo(denuncia as any, styles)}
 
                 {/* Segundo Párrafo - Hecho, Fecha y Lugar */}
-                {generarSegundoParrafo(denuncia, styles)}
+                {generarSegundoParrafo(denuncia as any, styles)}
 
                 {/* Tercer Párrafo - Relato */}
                 <TercerParrafo relato={denuncia.relato || ''} styles={styles} />
 
                 {/* Cierre de Acta */}
-                {(() => {
-                    const involucrados = denuncia.denunciantes_involucrados || [];
-                    const totalPersonas = 1 + involucrados.length;
-                    return <CierreDenuncia totalPersonas={totalPersonas} styles={styles} />;
-                })()}
+                <CierreDenuncia totalPersonas={analisis.totalComparecientes} styles={styles} />
             </Page>
         </Document>
     );
