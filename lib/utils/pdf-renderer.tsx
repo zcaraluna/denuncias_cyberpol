@@ -171,12 +171,6 @@ export async function renderDenunciaPdf(
         etiqueta: etiquetaOperador
     }
 
-    const denuncianteFirma = {
-        nombre: denunciante['Nombres y Apellidos'],
-        documento: `DOC.: ${denunciante['Número de Documento'] || denunciante['Cédula de Identidad']}`,
-        etiqueta: 'DENUNCIANTE'
-    }
-
     // --- Logos Path ---
     const getImagePath = (name: string) => path.join(process.cwd(), 'public', name)
     const logos = {
@@ -186,19 +180,12 @@ export async function renderDenunciaPdf(
     }
 
     return await renderToBuffer(
-        React.createElement(DocumentoDenunciaPdf, {
-            numeroOrden,
-            año,
-            denunciante,
-            datosDenuncia,
-            oficinaDatos,
-            parrafoIntroduccion: fragmentsIntro,
-            parrafoHecho: fragmentsHecho,
-            relatoCompleto,
-            qrDataUrl,
-            operadorFirma,
-            denuncianteFirma,
-            logos,
-        }) as React.ReactElement<any>
+        <DocumentoDenunciaPdf
+            numeroOrden={numeroOrden}
+            año={año}
+            datosDenuncia={datosDenuncia}
+            oficinaDatos={oficinaDatos}
+            logos={logos}
+        />
     )
 }
