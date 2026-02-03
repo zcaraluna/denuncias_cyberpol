@@ -19,7 +19,7 @@ const styles = StyleSheet.create({
         height: 60,
     },
     logoDerecha: {
-        width: 90,
+        width: 120,
         height: 60,
     },
     logoCentral: {
