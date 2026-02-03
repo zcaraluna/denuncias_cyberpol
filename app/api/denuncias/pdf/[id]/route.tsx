@@ -190,10 +190,12 @@ export async function GET(
             qr_code_url: await QRCode.toDataURL(`${request.headers.get('x-forwarded-proto') || 'https'}://${request.headers.get('host')}/verificar/${denuncia.hash}`),
             is_duplicate: isDuplicate,
             operador_actual: operadorActual ? {
+                id: Number(operadorActual.id),
                 nombre: String(operadorActual.nombre),
                 apellido: String(operadorActual.apellido),
                 grado: String(operadorActual.grado)
-            } : undefined
+            } : undefined,
+            usuario_id: denuncia.usuario_id
         };
 
         // Determinar el tamaño de página

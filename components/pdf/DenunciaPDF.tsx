@@ -164,6 +164,7 @@ const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 
                     qrCodeUrl={denuncia.qr_code_url || ''}
                     isDuplicate={denuncia.is_duplicate}
                     operadorActual={denuncia.operador_actual}
+                    operadorOriginalId={denuncia.usuario_id}
                 />
             </Page>
         </Document>

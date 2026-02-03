@@ -66,10 +66,12 @@ interface SeccionFirmasProps {
     qrCodeUrl: string;
     isDuplicate?: boolean;
     operadorActual?: {
+        id?: number;
         nombre: string;
         apellido: string;
         grado: string;
     };
+    operadorOriginalId?: number;
 }
 
 export const SeccionFirmas: React.FC<SeccionFirmasProps> = ({
@@ -79,11 +81,19 @@ export const SeccionFirmas: React.FC<SeccionFirmasProps> = ({
     hash,
     qrCodeUrl,
     isDuplicate,
-    operadorActual
+    operadorActual,
+    operadorOriginalId
 }) => {
+    // Es el mismo operador que hizo la denuncia original?
+    const esMismoOperador = isDuplicate && operadorActual && operadorActual.id === operadorOriginalId;
+
     // Definir qué datos de personal mostrar en la firma
-    const personal = (isDuplicate && operadorActual) ? operadorActual : operador;
-    const etiquetaCargo = isDuplicate ? 'PERSONAL AUTORIZADO' : 'PERSONAL INTERVINIENTE';
+    // Si es duplicado y es OTRA persona, mostrar esa persona
+    const personal = (isDuplicate && operadorActual && !esMismoOperador) ? operadorActual : operador;
+
+    // Si es duplicado pero es el MISMO, sigue siendo interviniente. 
+    // Si es duplicado y es OTRO, es personal autorizado.
+    const etiquetaCargo = (isDuplicate && !esMismoOperador) ? 'PERSONAL AUTORIZADO' : 'PERSONAL INTERVINIENTE';
 
     return (
         <View style={styles.signatureContainer} wrap={false}>
