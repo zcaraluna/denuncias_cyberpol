@@ -13,6 +13,9 @@ export async function GET(
     const denunciaResult = await pool.query(
       `SELECT 
         d.*,
+        COALESCE(NULLIF(d.operador_grado, ''), u.grado) as operador_grado_final,
+        COALESCE(NULLIF(d.operador_nombre, ''), u.nombre) as operador_nombre_final,
+        COALESCE(NULLIF(d.operador_apellido, ''), u.apellido) as operador_apellido_final,
         den.nombres as nombres_denunciante,
         den.cedula,
         den.tipo_documento,
@@ -28,6 +31,7 @@ export async function GET(
         den.matricula
       FROM denuncias d
       INNER JOIN denunciantes den ON d.denunciante_id = den.id
+      LEFT JOIN usuarios u ON d.usuario_id = u.id
       WHERE d.id = $1`,
       [id]
     )
@@ -107,9 +111,9 @@ export async function GET(
       latitud: denuncia.latitud,
       longitud: denuncia.longitud,
       orden: denuncia.orden,
-      operador_grado: denuncia.operador_grado,
-      operador_nombre: denuncia.operador_nombre,
-      operador_apellido: denuncia.operador_apellido,
+      operador_grado: denuncia.operador_grado_final,
+      operador_nombre: denuncia.operador_nombre_final,
+      operador_apellido: denuncia.operador_apellido_final,
       monto_dano: denuncia.monto_dano,
       moneda: denuncia.moneda,
       hash: denuncia.hash,

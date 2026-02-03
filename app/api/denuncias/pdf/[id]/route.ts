@@ -17,6 +17,9 @@ export async function GET(
         const denunciaResult = await pool.query(
             `SELECT 
         d.*,
+        COALESCE(NULLIF(d.operador_grado, ''), u.grado) as operador_grado_final,
+        COALESCE(NULLIF(d.operador_nombre, ''), u.nombre) as operador_nombre_final,
+        COALESCE(NULLIF(d.operador_apellido, ''), u.apellido) as operador_apellido_final,
         den.nombres as nombres_denunciante,
         den.cedula,
         den.tipo_documento,
@@ -32,7 +35,8 @@ export async function GET(
         den.matricula
       FROM denuncias d
       INNER JOIN denunciantes den ON d.denunciante_id = den.id
-      WHERE d.id = $1 AND d.estado = 'completada'`,
+      LEFT JOIN usuarios u ON d.usuario_id = u.id
+      WHERE d.id = $1 AND d.estado = 'completada' ORDER BY d.id DESC LIMIT 1`,
             [id]
         );
 
@@ -90,9 +94,9 @@ export async function GET(
             longitud: denuncia.longitud,
             monto_dano: denuncia.monto_dano,
             moneda: denuncia.moneda ? String(denuncia.moneda) : undefined,
-            operador_grado: String(denuncia.operador_grado || ''),
-            operador_nombre: String(denuncia.operador_nombre || ''),
-            operador_apellido: String(denuncia.operador_apellido || ''),
+            operador_grado: String(denuncia.operador_grado_final || ''),
+            operador_nombre: String(denuncia.operador_nombre_final || ''),
+            operador_apellido: String(denuncia.operador_apellido_final || ''),
 
             // DEBUG: Log operator data
             ...(console.log('[PDF DEBUG] Operator data from DB:', {

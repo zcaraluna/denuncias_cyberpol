@@ -75,7 +75,7 @@ async function upsertDenunciante(client: any, datos: DenuncianteDatos) {
 
   const aplicarUpdate = async (denuncianteId: number) => {
     await client.query(
-        `UPDATE denunciantes SET
+      `UPDATE denunciantes SET
           nombres = $1,
           tipo_documento = $2,
           nacionalidad = $3,
@@ -89,21 +89,21 @@ async function upsertDenunciante(client: any, datos: DenuncianteDatos) {
           profesion = $11,
           matricula = $12
         WHERE id = $13`,
-        [
-          nombres,
-          tipoDocumento,
-          nacionalidad,
-          estadoCivil,
-          edad,
-          fechaNacimiento,
-          lugarNacimiento,
-          domicilio,
-          telefono,
-          correo,
-          profesion,
-          matricula,
-          denuncianteId
-        ]
+      [
+        nombres,
+        tipoDocumento,
+        nacionalidad,
+        estadoCivil,
+        edad,
+        fechaNacimiento,
+        lugarNacimiento,
+        domicilio,
+        telefono,
+        correo,
+        profesion,
+        matricula,
+        denuncianteId
+      ]
     )
     return denuncianteId
   }
@@ -262,7 +262,7 @@ export async function POST(request: NextRequest) {
     }
 
     const usuario = usuarioResult.rows[0]
-    
+
     // Validar que el usuario no haya creado una denuncia completada en el último minuto
     // Usamos creado_en que es el timestamp exacto de cuando se insertó el registro
     const validacionTiempoResult = await client.query(
@@ -275,7 +275,7 @@ export async function POST(request: NextRequest) {
        LIMIT 1`,
       [usuarioId]
     )
-    
+
     if (validacionTiempoResult.rows.length > 0) {
       const ultimaDenuncia = validacionTiempoResult.rows[0]
       const tiempoRestante = Math.ceil(
@@ -284,7 +284,7 @@ export async function POST(request: NextRequest) {
       await client.query('ROLLBACK')
       client.release()
       return NextResponse.json(
-        { 
+        {
           error: `Debe esperar al menos un minuto entre la creación de denuncias completadas. Por favor, intente nuevamente en ${tiempoRestante > 0 ? `aproximadamente ${tiempoRestante} segundos` : 'unos momentos'}.`,
           ultimaDenuncia: {
             id: ultimaDenuncia.id,
@@ -294,12 +294,12 @@ export async function POST(request: NextRequest) {
         { status: 429 } // 429 Too Many Requests
       )
     }
-    
+
     // Usar la fecha/hora enviada desde el frontend (capturada al iniciar la denuncia)
     // Si no viene, usar la fecha/hora actual como fallback
     let fechaActual: string
     let horaActual: string
-    
+
     if (denuncia?.fechaDenuncia && denuncia?.horaDenuncia) {
       // Usar los valores enviados desde el frontend
       // Asegurarse de que la fecha esté en formato YYYY-MM-DD
@@ -364,7 +364,7 @@ export async function POST(request: NextRequest) {
          FOR UPDATE`,
         [año]
       )
-      
+
       const ordenResult = await client.query(
         `SELECT COALESCE(
           (SELECT MIN(n.orden_numero)
@@ -398,8 +398,11 @@ export async function POST(request: NextRequest) {
           moneda = $15,
           estado = 'completada',
           orden = $16,
-          hash = $17
-        WHERE id = $18`,
+          hash = $17,
+          operador_grado = $18,
+          operador_nombre = $19,
+          operador_apellido = $20
+        WHERE id = $21`,
         [
           principalId,
           fechaActual,
@@ -418,6 +421,9 @@ export async function POST(request: NextRequest) {
           moneda,
           numeroOrden,
           hash,
+          usuario.grado,
+          usuario.nombre,
+          usuario.apellido,
           borradorId
         ]
       )
@@ -432,7 +438,7 @@ export async function POST(request: NextRequest) {
          FOR UPDATE`,
         [año]
       )
-      
+
       const ordenResult = await client.query(
         `SELECT COALESCE(
           (SELECT MIN(n.orden_numero)

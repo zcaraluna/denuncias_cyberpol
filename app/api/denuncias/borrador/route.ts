@@ -293,8 +293,11 @@ export async function POST(request: NextRequest) {
           longitud = $13,
           monto_dano = $14,
           moneda = $15,
-          estado = 'borrador'
-        WHERE id = $16`,
+          estado = 'borrador',
+          operador_grado = $16,
+          operador_nombre = $17,
+          operador_apellido = $18
+        WHERE id = $19`,
         [
           principalId,
           denuncia?.fechaDenuncia ?? null,
@@ -311,6 +314,9 @@ export async function POST(request: NextRequest) {
           denuncia?.longitud ?? null,
           denuncia?.montoDano ?? null,
           denuncia?.moneda ?? null,
+          usuario.grado,
+          usuario.nombre,
+          usuario.apellido,
           borradorIdParam
         ]
       )
