@@ -25,7 +25,7 @@ const styles = StyleSheet.create({
     logoCentral: {
         width: 65,
         height: 65,
-        marginLeft: 10,
+        marginLeft: 15,
     },
     titleSection: {
         textAlign: 'center',
