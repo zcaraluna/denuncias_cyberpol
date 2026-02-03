@@ -83,7 +83,7 @@ const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 
 
     return (
         <Document>
-            <Page size={pageSize} style={styles.page}>
+            <Page size={[612, 936]} style={styles.page}>
                 <ParaguayHeader numeroActa={denuncia.orden.toString()} año={año} />
 
                 {/* Aviso Legal */}
