@@ -73,7 +73,7 @@ interface ParaguayHeaderProps {
 }
 
 const ParaguayHeader: React.FC<ParaguayHeaderProps> = ({ numeroActa, año }) => {
-    // Usar URLs absolutas para que funcionen en Vercel
+    // Usar URLs absolutas para que funcionen en VEEERCEEEEEL
     const baseUrl = 'https://denuncias-cyberpol.vercel.app';
 
     return (
