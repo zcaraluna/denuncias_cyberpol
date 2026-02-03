@@ -1,8 +1,9 @@
-import React from 'react'
+import * as React from 'react'
 import { renderToBuffer } from '@react-pdf/renderer'
 import { DocumentoDenunciaPdf } from '../components/pdf/DocumentoDenunciaPdf'
 import { DatosDenuncia, Denunciante } from './pdf'
 import QRCode from 'qrcode'
+import path from 'path'
 
 // Esta oficina de datos es la misma que está en pdf.ts
 const datosOficinas: any = {
@@ -176,19 +177,28 @@ export async function renderDenunciaPdf(
         etiqueta: 'DENUNCIANTE'
     }
 
+    // --- Logos Path ---
+    const getImagePath = (name: string) => path.join(process.cwd(), 'public', name)
+    const logos = {
+        policia: getImagePath('policianacional.png'),
+        dchef: getImagePath('dchef.png'),
+        gobierno: getImagePath('gobiernonacional.jpg'),
+    }
+
     return await renderToBuffer(
-        <DocumentoDenunciaPdf
-            numeroOrden={numeroOrden}
-            año={año}
-            denunciante={denunciante}
-            datosDenuncia={datosDenuncia}
-            oficinaDatos={oficinaDatos}
-            parrafoIntroduccion={fragmentsIntro}
-            parrafoHecho={fragmentsHecho}
-            relatoCompleto={relatoCompleto}
-            qrDataUrl={qrDataUrl}
-            operadorFirma={operadorFirma}
-            denuncianteFirma={denuncianteFirma}
-        />
+        React.createElement(DocumentoDenunciaPdf, {
+            numeroOrden,
+            año,
+            denunciante,
+            datosDenuncia,
+            oficinaDatos,
+            parrafoIntroduccion: fragmentsIntro,
+            parrafoHecho: fragmentsHecho,
+            relatoCompleto,
+            qrDataUrl,
+            operadorFirma,
+            denuncianteFirma,
+            logos,
+        })
     )
 }

@@ -1,7 +1,4 @@
-import React from 'react'
 import { Text, View, Image, StyleSheet } from '@react-pdf/renderer'
-import path from 'path'
-import fs from 'fs'
 
 const styles = StyleSheet.create({
     headerContainer: {
@@ -74,18 +71,20 @@ interface EncabezadoPdfProps {
         fax: string
         email: string
     }
+    logos: {
+        policia: string
+        dchef: string
+        gobierno: string
+    }
 }
 
-// Para entorno de servidor, necesitamos los paths absolutos de las imágenes
-const getImagePath = (name: string) => path.join(process.cwd(), name)
-
-export const EncabezadoPdf = ({ titulo, oficina, oficinaDatos }: EncabezadoPdfProps) => {
+export const EncabezadoPdf = ({ titulo, oficina, oficinaDatos, logos }: EncabezadoPdfProps) => {
     return (
         <View style={styles.headerContainer} fixed>
             <View style={styles.logosContainer}>
-                <Image src={getImagePath('policianacional.png')} style={styles.logoIzq} />
-                <Image src={getImagePath('dchef.png')} style={styles.logoCentro} />
-                <Image src={getImagePath('gobiernonacional.jpg')} style={styles.logoDer} />
+                <Image src={logos.policia} style={styles.logoIzq} />
+                <Image src={logos.dchef} style={styles.logoCentro} />
+                <Image src={logos.gobierno} style={styles.logoDer} />
             </View>
 
             <View style={styles.titleContainer}>

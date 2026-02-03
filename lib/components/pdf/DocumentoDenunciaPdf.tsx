@@ -1,4 +1,4 @@
-import React from 'react'
+import * as React from 'react'
 import { Document, Page, StyleSheet, Font } from '@react-pdf/renderer'
 import { EncabezadoPdf } from './EncabezadoPdf'
 import { AvisoLegalPdf } from './AvisoLegalPdf'
@@ -14,32 +14,19 @@ const styles = StyleSheet.create({
     },
 })
 
-interface DocumentoDenunciaPdfProps {
-    numeroOrden: number
-    año: string
-    denunciante: Denunciante
-    datosDenuncia: DatosDenuncia
-    oficinaDatos: any
-    parrafoIntroduccion: any[]
-    parrafoHecho: any[]
-    relatoCompleto: string
-    qrDataUrl: string
-    operadorFirma: any
-    denuncianteFirma: any
+operadorFirma: any
+denuncianteFirma: any
+logos: {
+    policia: string
+    dchef: string
+    gobierno: string
+}
 }
 
-export const DocumentoDenunciaPdf = ({
-    numeroOrden,
-    año,
-    denunciante,
-    datosDenuncia,
-    oficinaDatos,
-    parrafoIntroduccion,
-    parrafoHecho,
-    relatoCompleto,
-    qrDataUrl,
+qrDataUrl,
     operadorFirma,
     denuncianteFirma,
+    logos,
 }: DocumentoDenunciaPdfProps) => {
     const pageSize = datosDenuncia.tipo_papel === 'a4' ? 'A4' : ([612.28, 935.43] as [number, number]) // Oficio aproximado en pt (216x330mm)
 
@@ -52,6 +39,7 @@ export const DocumentoDenunciaPdf = ({
                     titulo={titulo}
                     oficina={datosDenuncia.oficina}
                     oficinaDatos={oficinaDatos}
+                    logos={logos}
                 />
 
                 <AvisoLegalPdf />

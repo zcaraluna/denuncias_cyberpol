@@ -1,4 +1,4 @@
-import React from 'react'
+import * as React from 'react'
 import { Text, View, StyleSheet } from '@react-pdf/renderer'
 import { DatosDenuncia, Denunciante } from '../../utils/pdf'
 
