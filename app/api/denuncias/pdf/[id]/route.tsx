@@ -141,7 +141,7 @@ export async function GET(
                 entidad_bancaria: autor.entidad_bancaria ? String(autor.entidad_bancaria) : undefined,
             })),
             denunciantes_involucrados: involucradosResult.rows.map(inv => ({
-                rol: String(inv.rol),
+                rol: String(inv.rol) as 'principal' | 'co-denunciante' | 'abogado',
                 con_carta_poder: Boolean(inv.con_carta_poder),
                 carta_poder_fecha: inv.carta_poder_fecha instanceof Date
                     ? inv.carta_poder_fecha.toISOString().split('T')[0]
