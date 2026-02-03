@@ -15,11 +15,11 @@ const styles = StyleSheet.create({
         marginBottom: 15,
     },
     logoIzquierda: {
-        width: 60,
+        width: 80,
         height: 60,
     },
     logoDerecha: {
-        width: 60,
+        width: 90,
         height: 60,
     },
     logoCentral: {
