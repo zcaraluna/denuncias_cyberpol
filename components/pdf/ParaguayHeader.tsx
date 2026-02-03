@@ -34,15 +34,18 @@ const styles = StyleSheet.create({
         fontSize: 11,
         fontWeight: 'bold',
         marginBottom: 2,
+        textAlign: 'center',
     },
     subTitle: {
         fontSize: 10,
         fontWeight: 'bold',
         marginBottom: 8,
+        textAlign: 'center',
     },
     infoText: {
         fontSize: 8,
         marginBottom: 1,
+        textAlign: 'center',
     },
     divider: {
         borderBottomWidth: 1.5,
@@ -80,9 +83,15 @@ const ParaguayHeader: React.FC<ParaguayHeaderProps> = ({ numeroActa, año }) => 
             <View style={styles.titleSection}>
                 <Text style={styles.mainTitle}>DIRECCIÓN CONTRA HECHOS PUNIBLES ECONÓMICOS Y FINANCIEROS</Text>
                 <Text style={styles.subTitle}>SALA DE DENUNCIAS</Text>
-                <Text style={styles.infoText}>Dirección: E. V. Haedo 725 casi O'Leary</Text>
-                <Text style={styles.infoText}>Teléfono: (021) 443-159 Fax: (021) 443-126 (021) 441-111</Text>
-                <Text style={styles.infoText}>E-mail: ayudantia@delitoseconomicos.gov.py</Text>
+                <Text style={styles.infoText}>
+                    <Text style={{ fontWeight: 'bold' }}>Dirección:</Text> E. V. Haedo 725 casi O'Leary
+                </Text>
+                <Text style={styles.infoText}>
+                    <Text style={{ fontWeight: 'bold' }}>Teléfono:</Text> (021) 443-159 Fax: (021) 443-126 (021) 441-111
+                </Text>
+                <Text style={styles.infoText}>
+                    <Text style={{ fontWeight: 'bold' }}>E-mail:</Text> ayudantia@delitoseconomicos.gov.py
+                </Text>
             </View>
 
             {/* Línea Divisoria y Número de Acta */}
