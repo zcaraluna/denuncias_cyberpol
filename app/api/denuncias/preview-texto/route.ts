@@ -228,7 +228,7 @@ export async function POST(request: NextRequest) {
             const nombre = toSafeString(body.autor.nombre).toUpperCase();
             const ci = body.autor.cedula ? `, con C.I. N° <strong>${body.autor.cedula}</strong>` : '';
             const dom = body.autor.domicilio ? `, domiciliado en <strong>${body.autor.domicilio.toUpperCase()}</strong>` : '';
-            authorText = `, siendo sindicado como supuesto autor el ciudadano <strong>${nombre}</strong>${ci}${dom}`;
+            authorText = `, siendo sindicado como supuesto autor <strong>${nombre}</strong>${ci}${dom}`;
         } else if (body.autor && body.autor.conocido === 'Desconocido') {
             const desc = formatDescripcionFisicaHtml(body.descripcionFisica);
             authorText = desc

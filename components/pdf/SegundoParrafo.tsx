@@ -107,7 +107,7 @@ export function generarSegundoParrafo(
                             const nombre = toSafeString(autor.nombre_autor).toUpperCase();
                             return (
                                 <React.Fragment key={index}>
-                                    el ciudadano <Text style={{ fontWeight: 'bold' }}>{nombre}</Text>
+                                    <Text style={{ fontWeight: 'bold' }}>{nombre}</Text>
                                     {autor.cedula_autor && (
                                         <>
                                             , con C.I. N° <Text style={{ fontWeight: 'bold' }}>{autor.cedula_autor}</Text>
