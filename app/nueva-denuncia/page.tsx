@@ -4632,6 +4632,61 @@ export default function NuevaDenunciaPage() {
                 </div>
               </div>
 
+              {/* Campos Estadísticos (Opcional) */}
+              <div className="bg-blue-50/50 p-6 rounded-xl border border-blue-100 mb-6 font-sans">
+                <div className="flex items-center gap-2 mb-4 text-blue-800">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                  <h3 className="font-bold text-sm uppercase tracking-wider">Información Estadística (Opcional)</h3>
+                </div>
+
+                <p className="text-xs text-blue-600 mb-4 bg-white/60 p-3 rounded-lg border border-blue-100/50 leading-relaxed shadow-sm">
+                  Los siguientes campos se solicitan <strong>únicamente con fines estadísticos</strong> para ayudar a cuantificar el impacto de los hechos punibles informáticos en nuestro país. Esta información <strong>no se incluirá en el acta formal de la denuncia</strong>.
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div className="space-y-1.5">
+                    <label className="block text-sm font-semibold text-gray-700">
+                      Monto de daño patrimonial
+                    </label>
+                    <div className="relative group">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 group-focus-within:text-blue-500 transition-colors">
+                        <span className="text-sm font-medium">₲/$</span>
+                      </div>
+                      <input
+                        {...registerDenuncia('montoDano')}
+                        placeholder="0"
+                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white hover:border-gray-400"
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/\./g, '')
+                          if (/^\d*$/.test(value)) {
+                            e.target.value = value ? parseInt(value).toLocaleString('es-PY').replace(/,/g, '.') : ''
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="block text-sm font-semibold text-gray-700">
+                      Moneda
+                    </label>
+                    <select
+                      {...registerDenuncia('moneda')}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white hover:border-gray-400 cursor-pointer appearance-none"
+                      style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center', backgroundSize: '1.25rem' }}
+                    >
+                      <option value="">Seleccione moneda...</option>
+                      <option value="Guaraníes (PYG)">Guaraníes (PYG)</option>
+                      <option value="Dólares (USD)">Dólares (USD)</option>
+                      <option value="Euros (EUR)">Euros (EUR)</option>
+                      <option value="Pesos Argentinos (ARS)">Pesos Argentinos (ARS)</option>
+                      <option value="Reales (BRL)">Reales (BRL)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Relato del Hecho *
@@ -4647,41 +4702,8 @@ export default function NuevaDenunciaPage() {
                 )}
               </div>
 
-              {/* Campos ocultos: Monto estimado de daño patrimonial y Moneda */}
-              <div className="hidden grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Monto estimado de daño patrimonial
-                  </label>
-                  <input
-                    {...registerDenuncia('montoDano')}
-                    placeholder="0"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    onChange={(e) => {
-                      const value = e.target.value.replace(/\./g, '')
-                      if (/^\d*$/.test(value)) {
-                        e.target.value = parseInt(value) ? parseInt(value).toLocaleString('es-PY').replace(/,/g, '.') : ''
-                      }
-                    }}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Moneda
-                  </label>
-                  <select
-                    {...registerDenuncia('moneda')}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="">Seleccione...</option>
-                    <option value="Guaraníes (PYG)">Guaraníes (PYG)</option>
-                    <option value="Dólares (USD)">Dólares (USD)</option>
-                    <option value="Euros (EUR)">Euros (EUR)</option>
-                    <option value="Pesos Argentinos (ARS)">Pesos Argentinos (ARS)</option>
-                    <option value="Reales (BRL)">Reales (BRL)</option>
-                  </select>
-                </div>
-              </div>
+
+
 
               <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                 <p className="text-sm text-yellow-800 font-medium">

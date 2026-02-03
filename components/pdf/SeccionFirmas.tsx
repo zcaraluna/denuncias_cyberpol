@@ -18,7 +18,7 @@ const styles = StyleSheet.create({
         flexDirection: 'column',
         alignItems: 'center',
         width: '40%',
-        marginTop: -40,
+        marginTop: -55,
     },
     line: {
         borderTopWidth: 1,
