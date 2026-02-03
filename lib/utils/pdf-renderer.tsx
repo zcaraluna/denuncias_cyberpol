@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Document, Page, Text, renderToBuffer, StyleSheet } from '@react-pdf/renderer'
+import { Document, Page, Text, pdf, StyleSheet } from '@react-pdf/renderer'
 import { DatosDenuncia, Denunciante } from './pdf'
 
 const styles = StyleSheet.create({
@@ -36,25 +36,31 @@ export async function renderDenunciaPdf(
     const titulo = `ACTA DE DENUNCIA Nº ${numeroOrden || '#'}/${año}`
 
     try {
-        // Renderizado ATÓMICO: Sin componentes externos para evitar Error #31
-        // relacionado con la reconciliación de tipos en Next.js App Router
-        return await renderToBuffer(
-            React.createElement(Document, { title: titulo },
-                React.createElement(Page, { size: "A4", style: styles.page },
-                    React.createElement(Text, { style: styles.mainTitle },
-                        "DIRECCIÓN CONTRA HECHOS PUNIBLES ECONÓMICOS Y FINANCIEROS"
-                    ),
-                    React.createElement(Text, { style: styles.subTitle },
-                        "SALA DE DENUNCIAS"
-                    ),
-                    React.createElement(Text, { style: styles.actaTitle },
-                        titulo
-                    )
+        console.log("Generating PDF buffer for:", titulo)
+
+        // Usar pdf().toBuffer() en lugar de renderToBuffer()
+        // Algunos entornos de Next.js App Router tienen problemas con la reconciliación
+        // de renderToBuffer. pdf() crea una instancia independiente.
+        const doc = React.createElement(Document, { title: titulo },
+            React.createElement(Page, { size: "A4", style: styles.page },
+                React.createElement(Text, { style: styles.mainTitle },
+                    "DIRECCIÓN CONTRA HECHOS PUNIBLES ECONÓMICOS Y FINANCIEROS"
+                ),
+                React.createElement(Text, { style: styles.subTitle },
+                    "SALA DE DENUNCIAS"
+                ),
+                React.createElement(Text, { style: styles.actaTitle },
+                    titulo
                 )
             )
         )
+
+        const pdfStream = pdf(doc)
+        const blob = await pdfStream.toBlob()
+        const arrayBuffer = await blob.arrayBuffer()
+        return Buffer.from(arrayBuffer)
     } catch (error: any) {
-        console.error("Critical error in atomic renderToBuffer:", error)
+        console.error("Critical error in renderDenunciaPdf:", error)
         throw error
     }
 }
