@@ -132,6 +132,19 @@ function renderDatosPersonales(persona: DenuncianteData): React.ReactNode {
     );
 }
 
+function renderDatosAbogado(abogado: InvolucradoData): React.ReactNode {
+    return (
+        <Text>
+            con {toSafeString(abogado.tipo_documento || 'Cédula de Identidad Paraguaya')} número{' '}
+            <Text style={{ fontWeight: 'bold' }}>{toSafeString(abogado.cedula)}</Text>
+            {abogado.matricula ? ', con matrícula profesional N° ' : ''}
+            {abogado.matricula ? <Text style={{ fontWeight: 'bold' }}>{toSafeString(abogado.matricula)}</Text> : ''}
+            {abogado.telefono ? ', teléfono ' : ''}
+            {abogado.telefono ? <Text style={{ fontWeight: 'bold' }}>{toSafeString(abogado.telefono)}</Text> : ''}
+        </Text>
+    );
+}
+
 /**
  * GENERACIÓN DEL PRIMER PÁRRAFO
  */
@@ -190,8 +203,8 @@ function generarParrafoAbogadoRepresentante(
             <Text style={{ fontWeight: 'bold' }}>{formatFecha(denuncia.fecha_denuncia)}</Text> siendo las{' '}
             <Text style={{ fontWeight: 'bold' }}>{toSafeString(denuncia.hora_denuncia)}</Text>, ante mí{' '}
             <Text style={{ fontWeight: 'bold' }}>{operador || 'PERSONAL POLICIAL INTERVINIENTE'}</Text>, concurre{' '}
-            <Text style={{ fontWeight: 'bold' }}>{toSafeString(abogado.nombres).toUpperCase()}</Text>, con{' '}
-            {renderDatosPersonales(abogado as DenuncianteData)}, actuando en su carácter de{' '}
+            <Text style={{ fontWeight: 'bold' }}>{toSafeString(abogado.nombres).toUpperCase()}</Text>
+            {renderDatosAbogado(abogado)}, actuando en su carácter de{' '}
             <Text style={{ fontWeight: 'bold' }}>REPRESENTANTE LEGAL</Text> de{' '}
             <Text style={{ fontWeight: 'bold' }}>{toSafeString(representado.nombres).toUpperCase()}</Text>, con{' '}
             {toSafeString(representado.tipo_documento || 'Cédula de Identidad Paraguaya')} número{' '}
@@ -229,13 +242,16 @@ function generarParrafoMultiple(
             <Text style={{ fontWeight: 'bold' }}>{toSafeString(denunciantePrincipal.nombres).toUpperCase()}</Text>, con{' '}
             {renderDatosPersonales(denunciantePrincipal)}
 
-            {coDenunciantes.map((cd, index) => (
-                <Text key={`coden-${index}`}>
-                    ; asimismo{' '}
-                    <Text style={{ fontWeight: 'bold' }}>{toSafeString(cd.nombres).toUpperCase()}</Text>, con{' '}
-                    {renderDatosPersonales(cd)}
-                </Text>
-            ))}
+            {coDenunciantes.map((cd, index) => {
+                const conector = index === 0 ? ', en compañía de ' : ', y ';
+                return (
+                    <Text key={`coden-${index}`}>
+                        {conector}
+                        <Text style={{ fontWeight: 'bold' }}>{toSafeString(cd.nombres).toUpperCase()}</Text>, con{' '}
+                        {renderDatosPersonales(cd)}
+                    </Text>
+                );
+            })}
 
             {/* Abogados */}
             {abogado ? (
@@ -243,9 +259,8 @@ function generarParrafoMultiple(
                     ; asistido por{' '}
                     <Text style={{ fontWeight: 'bold' }}>{toSafeString(abogado.nombres).toUpperCase()}</Text>, en su carácter de{' '}
                     <Text style={{ fontWeight: 'bold' }}>ABOGADO ASISTENTE</Text>
-                    {abogado.matricula ? `, matrícula N° ` : ''}
-                    {abogado.matricula ? <Text style={{ fontWeight: 'bold' }}>{toSafeString(abogado.matricula)}</Text> : ''}
-                    , con {renderDatosPersonales(abogado)}
+                    {/* El resto de datos ya los maneja renderDatosAbogado */}
+                    {renderDatosAbogado(abogado)}
                 </Text>
             ) : null}
 
@@ -255,9 +270,7 @@ function generarParrafoMultiple(
                     <Text style={{ fontWeight: 'bold' }}>{toSafeString(abogadoConCartaPoder.nombres).toUpperCase()}</Text>, en su carácter de{' '}
                     <Text style={{ fontWeight: 'bold' }}>REPRESENTANTE LEGAL</Text> de{' '}
                     <Text style={{ fontWeight: 'bold' }}>{toSafeString(denunciantePrincipal.nombres).toUpperCase()}</Text>
-                    {abogadoConCartaPoder.matricula ? `, matrícula N° ` : ''}
-                    {abogadoConCartaPoder.matricula ? <Text style={{ fontWeight: 'bold' }}>{toSafeString(abogadoConCartaPoder.matricula)}</Text> : ''}
-                    , con {renderDatosPersonales(abogadoConCartaPoder)}
+                    {renderDatosAbogado(abogadoConCartaPoder)}
                     {abogadoConCartaPoder.con_carta_poder ? (
                         <Text>
                             , conforme a <Text style={{ fontWeight: 'bold' }}>CARTA PODER</Text>
