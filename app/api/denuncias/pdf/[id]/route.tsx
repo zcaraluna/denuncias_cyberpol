@@ -164,7 +164,7 @@ export async function GET(
                 profesion: inv.profesion ? String(inv.profesion) : undefined,
                 matricula: inv.matricula ? String(inv.matricula) : undefined,
             })),
-            qr_code_url: await QRCode.toDataURL(String(denuncia.hash)),
+            qr_code_url: await QRCode.toDataURL(`${request.headers.get('x-forwarded-proto') || 'https'}://${request.headers.get('host')}/verificar/${denuncia.hash}`),
         };
 
         // Determinar el tamaño de página
