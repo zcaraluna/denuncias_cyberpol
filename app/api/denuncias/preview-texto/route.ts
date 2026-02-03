@@ -240,7 +240,8 @@ export async function POST(request: NextRequest) {
 
         // Agregar relato
         if (denuncia.relato) {
-            html += `<p class="mb-4 text-justify whitespace-pre-wrap">${denuncia.relato}</p>`;
+            html += `<p class="mb-2 text-justify">Según los acontecimientos que se mencionan a continuación:</p>`;
+            html += `<p class="mb-4 text-justify whitespace-pre-wrap italic">${denuncia.relato}</p>`;
         }
 
         return NextResponse.json({ texto: html });

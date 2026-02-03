@@ -3,6 +3,7 @@ import { Document, Page, StyleSheet, Text, View } from '@react-pdf/renderer';
 import ParaguayHeader from './ParaguayHeader';
 import { generarPrimerParrafo } from './PrimerParrafo';
 import { generarSegundoParrafo } from './SegundoParrafo';
+import { TercerParrafo } from './TercerParrafo';
 
 const styles = StyleSheet.create({
     page: {
@@ -12,9 +13,16 @@ const styles = StyleSheet.create({
         fontSize: 10,
         fontFamily: 'Helvetica',
     },
+    headerFixed: {
+        position: 'relative',
+        left: 0,
+        right: 0,
+        top: 0,
+    },
     legalNotice: {
         fontSize: 8,
         fontStyle: 'italic',
+        marginTop: 10,
         marginBottom: 8,
         textAlign: 'justify',
         lineHeight: 1.4,
@@ -53,6 +61,7 @@ interface DenunciaData {
     domicilio?: string;
     profesion?: string;
     telefono: string;
+    relato?: string;
     denunciantes_involucrados?: any[];
     [key: string]: any;
 }
@@ -87,9 +96,12 @@ const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 
     return (
         <Document>
             <Page size={[612, 936]} style={styles.page}>
-                <ParaguayHeader numeroActa={denuncia.orden.toString()} año={año} />
+                {/* Header que se repite en cada página */}
+                <View fixed style={styles.headerFixed}>
+                    <ParaguayHeader numeroActa={denuncia.orden.toString()} año={año} />
+                </View>
 
-                {/* Aviso Legal */}
+                {/* Aviso Legal: Solo en la primera página (sin 'fixed') */}
                 <Text style={styles.legalNotice}>
                     LA PRESENTE ACTA SE REALIZA CONFORME A LOS SIGUIENTES: ARTÍCULO 284. "DENUNCIA", ARTÍCULO 285. "FORMA Y CONTENIDO", ARTÍCULO 289. "DENUNCIA ANTE LA POLICÍA" DE LA LEY 1286/98 "CODIGO PROCESAL PENAL".
                 </Text>
@@ -99,6 +111,9 @@ const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 
 
                 {/* Segundo Párrafo - Hecho, Fecha y Lugar */}
                 {generarSegundoParrafo(denuncia, styles)}
+
+                {/* Tercer Párrafo - Relato */}
+                <TercerParrafo relato={denuncia.relato || ''} styles={styles} />
             </Page>
         </Document>
     );
