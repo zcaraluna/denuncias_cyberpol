@@ -1,5 +1,6 @@
 import React from 'react';
 import { Text } from '@react-pdf/renderer';
+import { obtenerCapitulo } from '@/lib/data/hechos-punibles';
 
 interface DenunciaData {
     tipo_denuncia: string;
@@ -33,9 +34,17 @@ export function generarSegundoParrafo(
     denuncia: DenunciaData,
     styles: any
 ): React.ReactElement {
-    let crimeType = toSafeString(denuncia.tipo_denuncia).toUpperCase();
-    if (crimeType === 'OTRO' || crimeType === 'OTRO (ESPECIFICAR)') {
+    const tipoBase = toSafeString(denuncia.tipo_denuncia);
+    const capitulo = obtenerCapitulo(tipoBase);
+
+    let crimeType = '';
+
+    if (capitulo) {
+        crimeType = capitulo.toUpperCase();
+    } else if (tipoBase.toUpperCase() === 'OTRO' || tipoBase.toUpperCase() === 'OTRO (ESPECIFICAR)') {
         crimeType = toSafeString(denuncia.otro_tipo).toUpperCase();
+    } else {
+        crimeType = tipoBase.toUpperCase();
     }
 
     const dateText = denuncia.usar_rango && denuncia.fecha_hecho_fin

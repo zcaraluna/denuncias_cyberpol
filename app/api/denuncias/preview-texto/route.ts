@@ -1,5 +1,5 @@
-
 import { NextRequest, NextResponse } from 'next/server'
+import { obtenerCapitulo } from '@/lib/data/hechos-punibles'
 
 interface DenuncianteData {
     nombres: string;
@@ -179,9 +179,16 @@ export async function POST(request: NextRequest) {
         html += `</p>`;
 
         // CASO: Segundo Párrafo (Hecho, Fecha y Lugar)
-        let crimeType = toSafeString(denuncia.tipoDenuncia).toUpperCase();
-        if (crimeType === 'OTRO' || crimeType === 'OTRO (ESPECIFICAR)') {
+        const tipoBase = toSafeString(denuncia.tipoDenuncia);
+        const capitulo = obtenerCapitulo(tipoBase);
+
+        let crimeType = '';
+        if (capitulo) {
+            crimeType = capitulo.toUpperCase();
+        } else if (tipoBase.toUpperCase() === 'OTRO' || tipoBase.toUpperCase() === 'OTRO (ESPECIFICAR)') {
             crimeType = toSafeString(denuncia.otroTipo).toUpperCase();
+        } else {
+            crimeType = tipoBase.toUpperCase();
         }
 
         const dateText = denuncia.usarRango && denuncia.fechaHechoFin
