@@ -105,7 +105,8 @@ interface DenunciaPDFProps {
 
 // Componente que retorna Document completo
 const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 'LETTER' }) => {
-    const año = new Date(denuncia.fecha_denuncia).getFullYear();
+    // CRÍTICO: NO crear objetos Date, extraer año del string directamente
+    const año = denuncia.fecha_denuncia.split('-')[0];
 
     return (
         <Document>
