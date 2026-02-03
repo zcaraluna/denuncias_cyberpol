@@ -226,14 +226,14 @@ export async function POST(request: NextRequest) {
         let authorText = '';
         if (body.autor && body.autor.conocido === 'Conocido') {
             const nombre = toSafeString(body.autor.nombre).toUpperCase();
-            const ci = body.autor.cedula ? `, con C.I. N° ${body.autor.cedula}` : '';
-            const dom = body.autor.domicilio ? `, domiciliado en ${body.autor.domicilio.toUpperCase()}` : '';
-            authorText = `, perpetrado presumiblemente por el ciudadano <strong>${nombre}</strong>${ci}${dom}`;
+            const ci = body.autor.cedula ? `, con C.I. N° <strong>${body.autor.cedula}</strong>` : '';
+            const dom = body.autor.domicilio ? `, domiciliado en <strong>${body.autor.domicilio.toUpperCase()}</strong>` : '';
+            authorText = `, siendo sindicado como supuesto autor el ciudadano <strong>${nombre}</strong>${ci}${dom}`;
         } else if (body.autor && body.autor.conocido === 'Desconocido') {
             const desc = formatDescripcionFisicaHtml(body.descripcionFisica);
             authorText = desc
-                ? `, perpetrado presumiblemente por <strong>persona/s</strong> de las siguientes características: ${desc}`
-                : `, perpetrado presumiblemente por <strong>persona/s desconocida/s</strong>`;
+                ? `, siendo el supuesto autor una persona desconocida quien es descripta con los siguientes rasgos físicos: <strong>${desc}</strong>`
+                : `, siendo el supuesto autor una <strong>persona desconocida</strong>`;
         }
 
         html += `<p class="text-justify mb-4">Que por la presente viene a realizar una denuncia sobre un supuesto <strong>${crimeType}</strong>, ocurrido ${dateText}, ${locationText}${authorText}.</p>`;

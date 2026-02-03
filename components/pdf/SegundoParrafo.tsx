@@ -73,40 +73,73 @@ export function generarSegundoParrafo(
         crimeType = tipoBase.toUpperCase();
     }
 
-    const dateText = denuncia.usar_rango && denuncia.fecha_hecho_fin
-        ? `entre la fecha ${formatFecha(denuncia.fecha_hecho)} siendo las ${toSafeString(denuncia.hora_hecho)} aproximadamente y la fecha ${formatFecha(denuncia.fecha_hecho_fin)} siendo las ${toSafeString(denuncia.hora_hecho_fin)} aproximadamente`
-        : `en fecha ${formatFecha(denuncia.fecha_hecho)} siendo las ${toSafeString(denuncia.hora_hecho)} aproximadamente`;
-
-    const locationText = denuncia.lugar_hecho_no_aplica
-        ? 'en dirección NO APLICA'
-        : `en la dirección ${toSafeString(denuncia.lugar_hecho).toUpperCase()}`;
-
-    // Lógica de Autores
-    let authorText = '';
     const autoresValidos = (denuncia.supuestos_autores || []).filter(a => a.autor_conocido !== 'No aplica');
-
-    if (autoresValidos.length > 0) {
-        const descripciones = autoresValidos.map((autor, index) => {
-            if (autor.autor_conocido === 'Conocido') {
-                const nombre = toSafeString(autor.nombre_autor).toUpperCase();
-                const ci = autor.cedula_autor ? `, con C.I. N° ${autor.cedula_autor}` : '';
-                const dom = autor.domicilio_autor ? `, domiciliado en ${autor.domicilio_autor.toUpperCase()}` : '';
-                return `el ciudadano ${nombre}${ci}${dom}`;
-            } else {
-                const descFisica = formatDescripcionFisica(autor.descripcion_fisica);
-                const prefijo = autoresValidos.length > 1 ? `Persona ${index + 1}` : 'persona/s';
-                return descFisica
-                    ? `${prefijo} de las siguientes características: ${descFisica}`
-                    : `persona/s desconocida/s`;
-            }
-        });
-
-        authorText = `, perpetrado presumiblemente por ${descripciones.join('; asimismo ')}`;
-    }
 
     return (
         <Text style={styles.paragraph}>
-            Que por la presente viene a realizar una denuncia sobre un supuesto <Text style={{ fontWeight: 'bold' }}>{crimeType}</Text>, ocurrido {dateText}, {locationText}{authorText}.
+            Que por la presente viene a realizar una denuncia sobre un supuesto <Text style={{ fontWeight: 'bold' }}>{crimeType}</Text>, ocurrido {' '}
+            {denuncia.usar_rango && denuncia.fecha_hecho_fin ? (
+                <>
+                    entre la fecha <Text style={{ fontWeight: 'bold' }}>{formatFecha(denuncia.fecha_hecho)}</Text> siendo las <Text style={{ fontWeight: 'bold' }}>{toSafeString(denuncia.hora_hecho)}</Text> aproximadamente y la fecha <Text style={{ fontWeight: 'bold' }}>{formatFecha(denuncia.fecha_hecho_fin)}</Text> siendo las <Text style={{ fontWeight: 'bold' }}>{toSafeString(denuncia.hora_hecho_fin)}</Text> aproximadamente
+                </>
+            ) : (
+                <>
+                    en fecha <Text style={{ fontWeight: 'bold' }}>{formatFecha(denuncia.fecha_hecho)}</Text> siendo las <Text style={{ fontWeight: 'bold' }}>{toSafeString(denuncia.hora_hecho)}</Text> aproximadamente
+                </>
+            )}, {' '}
+            {denuncia.lugar_hecho_no_aplica ? (
+                <>
+                    en dirección <Text style={{ fontWeight: 'bold' }}>NO APLICA</Text>
+                </>
+            ) : (
+                <>
+                    en la dirección <Text style={{ fontWeight: 'bold' }}>{toSafeString(denuncia.lugar_hecho).toUpperCase()}</Text>
+                </>
+            )}
+            {autoresValidos.length > 0 && (
+                <>
+                    {', siendo sindicado como supuesto autor '}
+                    {autoresValidos.map((autor, index) => {
+                        const isLast = index === autoresValidos.length - 1;
+                        const separator = isLast ? '' : '; asimismo ';
+
+                        if (autor.autor_conocido === 'Conocido') {
+                            const nombre = toSafeString(autor.nombre_autor).toUpperCase();
+                            return (
+                                <React.Fragment key={index}>
+                                    el ciudadano <Text style={{ fontWeight: 'bold' }}>{nombre}</Text>
+                                    {autor.cedula_autor && (
+                                        <>
+                                            , con C.I. N° <Text style={{ fontWeight: 'bold' }}>{autor.cedula_autor}</Text>
+                                        </>
+                                    )}
+                                    {autor.domicilio_autor && (
+                                        <>
+                                            , domiciliado en <Text style={{ fontWeight: 'bold' }}>{autor.domicilio_autor.toUpperCase()}</Text>
+                                        </>
+                                    )}
+                                    {separator}
+                                </React.Fragment>
+                            );
+                        } else {
+                            const descFisica = formatDescripcionFisica(autor.descripcion_fisica);
+                            const prefijo = autoresValidos.length > 1 ? `Persona ${index + 1}` : 'una persona desconocida';
+                            return (
+                                <React.Fragment key={index}>
+                                    {descFisica ? (
+                                        <>
+                                            {prefijo} quien es descripta con los siguientes rasgos físicos: <Text style={{ fontWeight: 'bold' }}>{descFisica}</Text>
+                                        </>
+                                    ) : (
+                                        'una persona desconocida'
+                                    )}
+                                    {separator}
+                                </React.Fragment>
+                            );
+                        }
+                    })}
+                </>
+            )}.
         </Text>
     );
 }
