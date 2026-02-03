@@ -19,8 +19,8 @@ const styles = StyleSheet.create({
         height: 60,
     },
     logoCentral: {
-        width: 110,
-        height: 110,
+        width: 50,
+        height: 50,
     },
     titleSection: {
         textAlign: 'center',
