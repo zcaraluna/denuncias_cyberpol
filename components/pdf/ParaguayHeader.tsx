@@ -15,16 +15,16 @@ const styles = StyleSheet.create({
         marginBottom: 15,
     },
     logoIzquierda: {
-        width: 120,
-        height: 45,
+        width: 100,
+        height: 30,
     },
     logoDerecha: {
         width: 120,
         height: 60,
     },
     logoCentral: {
-        width: 50,
-        height: 50,
+        width: 65,
+        height: 65,
     },
     titleSection: {
         textAlign: 'center',
