@@ -267,7 +267,7 @@ function generarParrafoMultiple(
                 <Text>
                     ; asistido por{' '}
                     <Text style={{ fontWeight: 'bold' }}>{toSafeString(abogado.nombres).toUpperCase()}</Text>, en su carácter de{' '}
-                    <Text style={{ fontWeight: 'bold' }}>ABOGADO ASISTENTE</Text>
+                    <Text style={{ fontWeight: 'bold' }}>ABOGADO ASISTENTE </Text>
                     {/* El resto de datos ya los maneja renderDatosAbogado */}
                     {renderDatosAbogado(abogado)}
                 </Text>

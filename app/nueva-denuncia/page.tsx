@@ -1950,129 +1950,142 @@ export default function NuevaDenunciaPage() {
       return
     }
 
-    const esValido = await triggerDenuncia()
-    if (!esValido) {
-      // Mapeo de nombres de campos a etiquetas legibles
-      const etiquetasCampos: Record<string, string> = {
-        fechaHecho: 'Fecha del Hecho',
-        horaHecho: 'Hora del Hecho',
-        tipoDenuncia: 'Tipo de Denuncia',
-        lugarHechoDepartamento: 'Departamento',
-        lugarHechoCiudad: 'Ciudad',
-        lugarHechoBarrio: 'Barrio',
-        lugarHechoCalles: 'Calles',
-        relato: 'Relato del Hecho',
-        otroTipo: 'Especificar Otro Tipo',
-        fechaHechoFin: 'Fecha de Fin',
-        horaHechoFin: 'Hora de Fin'
+    await handleSubmitDenuncia(
+      async (data) => {
+        setGenerandoVistaPrevia(true)
+
+        try {
+          // Se usa watchAutor porque el form de Autor es separado.
+          // data contiene los datos del form 'denuncia' (fecha, lugar, relato, etc),
+          // que es lo mismo que watchDenuncia() devolvería, pero usamos los valores ya validados.
+          // OJO: data NO incluye autorData ni denunciantes porque son estados/forms separados.
+          // Sin embargo, `watchDenuncia()` se usaba para construir el payload.
+          // data es lo que viene del form 'denuncia'.
+          // Podemos seguir usando watchDenuncia() para consistencia con el código original,
+          // o usar 'data' directamente para los campos de la denuncia.
+          // Originalmente usaba watchDenuncia(), vamos a mantenerlo para minimizar riesgos,
+          // aunque 'data' es más seguro. Pero el código original usaba watchDenuncia().
+          // Nota: handleSubmit ya validó que data es correcto.
+
+          const autorData = watchAutor()
+          const denunciaData = watchDenuncia()
+
+          let fechaHecho = denunciaData.fechaHecho || ''
+          if (fechaHecho.includes('/')) {
+            const [dia, mes, año] = fechaHecho.split('/')
+            fechaHecho = `${año}-${mes}-${dia}`
+          }
+
+          const denunciantePayload = construirDenunciantePayload(denunciantePrincipal)
+          const coleccionDenunciantes = construirColeccionDenunciantesPayload(denunciantes)
+
+          // Usar la fecha/hora capturada al inicio, no la actual
+          if (!fechaHoraInicioDenuncia) {
+            alert('Error: No se pudo determinar la hora de inicio de la denuncia. Por favor, recarga la página.')
+            setLoading(false)
+            return
+          }
+          const fechaDenuncia = fechaHoraInicioDenuncia.fecha.split('/').reverse().join('-')
+          const horaDenuncia = fechaHoraInicioDenuncia.hora
+
+          const payload = {
+            borradorId: borradorId || null,
+            denunciante: denunciantePayload,
+            denunciantes: coleccionDenunciantes,
+            denunciantePrincipalId: denunciantePrincipal.id,
+            denunciantesAdicionales: coleccionDenunciantes.filter(
+              (denunciante) => denunciante.id !== denunciantePrincipal.id
+            ),
+            denuncia: {
+              fechaDenuncia: fechaDenuncia,
+              horaDenuncia: horaDenuncia,
+              fechaHecho: fechaHecho,
+              horaHecho: denunciaData.horaHecho,
+              usarRango: denunciaData.usarRango || false,
+              fechaHechoFin: denunciaData.fechaHechoFin || null,
+              horaHechoFin: denunciaData.horaHechoFin || null,
+              tipoDenuncia: denunciaData.tipoDenuncia === 'Otro (Especificar)' ? 'OTRO' : denunciaData.tipoDenuncia,
+              otroTipo: denunciaData.tipoDenuncia === 'Otro (Especificar)' ? denunciaData.otroTipo?.toUpperCase() : null,
+              lugarHecho: lugarHechoNoAplica ? '' : (construirDomicilio(denunciaData.lugarHechoDepartamento, denunciaData.lugarHechoCiudad, denunciaData.lugarHechoBarrio, denunciaData.lugarHechoCalles)?.toUpperCase() || denunciaData.lugarHecho?.toUpperCase() || ''),
+              relato: denunciaData.relato || '',
+              montoDano: denunciaData.montoDano ? parseInt(denunciaData.montoDano.replace(/\./g, '')) : null,
+              moneda: denunciaData.moneda || null,
+              latitud: coordenadas?.lat || null,
+              longitud: coordenadas?.lng || null,
+            },
+            autor: {
+              conocido: autorConocido,
+              ...(autorConocido === 'Conocido' && {
+                nombre: autorData.nombre?.toUpperCase() || null,
+                cedula: autorData.cedula?.toUpperCase() || null,
+                domicilio: construirDomicilio(autorData.departamento, autorData.ciudad, autorData.barrio, autorData.calles) || null,
+                nacionalidad: autorData.nacionalidad?.toUpperCase() || null,
+                estadoCivil: autorData.estadoCivil?.toUpperCase() || null,
+                edad: autorData.edad || null,
+                fechaNacimiento: autorData.fechaNacimiento || null,
+                lugarNacimiento: autorData.lugarNacimiento?.toUpperCase() || null,
+                telefono: autorData.telefono?.toUpperCase() || null,
+                profesion: autorData.profesion?.toUpperCase() || null,
+              }),
+            },
+            descripcionFisica: autorConocido === 'Desconocido'
+              ? (Object.keys(descripcionFisica).length > 0 ? JSON.stringify(descripcionFisica) : null)
+              : autorConocido === 'No aplica'
+                ? null
+                : null,
+            operador: {
+              nombre: usuario.nombre,
+              apellido: usuario.apellido,
+              grado: usuario.grado,
+              oficina: usuario.oficina,
+            },
+          }
+
+          const response = await fetch('/api/denuncias/preview-texto', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          })
+
+          if (!response.ok) {
+            throw new Error('Error al generar la vista previa')
+          }
+
+          const result = await response.json()
+          setTextoVistaPrevia(result.texto)
+          setMostrarModalVistaPrevia(true)
+        } catch (error) {
+          console.error('Error:', error)
+          alert('Error al generar la vista previa. Por favor, intente nuevamente.')
+        } finally {
+          setGenerandoVistaPrevia(false)
+        }
+      },
+      (errors) => {
+        // Mapeo de nombres de campos a etiquetas legibles
+        const etiquetasCampos: Record<string, string> = {
+          fechaHecho: 'Fecha del Hecho',
+          horaHecho: 'Hora del Hecho',
+          tipoDenuncia: 'Tipo de Denuncia',
+          lugarHechoDepartamento: 'Departamento',
+          lugarHechoCiudad: 'Ciudad',
+          lugarHechoBarrio: 'Barrio',
+          lugarHechoCalles: 'Calles',
+          relato: 'Relato del Hecho',
+          otroTipo: 'Especificar Otro Tipo',
+          fechaHechoFin: 'Fecha de Fin',
+          horaHechoFin: 'Hora de Fin'
+        }
+
+        const camposFaltantes = Object.keys(errors)
+          .map(key => etiquetasCampos[key] || key)
+          .join(', ')
+
+        setMensajeErrorTitulo('Campos Obligatorios')
+        setMensajeError(`Por favor, complete los siguientes campos obligatorios antes de continuar:\n\n${camposFaltantes}`)
+        setMostrarModalError(true)
       }
-
-      const camposFaltantes = Object.keys(errorsDenuncia)
-        .map(key => etiquetasCampos[key] || key)
-        .join(', ')
-
-      setMensajeErrorTitulo('Campos Obligatorios')
-      setMensajeError(`Por favor, complete los siguientes campos obligatorios antes de continuar:\n\n${camposFaltantes}`)
-      setMostrarModalError(true)
-      return
-    }
-
-    setGenerandoVistaPrevia(true)
-
-    try {
-      const autorData = watchAutor()
-      const denunciaData = watchDenuncia()
-
-      let fechaHecho = denunciaData.fechaHecho || ''
-      if (fechaHecho.includes('/')) {
-        const [dia, mes, año] = fechaHecho.split('/')
-        fechaHecho = `${año}-${mes}-${dia}`
-      }
-
-      const denunciantePayload = construirDenunciantePayload(denunciantePrincipal)
-      const coleccionDenunciantes = construirColeccionDenunciantesPayload(denunciantes)
-
-      // Usar la fecha/hora capturada al inicio, no la actual
-      if (!fechaHoraInicioDenuncia) {
-        alert('Error: No se pudo determinar la hora de inicio de la denuncia. Por favor, recarga la página.')
-        setLoading(false)
-        return
-      }
-      const fechaDenuncia = fechaHoraInicioDenuncia.fecha.split('/').reverse().join('-')
-      const horaDenuncia = fechaHoraInicioDenuncia.hora
-
-      const payload = {
-        borradorId: borradorId || null,
-        denunciante: denunciantePayload,
-        denunciantes: coleccionDenunciantes,
-        denunciantePrincipalId: denunciantePrincipal.id,
-        denunciantesAdicionales: coleccionDenunciantes.filter(
-          (denunciante) => denunciante.id !== denunciantePrincipal.id
-        ),
-        denuncia: {
-          fechaDenuncia: fechaDenuncia,
-          horaDenuncia: horaDenuncia,
-          fechaHecho: fechaHecho,
-          horaHecho: denunciaData.horaHecho,
-          usarRango: denunciaData.usarRango || false,
-          fechaHechoFin: denunciaData.fechaHechoFin || null,
-          horaHechoFin: denunciaData.horaHechoFin || null,
-          tipoDenuncia: denunciaData.tipoDenuncia === 'Otro (Especificar)' ? 'OTRO' : denunciaData.tipoDenuncia,
-          otroTipo: denunciaData.tipoDenuncia === 'Otro (Especificar)' ? denunciaData.otroTipo?.toUpperCase() : null,
-          lugarHecho: lugarHechoNoAplica ? '' : (construirDomicilio(denunciaData.lugarHechoDepartamento, denunciaData.lugarHechoCiudad, denunciaData.lugarHechoBarrio, denunciaData.lugarHechoCalles)?.toUpperCase() || denunciaData.lugarHecho?.toUpperCase() || ''),
-          relato: denunciaData.relato || '',
-          montoDano: denunciaData.montoDano ? parseInt(denunciaData.montoDano.replace(/\./g, '')) : null,
-          moneda: denunciaData.moneda || null,
-          latitud: coordenadas?.lat || null,
-          longitud: coordenadas?.lng || null,
-        },
-        autor: {
-          conocido: autorConocido,
-          ...(autorConocido === 'Conocido' && {
-            nombre: autorData.nombre?.toUpperCase() || null,
-            cedula: autorData.cedula?.toUpperCase() || null,
-            domicilio: construirDomicilio(autorData.departamento, autorData.ciudad, autorData.barrio, autorData.calles) || null,
-            nacionalidad: autorData.nacionalidad?.toUpperCase() || null,
-            estadoCivil: autorData.estadoCivil?.toUpperCase() || null,
-            edad: autorData.edad || null,
-            fechaNacimiento: autorData.fechaNacimiento || null,
-            lugarNacimiento: autorData.lugarNacimiento?.toUpperCase() || null,
-            telefono: autorData.telefono?.toUpperCase() || null,
-            profesion: autorData.profesion?.toUpperCase() || null,
-          }),
-        },
-        descripcionFisica: autorConocido === 'Desconocido'
-          ? (Object.keys(descripcionFisica).length > 0 ? JSON.stringify(descripcionFisica) : null)
-          : autorConocido === 'No aplica'
-            ? null
-            : null,
-        operador: {
-          nombre: usuario.nombre,
-          apellido: usuario.apellido,
-          grado: usuario.grado,
-          oficina: usuario.oficina,
-        },
-      }
-
-      const response = await fetch('/api/denuncias/preview-texto', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
-
-      if (!response.ok) {
-        throw new Error('Error al generar la vista previa')
-      }
-
-      const result = await response.json()
-      setTextoVistaPrevia(result.texto)
-      setMostrarModalVistaPrevia(true)
-    } catch (error) {
-      console.error('Error:', error)
-      alert('Error al generar la vista previa. Por favor, intente nuevamente.')
-    } finally {
-      setGenerandoVistaPrevia(false)
-    }
+    )()
   }
 
   const onDenunciaPrueba = async (data: any) => {

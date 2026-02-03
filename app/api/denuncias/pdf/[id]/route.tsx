@@ -70,7 +70,8 @@ export async function GET(
                 den.lugar_nacimiento,
                 den.domicilio,
                 den.telefono,
-                den.profesion
+                den.profesion,
+                den.matricula
             FROM denuncias_involucrados di
             INNER JOIN denunciantes den ON den.id = di.denunciante_id
             WHERE di.denuncia_id = $1
@@ -117,6 +118,7 @@ export async function GET(
             telefono: String(denuncia.telefono),
             correo: denuncia.correo ? String(denuncia.correo) : undefined,
             profesion: denuncia.profesion ? String(denuncia.profesion) : undefined,
+            matricula: denuncia.matricula ? String(denuncia.matricula) : undefined,
             supuestos_autores: autoresResult.rows.map(autor => ({
                 autor_conocido: String(autor.autor_conocido),
                 nombre_autor: autor.nombre_autor ? String(autor.nombre_autor) : undefined,
@@ -154,6 +156,7 @@ export async function GET(
                 domicilio: inv.domicilio ? String(inv.domicilio) : undefined,
                 telefono: String(inv.telefono),
                 profesion: inv.profesion ? String(inv.profesion) : undefined,
+                matricula: inv.matricula ? String(inv.matricula) : undefined,
             })),
         };
 
