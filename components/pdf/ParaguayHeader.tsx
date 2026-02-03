@@ -29,23 +29,28 @@ const styles = StyleSheet.create({
     titleSection: {
         textAlign: 'center',
         marginTop: 5,
+        width: '100%',
+        alignItems: 'center',
     },
     mainTitle: {
         fontSize: 11,
         fontWeight: 'bold',
         marginBottom: 2,
         textAlign: 'center',
+        width: '100%',
     },
     subTitle: {
         fontSize: 10,
         fontWeight: 'bold',
         marginBottom: 8,
         textAlign: 'center',
+        width: '100%',
     },
     infoText: {
         fontSize: 8,
         marginBottom: 1,
         textAlign: 'center',
+        width: '100%',
     },
     divider: {
         borderBottomWidth: 1.5,
