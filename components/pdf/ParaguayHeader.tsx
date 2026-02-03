@@ -34,21 +34,21 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     mainTitle: {
-        fontSize: 11,
+        fontSize: 13,
         fontWeight: 'bold',
         marginBottom: 2,
         textAlign: 'center',
         width: '100%',
     },
     subTitle: {
-        fontSize: 10,
+        fontSize: 12,
         fontWeight: 'bold',
         marginBottom: 8,
         textAlign: 'center',
         width: '100%',
     },
     infoText: {
-        fontSize: 8,
+        fontSize: 10,
         marginBottom: 1,
         textAlign: 'center',
         width: '100%',
@@ -61,7 +61,7 @@ const styles = StyleSheet.create({
         marginBottom: 6,
     },
     documentId: {
-        fontSize: 11,
+        fontSize: 12,
         fontWeight: 'bold',
         textAlign: 'center',
     }

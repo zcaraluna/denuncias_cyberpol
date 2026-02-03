@@ -4,6 +4,7 @@ import ParaguayHeader from './ParaguayHeader';
 import { generarPrimerParrafo } from './PrimerParrafo';
 import { generarSegundoParrafo } from './SegundoParrafo';
 import { TercerParrafo } from './TercerParrafo';
+import { CierreDenuncia } from './CierreDenuncia';
 
 const styles = StyleSheet.create({
     page: {
@@ -114,6 +115,9 @@ const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 
 
                 {/* Tercer Párrafo - Relato */}
                 <TercerParrafo relato={denuncia.relato || ''} styles={styles} />
+
+                {/* Cierre de Acta */}
+                <CierreDenuncia styles={styles} />
             </Page>
         </Document>
     );

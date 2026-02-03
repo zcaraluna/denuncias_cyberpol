@@ -244,6 +244,9 @@ export async function POST(request: NextRequest) {
             html += `<p class="mb-4 text-justify whitespace-pre-wrap italic">${denuncia.relato}</p>`;
         }
 
+        // Agregar cierre
+        html += `<p class="mt-8 text-justify">NO HABIENDO NADA MÁS QUE AGREGAR SE DA POR TERMINADA EL ACTA, PREVIA LECTURA Y RATIFICACIÓN DE SU CONTENIDO, FIRMANDO AL PIE EL DENUNCIANTE Y EL INTERVINIENTE, EN 3 (TRES) COPIAS DEL MISMO TENOR Y EFECTO. LA PERSONA RECURRENTE ES INFORMADA SOBRE: ARTÍCULO 289.- "DENUNCIA FALSA"; ARTÍCULO 242.- "TESTIMONIO FALSO"; ARTÍCULO 243.- "DECLARACIÓN FALSA".</p>`;
+
         return NextResponse.json({ texto: html });
 
     } catch (error) {
