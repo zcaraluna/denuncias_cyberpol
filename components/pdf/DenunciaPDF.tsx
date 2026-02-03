@@ -29,6 +29,9 @@ interface DenunciaData {
     orden: number;
     fecha_denuncia: any;
     hora_denuncia: string;
+    operador_grado?: string;
+    operador_nombre?: string;
+    operador_apellido?: string;
     nombres_denunciante: string;
     cedula: string;
     tipo_documento?: string;
@@ -40,6 +43,7 @@ interface DenunciaData {
     domicilio?: string;
     profesion?: string;
     telefono: string;
+    denunciantes_involucrados?: any[];
     [key: string]: any;
 }
 
@@ -63,7 +67,7 @@ const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 
         if (fecha instanceof Date) return fecha.getFullYear();
         if (typeof fecha === 'string') {
             const parts = fecha.split('-');
-            return parseInt(parts[0], 10);
+            if (parts.length === 3) return parseInt(parts[0], 10);
         }
         return new Date().getFullYear();
     };
@@ -81,6 +85,33 @@ const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 
         return fechaStr;
     };
 
+    // Construir el nombre completo del operador
+    const operadorNombreCompleto = [
+        toSafeString(denuncia.operador_grado),
+        toSafeString(denuncia.operador_nombre),
+        toSafeString(denuncia.operador_apellido)
+    ].filter(Boolean).join(' ').toUpperCase();
+
+    // Determinar quién concurre y si hay representación
+    const involucrados = denuncia.denunciantes_involucrados || [];
+    const representante = involucrados.find((i: any) => i.rol === 'representante');
+    const principal = involucrados.find((i: any) => i.rol === 'principal');
+
+    // Datos del compareciente (el que está físicamente ahí)
+    const compareciente = representante || {
+        nombres: denuncia.nombres_denunciante,
+        tipo_documento: denuncia.tipo_documento,
+        cedula: denuncia.cedula,
+        nacionalidad: denuncia.nacionalidad,
+        estado_civil: denuncia.estado_civil,
+        edad: denuncia.edad,
+        fecha_nacimiento: denuncia.fecha_nacimiento,
+        lugar_nacimiento: denuncia.lugar_nacimiento,
+        domicilio: denuncia.domicilio,
+        profesion: denuncia.profesion,
+        telefono: denuncia.telefono
+    };
+
     return (
         <Document>
             <Page size={[612, 936]} style={styles.page}>
@@ -95,18 +126,37 @@ const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 
                 <Text style={styles.paragraph}>
                     En la Sala de Denuncias de la Dirección Contra Hechos Punibles Económicos y Financieros, Oficina ASUNCIÓN, en fecha{' '}
                     <Text style={{ fontWeight: 'bold' }}>{formatFecha(denuncia.fecha_denuncia)}</Text> siendo las{' '}
-                    <Text style={{ fontWeight: 'bold' }}>{toSafeString(denuncia.hora_denuncia)}</Text>, ante mí SUBOFICIAL AYUDANTE ANGEL GABRIEL CARVALLO FLORENTIN, concurre{' '}
-                    <Text style={{ fontWeight: 'bold' }}>{toSafeString(denuncia.nombres_denunciante).toUpperCase()}</Text>, con{' '}
-                    {toSafeString(denuncia.tipo_documento || 'Cédula de Identidad Paraguaya')} número{' '}
-                    <Text style={{ fontWeight: 'bold' }}>{toSafeString(denuncia.cedula)}</Text>, de nacionalidad{' '}
-                    <Text style={{ fontWeight: 'bold' }}>{toSafeString(denuncia.nacionalidad).toUpperCase()}</Text>, estado civil{' '}
-                    <Text style={{ fontWeight: 'bold' }}>{toSafeString(denuncia.estado_civil).toUpperCase()}</Text>,{' '}
-                    <Text style={{ fontWeight: 'bold' }}>{denuncia.edad}</Text> años de edad, fecha de nacimiento{' '}
-                    <Text style={{ fontWeight: 'bold' }}>{formatFecha(denuncia.fecha_nacimiento)}</Text>, en{' '}
-                    <Text style={{ fontWeight: 'bold' }}>{toSafeString(denuncia.lugar_nacimiento).toUpperCase()}</Text>, domiciliado en{' '}
-                    <Text style={{ fontWeight: 'bold' }}>{toSafeString(denuncia.domicilio).toUpperCase()}</Text>, de profesión{' '}
-                    <Text style={{ fontWeight: 'bold' }}>{toSafeString(denuncia.profesion).toUpperCase()}</Text>, teléfono{' '}
-                    <Text style={{ fontWeight: 'bold' }}>{toSafeString(denuncia.telefono)}</Text>, y expone cuanto sigue:
+                    <Text style={{ fontWeight: 'bold' }}>{toSafeString(denuncia.hora_denuncia)}</Text>, ante mí{' '}
+                    <Text style={{ fontWeight: 'bold' }}>{operadorNombreCompleto || 'PERSONAL POLICIAL INTERVINIENTE'}</Text>, concurre{' '}
+                    <Text style={{ fontWeight: 'bold' }}>{toSafeString(compareciente.nombres).toUpperCase()}</Text>, con{' '}
+                    {toSafeString(compareciente.tipo_documento || 'Cédula de Identidad Paraguaya')} número{' '}
+                    <Text style={{ fontWeight: 'bold' }}>{toSafeString(compareciente.cedula)}</Text>, de nacionalidad{' '}
+                    <Text style={{ fontWeight: 'bold' }}>{toSafeString(compareciente.nacionalidad).toUpperCase()}</Text>, estado civil{' '}
+                    <Text style={{ fontWeight: 'bold' }}>{toSafeString(compareciente.estado_civil).toUpperCase()}</Text>,{' '}
+                    <Text style={{ fontWeight: 'bold' }}>{compareciente.edad || '---'}</Text> años de edad, fecha de nacimiento{' '}
+                    <Text style={{ fontWeight: 'bold' }}>{formatFecha(compareciente.fecha_nacimiento)}</Text>, en{' '}
+                    <Text style={{ fontWeight: 'bold' }}>{toSafeString(compareciente.lugar_nacimiento).toUpperCase()}</Text>, domiciliado en{' '}
+                    <Text style={{ fontWeight: 'bold' }}>{toSafeString(compareciente.domicilio || 'SIN DATOS').toUpperCase()}</Text>, de profesión{' '}
+                    <Text style={{ fontWeight: 'bold' }}>{toSafeString(compareciente.profesion || 'SIN PROFESIÓN').toUpperCase()}</Text>, teléfono{' '}
+                    <Text style={{ fontWeight: 'bold' }}>{toSafeString(compareciente.telefono)}</Text>
+
+                    {representante && principal && (
+                        <>
+                            , actuando en su carácter de <Text style={{ fontWeight: 'bold' }}>REPRESENTANTE</Text> de{' '}
+                            <Text style={{ fontWeight: 'bold' }}>{toSafeString(principal.nombres).toUpperCase()}</Text>, con{' '}
+                            {toSafeString(principal.tipo_documento || 'Cédula de Identidad Paraguaya')} número{' '}
+                            <Text style={{ fontWeight: 'bold' }}>{toSafeString(principal.cedula)}</Text>
+                            {representante.con_carta_poder && (
+                                <>
+                                    , conforme a <Text style={{ fontWeight: 'bold' }}>CARTA PODER</Text>
+                                    {representante.carta_poder_numero && ` N° ${representante.carta_poder_numero}`}
+                                    {representante.carta_poder_fecha && ` de fecha ${formatFecha(representante.carta_poder_fecha)}`}
+                                    {representante.carta_poder_notario && ` ante el Escribano ${representante.carta_poder_notario.toUpperCase()}`}
+                                </>
+                            )}
+                        </>
+                    )}
+                    , y expone cuanto sigue:
                 </Text>
             </Page>
         </Document>

@@ -11,9 +11,11 @@ if (fs.existsSync(envPath)) {
   require('dotenv').config();
 }
 
+const connectionString = process.env.DATABASE_URL ? process.env.DATABASE_URL.replace('sslmode=require', '') : undefined;
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  connectionString: connectionString,
+  ssl: { rejectUnauthorized: false },
 });
 
 async function generarCodigoActivacion(diasExpiracion = 30, nombre = null) {
@@ -37,7 +39,7 @@ async function generarCodigoActivacion(diasExpiracion = 30, nombre = null) {
 
     // Generar código aleatorio seguro (32 caracteres hexadecimales)
     const codigo = crypto.randomBytes(16).toString('hex').toUpperCase();
-    
+
     // Formatear código para mejor legibilidad al mostrarlo (ej: ABCD-1234-EFGH-5678-1234-5678-ABCD-EFGH)
     const codigoFormateado = codigo.match(/.{1,4}/g).join('-');
 

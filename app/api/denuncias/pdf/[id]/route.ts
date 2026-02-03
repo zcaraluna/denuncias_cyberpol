@@ -46,6 +46,29 @@ export async function GET(
             [id]
         );
 
+        const involucradosResult = await pool.query(
+            `SELECT 
+                di.*,
+                den.nombres,
+                den.cedula,
+                den.tipo_documento,
+                den.nacionalidad,
+                den.estado_civil,
+                den.edad,
+                den.fecha_nacimiento,
+                den.lugar_nacimiento,
+                den.domicilio,
+                den.telefono,
+                den.profesion
+            FROM denuncias_involucrados di
+            INNER JOIN denunciantes den ON den.id = di.denunciante_id
+            WHERE di.denuncia_id = $1
+            ORDER BY 
+                CASE WHEN di.rol = 'principal' THEN 0 ELSE 1 END,
+                di.id`,
+            [id]
+        );
+
         // CRÍTICO: Convertir TODAS las fechas y valores a strings primitivos
         // react-pdf NO puede renderizar objetos Date, null, o undefined directamente
         const denunciaData = {
@@ -67,6 +90,9 @@ export async function GET(
             longitud: denuncia.longitud,
             monto_dano: denuncia.monto_dano,
             moneda: denuncia.moneda ? String(denuncia.moneda) : undefined,
+            operador_grado: String(denuncia.operador_grado || ''),
+            operador_nombre: String(denuncia.operador_nombre || ''),
+            operador_apellido: String(denuncia.operador_apellido || ''),
             nombres_denunciante: String(denuncia.nombres_denunciante),
             cedula: String(denuncia.cedula),
             tipo_documento: denuncia.tipo_documento ? String(denuncia.tipo_documento) : undefined,
@@ -96,6 +122,28 @@ export async function GET(
                 numero_cuenta_beneficiaria: autor.numero_cuenta_beneficiaria ? String(autor.numero_cuenta_beneficiaria) : undefined,
                 nombre_cuenta_beneficiaria: autor.nombre_cuenta_beneficiaria ? String(autor.nombre_cuenta_beneficiaria) : undefined,
                 entidad_bancaria: autor.entidad_bancaria ? String(autor.entidad_bancaria) : undefined,
+            })),
+            denunciantes_involucrados: involucradosResult.rows.map(inv => ({
+                rol: String(inv.rol),
+                con_carta_poder: Boolean(inv.con_carta_poder),
+                carta_poder_fecha: inv.carta_poder_fecha instanceof Date
+                    ? inv.carta_poder_fecha.toISOString().split('T')[0]
+                    : (inv.carta_poder_fecha ? String(inv.carta_poder_fecha) : undefined),
+                carta_poder_numero: inv.carta_poder_numero ? String(inv.carta_poder_numero) : undefined,
+                carta_poder_notario: inv.carta_poder_notario ? String(inv.carta_poder_notario) : undefined,
+                nombres: String(inv.nombres),
+                cedula: String(inv.cedula),
+                tipo_documento: inv.tipo_documento ? String(inv.tipo_documento) : undefined,
+                nacionalidad: String(inv.nacionalidad),
+                estado_civil: String(inv.estado_civil),
+                edad: Number(inv.edad),
+                fecha_nacimiento: inv.fecha_nacimiento instanceof Date
+                    ? inv.fecha_nacimiento.toISOString().split('T')[0]
+                    : String(inv.fecha_nacimiento),
+                lugar_nacimiento: String(inv.lugar_nacimiento),
+                domicilio: inv.domicilio ? String(inv.domicilio) : undefined,
+                telefono: String(inv.telefono),
+                profesion: inv.profesion ? String(inv.profesion) : undefined,
             })),
         };
 
