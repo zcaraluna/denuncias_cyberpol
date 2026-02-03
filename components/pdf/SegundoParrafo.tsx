@@ -4,7 +4,6 @@ import { obtenerCapitulo } from '@/lib/data/hechos-punibles';
 
 interface DenunciaData {
     tipo_denuncia: string;
-    otro_tipo?: string;
     fecha_hecho: string;
     hora_hecho: string;
     usar_rango?: boolean;
@@ -41,8 +40,6 @@ export function generarSegundoParrafo(
 
     if (capitulo) {
         crimeType = capitulo.toUpperCase();
-    } else if (tipoBase.toUpperCase() === 'OTRO' || tipoBase.toUpperCase() === 'OTRO (ESPECIFICAR)') {
-        crimeType = toSafeString(denuncia.otro_tipo).toUpperCase();
     } else {
         crimeType = tipoBase.toUpperCase();
     }

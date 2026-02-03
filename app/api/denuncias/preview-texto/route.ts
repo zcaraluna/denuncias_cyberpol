@@ -185,8 +185,6 @@ export async function POST(request: NextRequest) {
         let crimeType = '';
         if (capitulo) {
             crimeType = capitulo.toUpperCase();
-        } else if (tipoBase.toUpperCase() === 'OTRO' || tipoBase.toUpperCase() === 'OTRO (ESPECIFICAR)') {
-            crimeType = toSafeString(denuncia.otroTipo).toUpperCase();
         } else {
             crimeType = tipoBase.toUpperCase();
         }

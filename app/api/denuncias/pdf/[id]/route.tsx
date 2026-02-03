@@ -99,7 +99,6 @@ export async function GET(
                 : (denuncia.fecha_hecho_fin ? String(denuncia.fecha_hecho_fin) : undefined),
             hora_hecho_fin: denuncia.hora_hecho_fin ? String(denuncia.hora_hecho_fin) : undefined,
             tipo_denuncia: String(denuncia.tipo_denuncia),
-            otro_tipo: denuncia.otro_tipo ? String(denuncia.otro_tipo) : undefined,
             relato: String(denuncia.relato),
             lugar_hecho: String(denuncia.lugar_hecho),
             lugar_hecho_no_aplica: Boolean(denuncia.lugar_hecho_no_aplica),

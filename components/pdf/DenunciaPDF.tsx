@@ -37,7 +37,6 @@ interface DenunciaData {
     fecha_hecho_fin?: any;
     hora_hecho_fin?: string;
     tipo_denuncia: string;
-    otro_tipo?: string;
     lugar_hecho: string;
     lugar_hecho_no_aplica?: boolean;
     operador_grado?: string;
