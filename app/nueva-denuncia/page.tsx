@@ -4308,6 +4308,7 @@ export default function NuevaDenunciaPage() {
                         checked={lugarHechoNoAplica}
                         onChange={(e) => {
                           setLugarHechoNoAplica(e.target.checked)
+                          setValueDenuncia('lugarHechoNoAplica', e.target.checked)
                           if (e.target.checked) {
                             setValueDenuncia('lugarHechoDepartamento', '')
                             setValueDenuncia('lugarHechoCiudad', '')
