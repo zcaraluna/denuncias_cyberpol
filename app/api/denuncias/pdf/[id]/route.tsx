@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import { renderToBuffer } from '@react-pdf/renderer';
 import DenunciaPDFDocument from '@/components/pdf/DenunciaPDF';
+import QRCode from 'qrcode';
 
 export async function GET(
     request: NextRequest,
@@ -163,6 +164,7 @@ export async function GET(
                 profesion: inv.profesion ? String(inv.profesion) : undefined,
                 matricula: inv.matricula ? String(inv.matricula) : undefined,
             })),
+            qr_code_url: await QRCode.toDataURL(String(denuncia.hash)),
         };
 
         // Determinar el tamaño de página

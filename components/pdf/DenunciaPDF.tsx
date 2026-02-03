@@ -5,6 +5,7 @@ import { generarPrimerParrafo, analizarParticipantes } from './PrimerParrafo';
 import { generarSegundoParrafo } from './SegundoParrafo';
 import { TercerParrafo } from './TercerParrafo';
 import { CierreDenuncia } from './CierreDenuncia';
+import { SeccionFirmas } from './SeccionFirmas';
 
 const styles = StyleSheet.create({
     page: {
@@ -41,11 +42,14 @@ interface InvolucradoData {
     con_carta_poder: boolean;
     nombres: string;
     cedula: string;
+    matricula?: string;
     [key: string]: any;
 }
 
 interface DenunciaData {
     orden: number;
+    hash: string;
+    qr_code_url?: string;
     fecha_denuncia: any;
     hora_denuncia: string;
     fecha_hecho: any;
@@ -127,6 +131,25 @@ const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 
 
                 {/* Cierre de Acta */}
                 <CierreDenuncia totalPersonas={analisis.totalComparecientes} styles={styles} />
+
+                {/* Sección de Firmas */}
+                <SeccionFirmas
+                    operador={{
+                        nombre: denuncia.operador_nombre || '',
+                        apellido: denuncia.operador_apellido || '',
+                        grado: denuncia.operador_grado || '',
+                    }}
+                    denunciante={{
+                        nombres: denuncia.nombres_denunciante,
+                        cedula: denuncia.cedula,
+                    }}
+                    abogadoRep={analisis.abogadoConCartaPoder ? {
+                        nombres: analisis.abogadoConCartaPoder.nombres,
+                        matricula: analisis.abogadoConCartaPoder.matricula
+                    } : undefined}
+                    hash={denuncia.hash}
+                    qrCodeUrl={denuncia.qr_code_url || ''}
+                />
             </Page>
         </Document>
     );
