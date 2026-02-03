@@ -4,9 +4,9 @@ import ParaguayHeader from './ParaguayHeader';
 
 const styles = StyleSheet.create({
     page: {
-        paddingTop: 72,  // 2.54cm = ~72pt
-        paddingBottom: 72,
-        paddingHorizontal: 72,
+        paddingTop: 15,  // Margen superior mínimo
+        paddingBottom: 72,  // 2.54cm
+        paddingHorizontal: 72,  // 2.54cm laterales
         fontSize: 10,
         fontFamily: 'Helvetica',
     },
