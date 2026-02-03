@@ -189,6 +189,31 @@ export async function POST(request: NextRequest) {
             crimeType = tipoBase.toUpperCase();
         }
 
+        const formatDescripcionFisicaHtml = (descRaw: any): string => {
+            if (!descRaw) return '';
+            let desc: any;
+            try {
+                desc = typeof descRaw === 'string' ? JSON.parse(descRaw) : descRaw;
+            } catch (e) {
+                return String(descRaw);
+            }
+
+            if (typeof desc !== 'object') return String(desc);
+            const partes: string[] = [];
+            if (desc.sexo) partes.push(`Sexo: ${desc.sexo}`);
+            if (desc.altura) partes.push(`Altura: ${desc.altura}`);
+            if (desc.complexion) partes.push(`Complexión: ${desc.complexion}`);
+            if (desc.tonoPiel) partes.push(`Piel: ${desc.tonoPiel}`);
+            if (desc.colorCabello) partes.push(`Cabello: ${desc.colorCabello}`);
+            if (desc.colorOjos) partes.push(`Ojos: ${desc.colorOjos}`);
+            if (desc.otrosRasgos && Array.isArray(desc.otrosRasgos) && desc.otrosRasgos.length > 0) {
+                partes.push(`Otros rasgos: ${desc.otrosRasgos.join(', ')}`);
+            } else if (desc.otrosRasgos && typeof desc.otrosRasgos === 'string') {
+                partes.push(`Otros rasgos: ${desc.otrosRasgos}`);
+            }
+            return partes.join(', ');
+        };
+
         const dateText = denuncia.usarRango && denuncia.fechaHechoFin
             ? `entre la fecha <strong>${formatFecha(denuncia.fechaHecho)}</strong> siendo las <strong>${toSafeString(denuncia.horaHecho)}</strong> aproximadamente y la fecha <strong>${formatFecha(denuncia.fechaHechoFin)}</strong> siendo las <strong>${toSafeString(denuncia.horaHechoFin)}</strong> aproximadamente`
             : `en fecha <strong>${formatFecha(denuncia.fechaHecho)}</strong> siendo las <strong>${toSafeString(denuncia.horaHecho)}</strong> aproximadamente`;
@@ -197,30 +222,25 @@ export async function POST(request: NextRequest) {
             ? 'en dirección <strong>NO APLICA</strong>'
             : `en la dirección <strong>${toSafeString(denuncia.lugarHecho).toUpperCase()}</strong>`;
 
-        html += `<p class="text-justify mb-4">Que por la presente viene a realizar una denuncia sobre un supuesto <strong>${crimeType}</strong>, ocurrido ${dateText}, ${locationText}.</p>`;
+        // Lógica de Autores para la Vista Previa
+        let authorText = '';
+        if (body.autor && body.autor.conocido === 'Conocido') {
+            const nombre = toSafeString(body.autor.nombre).toUpperCase();
+            const ci = body.autor.cedula ? `, con C.I. N° ${body.autor.cedula}` : '';
+            const dom = body.autor.domicilio ? `, domiciliado en ${body.autor.domicilio.toUpperCase()}` : '';
+            authorText = `, perpetrado presumiblemente por el ciudadano <strong>${nombre}</strong>${ci}${dom}`;
+        } else if (body.autor && body.autor.conocido === 'Desconocido') {
+            const desc = formatDescripcionFisicaHtml(body.descripcionFisica);
+            authorText = `, perpetrado presumiblemente por <strong>persona/s</strong> de las siguientes características: ${desc || 'SIN DATOS'}`;
+        } else {
+            authorText = ', perpetrado presumiblemente por <strong>PERSONA/S DESCONOCIDA/S</strong>';
+        }
+
+        html += `<p class="text-justify mb-4">Que por la presente viene a realizar una denuncia sobre un supuesto <strong>${crimeType}</strong>, ocurrido ${dateText}, ${locationText}${authorText}.</p>`;
 
         // Agregar relato
         if (denuncia.relato) {
             html += `<p class="mb-4 text-justify whitespace-pre-wrap">${denuncia.relato}</p>`;
-        }
-
-        // Agregar datos del autor si existe
-        if (body.autor && body.autor.conocido === 'Conocido') {
-            html += `<p class="mb-4"><strong>DATOS DEL SUPUESTO AUTOR:</strong> ${body.autor.nombre}, con C.I. N° ${body.autor.cedula || 'No especifica'}.</p>`;
-        } else if (body.autor && body.autor.conocido === 'Desconocido' && body.descripcionFisica) {
-            // Intentar parsear si es JSON
-            let desc = body.descripcionFisica;
-            try {
-                const jsonDesc = JSON.parse(desc);
-                // Convertir objeto descripción a texto legible (simplificado)
-                const partes = [];
-                if (jsonDesc.altura) partes.push(`Altura: ${jsonDesc.altura}`);
-                if (jsonDesc.complexion) partes.push(`Complexión: ${jsonDesc.complexion}`);
-                if (partes.length > 0) desc = partes.join(', ');
-            } catch (e) {
-                // Es texto plano o ya formateado
-            }
-            html += `<p class="mb-4"><strong>DESCRIPCIÓN FÍSICA DEL SUPUESTO AUTOR:</strong> ${desc}</p>`;
         }
 
         return NextResponse.json({ texto: html });
