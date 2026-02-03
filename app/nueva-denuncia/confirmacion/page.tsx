@@ -47,7 +47,7 @@ function ConfirmacionPage() {
           throw new Error('Denuncia no encontrada')
         }
         const data = await response.json()
-        
+
         // Formatear la fecha correctamente
         let fechaStr = data.fecha_denuncia
         if (fechaStr instanceof Date) {
@@ -55,7 +55,7 @@ function ConfirmacionPage() {
         } else if (typeof fechaStr === 'string' && fechaStr.includes('T')) {
           fechaStr = fechaStr.split('T')[0]
         }
-        
+
         setDenuncia({
           id: data.id,
           orden: data.orden,
@@ -185,9 +185,11 @@ function ConfirmacionPage() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
               onClick={handleDescargarPDF}
-              className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-medium"
+              disabled
+              className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-medium opacity-50 cursor-not-allowed"
+              title="Generación de PDF temporalmente deshabilitada"
             >
-              Descargar PDF
+              Descargar PDF (Deshabilitado)
             </button>
             <button
               onClick={() => router.push('/nueva-denuncia')}
@@ -215,37 +217,37 @@ function ConfirmacionPage() {
             <p className="text-gray-600 mb-6">
               Elija el tamaño de papel para la impresión:
             </p>
-            
+
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-3">Formato de Papel</label>
               <div className="space-y-3">
-              <label className="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition">
-                <input
-                  type="radio"
-                  value="oficio"
-                  checked={tipoPapelSeleccionado === 'oficio'}
-                  onChange={(e) => setTipoPapelSeleccionado(e.target.value as 'oficio' | 'a4')}
-                  className="w-5 h-5 text-blue-600 focus:ring-blue-500"
-                />
-                <div className="ml-3">
-                  <p className="font-medium text-gray-900">Oficio (8.5" x 13")</p>
-                  <p className="text-sm text-gray-600">Formato estándar para documentos oficiales</p>
-                </div>
-              </label>
-              
-              <label className="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition">
-                <input
-                  type="radio"
-                  value="a4"
-                  checked={tipoPapelSeleccionado === 'a4'}
-                  onChange={(e) => setTipoPapelSeleccionado(e.target.value as 'oficio' | 'a4')}
-                  className="w-5 h-5 text-blue-600 focus:ring-blue-500"
-                />
-                <div className="ml-3">
-                  <p className="font-medium text-gray-900">A4 (8.27" x 11.69")</p>
-                  <p className="text-sm text-gray-600">Formato internacional estándar</p>
-                </div>
-              </label>
+                <label className="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition">
+                  <input
+                    type="radio"
+                    value="oficio"
+                    checked={tipoPapelSeleccionado === 'oficio'}
+                    onChange={(e) => setTipoPapelSeleccionado(e.target.value as 'oficio' | 'a4')}
+                    className="w-5 h-5 text-blue-600 focus:ring-blue-500"
+                  />
+                  <div className="ml-3">
+                    <p className="font-medium text-gray-900">Oficio (8.5" x 13")</p>
+                    <p className="text-sm text-gray-600">Formato estándar para documentos oficiales</p>
+                  </div>
+                </label>
+
+                <label className="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition">
+                  <input
+                    type="radio"
+                    value="a4"
+                    checked={tipoPapelSeleccionado === 'a4'}
+                    onChange={(e) => setTipoPapelSeleccionado(e.target.value as 'oficio' | 'a4')}
+                    className="w-5 h-5 text-blue-600 focus:ring-blue-500"
+                  />
+                  <div className="ml-3">
+                    <p className="font-medium text-gray-900">A4 (8.27" x 11.69")</p>
+                    <p className="text-sm text-gray-600">Formato internacional estándar</p>
+                  </div>
+                </label>
               </div>
             </div>
 

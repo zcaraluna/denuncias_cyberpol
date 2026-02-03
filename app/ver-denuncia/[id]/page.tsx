@@ -339,11 +339,9 @@ export default function VerDenunciaPage({ params }: { params: Promise<{ id: stri
                   </Link>
                   <button
                     onClick={abrirModalPDF}
-                    disabled
-                    className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 font-medium opacity-50 cursor-not-allowed"
-                    title="Generación de PDF temporalmente deshabilitada"
+                    className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 font-medium"
                   >
-                    Ver PDF (Deshabilitado)
+                    Ver PDF
                   </button>
                 </>
               )}
