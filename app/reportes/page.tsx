@@ -274,8 +274,57 @@ export default function ReportesPage() {
     exportToExcel(datosMensuales?.top_operadores || [], 'Ranking_Operadores', columns);
   };
 
+  const handleExportMonthlyTypesDocx = () => {
+    const columns = [
+      { header: 'Tipo de Hecho', key: 'tipo' },
+      { header: 'Total', key: 'total' }
+    ];
+    const data = mostrarGeneral ? datosMensuales?.resumen_general : datosMensuales?.resumen_especifico;
+    exportToDocx(data || [], 'Resumen de Denuncias por Tipo', columns);
+  };
+
+  const handleExportMonthlyOperatorsDocx = () => {
+    const columns = [
+      { header: 'Personal Interviniente', key: 'operador' },
+      { header: 'Total Denuncias', key: 'total' }
+    ];
+    exportToDocx(datosMensuales?.top_operadores || [], 'Ranking de Operadores del Mes', columns);
+  };
+
   const handleExportChartImage = () => {
     exportComponentToImage('chart-evolution', 'Evolucion_Diaria_Denuncias');
+  };
+
+  const handleExportRecurrenteExcel = (rec: Recurrente) => {
+    const data = rec.numeros_denuncia.map((num, i) => ({
+      numero: num,
+      tipo: rec.tipos[i] || 'SIN ESPECIFICAR',
+      fecha: rec.fechas[i] || '-',
+      oficial: rec.oficiales ? rec.oficiales[i] : '-'
+    }));
+    const columns = [
+      { header: 'Nro. Denuncia', key: 'numero', width: 20 },
+      { header: 'Tipo de Hecho', key: 'tipo', width: 40 },
+      { header: 'Fecha y Hora', key: 'fecha', width: 25 },
+      { header: 'Personal Interviniente', key: 'oficial', width: 40 }
+    ];
+    exportToExcel(data, `Recurrente_${rec.denunciante.split(' ')[0]}_${rec.cedula}`, columns);
+  };
+
+  const handleExportRecurrenteDocx = (rec: Recurrente) => {
+    const data = rec.numeros_denuncia.map((num, i) => ({
+      numero: num,
+      tipo: rec.tipos[i] || 'SIN ESPECIFICAR',
+      fecha: rec.fechas[i] || '-',
+      oficial: rec.oficiales ? rec.oficiales[i] : '-'
+    }));
+    const columns = [
+      { header: 'Nro. Denuncia', key: 'numero' },
+      { header: 'Tipo de Hecho', key: 'tipo' },
+      { header: 'Fecha y Hora', key: 'fecha' },
+      { header: 'Interviniente', key: 'oficial' }
+    ];
+    exportToDocx(data, `Denuncias de ${rec.denunciante} (CI: ${rec.cedula})`, columns);
   };
 
   if (loading) {
@@ -629,6 +678,15 @@ export default function ReportesPage() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
                     </button>
+                    <button
+                      onClick={handleExportMonthlyTypesDocx}
+                      title="Exportar a Word"
+                      className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </button>
                   </div>
                   {/* Toggle en tabla */}
                   <div className="flex bg-white p-0.5 rounded-lg shadow-sm border border-gray-200">
@@ -681,15 +739,26 @@ export default function ReportesPage() {
                     </svg>
                     Top 5 Intervinientes
                   </h3>
-                  <button
-                    onClick={handleExportMonthlyOperatorsExcel}
-                    title="Exportar a Excel"
-                    className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                  </button>
+                  <div className="flex gap-1">
+                    <button
+                      onClick={handleExportMonthlyOperatorsExcel}
+                      title="Exportar a Excel"
+                      className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={handleExportMonthlyOperatorsDocx}
+                      title="Exportar a Word"
+                      className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
                 <div className="p-0">
                   <table className="min-w-full divide-y divide-gray-200">
@@ -744,9 +813,31 @@ export default function ReportesPage() {
                             <h4 className="font-bold text-gray-900">{rec.denunciante}</h4>
                             <p className="text-[10px] text-gray-500 font-mono tracking-wider">CI: {rec.cedula}</p>
                           </div>
-                          <span className="px-2 py-1 bg-red-100 text-red-700 text-[10px] font-bold rounded uppercase">
-                            {rec.cantidad} denuncias
-                          </span>
+                          <div className="flex flex-col items-end gap-2">
+                            <span className="px-2 py-1 bg-red-100 text-red-700 text-[10px] font-bold rounded uppercase">
+                              {rec.cantidad} denuncias
+                            </span>
+                            <div className="flex gap-1">
+                              <button
+                                onClick={() => handleExportRecurrenteExcel(rec)}
+                                title="Exportar a Excel"
+                                className="p-1 rounded bg-green-50 text-green-600 hover:bg-green-100 transition shadow-sm"
+                              >
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                              </button>
+                              <button
+                                onClick={() => handleExportRecurrenteDocx(rec)}
+                                title="Exportar a Word"
+                                className="p-1 rounded bg-blue-50 text-blue-600 hover:bg-blue-100 transition shadow-sm"
+                              >
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                              </button>
+                            </div>
+                          </div>
                         </div>
                         <div className="mt-3 space-y-2">
                           {rec.numeros_denuncia.map((num, i) => (

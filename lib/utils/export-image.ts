@@ -9,8 +9,13 @@ export const exportComponentToImage = async (elementId: string, fileName: string
     }
 
     try {
+        // Pequeño retraso para asegurar que las animaciones de Recharts terminen
+        await new Promise(resolve => setTimeout(resolve, 500));
+
         const dataUrl = await toPng(node, {
             backgroundColor: '#ffffff',
+            cacheBust: true,
+            pixelRatio: 2, // Mejor calidad
             style: {
                 padding: '20px'
             }
