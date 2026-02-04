@@ -15,6 +15,7 @@ export async function GET(
         const id = parseInt(idStr);
         const { searchParams } = new URL(request.url);
         const tipo = searchParams.get('tipo') || 'oficio';
+        const esCopiaManual = searchParams.get('es_copia') === 'true';
 
         // 1. Obtener el usuario actual de la cookie de sesión
         const usuarioSesionCookie = request.cookies.get('usuario_sesion')?.value;
@@ -37,7 +38,7 @@ export async function GET(
         );
 
         const impresionesTotal = updateResult.rows[0]?.cantidad_impresiones || 1;
-        const isDuplicate = impresionesTotal > 1;
+        const isDuplicate = impresionesTotal > 1 || esCopiaManual;
 
         // Obtener datos de la base de datos (Unificado y robusto)
         const denunciaResult = await pool.query(

@@ -229,7 +229,7 @@ export default function VerDenunciaPage({ params }: { params: Promise<{ id: stri
       return
     }
     if (!usuario) return
-    window.open(`/api/denuncias/pdf/${denunciaId}?tipo=oficio&usuario_id=${usuario.id}`, '_blank')
+    window.open(`/api/denuncias/pdf/${denunciaId}?tipo=oficio&usuario_id=${usuario.id}&es_copia=true`, '_blank')
   }
 
   const continuarBorrador = () => {
