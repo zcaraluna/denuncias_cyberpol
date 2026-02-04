@@ -112,7 +112,7 @@ export function generarSegundoParrafo(
                 <>
                     en fecha <Text style={{ fontWeight: 'bold' }}>{formatFecha(denuncia.fecha_hecho)}</Text> siendo las <Text style={{ fontWeight: 'bold' }}>{toSafeString(denuncia.hora_hecho)}</Text> aproximadamente
                 </>
-            )},
+            )}
             {!denuncia.lugar_hecho_no_aplica && (
                 <>
                     , en la dirección <Text style={{ fontWeight: 'bold' }}>{toSafeString(denuncia.lugar_hecho).toUpperCase()}</Text>

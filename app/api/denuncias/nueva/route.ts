@@ -553,8 +553,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Guardar descripción física si el autor es desconocido
-    if (autor.conocido === 'Desconocido' && descripcionFisica && descripcionFisica.trim() !== '') {
+    // Guardar registro de autor si es desconocido
+    if (autor.conocido === 'Desconocido') {
       await client.query(
         `INSERT INTO supuestos_autores (
           denuncia_id, autor_conocido, descripcion_fisica
@@ -562,7 +562,7 @@ export async function POST(request: NextRequest) {
         [
           denunciaId,
           'Desconocido',
-          normalizarTexto(descripcionFisica)
+          descripcionFisica ? normalizarTexto(descripcionFisica) : null
         ]
       )
     }
