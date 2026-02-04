@@ -75,7 +75,7 @@ async function upsertDenunciante(client: any, datos: DenuncianteDatos) {
 
   const aplicarUpdate = async (denuncianteId: number) => {
     await client.query(
-        `UPDATE denunciantes SET
+      `UPDATE denunciantes SET
           nombres = $1,
           tipo_documento = $2,
           nacionalidad = $3,
@@ -89,21 +89,21 @@ async function upsertDenunciante(client: any, datos: DenuncianteDatos) {
           profesion = $11,
           matricula = $12
         WHERE id = $13`,
-        [
-          nombres,
-          tipoDocumento,
-          nacionalidad,
-          estadoCivil,
-          edad,
-          fechaNacimiento,
-          lugarNacimiento,
-          domicilio,
-          telefono,
-          correo,
-          profesion,
-          matricula,
-          denuncianteId
-        ]
+      [
+        nombres,
+        tipoDocumento,
+        nacionalidad,
+        estadoCivil,
+        edad,
+        fechaNacimiento,
+        lugarNacimiento,
+        domicilio,
+        telefono,
+        correo,
+        profesion,
+        matricula,
+        denuncianteId
+      ]
     )
     return denuncianteId
   }
@@ -262,7 +262,7 @@ export async function POST(request: NextRequest) {
     }
 
     const usuario = usuarioResult.rows[0]
-    
+
     // Validar que el usuario no haya creado una denuncia completada en el último minuto
     // Usamos creado_en que es el timestamp exacto de cuando se insertó el registro
     const validacionTiempoResult = await client.query(
@@ -275,7 +275,7 @@ export async function POST(request: NextRequest) {
        LIMIT 1`,
       [usuarioId]
     )
-    
+
     if (validacionTiempoResult.rows.length > 0) {
       const ultimaDenuncia = validacionTiempoResult.rows[0]
       const tiempoRestante = Math.ceil(
@@ -284,7 +284,7 @@ export async function POST(request: NextRequest) {
       await client.query('ROLLBACK')
       client.release()
       return NextResponse.json(
-        { 
+        {
           error: `Debe esperar al menos un minuto entre la creación de denuncias completadas. Por favor, intente nuevamente en ${tiempoRestante > 0 ? `aproximadamente ${tiempoRestante} segundos` : 'unos momentos'}.`,
           ultimaDenuncia: {
             id: ultimaDenuncia.id,
@@ -294,12 +294,12 @@ export async function POST(request: NextRequest) {
         { status: 429 } // 429 Too Many Requests
       )
     }
-    
+
     // Usar la fecha/hora enviada desde el frontend (capturada al iniciar la denuncia)
     // Si no viene, usar la fecha/hora actual como fallback
     let fechaActual: string
     let horaActual: string
-    
+
     if (denuncia?.fechaDenuncia && denuncia?.horaDenuncia) {
       // Usar los valores enviados desde el frontend
       // Asegurarse de que la fecha esté en formato YYYY-MM-DD
@@ -346,8 +346,11 @@ export async function POST(request: NextRequest) {
     const lugarHecho = denuncia?.lugarHecho ?? null
     const latitud = denuncia?.latitud ?? null
     const longitud = denuncia?.longitud ?? null
+    const lugarHechoNoAplica = Boolean(denuncia?.lugarHechoNoAplica)
+    const adjuntosUrls = denuncia?.adjuntosUrls ?? []
     const montoDano = denuncia?.montoDano ?? null
     const moneda = denuncia?.moneda ?? null
+    const usarRango = Boolean(denuncia?.usarRango)
 
     const hash = generarHash(usuario.oficina)
 
@@ -364,7 +367,7 @@ export async function POST(request: NextRequest) {
          FOR UPDATE`,
         [año]
       )
-      
+
       const ordenResult = await client.query(
         `SELECT COALESCE(
           (SELECT MIN(n.orden_numero)
@@ -398,8 +401,15 @@ export async function POST(request: NextRequest) {
           moneda = $15,
           estado = 'completada',
           orden = $16,
-          hash = $17
-        WHERE id = $18`,
+          hash = $17,
+          operador_grado = $18,
+          operador_nombre = $19,
+          operador_apellido = $20,
+          lugar_hecho_no_aplica = $21,
+          es_denuncia_escrita = $22,
+          archivo_denuncia_url = $23,
+          usar_rango = $24
+        WHERE id = $25`,
         [
           principalId,
           fechaActual,
@@ -418,6 +428,13 @@ export async function POST(request: NextRequest) {
           moneda,
           numeroOrden,
           hash,
+          usuario.grado,
+          usuario.nombre,
+          usuario.apellido,
+          lugarHechoNoAplica,
+          denuncia?.esDenunciaEscrita || false,
+          denuncia?.archivoDenunciaUrl || null,
+          usarRango,
           borradorId
         ]
       )
@@ -432,7 +449,7 @@ export async function POST(request: NextRequest) {
          FOR UPDATE`,
         [año]
       )
-      
+
       const ordenResult = await client.query(
         `SELECT COALESCE(
           (SELECT MIN(n.orden_numero)
@@ -467,8 +484,9 @@ export async function POST(request: NextRequest) {
           denunciante_id, fecha_denuncia, hora_denuncia, fecha_hecho, hora_hecho, fecha_hecho_fin, hora_hecho_fin,
           tipo_denuncia, otro_tipo, relato, lugar_hecho, latitud, longitud,
           orden, usuario_id, oficina, operador_grado, operador_nombre,
-          operador_apellido, monto_dano, moneda, hash, pdf, estado
-        ) VALUES ($1, $2::DATE, $3, $4::DATE, $5, $6::DATE, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, NULL, 'completada')
+          operador_apellido, monto_dano, moneda, hash, pdf, estado,
+          es_denuncia_escrita, archivo_denuncia_url, lugar_hecho_no_aplica, adjuntos_urls, usar_rango
+        ) VALUES ($1, $2::DATE, $3, $4::DATE, $5, $6::DATE, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, NULL, 'completada', $23, $24, $25, $26, $27)
         RETURNING id`,
         [
           principalId,
@@ -492,7 +510,12 @@ export async function POST(request: NextRequest) {
           usuario.apellido,
           montoDano,
           moneda,
-          hash
+          hash,
+          denuncia?.esDenunciaEscrita || false,
+          denuncia?.archivoDenunciaUrl || null,
+          lugarHechoNoAplica,
+          adjuntosUrls,
+          usarRango
         ]
       )
       denunciaId = insertDenuncia.rows[0].id
@@ -536,8 +559,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Guardar descripción física si el autor es desconocido
-    if (autor.conocido === 'Desconocido' && descripcionFisica && descripcionFisica.trim() !== '') {
+    // Guardar registro de autor si es desconocido
+    if (autor.conocido === 'Desconocido') {
       await client.query(
         `INSERT INTO supuestos_autores (
           denuncia_id, autor_conocido, descripcion_fisica
@@ -545,7 +568,7 @@ export async function POST(request: NextRequest) {
         [
           denunciaId,
           'Desconocido',
-          normalizarTexto(descripcionFisica)
+          descripcionFisica ? normalizarTexto(descripcionFisica) : null
         ]
       )
     }

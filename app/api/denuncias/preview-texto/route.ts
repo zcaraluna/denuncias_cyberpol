@@ -1,134 +1,279 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { generarTextoPDF, Denunciante, DatosDenuncia } from '@/lib/utils/pdf'
+import { obtenerCapitulo } from '@/lib/data/hechos-punibles'
 
-// Función auxiliar para convertir fechas
-const formatDate = (date: any): string => {
-  if (!date) return ''
-  if (date instanceof Date) {
-    // Usar zona horaria de Paraguay
-    const { dateToParaguayString } = require('@/lib/utils/timezone')
-    return dateToParaguayString(date)
-  }
-  return String(date)
+interface DenuncianteData {
+    nombres: string;
+    cedula: string;
+    tipo_documento?: string;
+    nacionalidad: string;
+    estado_civil: string;
+    edad: number | string;
+    fecha_nacimiento: string;
+    lugar_nacimiento: string;
+    domicilio?: string;
+    profesion?: string;
+    telefono: string;
+    matricula?: string;
 }
+
+interface InvolucradoData extends DenuncianteData {
+    rol: 'principal' | 'co-denunciante' | 'abogado';
+    con_carta_poder?: boolean;
+    carta_poder_fecha?: string;
+    carta_poder_numero?: string;
+    carta_poder_notario?: string;
+}
+
+const toSafeString = (value: any): string => {
+    if (value === null || value === undefined) return '';
+    if (value instanceof Date) return value.toISOString().split('T')[0];
+    return String(value);
+};
+
+const formatFecha = (fecha: any): string => {
+    const fechaStr = toSafeString(fecha);
+    if (!fechaStr) return '';
+    const parts = fechaStr.split('-');
+    if (parts.length === 3) {
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    return fechaStr;
+};
+
+const renderDatosPersonales = (persona: DenuncianteData): string => {
+    return `${toSafeString(persona.tipo_documento || 'Cédula de Identidad Paraguaya')} número <strong>${toSafeString(persona.cedula)}</strong>, de nacionalidad <strong>${toSafeString(persona.nacionalidad).toUpperCase()}</strong>, estado civil <strong>${toSafeString(persona.estado_civil).toUpperCase()}</strong>, <strong>${persona.edad || '---'}</strong> años de edad, fecha de nacimiento <strong>${formatFecha(persona.fecha_nacimiento)}</strong>, en <strong>${toSafeString(persona.lugar_nacimiento).toUpperCase()}</strong>, domiciliado en <strong>${toSafeString(persona.domicilio || 'SIN DATOS').toUpperCase()}</strong>, de profesión <strong>${toSafeString(persona.profesion || 'SIN PROFESIÓN').toUpperCase()}</strong>, teléfono <strong>${toSafeString(persona.telefono)}</strong>`;
+};
 
 export async function POST(request: NextRequest) {
-  try {
-    const data = await request.json()
+    try {
+        const body = await request.json();
+        const { denunciante, denunciantes, denuncia, operador } = body;
 
-    const denunciante: Denunciante = {
-      'Nombres y Apellidos': data.denunciante.nombres,
-      'Tipo de Documento': data.denunciante.tipoDocumento,
-      'Cédula de Identidad': data.denunciante.numeroDocumento,
-      'Número de Documento': data.denunciante.numeroDocumento,
-      'Nacionalidad': data.denunciante.nacionalidad,
-      'Estado Civil': data.denunciante.estadoCivil,
-      'Edad': data.denunciante.edad,
-      'Fecha de Nacimiento': formatDate(data.denunciante.fechaNacimiento),
-      'Lugar de Nacimiento': data.denunciante.lugarNacimiento,
-      'Número de Teléfono': data.denunciante.telefono,
-      'Domicilio': data.denunciante.domicilio || '',
-      'Correo Electrónico': data.denunciante.correo || '',
-      'Profesión': data.denunciante.profesion,
-    }
+        const fechaDenuncia = denuncia.fechaDenuncia;
+        const horaDenuncia = denuncia.horaDenuncia;
+        const operadorNombre = operador.nombre ? `${operador.grado || ''} ${operador.nombre} ${operador.apellido}`.trim() : 'PERSONAL POLICIAL INTERVINIENTE';
 
-    const mapIdToNombre = new Map<string, string>()
-    if (data.denunciantePrincipalId && data.denunciante?.nombres) {
-      mapIdToNombre.set(String(data.denunciantePrincipalId), data.denunciante.nombres)
-    }
-    if (Array.isArray(data.denunciantes)) {
-      data.denunciantes.forEach((item: any) => {
-        if (item?.id && item?.datos?.nombres) {
-          mapIdToNombre.set(String(item.id), item.datos.nombres)
+        // Preparar participantes
+        const denunciantePrincipal = denunciante;
+        // Mapear denunciantes de la lista para tener consistencia
+        const todosInvolucrados = (denunciantes || []).map((d: any) => ({
+            nombres: d.datos.nombres,
+            cedula: d.datos.numeroDocumento,
+            tipo_documento: d.datos.tipoDocumento,
+            nacionalidad: d.datos.nacionalidad,
+            estado_civil: d.datos.estadoCivil,
+            edad: d.datos.edad,
+            fecha_nacimiento: d.datos.fechaNacimiento,
+            lugar_nacimiento: d.datos.lugarNacimiento,
+            domicilio: d.datos.domicilio,
+            profesion: d.datos.profesion,
+            telefono: d.datos.telefono,
+            matricula: d.datos.matricula,
+            rol: d.rol,
+            con_carta_poder: d.conCartaPoder,
+            carta_poder_fecha: d.cartaPoderFecha,
+            carta_poder_numero: d.cartaPoderNumero,
+            carta_poder_notario: d.cartaPoderNotario,
+        }));
+
+        const coDenunciantes = todosInvolucrados.filter((i: any) => i.rol === 'co-denunciante');
+        const abogados = todosInvolucrados.filter((i: any) => i.rol === 'abogado');
+        const abogadoConCartaPoder = abogados.find((a: any) => a.con_carta_poder);
+        const abogado = abogados.find((a: any) => !a.con_carta_poder);
+        const totalComparecientes = 1 + coDenunciantes.length + (abogado ? 1 : 0) + (abogadoConCartaPoder ? 1 : 0);
+
+        let html = `<p class="text-justify mb-4">En la Sala de Denuncias de la Dirección Contra Hechos Punibles Económicos y Financieros, Oficina ASUNCIÓN, en fecha <strong>${formatFecha(fechaDenuncia)}</strong> siendo las <strong>${toSafeString(horaDenuncia)}</strong>, ante mí <strong>${operadorNombre.toUpperCase()}</strong>, `;
+
+        // Lógica principal de narrativa (similar a PrimerParrafo.tsx)
+        if (abogadoConCartaPoder && coDenunciantes.length === 0 && !abogado) {
+            // CASO 1: Abogado con carta poder comparece solo
+            html += `concurre <strong>${toSafeString(abogadoConCartaPoder.nombres).toUpperCase()}</strong>, con ${renderDatosPersonales(abogadoConCartaPoder)}, actuando en su carácter de <strong>REPRESENTANTE LEGAL</strong> de <strong>${toSafeString(denunciantePrincipal.nombres).toUpperCase()}</strong>, con ${toSafeString(denunciantePrincipal.tipoDocumento || 'Cédula de Identidad Paraguaya')} número <strong>${toSafeString(denunciantePrincipal.numeroDocumento)}</strong>`;
+
+            if (abogadoConCartaPoder.con_carta_poder) {
+                html += `, conforme a <strong>CARTA PODER</strong>`;
+                if (abogadoConCartaPoder.carta_poder_numero) html += ` N° ${abogadoConCartaPoder.carta_poder_numero}`;
+                if (abogadoConCartaPoder.carta_poder_fecha) html += ` de fecha ${formatFecha(abogadoConCartaPoder.carta_poder_fecha)}`;
+                if (abogadoConCartaPoder.carta_poder_notario) html += ` ante el Escribano ${abogadoConCartaPoder.carta_poder_notario.toUpperCase()}`;
+            }
+            html += `, y expone cuanto sigue:`;
+
+        } else if (!abogadoConCartaPoder && coDenunciantes.length === 0 && abogado) {
+            // CASO ESPECIAL: 1 Denunciante + 1 Abogado Asistente (Singular)
+            html += `concurre <strong>${toSafeString(denunciantePrincipal.nombres).toUpperCase()}</strong>, con ${renderDatosPersonales({
+                nombres: denunciantePrincipal.nombres,
+                cedula: denunciantePrincipal.numeroDocumento,
+                tipo_documento: denunciantePrincipal.tipoDocumento,
+                nacionalidad: denunciantePrincipal.nacionalidad,
+                estado_civil: denunciantePrincipal.estadoCivil,
+                edad: denunciantePrincipal.edad,
+                fecha_nacimiento: denunciantePrincipal.fechaNacimiento,
+                lugar_nacimiento: denunciantePrincipal.lugarNacimiento,
+                domicilio: denunciantePrincipal.domicilio,
+                profesion: denunciantePrincipal.profesion,
+                telefono: denunciantePrincipal.telefono
+            })}`;
+
+            html += `; con la asistencia técnica de <strong>${toSafeString(abogado.nombres).toUpperCase()}</strong>, en su carácter de <strong>ABOGADO ASISTENTE </strong>`;
+            if (abogado.matricula) html += `, matrícula N° <strong>${toSafeString(abogado.matricula)}</strong>`;
+            html += `, con ${renderDatosPersonales(abogado)}`;
+
+            html += `, y expone cuanto sigue:`;
+
+        } else if (totalComparecientes > 1) {
+            // CASO 2: Múltiples comparecientes
+            html += `concurren los ciudadanos: <strong>${toSafeString(denunciantePrincipal.nombres).toUpperCase()}</strong>, con ${renderDatosPersonales({
+                nombres: denunciantePrincipal.nombres,
+                cedula: denunciantePrincipal.numeroDocumento,
+                tipo_documento: denunciantePrincipal.tipoDocumento,
+                nacionalidad: denunciantePrincipal.nacionalidad,
+                estado_civil: denunciantePrincipal.estadoCivil,
+                edad: denunciantePrincipal.edad,
+                fecha_nacimiento: denunciantePrincipal.fechaNacimiento,
+                lugar_nacimiento: denunciantePrincipal.lugarNacimiento,
+                domicilio: denunciantePrincipal.domicilio,
+                profesion: denunciantePrincipal.profesion,
+                telefono: denunciantePrincipal.telefono
+            })}`;
+
+            coDenunciantes.forEach((cd: any) => {
+                html += `; asimismo <strong>${toSafeString(cd.nombres).toUpperCase()}</strong>, con ${renderDatosPersonales(cd)}`;
+            });
+
+            if (abogado) {
+                html += `; con la asistencia técnica de <strong>${toSafeString(abogado.nombres).toUpperCase()}</strong>, en su carácter de <strong>ABOGADO ASISTENTE </strong>`;
+                if (abogado.matricula) html += `, matrícula N° <strong>${toSafeString(abogado.matricula)}</strong>`;
+                html += `, con ${renderDatosPersonales(abogado)}`;
+            }
+
+            if (abogadoConCartaPoder) {
+                html += `; y <strong>${toSafeString(abogadoConCartaPoder.nombres).toUpperCase()}</strong>, en su carácter de <strong>REPRESENTANTE LEGAL</strong> de <strong>${toSafeString(denunciantePrincipal.nombres).toUpperCase()}</strong>`;
+                if (abogadoConCartaPoder.matricula) html += `, matrícula N° <strong>${toSafeString(abogadoConCartaPoder.matricula)}</strong>`;
+                html += `, con ${renderDatosPersonales(abogadoConCartaPoder)}`;
+
+                if (abogadoConCartaPoder.con_carta_poder) {
+                    html += `, conforme a <strong>CARTA PODER</strong>`;
+                    if (abogadoConCartaPoder.carta_poder_numero) html += ` N° ${abogadoConCartaPoder.carta_poder_numero}`;
+                    if (abogadoConCartaPoder.carta_poder_fecha) html += ` de fecha ${formatFecha(abogadoConCartaPoder.carta_poder_fecha)}`;
+                    if (abogadoConCartaPoder.carta_poder_notario) html += ` ante el Escribano ${abogadoConCartaPoder.carta_poder_notario.toUpperCase()}`;
+                }
+            }
+
+            html += `, quienes de común acuerdo exponen cuanto sigue:`;
+        } else {
+            // CASO 3: Simple
+            html += `concurre <strong>${toSafeString(denunciantePrincipal.nombres).toUpperCase()}</strong>, con ${renderDatosPersonales({
+                nombres: denunciantePrincipal.nombres,
+                cedula: denunciantePrincipal.numeroDocumento,
+                tipo_documento: denunciantePrincipal.tipoDocumento,
+                nacionalidad: denunciantePrincipal.nacionalidad,
+                estado_civil: denunciantePrincipal.estadoCivil,
+                edad: denunciantePrincipal.edad,
+                fecha_nacimiento: denunciantePrincipal.fechaNacimiento,
+                lugar_nacimiento: denunciantePrincipal.lugarNacimiento,
+                domicilio: denunciantePrincipal.domicilio,
+                profesion: denunciantePrincipal.profesion,
+                telefono: denunciantePrincipal.telefono
+            })}, y expone cuanto sigue:`;
         }
-      })
+
+        html += `</p>`;
+
+        // CASO: Segundo Párrafo (Hecho, Fecha y Lugar)
+        const tipoBase = toSafeString(denuncia.tipoDenuncia);
+        const capitulo = obtenerCapitulo(tipoBase);
+
+        let crimeType = '';
+        if (capitulo) {
+            crimeType = capitulo.toUpperCase();
+        } else {
+            crimeType = tipoBase.toUpperCase();
+        }
+
+        const formatDescripcionFisicaHtml = (descRaw: any): string => {
+            if (!descRaw) return '';
+            let desc: any;
+            try {
+                desc = typeof descRaw === 'string' ? JSON.parse(descRaw) : descRaw;
+            } catch (e) {
+                return String(descRaw);
+            }
+
+            if (typeof desc !== 'object') return String(desc);
+            const partes: string[] = [];
+            if (desc.sexo) partes.push(`Sexo: ${desc.sexo}`);
+            if (desc.altura) partes.push(`Altura: ${desc.altura}`);
+            if (desc.complexion) partes.push(`Complexión: ${desc.complexion}`);
+            if (desc.tonoPiel) partes.push(`Piel: ${desc.tonoPiel}`);
+            if (desc.colorCabello) partes.push(`Cabello: ${desc.colorCabello}`);
+            if (desc.colorOjos) partes.push(`Ojos: ${desc.colorOjos}`);
+            if (desc.otrosRasgos && Array.isArray(desc.otrosRasgos) && desc.otrosRasgos.length > 0) {
+                partes.push(`Otros rasgos: ${desc.otrosRasgos.join(', ')}`);
+            } else if (desc.otrosRasgos && typeof desc.otrosRasgos === 'string') {
+                partes.push(`Otros rasgos: ${desc.otrosRasgos}`);
+            }
+
+            if (desc.detallesAdicionales) {
+                partes.push(`Detalles adicionales: ${desc.detallesAdicionales}`);
+            }
+            return partes.join(', ');
+        };
+
+        const dateText = denuncia.usarRango && denuncia.fechaHechoFin
+            ? `entre la fecha <strong>${formatFecha(denuncia.fechaHecho)}</strong> siendo las <strong>${toSafeString(denuncia.horaHecho)}</strong> aproximadamente y la fecha <strong>${formatFecha(denuncia.fechaHechoFin)}</strong> siendo las <strong>${toSafeString(denuncia.horaHechoFin)}</strong> aproximadamente`
+            : `en fecha <strong>${formatFecha(denuncia.fechaHecho)}</strong> siendo las <strong>${toSafeString(denuncia.horaHecho)}</strong> aproximadamente`;
+
+        const locationText = denuncia.lugarHechoNoAplica
+            ? ''
+            : `en la dirección <strong>${toSafeString(denuncia.lugarHecho || '').toUpperCase()}</strong>`;
+
+        // Lógica de Autores para la Vista Previa
+        let authorText = '';
+        if (body.autor && body.autor.conocido === 'Conocido') {
+            const nombre = toSafeString(body.autor.nombre).toUpperCase();
+            const ci = body.autor.cedula ? `, con C.I. N° <strong>${body.autor.cedula}</strong>` : '';
+            const dom = body.autor.domicilio ? `, domiciliado en <strong>${body.autor.domicilio.toUpperCase()}</strong>` : '';
+            authorText = `, siendo sindicado como supuesto autor <strong>${nombre}</strong>${ci}${dom}`;
+        } else if (body.autor && body.autor.conocido === 'Desconocido') {
+            const desc = formatDescripcionFisicaHtml(body.descripcionFisica);
+            authorText = desc
+                ? `, siendo el supuesto autor una persona desconocida quien es descripta con los siguientes rasgos físicos: <strong>${desc}</strong>`
+                : `, siendo el supuesto autor una <strong>persona desconocida</strong>`;
+        }
+
+        const separator = locationText && authorText ? ', ' : '';
+        html += `<p class="text-justify mb-4">Que por la presente viene a realizar una denuncia sobre un supuesto <strong>${crimeType}</strong>, ocurrido ${dateText}${locationText ? ', ' + locationText : ''}${authorText}.</p>`;
+
+        // Agregar relato
+        if (denuncia.relato) {
+            html += `<p class="mb-2 text-justify">Según los acontecimientos que se mencionan a continuación:</p>`;
+            html += `<p class="mb-4 text-justify whitespace-pre-wrap italic">${denuncia.relato}</p>`;
+        }
+
+        // Mención de Adjuntos
+        const imagesCount = (denuncia.adjuntosUrls || []).filter((u: string) => /\.(jpg|jpeg|png|webp|gif)$/i.test(u)).length;
+        const pdfCount = (denuncia.adjuntosUrls || []).filter((u: string) => u.toLowerCase().endsWith('.pdf')).length;
+
+        if (imagesCount > 0 || pdfCount > 0) {
+            const parts = [];
+            if (imagesCount > 0) parts.push(`<strong>${imagesCount}</strong> imagen(es)`);
+            if (pdfCount > 0) parts.push(`<strong>${pdfCount}</strong> archivo(s) PDF`);
+            html += `<p class="mt-4 text-sm text-gray-600 border-t pt-2 italic">Se adjuntan a la presente acta: ${parts.join(' y ')}.</p>`;
+        }
+
+        // Agregar cierre
+        const isPlural = totalComparecientes > 1;
+        const firmaText = isPlural ? ' LOS DENUNCIANTES ' : ' EL DENUNCIANTE ';
+        const informeText = isPlural ? ' LAS PERSONAS RECURRENTES SON INFORMADAS ' : ' LA PERSONA RECURRENTE ES INFORMADA ';
+
+        html += `<p class="mt-4 text-justify">NO HABIENDO NADA MÁS QUE AGREGAR SE DA POR TERMINADA EL ACTA, PREVIA LECTURA Y RATIFICACIÓN DE SU CONTENIDO, FIRMANDO AL PIE${firmaText}Y EL INTERVINIENTE, EN 3 (TRES) COPIAS DEL MISMO TENOR Y EFECTO.${informeText}SOBRE: ARTÍCULO 289.- "DENUNCIA FALSA"; ARTÍCULO 242.- "TESTIMONIO FALSO"; ARTÍCULO 243.- "DECLARACIÓN FALSA".</p>`;
+
+        return NextResponse.json({ texto: html });
+
+    } catch (error) {
+        console.error('Error generando vista previa de texto:', error);
+        return NextResponse.json(
+            { error: 'Error generando vista previa' },
+            { status: 500 }
+        );
     }
-
-    const involucrados =
-      Array.isArray(data.denunciantes) && data.denunciantePrincipalId
-        ? data.denunciantes
-            .filter(
-              (item: any) =>
-                item &&
-                item.rol &&
-                item.id !== data.denunciantePrincipalId &&
-                item.datos
-            )
-            .map((item: any) => ({
-              rol: item.rol,
-              nombres: item.datos?.nombres || '',
-              tipoDocumento: item.datos?.tipoDocumento || null,
-              numeroDocumento: item.datos?.numeroDocumento || null,
-              telefono: item.datos?.telefono || null,
-              correo: item.datos?.correo || null,
-              profesion: item.datos?.profesion || null,
-              matricula: item.datos?.matricula || null,
-              nacionalidad: item.datos?.nacionalidad || null,
-              estadoCivil: item.datos?.estadoCivil || null,
-              edad: item.datos?.edad || null,
-              fechaNacimiento: item.datos?.fechaNacimiento || null,
-              lugarNacimiento: item.datos?.lugarNacimiento || null,
-              domicilio: item.datos?.domicilio || null,
-              representaA: item.representaA ? mapIdToNombre.get(String(item.representaA)) || null : null,
-              conCartaPoder: Boolean(item.conCartaPoder),
-              cartaPoderFecha: item.cartaPoderFecha || null,
-              cartaPoderNotario: item.cartaPoderNotario || null,
-            }))
-        : []
-
-    const { getFechaHoraParaguay } = await import('@/lib/utils/timezone')
-    const { fecha: fechaDenuncia, hora: horaDenuncia } = getFechaHoraParaguay()
-
-    const datosDenuncia: DatosDenuncia = {
-      fecha_denuncia: formatDate(data.denuncia.fechaDenuncia) || fechaDenuncia,
-      hora_denuncia: data.denuncia.horaDenuncia || horaDenuncia,
-      fecha_hecho: formatDate(data.denuncia.fechaHecho),
-      hora_hecho: data.denuncia.horaHecho,
-      fecha_hecho_fin: data.denuncia.fechaHechoFin ? formatDate(data.denuncia.fechaHechoFin) : null,
-      hora_hecho_fin: data.denuncia.horaHechoFin || null,
-      tipo_denuncia: data.denuncia.tipoDenuncia,
-      otro_tipo: data.denuncia.otroTipo,
-      lugar_hecho: data.denuncia.lugarHecho,
-      relato: data.denuncia.relato,
-      orden: 0, // Número temporal para vista previa (se mostrará como "#")
-      hash: 'XXXXX',
-      oficina: data.operador.oficina,
-      grado_operador: data.operador.grado,
-      nombre_operador: `${data.operador.nombre} ${data.operador.apellido}`,
-      tipo_papel: 'oficio',
-      latitud: data.denuncia.latitud,
-      longitud: data.denuncia.longitud,
-      monto_dano: data.denuncia.montoDano,
-      moneda: data.denuncia.moneda,
-      nombre_autor: data.autor.conocido === 'Conocido' ? data.autor.nombre : null,
-      cedula_autor: data.autor.conocido === 'Conocido' ? data.autor.cedula : null,
-      domicilio_autor: data.autor.conocido === 'Conocido' ? data.autor.domicilio : null,
-      nacionalidad_autor: data.autor.conocido === 'Conocido' ? data.autor.nacionalidad : null,
-      estado_civil_autor: data.autor.conocido === 'Conocido' ? data.autor.estadoCivil : null,
-      edad_autor: data.autor.conocido === 'Conocido' ? data.autor.edad : null,
-      fecha_nacimiento_autor: data.autor.conocido === 'Conocido' ? formatDate(data.autor.fechaNacimiento) : null,
-      lugar_nacimiento_autor: data.autor.conocido === 'Conocido' ? data.autor.lugarNacimiento : null,
-      telefono_autor: data.autor.conocido === 'Conocido' ? data.autor.telefono : null,
-      profesion_autor: data.autor.conocido === 'Conocido' ? data.autor.profesion : null,
-      descripcion_fisica: data.autor.conocido === 'Desconocido' && data.descripcionFisica 
-        ? (typeof data.descripcionFisica === 'string' 
-            ? data.descripcionFisica 
-            : JSON.stringify(data.descripcionFisica)) 
-        : null,
-      involucrados,
-    }
-
-    // Generar solo el texto del PDF
-    // Usar 0 para vista previa, que se mostrará como "#/AAAA"
-    const textoPDF = generarTextoPDF(0, denunciante, datosDenuncia)
-
-    return NextResponse.json({ texto: textoPDF })
-  } catch (error) {
-    console.error('Error generando texto de vista previa:', error)
-    return NextResponse.json(
-      { error: 'Error al generar la vista previa del texto' },
-      { status: 500 }
-    )
-  }
 }
-

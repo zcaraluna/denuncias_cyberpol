@@ -11,9 +11,19 @@ if (fs.existsSync(envPath)) {
   require('dotenv').config();
 }
 
+// Desactivar validación de certificados TLS
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+
+let connectionString = process.env.DATABASE_URL || '';
+// Limpiar sslmode=require de la cadena para que no interfiera con el driver de JS
+connectionString = connectionString.replace('sslmode=require', 'sslmode=disable');
+
+const isLocal = connectionString.includes('localhost') || connectionString.includes('127.0.0.1');
+const sslConfig = isLocal ? false : { rejectUnauthorized: false };
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  connectionString,
+  ssl: sslConfig,
 });
 
 async function generarCodigoActivacion(diasExpiracion = 30, nombre = null) {
@@ -37,7 +47,7 @@ async function generarCodigoActivacion(diasExpiracion = 30, nombre = null) {
 
     // Generar código aleatorio seguro (32 caracteres hexadecimales)
     const codigo = crypto.randomBytes(16).toString('hex').toUpperCase();
-    
+
     // Formatear código para mejor legibilidad al mostrarlo (ej: ABCD-1234-EFGH-5678-1234-5678-ABCD-EFGH)
     const codigoFormateado = codigo.match(/.{1,4}/g).join('-');
 

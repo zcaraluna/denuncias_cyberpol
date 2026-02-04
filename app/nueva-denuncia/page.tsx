@@ -149,10 +149,31 @@ const denunciaSchema = z.object({
   lugarHechoBarrio: z.string().optional(),
   lugarHechoCalles: z.string().optional(),
   lugarHechoNoAplica: z.boolean().optional(),
-  relato: z.string().min(10, 'El relato debe tener al menos 10 caracteres'),
+  relato: z.string().optional(),
   montoDano: z.string().optional(),
   moneda: z.string().optional(),
+  esDenunciaEscrita: z.boolean().optional(),
+  archivoDenunciaUrl: z.string().optional(),
 }).superRefine((data, ctx) => {
+  // Validar relato si NO es denuncia escrita
+  if (!data.esDenunciaEscrita) {
+    if (!data.relato || data.relato.length < 10) {
+      ctx.addIssue({
+        path: ['relato'],
+        code: z.ZodIssueCode.custom,
+        message: 'El relato debe tener al menos 10 caracteres',
+      })
+    }
+  } else {
+    // Si ES denuncia escrita, validar que haya archivo
+    if (!data.archivoDenunciaUrl) {
+      ctx.addIssue({
+        path: ['archivoDenunciaUrl'],
+        code: z.ZodIssueCode.custom,
+        message: 'Debe subir el archivo de la denuncia escrita',
+      })
+    }
+  }
   // Si se usa rango, validar que fecha y hora de fin estén presentes
   if (data.usarRango) {
     if (!data.fechaHechoFin || data.fechaHechoFin.trim() === '') {
@@ -172,17 +193,11 @@ const denunciaSchema = z.object({
   }
   // Validar lugar del hecho solo si "No aplica" no está marcado
   if (!data.lugarHechoNoAplica) {
-    if (!data.lugarHecho || data.lugarHecho.trim() === '') {
-      ctx.addIssue({
-        path: ['lugarHecho'],
-        code: z.ZodIssueCode.custom,
-        message: 'Este campo es obligatorio',
-      })
-    }
     if (!data.lugarHechoDepartamento || data.lugarHechoDepartamento.trim() === '') {
       ctx.addIssue({
         path: ['lugarHechoDepartamento'],
         code: z.ZodIssueCode.custom,
+
         message: 'Seleccione un departamento',
       })
     }
@@ -340,6 +355,14 @@ export default function NuevaDenunciaPage() {
   const [guardandoBorrador, setGuardandoBorrador] = useState(false)
   const [borradorId, setBorradorId] = useState<number | null>(null)
   const [mostrarModalBorrador, setMostrarModalBorrador] = useState(false)
+
+  // Estados para modal de error (No bloqueante)
+  const [mostrarModalError, setMostrarModalError] = useState(false)
+  const [mensajeError, setMensajeError] = useState('')
+  const [mensajeErrorTitulo, setMensajeErrorTitulo] = useState('Error')
+  const [subiendoArchivo, setSubiendoArchivo] = useState(false)
+  const [adjuntosUrls, setAdjuntosUrls] = useState<string[]>([])
+  const [subiendoAdjunto, setSubiendoAdjunto] = useState(false)
   const [descripcionFisica, setDescripcionFisica] = useState<{
     altura?: string
     complexion?: string
@@ -1125,8 +1148,27 @@ export default function NuevaDenunciaPage() {
     watch: watchDenuncia,
     control: controlDenuncia,
     setValue: setValueDenuncia,
+    trigger: triggerDenuncia,
   } = useForm<z.infer<typeof denunciaSchema>>({
     resolver: zodResolver(denunciaSchema),
+    defaultValues: {
+      fechaHecho: '',
+      horaHecho: '',
+      usarRango: false,
+      fechaHechoFin: '',
+      horaHechoFin: '',
+      tipoDenuncia: '',
+      otroTipo: '',
+      lugarHecho: '',
+      lugarHechoDepartamento: '',
+      lugarHechoCiudad: '',
+      lugarHechoBarrio: '',
+      lugarHechoCalles: '',
+      lugarHechoNoAplica: false,
+      relato: '',
+      montoDano: '',
+      moneda: '',
+    }
   })
 
   const tipoDenuncia = watchDenuncia('tipoDenuncia')
@@ -1629,6 +1671,9 @@ export default function NuevaDenunciaPage() {
         if (data.latitud && data.longitud) {
           setCoordenadas({ lat: parseFloat(data.latitud), lng: parseFloat(data.longitud) })
         }
+        if (data.adjuntos_urls) {
+          setAdjuntosUrls(data.adjuntos_urls)
+        }
       }
 
       // Cargar datos del autor
@@ -1858,6 +1903,10 @@ export default function NuevaDenunciaPage() {
           moneda: denunciaData.moneda || null,
           latitud: coordenadas?.lat || null,
           longitud: coordenadas?.lng || null,
+          esDenunciaEscrita: denunciaData.esDenunciaEscrita || false,
+          archivoDenunciaUrl: denunciaData.archivoDenunciaUrl || null,
+          adjuntosUrls: adjuntosUrls || [],
+          lugarHechoNoAplica: denunciaData.lugarHechoNoAplica || false,
         },
         autor: {
           conocido: autorConocido,
@@ -1916,114 +1965,162 @@ export default function NuevaDenunciaPage() {
     if (!usuario) return
 
     if (denunciantes.length === 0) {
-      alert('Debes agregar al menos un denunciante antes de completar la denuncia.')
+      setMensajeErrorTitulo('Faltan Denunciantes')
+      setMensajeError('Debes agregar al menos un denunciante antes de completar la denuncia.')
+      setMostrarModalError(true)
       setPaso(1)
       return
     }
 
     const denunciantePrincipal = obtenerDenunciantePrincipal()
     if (!denunciantePrincipal) {
-      alert('Debes registrar un denunciante principal antes de completar la denuncia.')
+      setMensajeErrorTitulo('Falta Denunciante Principal')
+      setMensajeError('Debes registrar un denunciante principal antes de completar la denuncia.')
+      setMostrarModalError(true)
       setPaso(1)
       return
     }
 
-    setGenerandoVistaPrevia(true)
+    await handleSubmitDenuncia(
+      async (data) => {
+        setGenerandoVistaPrevia(true)
 
-    try {
-      const autorData = watchAutor()
-      const denunciaData = watchDenuncia()
+        try {
+          // Se usa watchAutor porque el form de Autor es separado.
+          // data contiene los datos del form 'denuncia' (fecha, lugar, relato, etc),
+          // que es lo mismo que watchDenuncia() devolvería, pero usamos los valores ya validados.
+          // OJO: data NO incluye autorData ni denunciantes porque son estados/forms separados.
+          // Sin embargo, `watchDenuncia()` se usaba para construir el payload.
+          // data es lo que viene del form 'denuncia'.
+          // Podemos seguir usando watchDenuncia() para consistencia con el código original,
+          // o usar 'data' directamente para los campos de la denuncia.
+          // Originalmente usaba watchDenuncia(), vamos a mantenerlo para minimizar riesgos,
+          // aunque 'data' es más seguro. Pero el código original usaba watchDenuncia().
+          // Nota: handleSubmit ya validó que data es correcto.
 
-      let fechaHecho = denunciaData.fechaHecho || ''
-      if (fechaHecho.includes('/')) {
-        const [dia, mes, año] = fechaHecho.split('/')
-        fechaHecho = `${año}-${mes}-${dia}`
+          const autorData = watchAutor()
+          const denunciaData = watchDenuncia()
+
+          let fechaHecho = denunciaData.fechaHecho || ''
+          if (fechaHecho.includes('/')) {
+            const [dia, mes, año] = fechaHecho.split('/')
+            fechaHecho = `${año}-${mes}-${dia}`
+          }
+
+          const denunciantePayload = construirDenunciantePayload(denunciantePrincipal)
+          const coleccionDenunciantes = construirColeccionDenunciantesPayload(denunciantes)
+
+          // Usar la fecha/hora capturada al inicio, no la actual
+          if (!fechaHoraInicioDenuncia) {
+            alert('Error: No se pudo determinar la hora de inicio de la denuncia. Por favor, recarga la página.')
+            setLoading(false)
+            return
+          }
+          const fechaDenuncia = fechaHoraInicioDenuncia.fecha.split('/').reverse().join('-')
+          const horaDenuncia = fechaHoraInicioDenuncia.hora
+
+          const payload = {
+            borradorId: borradorId || null,
+            denunciante: denunciantePayload,
+            denunciantes: coleccionDenunciantes,
+            denunciantePrincipalId: denunciantePrincipal.id,
+            denunciantesAdicionales: coleccionDenunciantes.filter(
+              (denunciante) => denunciante.id !== denunciantePrincipal.id
+            ),
+            denuncia: {
+              fechaDenuncia: fechaDenuncia,
+              horaDenuncia: horaDenuncia,
+              fechaHecho: fechaHecho,
+              horaHecho: denunciaData.horaHecho,
+              usarRango: denunciaData.usarRango || false,
+              fechaHechoFin: denunciaData.fechaHechoFin || null,
+              horaHechoFin: denunciaData.horaHechoFin || null,
+              tipoDenuncia: denunciaData.tipoDenuncia === 'Otro (Especificar)' ? 'OTRO' : denunciaData.tipoDenuncia,
+              otroTipo: denunciaData.tipoDenuncia === 'Otro (Especificar)' ? denunciaData.otroTipo?.toUpperCase() : null,
+              lugarHecho: lugarHechoNoAplica ? '' : (construirDomicilio(denunciaData.lugarHechoDepartamento, denunciaData.lugarHechoCiudad, denunciaData.lugarHechoBarrio, denunciaData.lugarHechoCalles)?.toUpperCase() || denunciaData.lugarHecho?.toUpperCase() || ''),
+              relato: denunciaData.relato || '',
+              montoDano: denunciaData.montoDano ? parseInt(denunciaData.montoDano.replace(/\./g, '')) : null,
+              moneda: denunciaData.moneda || null,
+              latitud: coordenadas?.lat || null,
+              longitud: coordenadas?.lng || null,
+              esDenunciaEscrita: denunciaData.esDenunciaEscrita || false,
+              archivoDenunciaUrl: denunciaData.archivoDenunciaUrl || null,
+              adjuntosUrls: adjuntosUrls || [],
+              lugarHechoNoAplica: denunciaData.lugarHechoNoAplica || false,
+            },
+            autor: {
+              conocido: autorConocido,
+              ...(autorConocido === 'Conocido' && {
+                nombre: autorData.nombre?.toUpperCase() || null,
+                cedula: autorData.cedula?.toUpperCase() || null,
+                domicilio: construirDomicilio(autorData.departamento, autorData.ciudad, autorData.barrio, autorData.calles) || null,
+                nacionalidad: autorData.nacionalidad?.toUpperCase() || null,
+                estadoCivil: autorData.estadoCivil?.toUpperCase() || null,
+                edad: autorData.edad || null,
+                fechaNacimiento: autorData.fechaNacimiento || null,
+                lugarNacimiento: autorData.lugarNacimiento?.toUpperCase() || null,
+                telefono: autorData.telefono?.toUpperCase() || null,
+                profesion: autorData.profesion?.toUpperCase() || null,
+              }),
+            },
+            descripcionFisica: autorConocido === 'Desconocido'
+              ? (Object.keys(descripcionFisica).length > 0 ? JSON.stringify(descripcionFisica) : null)
+              : autorConocido === 'No aplica'
+                ? null
+                : null,
+            operador: {
+              nombre: usuario.nombre,
+              apellido: usuario.apellido,
+              grado: usuario.grado,
+              oficina: usuario.oficina,
+            },
+          }
+
+          const response = await fetch('/api/denuncias/preview-texto', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          })
+
+          if (!response.ok) {
+            throw new Error('Error al generar la vista previa')
+          }
+
+          const result = await response.json()
+          setTextoVistaPrevia(result.texto)
+          setMostrarModalVistaPrevia(true)
+        } catch (error) {
+          console.error('Error:', error)
+          alert('Error al generar la vista previa. Por favor, intente nuevamente.')
+        } finally {
+          setGenerandoVistaPrevia(false)
+        }
+      },
+      (errors) => {
+        // Mapeo de nombres de campos a etiquetas legibles
+        const etiquetasCampos: Record<string, string> = {
+          fechaHecho: 'Fecha del Hecho',
+          horaHecho: 'Hora del Hecho',
+          tipoDenuncia: 'Tipo de Denuncia',
+          lugarHechoDepartamento: 'Departamento',
+          lugarHechoCiudad: 'Ciudad',
+          lugarHechoBarrio: 'Barrio',
+          lugarHechoCalles: 'Calles',
+          relato: 'Relato del Hecho',
+          otroTipo: 'Especificar Otro Tipo',
+          fechaHechoFin: 'Fecha de Fin',
+          horaHechoFin: 'Hora de Fin'
+        }
+
+        const camposFaltantes = Object.keys(errors)
+          .map(key => etiquetasCampos[key] || key)
+          .join(', ')
+
+        setMensajeErrorTitulo('Campos Obligatorios')
+        setMensajeError(`Por favor, complete los siguientes campos obligatorios antes de continuar:\n\n${camposFaltantes}`)
+        setMostrarModalError(true)
       }
-
-      const denunciantePayload = construirDenunciantePayload(denunciantePrincipal)
-      const coleccionDenunciantes = construirColeccionDenunciantesPayload(denunciantes)
-
-      // Usar la fecha/hora capturada al inicio, no la actual
-      if (!fechaHoraInicioDenuncia) {
-        alert('Error: No se pudo determinar la hora de inicio de la denuncia. Por favor, recarga la página.')
-        setLoading(false)
-        return
-      }
-      const fechaDenuncia = fechaHoraInicioDenuncia.fecha.split('/').reverse().join('-')
-      const horaDenuncia = fechaHoraInicioDenuncia.hora
-
-      const payload = {
-        borradorId: borradorId || null,
-        denunciante: denunciantePayload,
-        denunciantes: coleccionDenunciantes,
-        denunciantePrincipalId: denunciantePrincipal.id,
-        denunciantesAdicionales: coleccionDenunciantes.filter(
-          (denunciante) => denunciante.id !== denunciantePrincipal.id
-        ),
-        denuncia: {
-          fechaDenuncia: fechaDenuncia,
-          horaDenuncia: horaDenuncia,
-          fechaHecho: fechaHecho,
-          horaHecho: denunciaData.horaHecho,
-          usarRango: denunciaData.usarRango || false,
-          fechaHechoFin: denunciaData.fechaHechoFin || null,
-          horaHechoFin: denunciaData.horaHechoFin || null,
-          tipoDenuncia: denunciaData.tipoDenuncia === 'Otro (Especificar)' ? 'OTRO' : denunciaData.tipoDenuncia,
-          otroTipo: denunciaData.tipoDenuncia === 'Otro (Especificar)' ? denunciaData.otroTipo?.toUpperCase() : null,
-          lugarHecho: lugarHechoNoAplica ? '' : (construirDomicilio(denunciaData.lugarHechoDepartamento, denunciaData.lugarHechoCiudad, denunciaData.lugarHechoBarrio, denunciaData.lugarHechoCalles)?.toUpperCase() || denunciaData.lugarHecho?.toUpperCase() || ''),
-          relato: denunciaData.relato || '',
-          montoDano: denunciaData.montoDano ? parseInt(denunciaData.montoDano.replace(/\./g, '')) : null,
-          moneda: denunciaData.moneda || null,
-          latitud: coordenadas?.lat || null,
-          longitud: coordenadas?.lng || null,
-        },
-        autor: {
-          conocido: autorConocido,
-          ...(autorConocido === 'Conocido' && {
-            nombre: autorData.nombre?.toUpperCase() || null,
-            cedula: autorData.cedula?.toUpperCase() || null,
-            domicilio: construirDomicilio(autorData.departamento, autorData.ciudad, autorData.barrio, autorData.calles) || null,
-            nacionalidad: autorData.nacionalidad?.toUpperCase() || null,
-            estadoCivil: autorData.estadoCivil?.toUpperCase() || null,
-            edad: autorData.edad || null,
-            fechaNacimiento: autorData.fechaNacimiento || null,
-            lugarNacimiento: autorData.lugarNacimiento?.toUpperCase() || null,
-            telefono: autorData.telefono?.toUpperCase() || null,
-            profesion: autorData.profesion?.toUpperCase() || null,
-          }),
-        },
-        descripcionFisica: autorConocido === 'Desconocido'
-          ? (Object.keys(descripcionFisica).length > 0 ? JSON.stringify(descripcionFisica) : null)
-          : autorConocido === 'No aplica'
-            ? null
-            : null,
-        operador: {
-          nombre: usuario.nombre,
-          apellido: usuario.apellido,
-          grado: usuario.grado,
-          oficina: usuario.oficina,
-        },
-      }
-
-      const response = await fetch('/api/denuncias/preview-texto', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
-
-      if (!response.ok) {
-        throw new Error('Error al generar la vista previa')
-      }
-
-      const result = await response.json()
-      setTextoVistaPrevia(result.texto)
-      setMostrarModalVistaPrevia(true)
-    } catch (error) {
-      console.error('Error:', error)
-      alert('Error al generar la vista previa. Por favor, intente nuevamente.')
-    } finally {
-      setGenerandoVistaPrevia(false)
-    }
+    )()
   }
 
   const onDenunciaPrueba = async (data: any) => {
@@ -2089,6 +2186,10 @@ export default function NuevaDenunciaPage() {
           moneda: denunciaData.moneda || null,
           latitud: coordenadas?.lat || null,
           longitud: coordenadas?.lng || null,
+          esDenunciaEscrita: denunciaData.esDenunciaEscrita || false,
+          archivoDenunciaUrl: denunciaData.archivoDenunciaUrl || null,
+          adjuntosUrls: adjuntosUrls || [],
+          lugarHechoNoAplica: denunciaData.lugarHechoNoAplica || false,
         },
         autor: {
           conocido: autorConocido,
@@ -2217,6 +2318,10 @@ export default function NuevaDenunciaPage() {
           moneda: denunciaData.moneda || null,
           latitud: coordenadas?.lat || null,
           longitud: coordenadas?.lng || null,
+          esDenunciaEscrita: denunciaData.esDenunciaEscrita || false,
+          archivoDenunciaUrl: denunciaData.archivoDenunciaUrl || null,
+          adjuntosUrls: adjuntosUrls || [],
+          lugarHechoNoAplica: denunciaData.lugarHechoNoAplica || false,
         },
         autor: {
           conocido: autorConocido,
@@ -2342,6 +2447,10 @@ export default function NuevaDenunciaPage() {
           moneda: denunciaData.moneda || null,
           latitud: coordenadas?.lat || null,
           longitud: coordenadas?.lng || null,
+          esDenunciaEscrita: denunciaData.esDenunciaEscrita || false,
+          archivoDenunciaUrl: denunciaData.archivoDenunciaUrl || null,
+          adjuntosUrls: adjuntosUrls || [],
+          lugarHechoNoAplica: denunciaData.lugarHechoNoAplica || false,
         },
         autor: {
           conocido: autorConocido,
@@ -4285,9 +4394,14 @@ export default function NuevaDenunciaPage() {
                     <label className="flex items-center ml-4 cursor-pointer">
                       <input
                         type="checkbox"
+                        {...registerDenuncia('lugarHechoNoAplica')}
                         checked={lugarHechoNoAplica}
                         onChange={(e) => {
+                          registerDenuncia('lugarHechoNoAplica').onChange(e)
                           setLugarHechoNoAplica(e.target.checked)
+                          // value is updated by register, but we also want custom logic
+                          setValueDenuncia('lugarHechoNoAplica', e.target.checked)
+
                           if (e.target.checked) {
                             setValueDenuncia('lugarHechoDepartamento', '')
                             setValueDenuncia('lugarHechoCiudad', '')
@@ -4565,56 +4679,344 @@ export default function NuevaDenunciaPage() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Relato del Hecho *
-                </label>
-                <textarea
-                  {...registerDenuncia('relato')}
-                  rows={10}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Escriba el relato del hecho..."
-                />
-                {errorsDenuncia.relato && (
-                  <p className="text-red-600 text-sm mt-1">{errorsDenuncia.relato.message as string}</p>
+              {/* Campos Estadísticos (Opcional) */}
+              <div className="bg-blue-50/50 p-6 rounded-xl border border-blue-100 mb-6 font-sans">
+                <div className="flex items-center gap-2 mb-4 text-blue-800">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                  <h3 className="font-bold text-sm uppercase tracking-wider">Información Estadística (Opcional)</h3>
+                </div>
+
+                <p className="text-xs text-blue-600 mb-4 bg-white/60 p-3 rounded-lg border border-blue-100/50 leading-relaxed shadow-sm">
+                  El siguiente campo se solicita <strong>únicamente con fines estadísticos</strong> para ayudar a cuantificar el impacto de los hechos punibles denunciados en esta Dirección. Esta información <strong>no se incluirá en el acta formal de la denuncia</strong>.
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div className="space-y-1.5">
+                    <label className="block text-sm font-semibold text-gray-700">
+                      Monto de daño patrimonial
+                    </label>
+                    <div className="relative group">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 group-focus-within:text-blue-500 transition-colors">
+                        <span className="text-sm font-medium">₲/$</span>
+                      </div>
+                      <input
+                        {...registerDenuncia('montoDano')}
+                        placeholder="0"
+                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white hover:border-gray-400"
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/\./g, '')
+                          if (/^\d*$/.test(value)) {
+                            e.target.value = value ? parseInt(value).toLocaleString('es-PY').replace(/,/g, '.') : ''
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="block text-sm font-semibold text-gray-700">
+                      Moneda
+                    </label>
+                    <select
+                      {...registerDenuncia('moneda')}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white hover:border-gray-400 cursor-pointer appearance-none"
+                      style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center', backgroundSize: '1.25rem' }}
+                    >
+                      <option value="">Seleccione moneda...</option>
+                      <option value="Guaraníes (PYG)">Guaraníes (PYG)</option>
+                      <option value="Dólares (USD)">Dólares (USD)</option>
+                      <option value="Euros (EUR)">Euros (EUR)</option>
+                      <option value="Pesos Argentinos (ARS)">Pesos Argentinos (ARS)</option>
+                      <option value="Reales (BRL)">Reales (BRL)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4 border-t pt-4 mt-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-800">Relato de los Hechos</h3>
+                  <div className="flex items-center bg-gray-100 p-1 rounded-lg">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setValueDenuncia('esDenunciaEscrita', false)
+                        setValueDenuncia('archivoDenunciaUrl', '') // Limpiar al cambiar
+                      }}
+                      className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${!watchDenuncia('esDenunciaEscrita') ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-800'}`}
+                    >
+                      Relato Verbal
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setValueDenuncia('esDenunciaEscrita', true)
+                        setValueDenuncia('relato', '') // Limpiar al cambiar
+                      }}
+                      className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${watchDenuncia('esDenunciaEscrita') ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-800'}`}
+                    >
+                      Denuncia Escrita
+                    </button>
+                  </div>
+                </div>
+
+                {!watchDenuncia('esDenunciaEscrita') ? (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Relato del Hecho *
+                    </label>
+                    <textarea
+                      {...registerDenuncia('relato')}
+                      rows={10}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Escriba el relato del hecho..."
+                    />
+                    {errorsDenuncia.relato && (
+                      <p className="text-red-600 text-sm mt-1">{errorsDenuncia.relato.message as string}</p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                    <div className="mb-4">
+                      <h4 className="text-base font-semibold text-blue-900 mb-1">Adjuntar Denuncia Escrita</h4>
+                      <p className="text-sm text-blue-700">
+                        Suba el documento escaneado de la denuncia escrita. El formato debe ser PDF y no superar los 25MB.
+                      </p>
+                    </div>
+
+                    <div className="mt-2">
+                      {watchDenuncia('archivoDenunciaUrl') ? (
+                        <div className="flex items-center justify-between bg-white p-3 rounded-lg border border-blue-200">
+                          <div className="flex items-center overflow-hidden">
+                            <svg className="w-8 h-8 text-red-500 mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                            </svg>
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium text-gray-900 truncate">Documento Adjunto</p>
+                              <a href={watchDenuncia('archivoDenunciaUrl') || '#'} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline truncate block">
+                                Ver documento
+                              </a>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setValueDenuncia('archivoDenunciaUrl', '')}
+                            className="ml-4 text-gray-400 hover:text-red-500"
+                          >
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex justify-center px-6 pt-5 pb-6 border-2 border-blue-300 border-dashed rounded-md bg-white hover:bg-blue-50 transition-colors relative">
+                          <div className="space-y-1 text-center">
+                            <svg
+                              className="mx-auto h-12 w-12 text-blue-400"
+                              stroke="currentColor"
+                              fill="none"
+                              viewBox="0 0 48 48"
+                              aria-hidden="true"
+                            >
+                              <path
+                                d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                                strokeWidth={2}
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                            </svg>
+                            <div className="flex text-sm text-gray-600 justify-center">
+                              <label
+                                htmlFor="file-upload"
+                                className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"
+                              >
+                                <span>Subir un archivo</span>
+                                <input
+                                  id="file-upload"
+                                  name="file-upload"
+                                  type="file"
+                                  accept="application/pdf"
+                                  className="sr-only"
+                                  disabled={subiendoArchivo}
+                                  onChange={async (e) => {
+                                    const file = e.target.files?.[0]
+                                    if (!file) return
+
+                                    if (file.type !== 'application/pdf') {
+                                      setMensajeErrorTitulo('Formato incorrecto')
+                                      setMensajeError('Solo se permiten archivos PDF.')
+                                      setMostrarModalError(true)
+                                      return
+                                    }
+
+                                    if (file.size > 25 * 1024 * 1024) {
+                                      setMensajeErrorTitulo('Archivo demasiado grande')
+                                      setMensajeError('El archivo no debe superar los 25MB.')
+                                      setMostrarModalError(true)
+                                      return
+                                    }
+
+                                    setSubiendoArchivo(true)
+                                    try {
+                                      const response = await fetch(`/api/upload/denuncia-escrita?filename=${encodeURIComponent(file.name)}`, {
+                                        method: 'POST',
+                                        body: file,
+                                      })
+
+                                      if (!response.ok) throw new Error('Error al subir archivo')
+
+                                      const blob = await response.json()
+                                      setValueDenuncia('archivoDenunciaUrl', blob.url)
+                                    } catch (error) {
+                                      console.error('Error uploading file:', error)
+                                      setMensajeErrorTitulo('Error de subida')
+                                      setMensajeError('Hubo un error al subir el archivo. Intente nuevamente.')
+                                      setMostrarModalError(true)
+                                    } finally {
+                                      setSubiendoArchivo(false)
+                                    }
+                                  }}
+                                />
+                              </label>
+                              <p className="pl-1">o arrastrar y soltar</p>
+                            </div>
+                            <p className="text-xs text-gray-500">
+                              PDF hasta 25MB
+                            </p>
+                          </div>
+                          {subiendoArchivo && (
+                            <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
+                              <div className="flex items-center">
+                                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <span className="text-sm font-medium text-blue-600">Subiendo...</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {errorsDenuncia.archivoDenunciaUrl && (
+                        <p className="text-red-600 text-sm mt-1">{errorsDenuncia.archivoDenunciaUrl.message as string}</p>
+                      )}
+                    </div>
+                  </div>
                 )}
               </div>
 
-              {/* Campos ocultos: Monto estimado de daño patrimonial y Moneda */}
-              <div className="hidden grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Monto estimado de daño patrimonial
-                  </label>
-                  <input
-                    {...registerDenuncia('montoDano')}
-                    placeholder="0"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    onChange={(e) => {
-                      const value = e.target.value.replace(/\./g, '')
-                      if (/^\d*$/.test(value)) {
-                        e.target.value = parseInt(value) ? parseInt(value).toLocaleString('es-PY').replace(/,/g, '.') : ''
-                      }
-                    }}
-                  />
+              {/* Sección de Adjuntos Opcionales (Imágenes/PDFs) */}
+              <div className="mt-6 border-t pt-6">
+                <div className="mb-4">
+                  <h4 className="text-base font-semibold text-gray-800 mb-1">Adjuntos Opcionales</h4>
+                  <p className="text-sm text-gray-600">
+                    Puede adjuntar imágenes (JPG, PNG) o archivos PDF adicionales que desee incluir en la denuncia.
+                  </p>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Moneda
-                  </label>
-                  <select
-                    {...registerDenuncia('moneda')}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="">Seleccione...</option>
-                    <option value="Guaraníes (PYG)">Guaraníes (PYG)</option>
-                    <option value="Dólares (USD)">Dólares (USD)</option>
-                    <option value="Euros (EUR)">Euros (EUR)</option>
-                    <option value="Pesos Argentinos (ARS)">Pesos Argentinos (ARS)</option>
-                    <option value="Reales (BRL)">Reales (BRL)</option>
-                  </select>
+
+                <div className="space-y-4">
+                  {/* Lista de adjuntos subidos */}
+                  {adjuntosUrls.length > 0 && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                      {adjuntosUrls.map((url, index) => (
+                        <div key={index} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border border-gray-200">
+                          <div className="flex items-center overflow-hidden">
+                            {url.match(/\.(jpg|jpeg|png|webp|gif)$/i) ? (
+                              <svg className="w-8 h-8 text-blue-500 mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                            ) : (
+                              <svg className="w-8 h-8 text-red-500 mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                              </svg>
+                            )}
+                            <div className="min-w-0">
+                              <p className="text-xs font-medium text-gray-900 truncate">Adjunto {index + 1}</p>
+                              <a href={url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline truncate block">
+                                Ver archivo
+                              </a>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setAdjuntosUrls(adjuntosUrls.filter((_, i) => i !== index))}
+                            className="ml-4 text-gray-400 hover:text-red-500"
+                          >
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Botón de subida */}
+                  <div className="flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md bg-white hover:bg-gray-50 transition-colors relative">
+                    <div className="space-y-1 text-center">
+                      <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                        <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                      <div className="flex text-sm text-gray-600 justify-center">
+                        <label className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                          <span>Subir archivos adicionales</span>
+                          <input
+                            type="file"
+                            multiple
+                            accept="image/*,application/pdf"
+                            className="sr-only"
+                            disabled={subiendoAdjunto}
+                            onChange={async (e) => {
+                              const files = e.target.files
+                              if (!files || files.length === 0) return
+
+                              setSubiendoAdjunto(true)
+                              try {
+                                const nuevasUrls = [...adjuntosUrls]
+                                for (let i = 0; i < files.length; i++) {
+                                  const file = files[i]
+                                  const response = await fetch(`/api/upload/adjuntos?filename=${encodeURIComponent(file.name)}`, {
+                                    method: 'POST',
+                                    body: file,
+                                  })
+                                  if (response.ok) {
+                                    const blob = await response.json()
+                                    nuevasUrls.push(blob.url)
+                                  }
+                                }
+                                setAdjuntosUrls(nuevasUrls)
+                              } catch (error) {
+                                console.error('Error uploading files:', error)
+                                alert('Hubo un error al subir uno o más archivos.')
+                              } finally {
+                                setSubiendoAdjunto(false)
+                                // Reset input
+                                e.target.value = ''
+                              }
+                            }}
+                          />
+                        </label>
+                      </div>
+                      <p className="text-xs text-gray-500">Imágenes o PDF hasta 25MB cada uno</p>
+                    </div>
+                    {subiendoAdjunto && (
+                      <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
+                        <div className="flex items-center">
+                          <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          <span className="text-sm font-medium text-blue-600">Subiendo...</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
+
+
+
 
               <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                 <p className="text-sm text-yellow-800 font-medium">
@@ -4655,11 +5057,11 @@ export default function NuevaDenunciaPage() {
                 </button> */}
                 <button
                   type="button"
-                  onClick={usuario?.usuario === 'garv' ? () => onDenunciaPrueba(watchDenuncia()) : generarVistaPrevia}
+                  onClick={generarVistaPrevia}
                   disabled={generandoVistaPrevia || guardandoBorrador || loading}
                   className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {loading ? 'Generando...' : usuario?.usuario === 'garv' ? 'PRUEBA' : (generandoVistaPrevia ? 'Generando vista previa...' : 'Finalizar')}
+                  {loading ? 'Generando...' : (generandoVistaPrevia ? 'Generando vista previa...' : 'Finalizar')}
                 </button>
               </div>
             </div>
@@ -4698,6 +5100,37 @@ export default function NuevaDenunciaPage() {
                 className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-medium"
               >
                 Ir al Inicio
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Error (No Bloqueante) */}
+      {mostrarModalError && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 animate-fadeIn p-4">
+          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4 border-l-4 border-red-500 transform transition-all scale-100">
+            <div className="flex items-start mb-4">
+              <div className="flex-shrink-0">
+                <svg className="h-6 w-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div className="ml-3 w-full">
+                <h3 className="text-lg font-medium text-gray-900 leading-6">
+                  {mensajeErrorTitulo}
+                </h3>
+                <div className="mt-2 text-sm text-gray-600 whitespace-pre-wrap">
+                  {mensajeError}
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end pt-3">
+              <button
+                onClick={() => setMostrarModalError(false)}
+                className="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 shadow-sm transition-colors duration-200"
+              >
+                Entendido
               </button>
             </div>
           </div>
