@@ -4,6 +4,16 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState, useMemo } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/lib/hooks/useAuth'
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Cell
+} from 'recharts'
 
 interface ReporteRow {
   numero_denuncia: number
@@ -35,6 +45,7 @@ interface Recurrente {
 interface DatosMensuales {
   resumen_especifico: ResumenTipo[]
   resumen_general: ResumenTipo[]
+  evolucion_diaria: { fecha: string; dia: number; total: number }[]
   denunciantes_recurrentes: Recurrente[]
 }
 
@@ -534,6 +545,81 @@ export default function ReportesPage() {
         {/* Resultados Mensual */}
         {activeTab === 'mensual' && datosMensuales && (
           <div className="space-y-6">
+            {/* Gráfico de Evolución Diaria */}
+            <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+                <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+                  </svg>
+                  Evolución Diaria de Denuncias
+                </h3>
+              </div>
+              <div className="p-6">
+                <div className="h-[300px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={datosMensuales.evolucion_diaria}
+                      margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                      <XAxis
+                        dataKey="dia"
+                        fontSize={12}
+                        tickLine={false}
+                        axisLine={false}
+                        tick={{ fill: '#6b7280' }}
+                      />
+                      <YAxis
+                        fontSize={12}
+                        tickLine={false}
+                        axisLine={false}
+                        tick={{ fill: '#6b7280' }}
+                        allowDecimals={false}
+                      />
+                      <Tooltip
+                        cursor={{ fill: '#f3f4f6' }}
+                        content={({ active, payload }) => {
+                          if (active && payload && payload.length) {
+                            return (
+                              <div className="bg-white p-3 border border-gray-200 shadow-xl rounded-lg">
+                                <p className="text-xs text-gray-500 font-medium">Día {payload[0].payload.dia}</p>
+                                <p className="text-sm font-bold text-blue-600">{payload[0].value} denuncia(s)</p>
+                              </div>
+                            );
+                          }
+                          return null;
+                        }}
+                      />
+                      <Bar
+                        dataKey="total"
+                        radius={[4, 4, 0, 0]}
+                        onMouseOver={(data, index) => { }}
+                      >
+                        {datosMensuales.evolucion_diaria.map((entry, index) => (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={entry.total > 0 ? '#2563eb' : '#e5e7eb'}
+                            className="transition-all duration-300"
+                          />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="mt-4 flex justify-center gap-6">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-blue-600 rounded-sm"></div>
+                    <span className="text-xs text-gray-600 font-medium">Con Denuncias</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-gray-200 rounded-sm"></div>
+                    <span className="text-xs text-gray-600 font-medium">Sin Actividad</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Resumen por Tipos */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
