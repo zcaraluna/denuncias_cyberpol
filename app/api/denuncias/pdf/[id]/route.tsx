@@ -198,7 +198,7 @@ export async function GET(
                 grado: String(operadorActual.grado)
             } : undefined,
             usuario_id: denuncia.usuario_id,
-            es_denuncia_escrita: denuncia.es_denuncia_escrita,
+            es_denuncia_escrita: Boolean(denuncia.es_denuncia_escrita),
             archivo_denuncia_url: denuncia.archivo_denuncia_url
         };
 

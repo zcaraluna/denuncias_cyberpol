@@ -403,8 +403,10 @@ export async function POST(request: NextRequest) {
           operador_grado = $18,
           operador_nombre = $19,
           operador_apellido = $20,
-          lugar_hecho_no_aplica = $21
-        WHERE id = $22`,
+          lugar_hecho_no_aplica = $21,
+          es_denuncia_escrita = $22,
+          archivo_denuncia_url = $23
+        WHERE id = $24`,
         [
           principalId,
           fechaActual,
@@ -427,6 +429,8 @@ export async function POST(request: NextRequest) {
           usuario.nombre,
           usuario.apellido,
           lugarHechoNoAplica,
+          denuncia?.esDenunciaEscrita || false,
+          denuncia?.archivoDenunciaUrl || null,
           borradorId
         ]
       )

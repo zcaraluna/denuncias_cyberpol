@@ -190,6 +190,8 @@ export async function GET(
             })),
             qr_code_url: await QRCode.toDataURL(`${request.headers.get('x-forwarded-proto') || 'https'}://${request.headers.get('host')}/verificar/${denuncia.hash}`),
             usuario_id: ampliacion.usuario_id,
+            es_denuncia_escrita: Boolean(denuncia.es_denuncia_escrita),
+            archivo_denuncia_url: denuncia.archivo_denuncia_url,
             es_ampliacion: true,
             numero_ampliacion: ampliacion.numero_ampliacion,
             fecha_original: denuncia.fecha_denuncia instanceof Date

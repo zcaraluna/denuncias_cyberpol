@@ -59,6 +59,8 @@ CREATE TABLE IF NOT EXISTS denuncias (
     hash VARCHAR(50) UNIQUE NOT NULL,
     pdf BYTEA,
     lugar_hecho_no_aplica BOOLEAN DEFAULT FALSE,
+    es_denuncia_escrita BOOLEAN DEFAULT FALSE,
+    archivo_denuncia_url TEXT,
     estado VARCHAR(20) DEFAULT 'completada',
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT check_estado CHECK (estado IN ('borrador', 'completada')),
