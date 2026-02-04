@@ -72,15 +72,16 @@ export async function GET(request: NextRequest) {
         den.nombres as denunciante,
         den.cedula,
         COUNT(d.id) as cantidad,
-        ARRAY_AGG(d.orden || '/' || EXTRACT(YEAR FROM d.fecha_denuncia)::integer) as numeros_denuncia,
-        ARRAY_AGG(COALESCE(d.tipo_denuncia, 'SIN ESPECIFICAR')) as tipos,
-        ARRAY_AGG(TO_CHAR(d.fecha_denuncia, 'YYYY-MM-DD') || ' ' || COALESCE(d.hora_denuncia, '')) as fechas,
+        ARRAY_AGG(d.orden || '/' || EXTRACT(YEAR FROM d.fecha_denuncia)::integer ORDER BY d.fecha_denuncia DESC, d.hora_denuncia DESC) as numeros_denuncia,
+        ARRAY_AGG(COALESCE(d.tipo_denuncia, 'SIN ESPECIFICAR') ORDER BY d.fecha_denuncia DESC, d.hora_denuncia DESC) as tipos,
+        ARRAY_AGG(TO_CHAR(d.fecha_denuncia, 'YYYY-MM-DD') || ' ' || COALESCE(d.hora_denuncia, '') ORDER BY d.fecha_denuncia DESC, d.hora_denuncia DESC) as fechas,
         ARRAY_AGG(
           TRIM(
             COALESCE(d.operador_grado, '') || ' ' || 
             COALESCE(d.operador_nombre, '') || ' ' || 
             COALESCE(d.operador_apellido, '')
           )
+          ORDER BY d.fecha_denuncia DESC, d.hora_denuncia DESC
         ) as oficiales
       FROM denuncias d
       JOIN denunciantes den ON d.denunciante_id = den.id
@@ -88,7 +89,7 @@ export async function GET(request: NextRequest) {
         AND d.estado = 'completada'
       GROUP BY den.nombres, den.cedula
       HAVING COUNT(d.id) > 1
-      ORDER BY cantidad DESC`,
+      ORDER BY cantidad DESC, den.nombres ASC`,
             [primerDia, ultimoDia]
         )
 

@@ -759,7 +759,7 @@ export default function ReportesPage() {
                               <div className="flex items-center justify-between mt-1 pt-1 border-t border-gray-50">
                                 <span className="text-[9px] text-gray-400">{formatearFecha(rec.fechas[i])}</span>
                                 {rec.oficiales && rec.oficiales[i] && (
-                                  <span className="text-[9px] text-gray-400 italic">Por: {rec.oficiales[i].split(' ').pop()}</span>
+                                  <span className="text-[9px] text-gray-400 italic">Por: {rec.oficiales[i]}</span>
                                 )}
                               </div>
                             </div>
