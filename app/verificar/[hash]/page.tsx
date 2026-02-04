@@ -32,7 +32,7 @@ interface ResultadoVerificacion {
 export default function VerificarDenunciaPage() {
   const params = useParams()
   const hash = params.hash as string
-  
+
   const [loading, setLoading] = useState(true)
   const [resultado, setResultado] = useState<ResultadoVerificacion | null>(null)
 
@@ -158,8 +158,8 @@ export default function VerificarDenunciaPage() {
               </h3>
               <div className="grid grid-cols-2 gap-4">
                 {datos.fechaHechoFin ? (
-                  <InfoItem 
-                    label="Fecha y Hora del Hecho" 
+                  <InfoItem
+                    label="Fecha y Hora del Hecho"
                     value={`Entre las ${datos.horaHecho} horas de fecha ${datos.fechaHecho} y las ${datos.horaHechoFin || '—'} horas de fecha ${datos.fechaHechoFin}`}
                     className="col-span-2"
                   />
@@ -205,23 +205,13 @@ export default function VerificarDenunciaPage() {
               </div>
             </div>
 
-            {/* Estado */}
-            <div className="flex items-center justify-between bg-gray-50 rounded-lg p-4">
-              <span className="text-sm font-medium text-gray-600">Estado del documento:</span>
-              <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                datos.estado === 'finalizada' 
-                  ? 'bg-green-100 text-green-800' 
-                  : 'bg-yellow-100 text-yellow-800'
-              }`}>
-                {datos.estado === 'finalizada' ? 'Finalizada' : datos.estado}
-              </span>
-            </div>
+
           </div>
 
           {/* Footer */}
           <div className="bg-gray-50 px-6 py-4 border-t">
             <p className="text-xs text-gray-500 text-center">
-              Este documento ha sido verificado electrónicamente. Los datos mostrados corresponden 
+              Este documento ha sido verificado electrónicamente. Los datos mostrados corresponden
               al registro oficial en el sistema de la Dirección Contra Hechos Punibles Económicos y Financieros.
             </p>
           </div>
@@ -239,14 +229,14 @@ export default function VerificarDenunciaPage() {
 }
 
 // Componente auxiliar para mostrar información
-function InfoItem({ 
-  label, 
-  value, 
-  className = '' 
-}: { 
+function InfoItem({
+  label,
+  value,
+  className = ''
+}: {
   label: string
   value: string
-  className?: string 
+  className?: string
 }) {
   return (
     <div className={`${className}`}>
