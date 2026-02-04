@@ -211,6 +211,10 @@ export async function POST(request: NextRequest) {
             } else if (desc.otrosRasgos && typeof desc.otrosRasgos === 'string') {
                 partes.push(`Otros rasgos: ${desc.otrosRasgos}`);
             }
+
+            if (desc.detallesAdicionales) {
+                partes.push(`Detalles adicionales: ${desc.detallesAdicionales}`);
+            }
             return partes.join(', ');
         };
 
@@ -219,8 +223,8 @@ export async function POST(request: NextRequest) {
             : `en fecha <strong>${formatFecha(denuncia.fechaHecho)}</strong> siendo las <strong>${toSafeString(denuncia.horaHecho)}</strong> aproximadamente`;
 
         const locationText = denuncia.lugarHechoNoAplica
-            ? 'en dirección <strong>NO APLICA</strong>'
-            : `en la dirección <strong>${toSafeString(denuncia.lugarHecho).toUpperCase()}</strong>`;
+            ? ''
+            : `en la dirección <strong>${toSafeString(denuncia.lugarHecho || '').toUpperCase()}</strong>`;
 
         // Lógica de Autores para la Vista Previa
         let authorText = '';
@@ -236,7 +240,8 @@ export async function POST(request: NextRequest) {
                 : `, siendo el supuesto autor una <strong>persona desconocida</strong>`;
         }
 
-        html += `<p class="text-justify mb-4">Que por la presente viene a realizar una denuncia sobre un supuesto <strong>${crimeType}</strong>, ocurrido ${dateText}, ${locationText}${authorText}.</p>`;
+        const separator = locationText && authorText ? ', ' : '';
+        html += `<p class="text-justify mb-4">Que por la presente viene a realizar una denuncia sobre un supuesto <strong>${crimeType}</strong>, ocurrido ${dateText}${locationText ? ', ' + locationText : ''}${authorText}.</p>`;
 
         // Agregar relato
         if (denuncia.relato) {
@@ -244,12 +249,23 @@ export async function POST(request: NextRequest) {
             html += `<p class="mb-4 text-justify whitespace-pre-wrap italic">${denuncia.relato}</p>`;
         }
 
+        // Mención de Adjuntos
+        const imagesCount = (denuncia.adjuntosUrls || []).filter((u: string) => /\.(jpg|jpeg|png|webp|gif)$/i.test(u)).length;
+        const pdfCount = (denuncia.adjuntosUrls || []).filter((u: string) => u.toLowerCase().endsWith('.pdf')).length;
+
+        if (imagesCount > 0 || pdfCount > 0) {
+            const parts = [];
+            if (imagesCount > 0) parts.push(`<strong>${imagesCount}</strong> imagen(es)`);
+            if (pdfCount > 0) parts.push(`<strong>${pdfCount}</strong> archivo(s) PDF`);
+            html += `<p class="mt-4 text-sm text-gray-600 border-t pt-2 italic">Se adjuntan a la presente acta: ${parts.join(' y ')}.</p>`;
+        }
+
         // Agregar cierre
         const isPlural = totalComparecientes > 1;
         const firmaText = isPlural ? ' LOS DENUNCIANTES ' : ' EL DENUNCIANTE ';
         const informeText = isPlural ? ' LAS PERSONAS RECURRENTES SON INFORMADAS ' : ' LA PERSONA RECURRENTE ES INFORMADA ';
 
-        html += `<p class="mt-2 text-justify">NO HABIENDO NADA MÁS QUE AGREGAR SE DA POR TERMINADA EL ACTA, PREVIA LECTURA Y RATIFICACIÓN DE SU CONTENIDO, FIRMANDO AL PIE${firmaText}Y EL INTERVINIENTE, EN 3 (TRES) COPIAS DEL MISMO TENOR Y EFECTO.${informeText}SOBRE: ARTÍCULO 289.- "DENUNCIA FALSA"; ARTÍCULO 242.- "TESTIMONIO FALSO"; ARTÍCULO 243.- "DECLARACIÓN FALSA".</p>`;
+        html += `<p class="mt-4 text-justify">NO HABIENDO NADA MÁS QUE AGREGAR SE DA POR TERMINADA EL ACTA, PREVIA LECTURA Y RATIFICACIÓN DE SU CONTENIDO, FIRMANDO AL PIE${firmaText}Y EL INTERVINIENTE, EN 3 (TRES) COPIAS DEL MISMO TENOR Y EFECTO.${informeText}SOBRE: ARTÍCULO 289.- "DENUNCIA FALSA"; ARTÍCULO 242.- "TESTIMONIO FALSO"; ARTÍCULO 243.- "DECLARACIÓN FALSA".</p>`;
 
         return NextResponse.json({ texto: html });
 

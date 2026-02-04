@@ -2045,6 +2045,7 @@ export default function NuevaDenunciaPage() {
               longitud: coordenadas?.lng || null,
               esDenunciaEscrita: denunciaData.esDenunciaEscrita || false,
               archivoDenunciaUrl: denunciaData.archivoDenunciaUrl || null,
+              adjuntosUrls: adjuntosUrls || [],
               lugarHechoNoAplica: denunciaData.lugarHechoNoAplica || false,
             },
             autor: {

@@ -275,6 +275,14 @@ export async function POST(request: NextRequest) {
       throw new Error('No se pudo determinar el denunciante principal.')
     }
 
+    const lugarHechoNoAplica = denuncia?.lugarHechoNoAplica ?? false
+    const esDenunciaEscrita = denuncia?.esDenunciaEscrita ?? false
+    const archivoDenunciaUrl = denuncia?.archivoDenunciaUrl ?? null
+    const adjuntosUrls = denuncia?.adjuntosUrls || []
+    const montoDano = denuncia?.montoDano ?? null
+    const moneda = denuncia?.moneda ?? null
+    const usarRango = Boolean(denuncia?.usarRango)
+
     if (borradorIdParam) {
       await client.query(
         `UPDATE denuncias SET
@@ -297,8 +305,12 @@ export async function POST(request: NextRequest) {
           operador_grado = $16,
           operador_nombre = $17,
           operador_apellido = $18,
-          adjuntos_urls = $19
-        WHERE id = $20`,
+          lugar_hecho_no_aplica = $19,
+          es_denuncia_escrita = $20,
+          archivo_denuncia_url = $21,
+          adjuntos_urls = $22,
+          usar_rango = $23
+        WHERE id = $24`,
         [
           principalId,
           denuncia?.fechaDenuncia ?? null,
@@ -313,12 +325,16 @@ export async function POST(request: NextRequest) {
           denuncia?.lugarHecho ?? null,
           denuncia?.latitud ?? null,
           denuncia?.longitud ?? null,
-          denuncia?.montoDano ?? null,
-          denuncia?.moneda ?? null,
+          montoDano,
+          moneda,
           usuario.grado,
           usuario.nombre,
           usuario.apellido,
-          denuncia?.adjuntosUrls || [],
+          lugarHechoNoAplica,
+          esDenunciaEscrita,
+          archivoDenunciaUrl,
+          adjuntosUrls,
+          usarRango,
           borradorIdParam
         ]
       )
@@ -336,8 +352,9 @@ export async function POST(request: NextRequest) {
           denunciante_id, fecha_denuncia, hora_denuncia, fecha_hecho, hora_hecho, fecha_hecho_fin, hora_hecho_fin,
           tipo_denuncia, otro_tipo, relato, lugar_hecho, latitud, longitud,
           orden, usuario_id, oficina, operador_grado, operador_nombre,
-          operador_apellido, monto_dano, moneda, hash, pdf, estado, adjuntos_urls
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, NULL, 'borrador', $23)
+          operador_apellido, monto_dano, moneda, hash, pdf, estado,
+          lugar_hecho_no_aplica, es_denuncia_escrita, archivo_denuncia_url, adjuntos_urls, usar_rango
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, NULL, 'borrador', $23, $24, $25, $26, $27)
         RETURNING id`,
         [
           principalId,
@@ -359,10 +376,14 @@ export async function POST(request: NextRequest) {
           usuario.grado,
           usuario.nombre,
           usuario.apellido,
-          denuncia?.montoDano ?? null,
-          denuncia?.moneda ?? null,
+          montoDano,
+          moneda,
           hash,
-          denuncia?.adjuntosUrls || []
+          lugarHechoNoAplica,
+          esDenunciaEscrita,
+          archivoDenunciaUrl,
+          adjuntosUrls,
+          usarRango
         ]
       )
 

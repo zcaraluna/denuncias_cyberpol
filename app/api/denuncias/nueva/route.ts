@@ -350,6 +350,7 @@ export async function POST(request: NextRequest) {
     const adjuntosUrls = denuncia?.adjuntosUrls ?? []
     const montoDano = denuncia?.montoDano ?? null
     const moneda = denuncia?.moneda ?? null
+    const usarRango = Boolean(denuncia?.usarRango)
 
     const hash = generarHash(usuario.oficina)
 
@@ -406,8 +407,9 @@ export async function POST(request: NextRequest) {
           operador_apellido = $20,
           lugar_hecho_no_aplica = $21,
           es_denuncia_escrita = $22,
-          archivo_denuncia_url = $23
-        WHERE id = $24`,
+          archivo_denuncia_url = $23,
+          usar_rango = $24
+        WHERE id = $25`,
         [
           principalId,
           fechaActual,
@@ -432,6 +434,7 @@ export async function POST(request: NextRequest) {
           lugarHechoNoAplica,
           denuncia?.esDenunciaEscrita || false,
           denuncia?.archivoDenunciaUrl || null,
+          usarRango,
           borradorId
         ]
       )
@@ -482,8 +485,8 @@ export async function POST(request: NextRequest) {
           tipo_denuncia, otro_tipo, relato, lugar_hecho, latitud, longitud,
           orden, usuario_id, oficina, operador_grado, operador_nombre,
           operador_apellido, monto_dano, moneda, hash, pdf, estado,
-          es_denuncia_escrita, archivo_denuncia_url, lugar_hecho_no_aplica, adjuntos_urls
-        ) VALUES ($1, $2::DATE, $3, $4::DATE, $5, $6::DATE, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, NULL, 'completada', $23, $24, $25, $26)
+          es_denuncia_escrita, archivo_denuncia_url, lugar_hecho_no_aplica, adjuntos_urls, usar_rango
+        ) VALUES ($1, $2::DATE, $3, $4::DATE, $5, $6::DATE, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, NULL, 'completada', $23, $24, $25, $26, $27)
         RETURNING id`,
         [
           principalId,
@@ -511,7 +514,8 @@ export async function POST(request: NextRequest) {
           denuncia?.esDenunciaEscrita || false,
           denuncia?.archivoDenunciaUrl || null,
           lugarHechoNoAplica,
-          adjuntosUrls
+          adjuntosUrls,
+          usarRango
         ]
       )
       denunciaId = insertDenuncia.rows[0].id
