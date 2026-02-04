@@ -18,9 +18,9 @@ export async function GET(request: NextRequest) {
         const primerDia = `${año}-${mes.padStart(2, '0')}-01`
         const ultimoDia = new Date(parseInt(año), parseInt(mes), 0).toISOString().split('T')[0]
 
-        // Obtener todas las denuncias del mes para procesar en memoria los tipos
+        // Obtener todas las denuncias del mes para procesar en memoria los tipos y evolución diaria
         const denunciasResult = await pool.query(
-            `SELECT d.tipo_denuncia, d.orden, EXTRACT(YEAR FROM d.fecha_denuncia)::integer as año, d.denunciante_id
+            `SELECT d.tipo_denuncia, d.orden, EXTRACT(YEAR FROM d.fecha_denuncia)::integer as año, d.denunciante_id, TO_CHAR(d.fecha_denuncia, 'YYYY-MM-DD') as fecha
        FROM denuncias d
        WHERE d.fecha_denuncia BETWEEN $1::DATE AND $2::DATE
          AND d.estado = 'completada'`,
@@ -29,16 +29,19 @@ export async function GET(request: NextRequest) {
 
         const denuncias = denunciasResult.rows
 
-        // 1. Resumen por Tipo de Denuncia
+        // 1. Resumen por Tipo de Denuncia y Evolución Diaria
         const statsEspecifico: Record<string, number> = {}
         const statsGeneral: Record<string, number> = {}
+        const statsDiarios: Record<string, number> = {}
 
         denuncias.forEach(d => {
             const esp = d.tipo_denuncia || 'SIN ESPECIFICAR'
             const gen = obtenerCapitulo(esp) || esp
+            const fecha = d.fecha
 
             statsEspecifico[esp] = (statsEspecifico[esp] || 0) + 1
             statsGeneral[gen] = (statsGeneral[gen] || 0) + 1
+            statsDiarios[fecha] = (statsDiarios[fecha] || 0) + 1
         })
 
         const resumen_especifico = Object.entries(statsEspecifico)
@@ -48,6 +51,20 @@ export async function GET(request: NextRequest) {
         const resumen_general = Object.entries(statsGeneral)
             .map(([tipo, total]) => ({ tipo, total }))
             .sort((a, b) => b.total - a.total)
+
+        // Generar lista completa de días para el gráfico (incluso los que tienen 0)
+        const evolucion_diaria = []
+        const datePtr = new Date(parseInt(año), parseInt(mes) - 1, 1)
+        const lastDate = new Date(parseInt(año), parseInt(mes), 0).getDate()
+
+        for (let day = 1; day <= lastDate; day++) {
+            const dateStr = `${año}-${mes.padStart(2, '0')}-${day.toString().padStart(2, '0')}`
+            evolucion_diaria.push({
+                fecha: dateStr,
+                dia: day,
+                total: statsDiarios[dateStr] || 0
+            })
+        }
 
         // 2. Denunciantes Recurrentes (más de una vez al mes)
         const recurrentesResult = await pool.query(
@@ -78,6 +95,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({
             resumen_especifico,
             resumen_general,
+            evolucion_diaria,
             denunciantes_recurrentes: recurrentesResult.rows
         })
     } catch (error) {
