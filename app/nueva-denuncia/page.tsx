@@ -1898,6 +1898,9 @@ export default function NuevaDenunciaPage() {
           moneda: denunciaData.moneda || null,
           latitud: coordenadas?.lat || null,
           longitud: coordenadas?.lng || null,
+          esDenunciaEscrita: denunciaData.esDenunciaEscrita || false,
+          archivoDenunciaUrl: denunciaData.archivoDenunciaUrl || null,
+          lugarHechoNoAplica: denunciaData.lugarHechoNoAplica || false,
         },
         autor: {
           conocido: autorConocido,
@@ -2034,6 +2037,9 @@ export default function NuevaDenunciaPage() {
               moneda: denunciaData.moneda || null,
               latitud: coordenadas?.lat || null,
               longitud: coordenadas?.lng || null,
+              esDenunciaEscrita: denunciaData.esDenunciaEscrita || false,
+              archivoDenunciaUrl: denunciaData.archivoDenunciaUrl || null,
+              lugarHechoNoAplica: denunciaData.lugarHechoNoAplica || false,
             },
             autor: {
               conocido: autorConocido,
@@ -2173,6 +2179,9 @@ export default function NuevaDenunciaPage() {
           moneda: denunciaData.moneda || null,
           latitud: coordenadas?.lat || null,
           longitud: coordenadas?.lng || null,
+          esDenunciaEscrita: denunciaData.esDenunciaEscrita || false,
+          archivoDenunciaUrl: denunciaData.archivoDenunciaUrl || null,
+          lugarHechoNoAplica: denunciaData.lugarHechoNoAplica || false,
         },
         autor: {
           conocido: autorConocido,
@@ -2301,6 +2310,9 @@ export default function NuevaDenunciaPage() {
           moneda: denunciaData.moneda || null,
           latitud: coordenadas?.lat || null,
           longitud: coordenadas?.lng || null,
+          esDenunciaEscrita: denunciaData.esDenunciaEscrita || false,
+          archivoDenunciaUrl: denunciaData.archivoDenunciaUrl || null,
+          lugarHechoNoAplica: denunciaData.lugarHechoNoAplica || false,
         },
         autor: {
           conocido: autorConocido,
@@ -2426,6 +2438,9 @@ export default function NuevaDenunciaPage() {
           moneda: denunciaData.moneda || null,
           latitud: coordenadas?.lat || null,
           longitud: coordenadas?.lng || null,
+          esDenunciaEscrita: denunciaData.esDenunciaEscrita || false,
+          archivoDenunciaUrl: denunciaData.archivoDenunciaUrl || null,
+          lugarHechoNoAplica: denunciaData.lugarHechoNoAplica || false,
         },
         autor: {
           conocido: autorConocido,
