@@ -56,6 +56,10 @@ const formatDescripcionFisica = (descRaw: any): string => {
         partes.push(`Otros rasgos: ${desc.otrosRasgos}`);
     }
 
+    if (desc.detallesAdicionales) {
+        partes.push(`Detalles adicionales: ${desc.detallesAdicionales}`);
+    }
+
     return partes.join(', ');
 };
 

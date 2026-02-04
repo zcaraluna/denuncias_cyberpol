@@ -361,6 +361,8 @@ export default function NuevaDenunciaPage() {
   const [mensajeError, setMensajeError] = useState('')
   const [mensajeErrorTitulo, setMensajeErrorTitulo] = useState('Error')
   const [subiendoArchivo, setSubiendoArchivo] = useState(false)
+  const [adjuntosUrls, setAdjuntosUrls] = useState<string[]>([])
+  const [subiendoAdjunto, setSubiendoAdjunto] = useState(false)
   const [descripcionFisica, setDescripcionFisica] = useState<{
     altura?: string
     complexion?: string
@@ -1669,6 +1671,9 @@ export default function NuevaDenunciaPage() {
         if (data.latitud && data.longitud) {
           setCoordenadas({ lat: parseFloat(data.latitud), lng: parseFloat(data.longitud) })
         }
+        if (data.adjuntos_urls) {
+          setAdjuntosUrls(data.adjuntos_urls)
+        }
       }
 
       // Cargar datos del autor
@@ -1900,6 +1905,7 @@ export default function NuevaDenunciaPage() {
           longitud: coordenadas?.lng || null,
           esDenunciaEscrita: denunciaData.esDenunciaEscrita || false,
           archivoDenunciaUrl: denunciaData.archivoDenunciaUrl || null,
+          adjuntosUrls: adjuntosUrls || [],
           lugarHechoNoAplica: denunciaData.lugarHechoNoAplica || false,
         },
         autor: {
@@ -2181,6 +2187,7 @@ export default function NuevaDenunciaPage() {
           longitud: coordenadas?.lng || null,
           esDenunciaEscrita: denunciaData.esDenunciaEscrita || false,
           archivoDenunciaUrl: denunciaData.archivoDenunciaUrl || null,
+          adjuntosUrls: adjuntosUrls || [],
           lugarHechoNoAplica: denunciaData.lugarHechoNoAplica || false,
         },
         autor: {
@@ -2312,6 +2319,7 @@ export default function NuevaDenunciaPage() {
           longitud: coordenadas?.lng || null,
           esDenunciaEscrita: denunciaData.esDenunciaEscrita || false,
           archivoDenunciaUrl: denunciaData.archivoDenunciaUrl || null,
+          adjuntosUrls: adjuntosUrls || [],
           lugarHechoNoAplica: denunciaData.lugarHechoNoAplica || false,
         },
         autor: {
@@ -2440,6 +2448,7 @@ export default function NuevaDenunciaPage() {
           longitud: coordenadas?.lng || null,
           esDenunciaEscrita: denunciaData.esDenunciaEscrita || false,
           archivoDenunciaUrl: denunciaData.archivoDenunciaUrl || null,
+          adjuntosUrls: adjuntosUrls || [],
           lugarHechoNoAplica: denunciaData.lugarHechoNoAplica || false,
         },
         autor: {
@@ -4894,6 +4903,115 @@ export default function NuevaDenunciaPage() {
                     </div>
                   </div>
                 )}
+              </div>
+
+              {/* Sección de Adjuntos Opcionales (Imágenes/PDFs) */}
+              <div className="mt-6 border-t pt-6">
+                <div className="mb-4">
+                  <h4 className="text-base font-semibold text-gray-800 mb-1">Adjuntos Opcionales</h4>
+                  <p className="text-sm text-gray-600">
+                    Puede adjuntar imágenes (JPG, PNG) o archivos PDF adicionales que desee incluir en la denuncia.
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  {/* Lista de adjuntos subidos */}
+                  {adjuntosUrls.length > 0 && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                      {adjuntosUrls.map((url, index) => (
+                        <div key={index} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border border-gray-200">
+                          <div className="flex items-center overflow-hidden">
+                            {url.match(/\.(jpg|jpeg|png|webp|gif)$/i) ? (
+                              <svg className="w-8 h-8 text-blue-500 mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                            ) : (
+                              <svg className="w-8 h-8 text-red-500 mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                              </svg>
+                            )}
+                            <div className="min-w-0">
+                              <p className="text-xs font-medium text-gray-900 truncate">Adjunto {index + 1}</p>
+                              <a href={url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline truncate block">
+                                Ver archivo
+                              </a>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setAdjuntosUrls(adjuntosUrls.filter((_, i) => i !== index))}
+                            className="ml-4 text-gray-400 hover:text-red-500"
+                          >
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Botón de subida */}
+                  <div className="flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md bg-white hover:bg-gray-50 transition-colors relative">
+                    <div className="space-y-1 text-center">
+                      <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                        <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                      <div className="flex text-sm text-gray-600 justify-center">
+                        <label className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                          <span>Subir archivos adicionales</span>
+                          <input
+                            type="file"
+                            multiple
+                            accept="image/*,application/pdf"
+                            className="sr-only"
+                            disabled={subiendoAdjunto}
+                            onChange={async (e) => {
+                              const files = e.target.files
+                              if (!files || files.length === 0) return
+
+                              setSubiendoAdjunto(true)
+                              try {
+                                const nuevasUrls = [...adjuntosUrls]
+                                for (let i = 0; i < files.length; i++) {
+                                  const file = files[i]
+                                  const response = await fetch(`/api/upload/adjuntos?filename=${encodeURIComponent(file.name)}`, {
+                                    method: 'POST',
+                                    body: file,
+                                  })
+                                  if (response.ok) {
+                                    const blob = await response.json()
+                                    nuevasUrls.push(blob.url)
+                                  }
+                                }
+                                setAdjuntosUrls(nuevasUrls)
+                              } catch (error) {
+                                console.error('Error uploading files:', error)
+                                alert('Hubo un error al subir uno o más archivos.')
+                              } finally {
+                                setSubiendoAdjunto(false)
+                                // Reset input
+                                e.target.value = ''
+                              }
+                            }}
+                          />
+                        </label>
+                      </div>
+                      <p className="text-xs text-gray-500">Imágenes o PDF hasta 25MB cada uno</p>
+                    </div>
+                    {subiendoAdjunto && (
+                      <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
+                        <div className="flex items-center">
+                          <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          <span className="text-sm font-medium text-blue-600">Subiendo...</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
 
 

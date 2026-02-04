@@ -347,6 +347,7 @@ export async function POST(request: NextRequest) {
     const latitud = denuncia?.latitud ?? null
     const longitud = denuncia?.longitud ?? null
     const lugarHechoNoAplica = Boolean(denuncia?.lugarHechoNoAplica)
+    const adjuntosUrls = denuncia?.adjuntosUrls ?? []
     const montoDano = denuncia?.montoDano ?? null
     const moneda = denuncia?.moneda ?? null
 
@@ -481,8 +482,8 @@ export async function POST(request: NextRequest) {
           tipo_denuncia, otro_tipo, relato, lugar_hecho, latitud, longitud,
           orden, usuario_id, oficina, operador_grado, operador_nombre,
           operador_apellido, monto_dano, moneda, hash, pdf, estado,
-          es_denuncia_escrita, archivo_denuncia_url, lugar_hecho_no_aplica
-        ) VALUES ($1, $2::DATE, $3, $4::DATE, $5, $6::DATE, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, NULL, 'completada', $23, $24, $25)
+          es_denuncia_escrita, archivo_denuncia_url, lugar_hecho_no_aplica, adjuntos_urls
+        ) VALUES ($1, $2::DATE, $3, $4::DATE, $5, $6::DATE, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, NULL, 'completada', $23, $24, $25, $26)
         RETURNING id`,
         [
           principalId,
@@ -509,7 +510,8 @@ export async function POST(request: NextRequest) {
           hash,
           denuncia?.esDenunciaEscrita || false,
           denuncia?.archivoDenunciaUrl || null,
-          lugarHechoNoAplica
+          lugarHechoNoAplica,
+          adjuntosUrls
         ]
       )
       denunciaId = insertDenuncia.rows[0].id

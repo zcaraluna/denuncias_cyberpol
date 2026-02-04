@@ -1,5 +1,5 @@
 import React from 'react';
-import { Document, Page, StyleSheet, Text, View } from '@react-pdf/renderer';
+import { Document, Page, StyleSheet, Text, View, Image } from '@react-pdf/renderer';
 import ParaguayHeader from './ParaguayHeader';
 import { generarPrimerParrafo, analizarParticipantes } from './PrimerParrafo';
 import { generarSegundoParrafo } from './SegundoParrafo';
@@ -183,6 +183,36 @@ const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 
                     operadorOriginalId={denuncia.usuario_id}
                 />
             </Page >
+            {/* Páginas adicionales para adjuntos (Solo imágenes) */}
+            {denuncia.adjuntos_urls && denuncia.adjuntos_urls.length > 0 && denuncia.adjuntos_urls.map((url: string, index: number) => {
+                const isImage = /\.(jpg|jpeg|png|webp|gif)$/i.test(url);
+                if (!isImage) return null;
+                return (
+                    <Page key={`adjunto-${index}`} size={[612, 936]} style={[styles.page, { paddingBottom: 30 }]}>
+                        <View fixed style={styles.headerFixed}>
+                            <ParaguayHeader
+                                numeroActa={denuncia.orden.toString()}
+                                año={año}
+                                esAmpliacion={denuncia.es_ampliacion}
+                                numeroAmpliacion={denuncia.numero_ampliacion}
+                            />
+                        </View>
+                        <View style={{ marginTop: 20, alignItems: 'center' }}>
+                            <Text style={[styles.paragraph, { textAlign: 'center', marginBottom: 10, fontWeight: 'bold' }]}>
+                                ADJUNTO {index + 1}
+                            </Text>
+                            <Image
+                                src={url}
+                                style={{
+                                    maxWidth: '100%',
+                                    maxHeight: 700,
+                                    objectFit: 'contain'
+                                }}
+                            />
+                        </View>
+                    </Page>
+                );
+            })}
         </Document >
     );
 };

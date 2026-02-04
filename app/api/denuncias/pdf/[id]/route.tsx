@@ -199,7 +199,8 @@ export async function GET(
             } : undefined,
             usuario_id: denuncia.usuario_id,
             es_denuncia_escrita: Boolean(denuncia.es_denuncia_escrita),
-            archivo_denuncia_url: denuncia.archivo_denuncia_url
+            archivo_denuncia_url: denuncia.archivo_denuncia_url,
+            adjuntos_urls: denuncia.adjuntos_urls || []
         };
 
         // Determinar el tamaño de página
@@ -213,43 +214,48 @@ export async function GET(
             />
         );
 
-        // Si es denuncia escrita y tiene archivo adjunto, fusionar PDFs
+        // 5. Fusionar PDFs si existen (archivo_denuncia_url o adjuntos_urls que sean PDF)
+        const pdfAdjuntosUrls = (denuncia.adjuntos_urls || []).filter((url: string) => url.toLowerCase().endsWith('.pdf'));
         if (denuncia.es_denuncia_escrita && denuncia.archivo_denuncia_url) {
+            pdfAdjuntosUrls.unshift(denuncia.archivo_denuncia_url);
+        }
+
+        if (pdfAdjuntosUrls.length > 0) {
             try {
-                // 1. Cargar el documento original (Carátula)
-                const caratulaPdf = await PDFDocument.load(pdfBuffer);
-
-                // 2. Descargar y cargar el documento adjunto
-                const response = await fetch(denuncia.archivo_denuncia_url);
-                if (!response.ok) throw new Error('No se pudo descargar el archivo adjunto');
-                const adjuntoArrayBuffer = await response.arrayBuffer();
-                const adjuntoPdf = await PDFDocument.load(adjuntoArrayBuffer);
-
-                // 3. Crear nuevo documento
+                // 1. Cargar el documento original (Carátula + Imágenes)
+                const mainPdf = await PDFDocument.load(pdfBuffer);
                 const mergedPdf = await PDFDocument.create();
 
-                // 4. Copiar páginas de la carátula
-                const caratulaPages = await mergedPdf.copyPages(caratulaPdf, caratulaPdf.getPageIndices());
-                caratulaPages.forEach((page) => mergedPdf.addPage(page));
+                // 2. Copiar páginas de la carátula
+                const mainPages = await mergedPdf.copyPages(mainPdf, mainPdf.getPageIndices());
+                mainPages.forEach((page) => mergedPdf.addPage(page));
 
-                // 5. Copiar páginas del adjunto
-                const adjuntoPages = await mergedPdf.copyPages(adjuntoPdf, adjuntoPdf.getPageIndices());
-                adjuntoPages.forEach((page) => mergedPdf.addPage(page));
+                // 3. Descargar y fusionar cada PDF adjunto
+                for (const url of pdfAdjuntosUrls) {
+                    try {
+                        const response = await fetch(url);
+                        if (!response.ok) continue;
+                        const arrayBuffer = await response.arrayBuffer();
+                        const adjuntoPdf = await PDFDocument.load(arrayBuffer);
+                        const pages = await mergedPdf.copyPages(adjuntoPdf, adjuntoPdf.getPageIndices());
+                        pages.forEach((page) => mergedPdf.addPage(page));
+                    } catch (err) {
+                        console.error(`Error fusionando PDF desde ${url}:`, err);
+                    }
+                }
 
-                // 6. Guardar como Uint8Array
+                // 4. Guardar como Uint8Array
                 const mergedPdfBytes = await mergedPdf.save();
-
                 return new NextResponse(Buffer.from(mergedPdfBytes), {
                     headers: {
                         'Content-Type': 'application/pdf',
-                        'Content-Disposition': `attachment; filename="denuncia_escrita_${denuncia.orden}_${new Date().toISOString().split('T')[0]}.pdf"`,
+                        'Content-Disposition': `attachment; filename="denuncia_${denuncia.orden}_${new Date().toISOString().split('T')[0]}.pdf"`,
                     },
                 });
 
             } catch (mergeError) {
-                console.error('Error fusionando PDFs:', mergeError);
-                // Si falla la fusión, devolver solo la carátula pero registrando el error
-                // Opcionalmente podríamos agregar una página de error en el PDF
+                console.error('Error general fusionando PDFs:', mergeError);
+                // Si falla la fusión, devolver solo la carátula
             }
         }
 
