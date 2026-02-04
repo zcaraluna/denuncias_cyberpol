@@ -189,7 +189,13 @@ export async function GET(
                 matricula: inv.matricula ? String(inv.matricula) : undefined,
             })),
             qr_code_url: await QRCode.toDataURL(`${request.headers.get('x-forwarded-proto') || 'https'}://${request.headers.get('host')}/verificar/${denuncia.hash}`),
-            usuario_id: ampliacion.usuario_id
+            usuario_id: ampliacion.usuario_id,
+            es_ampliacion: true,
+            numero_ampliacion: ampliacion.numero_ampliacion,
+            fecha_original: denuncia.fecha_denuncia instanceof Date
+                ? denuncia.fecha_denuncia.toISOString().split('T')[0]
+                : String(denuncia.fecha_denuncia),
+            hora_original: String(denuncia.hora_denuncia || '')
         };
 
         // Determinar el tamaño de página

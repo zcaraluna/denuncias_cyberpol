@@ -75,9 +75,35 @@ export function generarSegundoParrafo(
 
     const autoresValidos = (denuncia.supuestos_autores || []).filter(a => a.autor_conocido !== 'No aplica');
 
+    const renderTextoInicial = () => {
+        if (denuncia.es_ampliacion) {
+            return (
+                <>
+                    viene a realizar una <Text style={{ fontWeight: 'bold' }}>AMPLIACIÓN</Text> de la denuncia sobre un supuesto <Text style={{ fontWeight: 'bold' }}>{crimeType}</Text>
+                </>
+            );
+        }
+        return (
+            <>
+                viene a realizar una denuncia sobre un supuesto <Text style={{ fontWeight: 'bold' }}>{crimeType}</Text>
+            </>
+        );
+    };
+
+    const renderReferenciaOriginal = () => {
+        if (denuncia.es_ampliacion && denuncia.fecha_original) {
+            return (
+                <Text>
+                    , denunciada en <Text style={{ fontWeight: 'bold' }}>{formatFecha(denuncia.fecha_original)}</Text> {denuncia.hora_original ? `siendo las ${toSafeString(denuncia.hora_original)}` : ''}
+                </Text>
+            );
+        }
+        return null;
+    };
+
     return (
         <Text style={styles.paragraph}>
-            Que por la presente viene a realizar una denuncia sobre un supuesto <Text style={{ fontWeight: 'bold' }}>{crimeType}</Text>, ocurrido {' '}
+            Que por la presente {renderTextoInicial()}, ocurrido {' '}
             {denuncia.usar_rango && denuncia.fecha_hecho_fin ? (
                 <>
                     entre la fecha <Text style={{ fontWeight: 'bold' }}>{formatFecha(denuncia.fecha_hecho)}</Text> siendo las <Text style={{ fontWeight: 'bold' }}>{toSafeString(denuncia.hora_hecho)}</Text> aproximadamente y la fecha <Text style={{ fontWeight: 'bold' }}>{formatFecha(denuncia.fecha_hecho_fin)}</Text> siendo las <Text style={{ fontWeight: 'bold' }}>{toSafeString(denuncia.hora_hecho_fin)}</Text> aproximadamente
@@ -139,7 +165,9 @@ export function generarSegundoParrafo(
                         }
                     })}
                 </>
-            )}.
+            )}
+            {renderReferenciaOriginal()}
+            .
         </Text>
     );
 }

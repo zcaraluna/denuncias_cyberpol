@@ -70,9 +70,11 @@ const styles = StyleSheet.create({
 interface ParaguayHeaderProps {
     numeroActa: string;
     año: number;
+    esAmpliacion?: boolean;
+    numeroAmpliacion?: number;
 }
 
-const ParaguayHeader: React.FC<ParaguayHeaderProps> = ({ numeroActa, año }) => {
+const ParaguayHeader: React.FC<ParaguayHeaderProps> = ({ numeroActa, año, esAmpliacion, numeroAmpliacion }) => {
     // Usar URLs absolutas para que funcionen en VEEERCEEEEEL
     const baseUrl = 'https://denuncias-cyberpol.vercel.app';
 
@@ -102,7 +104,11 @@ const ParaguayHeader: React.FC<ParaguayHeaderProps> = ({ numeroActa, año }) => 
 
             {/* Línea Divisoria y Número de Acta */}
             <View style={styles.divider} />
-            <Text style={styles.documentId}>ACTA DE DENUNCIA N° {numeroActa}/{año}</Text>
+            <Text style={styles.documentId}>
+                {esAmpliacion
+                    ? `AMPLIACIÓN ${numeroAmpliacion} DEL ACTA DE DENUNCIA N° ${numeroActa}/${año}`
+                    : `ACTA DE DENUNCIA N° ${numeroActa}/${año}`}
+            </Text>
         </View>
     );
 };

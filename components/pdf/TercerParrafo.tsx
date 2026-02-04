@@ -4,10 +4,11 @@ import { Text, View } from '@react-pdf/renderer';
 interface TercerParrafoProps {
     relato: string;
     esDenunciaEscrita?: boolean;
+    esAmpliacion?: boolean;
     styles: any;
 }
 
-export const TercerParrafo: React.FC<TercerParrafoProps> = ({ relato, esDenunciaEscrita, styles }) => {
+export const TercerParrafo: React.FC<TercerParrafoProps> = ({ relato, esDenunciaEscrita, esAmpliacion, styles }) => {
     if (esDenunciaEscrita) {
         return (
             <View>
@@ -23,7 +24,7 @@ export const TercerParrafo: React.FC<TercerParrafoProps> = ({ relato, esDenuncia
     return (
         <View>
             <Text style={styles.paragraph}>
-                Según los acontecimientos que se mencionan a continuación:
+                {esAmpliacion ? 'Por la presente añade lo siguiente:' : 'Según los acontecimientos que se mencionan a continuación:'}
             </Text>
             <Text style={[styles.paragraph, { fontStyle: 'italic' }]}>
                 {relato}

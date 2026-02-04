@@ -58,13 +58,14 @@ CREATE TABLE IF NOT EXISTS denuncias (
     moneda VARCHAR(50),
     hash VARCHAR(50) UNIQUE NOT NULL,
     pdf BYTEA,
+    lugar_hecho_no_aplica BOOLEAN DEFAULT FALSE,
     estado VARCHAR(20) DEFAULT 'completada',
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT check_estado CHECK (estado IN ('borrador', 'completada')),
     CONSTRAINT check_completada CHECK (
         (estado = 'completada' AND fecha_denuncia IS NOT NULL AND hora_denuncia IS NOT NULL AND 
          fecha_hecho IS NOT NULL AND hora_hecho IS NOT NULL AND tipo_denuncia IS NOT NULL AND 
-         relato IS NOT NULL AND lugar_hecho IS NOT NULL) 
+         relato IS NOT NULL AND (lugar_hecho IS NOT NULL OR lugar_hecho_no_aplica = TRUE)) 
         OR estado = 'borrador'
     )
 );

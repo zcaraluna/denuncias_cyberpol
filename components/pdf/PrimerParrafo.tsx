@@ -346,7 +346,7 @@ function generarParrafoSimple(
     return (
         <Text style={styles.paragraph}>
             En la Sala de Denuncias de la Dirección Contra Hechos Punibles Económicos y Financieros, Oficina ASUNCIÓN, en fecha{' '}
-            <Text style={{ fontWeight: 'bold' }}>{formatFecha(denuncia.fecha_denuncia)}</Text> being the{' '}
+            <Text style={{ fontWeight: 'bold' }}>{formatFecha(denuncia.fecha_denuncia)}</Text> siendo las{' '}
             <Text style={{ fontWeight: 'bold' }}>{toSafeString(denuncia.hora_denuncia)}</Text>, ante mí{' '}
             <Text style={{ fontWeight: 'bold' }}>{operador || 'PERSONAL POLICIAL INTERVINIENTE'}</Text>, concurre{' '}
             <Text style={{ fontWeight: 'bold' }}>{toSafeString(denunciante.nombres).toUpperCase()}</Text>, con{' '}

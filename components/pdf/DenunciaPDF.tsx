@@ -84,6 +84,10 @@ interface DenunciaData {
     };
     archivo_denuncia_url?: string;
     es_denuncia_escrita?: boolean;
+    es_ampliacion?: boolean;
+    numero_ampliacion?: number;
+    fecha_original?: string;
+    hora_original?: string;
     [key: string]: any;
 }
 
@@ -120,7 +124,12 @@ const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 
             <Page size={[612, 936]} style={styles.page}>
                 {/* Header que se repite en cada página */}
                 <View fixed style={styles.headerFixed}>
-                    <ParaguayHeader numeroActa={denuncia.orden.toString()} año={año} />
+                    <ParaguayHeader
+                        numeroActa={denuncia.orden.toString()}
+                        año={año}
+                        esAmpliacion={denuncia.es_ampliacion}
+                        numeroAmpliacion={denuncia.numero_ampliacion}
+                    />
                 </View>
 
                 {/* Aviso Legal: Solo en la primera página (sin 'fixed') */}
@@ -145,6 +154,7 @@ const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 
                 <TercerParrafo
                     relato={denuncia.relato || ''}
                     esDenunciaEscrita={denuncia.es_denuncia_escrita}
+                    esAmpliacion={denuncia.es_ampliacion}
                     styles={styles}
                 />
 
