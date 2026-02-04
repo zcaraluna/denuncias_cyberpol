@@ -112,14 +112,10 @@ export function generarSegundoParrafo(
                 <>
                     en fecha <Text style={{ fontWeight: 'bold' }}>{formatFecha(denuncia.fecha_hecho)}</Text> siendo las <Text style={{ fontWeight: 'bold' }}>{toSafeString(denuncia.hora_hecho)}</Text> aproximadamente
                 </>
-            )}, {' '}
-            {denuncia.lugar_hecho_no_aplica ? (
+            )},
+            {!denuncia.lugar_hecho_no_aplica && (
                 <>
-                    en dirección <Text style={{ fontWeight: 'bold' }}>NO APLICA</Text>
-                </>
-            ) : (
-                <>
-                    en la dirección <Text style={{ fontWeight: 'bold' }}>{toSafeString(denuncia.lugar_hecho).toUpperCase()}</Text>
+                    , en la dirección <Text style={{ fontWeight: 'bold' }}>{toSafeString(denuncia.lugar_hecho).toUpperCase()}</Text>
                 </>
             )}
             {autoresValidos.length > 0 && (
@@ -157,7 +153,7 @@ export function generarSegundoParrafo(
                                             {prefijo} quien es descripta con los siguientes rasgos físicos: <Text style={{ fontWeight: 'bold' }}>{descFisica}</Text>
                                         </>
                                     ) : (
-                                        'una persona desconocida'
+                                        prefijo
                                     )}
                                     {separator}
                                 </React.Fragment>
