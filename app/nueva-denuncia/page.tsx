@@ -149,10 +149,31 @@ const denunciaSchema = z.object({
   lugarHechoBarrio: z.string().optional(),
   lugarHechoCalles: z.string().optional(),
   lugarHechoNoAplica: z.boolean().optional(),
-  relato: z.string().min(10, 'El relato debe tener al menos 10 caracteres'),
+  relato: z.string().optional(),
   montoDano: z.string().optional(),
   moneda: z.string().optional(),
+  esDenunciaEscrita: z.boolean().optional(),
+  archivoDenunciaUrl: z.string().optional(),
 }).superRefine((data, ctx) => {
+  // Validar relato si NO es denuncia escrita
+  if (!data.esDenunciaEscrita) {
+    if (!data.relato || data.relato.length < 10) {
+      ctx.addIssue({
+        path: ['relato'],
+        code: z.ZodIssueCode.custom,
+        message: 'El relato debe tener al menos 10 caracteres',
+      })
+    }
+  } else {
+    // Si ES denuncia escrita, validar que haya archivo
+    if (!data.archivoDenunciaUrl) {
+      ctx.addIssue({
+        path: ['archivoDenunciaUrl'],
+        code: z.ZodIssueCode.custom,
+        message: 'Debe subir el archivo de la denuncia escrita',
+      })
+    }
+  }
   // Si se usa rango, validar que fecha y hora de fin estén presentes
   if (data.usarRango) {
     if (!data.fechaHechoFin || data.fechaHechoFin.trim() === '') {
@@ -339,6 +360,7 @@ export default function NuevaDenunciaPage() {
   const [mostrarModalError, setMostrarModalError] = useState(false)
   const [mensajeError, setMensajeError] = useState('')
   const [mensajeErrorTitulo, setMensajeErrorTitulo] = useState('Error')
+  const [subiendoArchivo, setSubiendoArchivo] = useState(false)
   const [descripcionFisica, setDescripcionFisica] = useState<{
     altura?: string
     complexion?: string
@@ -4687,18 +4709,175 @@ export default function NuevaDenunciaPage() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Relato del Hecho *
-                </label>
-                <textarea
-                  {...registerDenuncia('relato')}
-                  rows={10}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Escriba el relato del hecho..."
-                />
-                {errorsDenuncia.relato && (
-                  <p className="text-red-600 text-sm mt-1">{errorsDenuncia.relato.message as string}</p>
+              <div className="space-y-4 border-t pt-4 mt-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-800">Relato de los Hechos</h3>
+                  <div className="flex items-center bg-gray-100 p-1 rounded-lg">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setValueDenuncia('esDenunciaEscrita', false)
+                        setValueDenuncia('archivoDenunciaUrl', '') // Limpiar al cambiar
+                      }}
+                      className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${!watchDenuncia('esDenunciaEscrita') ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-800'}`}
+                    >
+                      Relato Verbal
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setValueDenuncia('esDenunciaEscrita', true)
+                        setValueDenuncia('relato', '') // Limpiar al cambiar
+                      }}
+                      className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${watchDenuncia('esDenunciaEscrita') ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-800'}`}
+                    >
+                      Denuncia Escrita
+                    </button>
+                  </div>
+                </div>
+
+                {!watchDenuncia('esDenunciaEscrita') ? (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Relato del Hecho *
+                    </label>
+                    <textarea
+                      {...registerDenuncia('relato')}
+                      rows={10}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Escriba el relato del hecho..."
+                    />
+                    {errorsDenuncia.relato && (
+                      <p className="text-red-600 text-sm mt-1">{errorsDenuncia.relato.message as string}</p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                    <div className="mb-4">
+                      <h4 className="text-base font-semibold text-blue-900 mb-1">Adjuntar Denuncia Escrita</h4>
+                      <p className="text-sm text-blue-700">
+                        Suba el documento escaneado de la denuncia escrita. El formato debe ser PDF y no superar los 25MB.
+                      </p>
+                    </div>
+
+                    <div className="mt-2">
+                      {watchDenuncia('archivoDenunciaUrl') ? (
+                        <div className="flex items-center justify-between bg-white p-3 rounded-lg border border-blue-200">
+                          <div className="flex items-center overflow-hidden">
+                            <svg className="w-8 h-8 text-red-500 mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                            </svg>
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium text-gray-900 truncate">Documento Adjunto</p>
+                              <a href={watchDenuncia('archivoDenunciaUrl') || '#'} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline truncate block">
+                                Ver documento
+                              </a>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setValueDenuncia('archivoDenunciaUrl', '')}
+                            className="ml-4 text-gray-400 hover:text-red-500"
+                          >
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex justify-center px-6 pt-5 pb-6 border-2 border-blue-300 border-dashed rounded-md bg-white hover:bg-blue-50 transition-colors relative">
+                          <div className="space-y-1 text-center">
+                            <svg
+                              className="mx-auto h-12 w-12 text-blue-400"
+                              stroke="currentColor"
+                              fill="none"
+                              viewBox="0 0 48 48"
+                              aria-hidden="true"
+                            >
+                              <path
+                                d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                                strokeWidth={2}
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                            </svg>
+                            <div className="flex text-sm text-gray-600 justify-center">
+                              <label
+                                htmlFor="file-upload"
+                                className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"
+                              >
+                                <span>Subir un archivo</span>
+                                <input
+                                  id="file-upload"
+                                  name="file-upload"
+                                  type="file"
+                                  accept="application/pdf"
+                                  className="sr-only"
+                                  disabled={subiendoArchivo}
+                                  onChange={async (e) => {
+                                    const file = e.target.files?.[0]
+                                    if (!file) return
+
+                                    if (file.type !== 'application/pdf') {
+                                      setMensajeErrorTitulo('Formato incorrecto')
+                                      setMensajeError('Solo se permiten archivos PDF.')
+                                      setMostrarModalError(true)
+                                      return
+                                    }
+
+                                    if (file.size > 25 * 1024 * 1024) {
+                                      setMensajeErrorTitulo('Archivo demasiado grande')
+                                      setMensajeError('El archivo no debe superar los 25MB.')
+                                      setMostrarModalError(true)
+                                      return
+                                    }
+
+                                    setSubiendoArchivo(true)
+                                    try {
+                                      const response = await fetch(`/api/upload/denuncia-escrita?filename=${encodeURIComponent(file.name)}`, {
+                                        method: 'POST',
+                                        body: file,
+                                      })
+
+                                      if (!response.ok) throw new Error('Error al subir archivo')
+
+                                      const blob = await response.json()
+                                      setValueDenuncia('archivoDenunciaUrl', blob.url)
+                                    } catch (error) {
+                                      console.error('Error uploading file:', error)
+                                      setMensajeErrorTitulo('Error de subida')
+                                      setMensajeError('Hubo un error al subir el archivo. Intente nuevamente.')
+                                      setMostrarModalError(true)
+                                    } finally {
+                                      setSubiendoArchivo(false)
+                                    }
+                                  }}
+                                />
+                              </label>
+                              <p className="pl-1">o arrastrar y soltar</p>
+                            </div>
+                            <p className="text-xs text-gray-500">
+                              PDF hasta 25MB
+                            </p>
+                          </div>
+                          {subiendoArchivo && (
+                            <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
+                              <div className="flex items-center">
+                                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <span className="text-sm font-medium text-blue-600">Subiendo...</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {errorsDenuncia.archivoDenunciaUrl && (
+                        <p className="text-red-600 text-sm mt-1">{errorsDenuncia.archivoDenunciaUrl.message as string}</p>
+                      )}
+                    </div>
+                  </div>
                 )}
               </div>
 

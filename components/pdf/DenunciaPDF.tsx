@@ -82,6 +82,8 @@ interface DenunciaData {
         apellido: string;
         grado: string;
     };
+    archivo_denuncia_url?: string;
+    es_denuncia_escrita?: boolean;
     [key: string]: any;
 }
 
@@ -140,7 +142,11 @@ const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 
                 {generarSegundoParrafo(denuncia as any, styles)}
 
                 {/* Tercer Párrafo - Relato */}
-                <TercerParrafo relato={denuncia.relato || ''} styles={styles} />
+                <TercerParrafo
+                    relato={denuncia.relato || ''}
+                    esDenunciaEscrita={denuncia.es_denuncia_escrita}
+                    styles={styles}
+                />
 
                 {/* Cierre de Acta */}
                 <CierreDenuncia totalPersonas={analisis.totalComparecientes} styles={styles} />
@@ -166,8 +172,8 @@ const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 
                     operadorActual={denuncia.operador_actual}
                     operadorOriginalId={denuncia.usuario_id}
                 />
-            </Page>
-        </Document>
+            </Page >
+        </Document >
     );
 };
 

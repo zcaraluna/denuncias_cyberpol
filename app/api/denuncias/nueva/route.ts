@@ -473,8 +473,9 @@ export async function POST(request: NextRequest) {
           denunciante_id, fecha_denuncia, hora_denuncia, fecha_hecho, hora_hecho, fecha_hecho_fin, hora_hecho_fin,
           tipo_denuncia, otro_tipo, relato, lugar_hecho, latitud, longitud,
           orden, usuario_id, oficina, operador_grado, operador_nombre,
-          operador_apellido, monto_dano, moneda, hash, pdf, estado
-        ) VALUES ($1, $2::DATE, $3, $4::DATE, $5, $6::DATE, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, NULL, 'completada')
+          operador_apellido, monto_dano, moneda, hash, pdf, estado,
+          es_denuncia_escrita, archivo_denuncia_url
+        ) VALUES ($1, $2::DATE, $3, $4::DATE, $5, $6::DATE, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, NULL, 'completada', $23, $24)
         RETURNING id`,
         [
           principalId,
@@ -498,7 +499,9 @@ export async function POST(request: NextRequest) {
           usuario.apellido,
           montoDano,
           moneda,
-          hash
+          hash,
+          denuncia?.esDenunciaEscrita || false,
+          denuncia?.archivoDenunciaUrl || null
         ]
       )
       denunciaId = insertDenuncia.rows[0].id

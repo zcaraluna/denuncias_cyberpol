@@ -1,10 +1,9 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
-import Link from 'next/link';
 import { renderToBuffer } from '@react-pdf/renderer';
 import DenunciaPDFDocument from '@/components/pdf/DenunciaPDF';
 import QRCode from 'qrcode';
-import { PDFDocument } from 'pdf-lib';
 
 export async function GET(
     request: NextRequest,
@@ -16,36 +15,25 @@ export async function GET(
         const { searchParams } = new URL(request.url);
         const tipo = searchParams.get('tipo') || 'oficio';
 
-        // 1. Obtener el usuario actual de la cookie de sesión
-        const usuarioSesionCookie = request.cookies.get('usuario_sesion')?.value;
-        let operadorActual = null;
-        if (usuarioSesionCookie) {
-            try {
-                operadorActual = JSON.parse(decodeURIComponent(usuarioSesionCookie));
-            } catch (e) {
-                console.error('Error parseando sesión:', e);
-            }
-        }
-
-        // 2. Incrementar contador de impresiones y obtener valor previo
-        const updateResult = await pool.query(
-            `UPDATE denuncias 
-             SET cantidad_impresiones = cantidad_impresiones + 1 
-             WHERE id = $1 
-             RETURNING cantidad_impresiones`,
+        // 1. Obtener datos de la ampliación
+        const ampliacionResult = await pool.query(
+            `SELECT * FROM ampliaciones_denuncia WHERE id = $1`,
             [id]
         );
 
-        const impresionesTotal = updateResult.rows[0]?.cantidad_impresiones || 1;
-        const isDuplicate = impresionesTotal > 1;
+        if (ampliacionResult.rows.length === 0) {
+            return NextResponse.json(
+                { error: 'Ampliación no encontrada' },
+                { status: 404 }
+            );
+        }
 
-        // Obtener datos de la base de datos (Unificado y robusto)
+        const ampliacion = ampliacionResult.rows[0];
+
+        // 2. Obtener datos de la denuncia original
         const denunciaResult = await pool.query(
             `SELECT 
                 d.*,
-                COALESCE(NULLIF(d.operador_grado, ''), u.grado) as operador_grado_final,
-                COALESCE(NULLIF(d.operador_nombre, ''), u.nombre) as operador_nombre_final,
-                COALESCE(NULLIF(d.operador_apellido, ''), u.apellido) as operador_apellido_final,
                 den.nombres as nombres_denunciante,
                 den.cedula,
                 den.tipo_documento,
@@ -61,28 +49,26 @@ export async function GET(
                 den.matricula
             FROM denuncias d
             INNER JOIN denunciantes den ON d.denunciante_id = den.id
-            LEFT JOIN usuarios u ON d.usuario_id = u.id
-            WHERE d.id = $1 AND d.estado = 'completada'
-            LIMIT 1`,
-            [id]
+            WHERE d.id = $1`,
+            [ampliacion.denuncia_id]
         );
 
         if (denunciaResult.rows.length === 0) {
             return NextResponse.json(
-                { error: 'Denuncia no encontrada o no completada' },
+                { error: 'Denuncia original no encontrada' },
                 { status: 404 }
             );
         }
 
         const denuncia = denunciaResult.rows[0];
 
-        // Obtener supuestos autores
+        // 3. Obtener supuestos autores (de la original)
         const autoresResult = await pool.query(
             `SELECT * FROM supuestos_autores WHERE denuncia_id = $1`,
-            [id]
+            [denuncia.id]
         );
 
-        // Obtener involucrados
+        // 4. Obtener involucrados (de la original)
         const involucradosResult = await pool.query(
             `SELECT 
                 di.*,
@@ -104,17 +90,21 @@ export async function GET(
             ORDER BY 
                 CASE WHEN di.rol = 'principal' THEN 0 ELSE 1 END,
                 di.id`,
-            [id]
+            [denuncia.id]
         );
 
-        // Preparar datos serializados para el PDF (react-pdf no acepta Dates ni nulls)
+        // 5. Preparar datos para el PDF usando la información de la ampliación
+        // pero manteniendo los datos estructurales de la denuncia original
         const denunciaData = {
-            orden: denuncia.orden,
+            orden: denuncia.orden, // Mismo número de acta
             hash: String(denuncia.hash),
-            fecha_denuncia: denuncia.fecha_denuncia instanceof Date
-                ? denuncia.fecha_denuncia.toISOString().split('T')[0]
-                : String(denuncia.fecha_denuncia),
-            hora_denuncia: String(denuncia.hora_denuncia || ''),
+            // Usar fecha y hora de la ampliación
+            fecha_denuncia: ampliacion.fecha_ampliacion instanceof Date
+                ? ampliacion.fecha_ampliacion.toISOString().split('T')[0]
+                : String(ampliacion.fecha_ampliacion),
+            hora_denuncia: String(ampliacion.hora_ampliacion || ''),
+
+            // Datos del hecho original
             fecha_hecho: denuncia.fecha_hecho instanceof Date
                 ? denuncia.fecha_hecho.toISOString().split('T')[0]
                 : String(denuncia.fecha_hecho),
@@ -124,17 +114,24 @@ export async function GET(
                 ? denuncia.fecha_hecho_fin.toISOString().split('T')[0]
                 : (denuncia.fecha_hecho_fin ? String(denuncia.fecha_hecho_fin) : undefined),
             hora_hecho_fin: denuncia.hora_hecho_fin ? String(denuncia.hora_hecho_fin) : undefined,
-            tipo_denuncia: String(denuncia.tipo_denuncia),
-            relato: String(denuncia.relato),
+            tipo_denuncia: String(denuncia.tipo_denuncia), // Tipo original
+
+            // Relato de la ampliación
+            relato: String(ampliacion.relato),
+
             lugar_hecho: String(denuncia.lugar_hecho),
             lugar_hecho_no_aplica: Boolean(denuncia.lugar_hecho_no_aplica),
             latitud: denuncia.latitud,
             longitud: denuncia.longitud,
             monto_dano: denuncia.monto_dano,
             moneda: denuncia.moneda ? String(denuncia.moneda) : undefined,
-            operador_grado: String(denuncia.operador_grado_final || ''),
-            operador_nombre: String(denuncia.operador_nombre_final || ''),
-            operador_apellido: String(denuncia.operador_apellido_final || ''),
+
+            // Operador de la ampliación
+            operador_grado: String(ampliacion.operador_grado || ''),
+            operador_nombre: String(ampliacion.operador_nombre || ''),
+            operador_apellido: String(ampliacion.operador_apellido || ''),
+
+            // Datos del denunciante original
             nombres_denunciante: String(denuncia.nombres_denunciante),
             cedula: String(denuncia.cedula),
             tipo_documento: denuncia.tipo_documento ? String(denuncia.tipo_documento) : undefined,
@@ -150,6 +147,8 @@ export async function GET(
             correo: denuncia.correo ? String(denuncia.correo) : undefined,
             profesion: denuncia.profesion ? String(denuncia.profesion) : undefined,
             matricula: denuncia.matricula ? String(denuncia.matricula) : undefined,
+
+            // Autores e involucrados originales
             supuestos_autores: autoresResult.rows.map(autor => ({
                 autor_conocido: String(autor.autor_conocido),
                 nombre_autor: autor.nombre_autor ? String(autor.nombre_autor) : undefined,
@@ -190,22 +189,13 @@ export async function GET(
                 matricula: inv.matricula ? String(inv.matricula) : undefined,
             })),
             qr_code_url: await QRCode.toDataURL(`${request.headers.get('x-forwarded-proto') || 'https'}://${request.headers.get('host')}/verificar/${denuncia.hash}`),
-            is_duplicate: isDuplicate,
-            operador_actual: operadorActual ? {
-                id: Number(operadorActual.id),
-                nombre: String(operadorActual.nombre),
-                apellido: String(operadorActual.apellido),
-                grado: String(operadorActual.grado)
-            } : undefined,
-            usuario_id: denuncia.usuario_id,
-            es_denuncia_escrita: denuncia.es_denuncia_escrita,
-            archivo_denuncia_url: denuncia.archivo_denuncia_url
+            usuario_id: ampliacion.usuario_id
         };
 
         // Determinar el tamaño de página
         const pageSize = tipo === 'a4' ? 'A4' : 'LETTER';
 
-        // Generar el PDF usando renderToBuffer con JSX
+        // Generar el PDF
         const pdfBuffer = await renderToBuffer(
             <DenunciaPDFDocument
                 denuncia={denunciaData}
@@ -213,58 +203,17 @@ export async function GET(
             />
         );
 
-        // Si es denuncia escrita y tiene archivo adjunto, fusionar PDFs
-        if (denuncia.es_denuncia_escrita && denuncia.archivo_denuncia_url) {
-            try {
-                // 1. Cargar el documento original (Carátula)
-                const caratulaPdf = await PDFDocument.load(pdfBuffer);
-
-                // 2. Descargar y cargar el documento adjunto
-                const response = await fetch(denuncia.archivo_denuncia_url);
-                if (!response.ok) throw new Error('No se pudo descargar el archivo adjunto');
-                const adjuntoArrayBuffer = await response.arrayBuffer();
-                const adjuntoPdf = await PDFDocument.load(adjuntoArrayBuffer);
-
-                // 3. Crear nuevo documento
-                const mergedPdf = await PDFDocument.create();
-
-                // 4. Copiar páginas de la carátula
-                const caratulaPages = await mergedPdf.copyPages(caratulaPdf, caratulaPdf.getPageIndices());
-                caratulaPages.forEach((page) => mergedPdf.addPage(page));
-
-                // 5. Copiar páginas del adjunto
-                const adjuntoPages = await mergedPdf.copyPages(adjuntoPdf, adjuntoPdf.getPageIndices());
-                adjuntoPages.forEach((page) => mergedPdf.addPage(page));
-
-                // 6. Guardar como Uint8Array
-                const mergedPdfBytes = await mergedPdf.save();
-
-                return new NextResponse(Buffer.from(mergedPdfBytes), {
-                    headers: {
-                        'Content-Type': 'application/pdf',
-                        'Content-Disposition': `attachment; filename="denuncia_escrita_${denuncia.orden}_${new Date().toISOString().split('T')[0]}.pdf"`,
-                    },
-                });
-
-            } catch (mergeError) {
-                console.error('Error fusionando PDFs:', mergeError);
-                // Si falla la fusión, devolver solo la carátula pero registrando el error
-                // Opcionalmente podríamos agregar una página de error en el PDF
-            }
-        }
-
-        // Convertir Buffer a Uint8Array para NextResponse
+        // Convertir Buffer a Uint8Array
         const uint8Array = new Uint8Array(pdfBuffer);
 
-        // Retornar el PDF
-        return new NextResponse(uint8Array, {
+        return new NextResponse(Buffer.from(uint8Array), {
             headers: {
                 'Content-Type': 'application/pdf',
-                'Content-Disposition': `attachment; filename="denuncia_${denuncia.orden}_${new Date().toISOString().split('T')[0]}.pdf"`,
+                'Content-Disposition': `attachment; filename="ampliacion_${ampliacion.numero_ampliacion}_${denuncia.orden}.pdf"`,
             },
         });
     } catch (error) {
-        console.error('Error generando PDF:', error);
+        console.error('Error generando PDF de ampliación:', error);
         return NextResponse.json(
             { error: 'Error al generar PDF' },
             { status: 500 }
