@@ -92,11 +92,30 @@ export async function GET(request: NextRequest) {
             [primerDia, ultimoDia]
         )
 
+        // 3. Top 5 Operadores del mes
+        const topOperadoresResult = await pool.query(
+            `SELECT 
+                TRIM(
+                    COALESCE(operador_grado, '') || ' ' || 
+                    COALESCE(operador_nombre, '') || ' ' || 
+                    COALESCE(operador_apellido, '')
+                ) as operador,
+                COUNT(*) as total
+             FROM denuncias
+             WHERE fecha_denuncia BETWEEN $1::DATE AND $2::DATE
+               AND estado = 'completada'
+             GROUP BY operador
+             ORDER BY total DESC
+             LIMIT 5`,
+            [primerDia, ultimoDia]
+        )
+
         return NextResponse.json({
             resumen_especifico,
             resumen_general,
             evolucion_diaria,
-            denunciantes_recurrentes: recurrentesResult.rows
+            denunciantes_recurrentes: recurrentesResult.rows,
+            top_operadores: topOperadoresResult.rows
         })
     } catch (error) {
         console.error('Error obteniendo resumen mensual:', error)
