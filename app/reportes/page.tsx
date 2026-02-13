@@ -57,7 +57,7 @@ interface DatosMensuales {
   denuncias_danos?: ReporteRow[]
 }
 
-type SortField = 'numero_denuncia' | 'hora_denuncia'
+type SortField = 'numero_denuncia' | 'hora_denuncia' | 'shp' | 'monto_dano' | 'moneda'
 type SortDirection = 'asc' | 'desc'
 type Tab = 'diario' | 'mensual' | 'danos'
 
@@ -215,6 +215,12 @@ export default function ReportesPage() {
         const horaA = a.hora_denuncia || '00:00'
         const horaB = b.hora_denuncia || '00:00'
         comparison = horaA.localeCompare(horaB)
+      } else if (sortField === 'shp') {
+        comparison = (a.tipo_especifico || a.shp || '').localeCompare(b.tipo_especifico || b.shp || '')
+      } else if (sortField === 'monto_dano') {
+        comparison = (a.monto_dano || 0) - (b.monto_dano || 0)
+      } else if (sortField === 'moneda') {
+        comparison = (a.moneda || '').localeCompare(b.moneda || '')
       }
 
       return sortDirection === 'asc' ? comparison : -comparison
@@ -1037,11 +1043,19 @@ export default function ReportesPage() {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase">Denuncia</th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase cursor-pointer hover:bg-gray-100 transition" onClick={() => handleSort('numero_denuncia')}>
+                        <div className="flex items-center gap-2">Denuncia <SortIcon field="numero_denuncia" /></div>
+                      </th>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase">Denunciante</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase">Hecho Punible</th>
-                      <th className="px-6 py-4 text-right text-xs font-semibold text-gray-700 uppercase">Monto Daño</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase">Moneda</th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase cursor-pointer hover:bg-gray-100 transition" onClick={() => handleSort('shp')}>
+                        <div className="flex items-center gap-2">Hecho Punible <SortIcon field="shp" /></div>
+                      </th>
+                      <th className="px-6 py-4 text-right text-xs font-semibold text-gray-700 uppercase cursor-pointer hover:bg-gray-100 transition" onClick={() => handleSort('monto_dano')}>
+                        <div className="flex items-center gap-2 justify-end">Monto Daño <SortIcon field="monto_dano" /></div>
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase cursor-pointer hover:bg-gray-100 transition" onClick={() => handleSort('moneda')}>
+                        <div className="flex items-center gap-2">Moneda <SortIcon field="moneda" /></div>
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
