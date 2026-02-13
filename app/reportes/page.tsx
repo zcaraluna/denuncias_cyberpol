@@ -158,10 +158,9 @@ export default function ReportesPage() {
       }
 
       setDatos(data)
-      setFiltrosTipos([]) // Resetear filtros al buscar nuevo día
-
       const tiposUnicos: string[] = Array.from(new Set(data.map((row: ReporteRow) => row.shp).filter((tipo: string | undefined): tipo is string => Boolean(tipo))))
       setTiposDisponibles(tiposUnicos.sort())
+      setFiltrosTipos(tiposUnicos) // Select all by default
 
       if (data.length === 0 && fecha) {
         setError(`No se encontraron denuncias para la fecha ${fecha}${tipoDenuncia ? ` y tipo "${tipoDenuncia}"` : ''}`)
@@ -196,11 +195,14 @@ export default function ReportesPage() {
       }
 
       setDatosMensuales(data)
-      setFiltrosTipos([]) // Resetear filtros al buscar nuevo periodo
       if (activeTab === 'danos') {
-        setDatos(data.denuncias_danos || [])
+        const rows: ReporteRow[] = data.denuncias_danos || []
+        setDatos(rows)
+        const tiposUnicos: string[] = Array.from(new Set(rows.map(d => d.shp).filter((shp): shp is string => Boolean(shp))))
+        setFiltrosTipos(tiposUnicos) // Select all by default
       } else {
         setDatos([])
+        setFiltrosTipos([])
       }
 
       if (data.resumen_especifico.length === 0 && data.resumen_general.length === 0 && (!data.denuncias_danos || data.denuncias_danos.length === 0)) {
@@ -225,9 +227,11 @@ export default function ReportesPage() {
   }
 
   const datosOrdenados = useMemo(() => {
-    const sorted = filtrosTipos.length > 0
+    // Si no se ha buscado nada yet (datos vacíos), no filtramos estrictamente para evitar mostrar nada
+    // Pero si hay datos, filtramos por los seleccionados
+    const sorted = datos.length > 0
       ? datos.filter(d => filtrosTipos.includes(d.tipo_especifico || d.shp || ''))
-      : [...datos]
+      : []
 
     sorted.sort((a, b) => {
       let comparison = 0
