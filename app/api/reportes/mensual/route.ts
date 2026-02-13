@@ -122,13 +122,39 @@ export async function GET(request: NextRequest) {
             [primerDia, ultimoDia]
         )
 
+        // 4. Detalle de Denuncias con Daños para la pestaña de Daños
+        const denunciasDanosResult = await pool.query(
+            `SELECT 
+                d.orden as numero_denuncia,
+                EXTRACT(YEAR FROM d.fecha_denuncia)::integer as año,
+                d.hora_denuncia,
+                d.tipo_denuncia as shp,
+                den.nombres as denunciante,
+                TRIM(
+                    COALESCE(d.operador_grado, '') || ' ' || 
+                    COALESCE(d.operador_nombre, '') || ' ' || 
+                    COALESCE(d.operador_apellido, '')
+                ) as interviniente,
+                d.oficina,
+                d.monto_dano,
+                d.moneda
+            FROM denuncias d
+            LEFT JOIN denunciantes den ON d.denunciante_id = den.id
+            WHERE d.fecha_denuncia BETWEEN $1::DATE AND $2::DATE
+                AND d.estado = 'completada'
+                AND d.monto_dano > 0
+            ORDER BY d.fecha_denuncia ASC, d.hora_denuncia ASC`,
+            [primerDia, ultimoDia]
+        )
+
         return NextResponse.json({
             resumen_especifico,
             resumen_general,
             evolucion_diaria,
             resumen_danos,
             denunciantes_recurrentes: recurrentesResult.rows,
-            top_operadores: topOperadoresResult.rows
+            top_operadores: topOperadoresResult.rows,
+            denuncias_danos: denunciasDanosResult.rows
         })
     } catch (error) {
         console.error('Error obteniendo resumen mensual:', error)

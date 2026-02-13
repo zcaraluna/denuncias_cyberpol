@@ -54,6 +54,7 @@ interface DatosMensuales {
   top_operadores: { operador: string; total: number }[]
   denunciantes_recurrentes: Recurrente[]
   resumen_danos: { moneda: string; total: number }[]
+  denuncias_danos?: ReporteRow[]
 }
 
 type SortField = 'numero_denuncia' | 'hora_denuncia'
@@ -176,8 +177,13 @@ export default function ReportesPage() {
       }
 
       setDatosMensuales(data)
+      if (activeTab === 'danos') {
+        setDatos(data.denuncias_danos || [])
+      } else {
+        setDatos([])
+      }
 
-      if (data.resumen_especifico.length === 0 && data.resumen_general.length === 0) {
+      if (data.resumen_especifico.length === 0 && data.resumen_general.length === 0 && (!data.denuncias_danos || data.denuncias_danos.length === 0)) {
         setError(`No se encontraron denuncias para el período ${mes}/${año}`)
       }
     } catch (error) {
@@ -565,8 +571,8 @@ export default function ReportesPage() {
 
           <div className="flex justify-end">
             <button
-              onClick={activeTab === 'diario' || activeTab === 'danos' ? handleBuscarDiario : handleBuscarMensual}
-              disabled={cargando || ((activeTab === 'diario' || activeTab === 'danos') && !fecha)}
+              onClick={activeTab === 'diario' ? handleBuscarDiario : handleBuscarMensual}
+              disabled={cargando || (activeTab === 'diario' && !fecha)}
               className="px-8 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition shadow-md hover:shadow-lg flex items-center gap-2 font-medium"
             >
               {cargando ? (
