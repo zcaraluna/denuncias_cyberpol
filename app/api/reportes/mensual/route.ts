@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
 
         // Obtener todas las denuncias del mes para procesar en memoria los tipos y evolución diaria
         const denunciasResult = await pool.query(
-            `SELECT d.tipo_denuncia, d.orden, EXTRACT(YEAR FROM d.fecha_denuncia)::integer as año, d.denunciante_id, TO_CHAR(d.fecha_denuncia, 'YYYY-MM-DD') as fecha
+            `SELECT d.tipo_denuncia, d.orden, EXTRACT(YEAR FROM d.fecha_denuncia)::integer as año, d.denunciante_id, TO_CHAR(d.fecha_denuncia, 'YYYY-MM-DD') as fecha, d.monto_dano, d.moneda
        FROM denuncias d
        WHERE d.fecha_denuncia BETWEEN $1::DATE AND $2::DATE
          AND d.estado = 'completada'`,
@@ -29,19 +29,26 @@ export async function GET(request: NextRequest) {
 
         const denuncias = denunciasResult.rows
 
-        // 1. Resumen por Tipo de Denuncia y Evolución Diaria
+        // 1. Resumen por Tipo de Denuncia, Evolución Diaria y Daños
         const statsEspecifico: Record<string, number> = {}
         const statsGeneral: Record<string, number> = {}
         const statsDiarios: Record<string, number> = {}
+        const statsDanos: Record<string, number> = {} // Acumulado por moneda
 
         denuncias.forEach(d => {
             const esp = d.tipo_denuncia || 'SIN ESPECIFICAR'
             const gen = obtenerCapitulo(esp) || esp
             const fecha = d.fecha
+            const monto = d.monto_dano ? parseInt(d.monto_dano, 10) : 0
+            const moneda = d.moneda
 
             statsEspecifico[esp] = (statsEspecifico[esp] || 0) + 1
             statsGeneral[gen] = (statsGeneral[gen] || 0) + 1
             statsDiarios[fecha] = (statsDiarios[fecha] || 0) + 1
+
+            if (monto > 0 && moneda) {
+                statsDanos[moneda] = (statsDanos[moneda] || 0) + monto
+            }
         })
 
         const resumen_especifico = Object.entries(statsEspecifico)
@@ -50,6 +57,10 @@ export async function GET(request: NextRequest) {
 
         const resumen_general = Object.entries(statsGeneral)
             .map(([tipo, total]) => ({ tipo, total }))
+            .sort((a, b) => b.total - a.total)
+
+        const resumen_danos = Object.entries(statsDanos)
+            .map(([moneda, total]) => ({ moneda, total }))
             .sort((a, b) => b.total - a.total)
 
         // Generar lista completa de días para el gráfico (incluso los que tienen 0)
@@ -115,6 +126,7 @@ export async function GET(request: NextRequest) {
             resumen_especifico,
             resumen_general,
             evolucion_diaria,
+            resumen_danos,
             denunciantes_recurrentes: recurrentesResult.rows,
             top_operadores: topOperadoresResult.rows
         })

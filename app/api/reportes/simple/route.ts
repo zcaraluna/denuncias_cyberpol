@@ -56,7 +56,9 @@ export async function GET(request: NextRequest) {
           COALESCE(d.operador_nombre, '') || ' ' || 
           COALESCE(d.operador_apellido, '')
         ) as interviniente,
-        d.oficina
+        d.oficina,
+        d.monto_dano,
+        d.moneda
       FROM denuncias d
       LEFT JOIN denunciantes den ON d.denunciante_id = den.id
       WHERE ${whereClause}
