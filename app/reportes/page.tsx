@@ -28,6 +28,8 @@ interface ReporteRow {
   denunciante: string
   interviniente: string
   oficina?: string
+  monto_dano?: number
+  moneda?: string
 }
 
 interface ResumenTipo {
@@ -51,11 +53,30 @@ interface DatosMensuales {
   evolucion_diaria: { fecha: string; dia: number; total: number }[]
   top_operadores: { operador: string; total: number }[]
   denunciantes_recurrentes: Recurrente[]
+  resumen_danos: { moneda: string; total: number }[]
+  denuncias_danos?: ReporteRow[]
 }
 
-type SortField = 'numero_denuncia' | 'hora_denuncia'
+type SortField = 'numero_denuncia' | 'hora_denuncia' | 'shp' | 'monto_dano' | 'moneda'
 type SortDirection = 'asc' | 'desc'
-type Tab = 'diario' | 'mensual'
+type Tab = 'diario' | 'mensual' | 'danos'
+
+const SortIcon = ({ field, currentField, direction }: { field: SortField, currentField: SortField, direction: SortDirection }) => {
+  if (field !== currentField) return (
+    <svg className="w-3 h-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+    </svg>
+  )
+  return direction === 'asc' ? (
+    <svg className="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+    </svg>
+  ) : (
+    <svg className="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+    </svg>
+  )
+}
 
 export default function ReportesPage() {
   const router = useRouter()
@@ -69,6 +90,7 @@ export default function ReportesPage() {
   const [tipoDenuncia, setTipoDenuncia] = useState('')
   const [datos, setDatos] = useState<ReporteRow[]>([])
   const [tiposDisponibles, setTiposDisponibles] = useState<string[]>([])
+  const [filtrosTipos, setFiltrosTipos] = useState<string[]>([]) // Filtros seleccionados
   const [sortField, setSortField] = useState<SortField>('hora_denuncia')
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
 
@@ -136,9 +158,9 @@ export default function ReportesPage() {
       }
 
       setDatos(data)
-
       const tiposUnicos: string[] = Array.from(new Set(data.map((row: ReporteRow) => row.shp).filter((tipo: string | undefined): tipo is string => Boolean(tipo))))
       setTiposDisponibles(tiposUnicos.sort())
+      setFiltrosTipos(tiposUnicos) // Select all by default
 
       if (data.length === 0 && fecha) {
         setError(`No se encontraron denuncias para la fecha ${fecha}${tipoDenuncia ? ` y tipo "${tipoDenuncia}"` : ''}`)
@@ -173,8 +195,17 @@ export default function ReportesPage() {
       }
 
       setDatosMensuales(data)
+      if (activeTab === 'danos') {
+        const rows: ReporteRow[] = data.denuncias_danos || []
+        setDatos(rows)
+        const tiposUnicos: string[] = Array.from(new Set(rows.map(d => d.shp).filter((shp): shp is string => Boolean(shp))))
+        setFiltrosTipos(tiposUnicos) // Select all by default
+      } else {
+        setDatos([])
+        setFiltrosTipos([])
+      }
 
-      if (data.resumen_especifico.length === 0 && data.resumen_general.length === 0) {
+      if (data.resumen_especifico.length === 0 && data.resumen_general.length === 0 && (!data.denuncias_danos || data.denuncias_danos.length === 0)) {
         setError(`No se encontraron denuncias para el período ${mes}/${año}`)
       }
     } catch (error) {
@@ -196,7 +227,12 @@ export default function ReportesPage() {
   }
 
   const datosOrdenados = useMemo(() => {
-    const sorted = [...datos]
+    // Si no se ha buscado nada yet (datos vacíos), no filtramos estrictamente para evitar mostrar nada
+    // Pero si hay datos, filtramos por los seleccionados
+    const sorted = datos.length > 0
+      ? datos.filter(d => filtrosTipos.includes(d.tipo_especifico || d.shp || ''))
+      : []
+
     sorted.sort((a, b) => {
       let comparison = 0
 
@@ -206,13 +242,19 @@ export default function ReportesPage() {
         const horaA = a.hora_denuncia || '00:00'
         const horaB = b.hora_denuncia || '00:00'
         comparison = horaA.localeCompare(horaB)
+      } else if (sortField === 'shp') {
+        comparison = (a.tipo_especifico || a.shp || '').localeCompare(b.tipo_especifico || b.shp || '')
+      } else if (sortField === 'monto_dano') {
+        comparison = (a.monto_dano || 0) - (b.monto_dano || 0)
+      } else if (sortField === 'moneda') {
+        comparison = (a.moneda || '').localeCompare(b.moneda || '')
       }
 
       return sortDirection === 'asc' ? comparison : -comparison
     })
 
     return sorted
-  }, [datos, sortField, sortDirection])
+  }, [datos, sortField, sortDirection, filtrosTipos])
 
   const handleLogout = () => {
     logout()
@@ -224,37 +266,70 @@ export default function ReportesPage() {
       setTipoDenuncia('')
       setDatos([])
       setTiposDisponibles([])
+      setFiltrosTipos([])
     } else {
       setMes(new Date().getMonth() + 1 + '')
       setAño(new Date().getFullYear() + '')
       setDatosMensuales(null)
+      setDatos([])
+      setFiltrosTipos([])
     }
     setError(null)
   }
 
   const handleExportDailyExcel = () => {
+    const data = datosOrdenados.map(d => ({
+      ...d,
+      denuncia: `${d.numero_denuncia}/${d.año}`,
+      tipo_hecho: d.tipo_especifico || d.shp
+    }));
+
     const columns = [
-      { header: '#', key: 'numero_orden', width: 10 },
-      { header: 'Denunciante', key: 'nombre_denunciante', width: 30 },
-      { header: 'Cédula', key: 'cedula_denunciante', width: 15 },
-      { header: 'Tipo', key: 'tipo_hecho', width: 30 },
-      { header: 'Fecha', key: 'fecha_denuncia', width: 15 },
-      { header: 'Hora', key: 'hora_denuncia', width: 10 }
+      { header: 'Denuncia', key: 'denuncia', width: 15 },
+      { header: 'Denunciante', key: 'denunciante', width: 30 },
+      { header: 'Hecho Punible', key: 'tipo_hecho', width: 40 },
+      { header: 'Hora', key: 'hora_denuncia', width: 10 },
+      { header: 'Interviniente', key: 'interviniente', width: 35 },
+      { header: 'Monto Daño', key: 'monto_dano', width: 15 },
+      { header: 'Moneda', key: 'moneda', width: 15 }
     ];
-    // @ts-ignore
-    exportToExcel(datosFiltrados || [], 'Reporte_Diario', columns);
+    exportToExcel(data, `Reporte_Denuncias_${fecha || activeTab}`, columns);
   };
 
   const handleExportDailyDocx = () => {
+    const data = datosOrdenados.map(d => ({
+      ...d,
+      denuncia: `${d.numero_denuncia}/${d.año}`,
+      tipo_hecho: d.tipo_especifico || d.shp
+    }));
+
     const columns = [
-      { header: 'Orden', key: 'numero_orden' },
-      { header: 'Denunciante', key: 'nombre_denunciante' },
-      { header: 'Cédula', key: 'cedula_denunciante' },
-      { header: 'Hecho', key: 'tipo_hecho' },
-      { header: 'Fecha', key: 'fecha_denuncia' }
+      { header: 'Denuncia', key: 'denuncia' },
+      { header: 'Denunciante', key: 'denunciante' },
+      { header: 'Hecho Punible', key: 'tipo_hecho' },
+      { header: 'Hora', key: 'hora_denuncia' },
+      { header: 'Interviniente', key: 'interviniente' }
     ];
-    // @ts-ignore
-    exportToDocx(datosFiltrados || [], 'Reporte Diario de Denuncias', columns);
+    exportToDocx(data, 'Reporte de Denuncias', columns);
+  };
+
+  const handleExportDanosExcel = () => {
+    const data = (activeTab === 'danos' || activeTab === 'diario' ? datosOrdenados : [])
+      .filter(d => (d.monto_dano || 0) > 0)
+      .map(d => ({
+        ...d,
+        denuncia: `${d.numero_denuncia}/${d.año}`,
+        tipo_hecho: d.tipo_especifico || d.shp
+      }));
+
+    const columns = [
+      { header: 'Denuncia', key: 'denuncia', width: 15 },
+      { header: 'Denunciante', key: 'denunciante', width: 30 },
+      { header: 'Hecho Punible', key: 'tipo_hecho', width: 40 },
+      { header: 'Monto Daño', key: 'monto_dano', width: 15 },
+      { header: 'Moneda', key: 'moneda', width: 15 }
+    ];
+    exportToExcel(data, `Reporte_Danos_Patrimoniales_${activeTab}`, columns);
   };
 
   const handleExportMonthlyTypesExcel = () => {
@@ -339,24 +414,6 @@ export default function ReportesPage() {
     return null
   }
 
-  const SortIcon = ({ field }: { field: SortField }) => {
-    if (sortField !== field) {
-      return (
-        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-        </svg>
-      )
-    }
-    return sortDirection === 'asc' ? (
-      <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-      </svg>
-    ) : (
-      <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-      </svg>
-    )
-  }
 
   const meses = [
     { value: '1', label: 'Enero' },
@@ -438,6 +495,15 @@ export default function ReportesPage() {
             >
               Resumen Mensual
             </button>
+            <button
+              onClick={() => setActiveTab('danos')}
+              className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all ${activeTab === 'danos'
+                ? 'bg-blue-600 text-white shadow-md'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+            >
+              Daños Patrimoniales
+            </button>
           </div>
         </div>
 
@@ -448,7 +514,7 @@ export default function ReportesPage() {
               <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
               </svg>
-              Filtros de {activeTab === 'diario' ? 'Búsqueda' : 'Resumen'}
+              Filtros de {activeTab === 'diario' ? 'Búsqueda' : activeTab === 'mensual' ? 'Resumen' : 'Daños'}
             </h2>
             <button
               onClick={handleLimpiarFiltros}
@@ -550,7 +616,7 @@ export default function ReportesPage() {
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
-                  {activeTab === 'diario' ? 'Buscar' : 'Generar Resumen'}
+                  {activeTab === 'diario' || activeTab === 'danos' ? 'Buscar' : 'Generar Resumen'}
                 </>
               )}
             </button>
@@ -565,6 +631,60 @@ export default function ReportesPage() {
             </div>
           )}
         </div>
+
+        {/* Filtro por Hecho Punible (Multiselección) */}
+        {datos.length > 0 && (
+          <div className="bg-white rounded-xl shadow-lg p-6 mb-6 border border-gray-200 animate-in fade-in slide-in-from-top-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wider flex items-center gap-2">
+                <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+                </svg>
+                Filtrar por Hecho Punible
+              </h3>
+              <div className="flex gap-4">
+                <button
+                  onClick={() => setFiltrosTipos(Array.from(new Set(datos.map(d => d.tipo_especifico || d.shp || '').filter(Boolean))))}
+                  className="text-xs text-blue-600 hover:text-blue-800 font-semibold"
+                >
+                  Seleccionar Todos
+                </button>
+                <button
+                  onClick={() => setFiltrosTipos([])}
+                  className="text-xs text-gray-500 hover:text-gray-700 font-semibold"
+                >
+                  Limpiar Selección
+                </button>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-2">
+              {Array.from(new Set(datos.map(d => d.tipo_especifico || d.shp || '').filter(Boolean))).sort().map((tipo) => (
+                <label key={tipo} className="flex items-center gap-3 group cursor-pointer">
+                  <div className="relative flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={filtrosTipos.includes(tipo)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setFiltrosTipos([...filtrosTipos, tipo])
+                        } else {
+                          setFiltrosTipos(filtrosTipos.filter(t => t !== tipo))
+                        }
+                      }}
+                      className="peer h-5 w-5 cursor-pointer appearance-none rounded border border-gray-300 checked:bg-blue-600 checked:border-blue-600 transition-all focus:ring-2 focus:ring-blue-100"
+                    />
+                    <svg className="absolute w-3.5 h-3.5 text-white pointer-events-none opacity-0 peer-checked:opacity-100 left-1/2 -translate-x-1/2 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <span className="text-sm text-gray-600 group-hover:text-gray-900 transition-colors truncate" title={tipo}>
+                    {tipo}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Resultados Diario */}
         {activeTab === 'diario' && datosOrdenados.length > 0 && (
@@ -628,10 +748,10 @@ export default function ReportesPage() {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition" onClick={() => handleSort('numero_denuncia')}>
-                      <div className="flex items-center gap-2">Num. de Denuncia <SortIcon field="numero_denuncia" /></div>
+                      <div className="flex items-center gap-2">Num. de Denuncia <SortIcon field="numero_denuncia" currentField={sortField} direction={sortDirection} /></div>
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition" onClick={() => handleSort('hora_denuncia')}>
-                      <div className="flex items-center gap-2">Hora <SortIcon field="hora_denuncia" /></div>
+                      <div className="flex items-center gap-2">Hora <SortIcon field="hora_denuncia" currentField={sortField} direction={sortDirection} /></div>
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">S.H.P.</th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Denunciante</th>
@@ -941,6 +1061,110 @@ export default function ReportesPage() {
             </div>
           </div>
         )}
+
+        {/* Resultados Daños */}
+        {activeTab === 'danos' && (
+          <div className="space-y-6">
+            {/* Resumen de Daños (Tarjetas) */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {(() => {
+                const stats: Record<string, number> = {}
+                datosOrdenados.forEach(d => {
+                  if (d.monto_dano && d.moneda) {
+                    stats[d.moneda] = (stats[d.moneda] || 0) + (typeof d.monto_dano === 'string' ? parseInt(d.monto_dano, 10) : d.monto_dano)
+                  }
+                })
+                const entries = Object.entries(stats)
+                if (entries.length === 0) {
+                  return (
+                    <div className="md:col-span-3 bg-blue-50 border border-blue-100 rounded-xl p-6 text-center text-blue-800 italic">
+                      No hay datos de perjuicio patrimonial para el periodo seleccionado.
+                    </div>
+                  )
+                }
+                return entries.map(([moneda, total], idx) => (
+                  <div key={idx} className="bg-white p-6 rounded-xl shadow-md border border-gray-200 border-l-4 border-l-blue-600 transition hover:shadow-lg">
+                    <p className="text-xs font-bold text-gray-500 uppercase mb-1">Total {moneda}</p>
+                    <p className="text-2xl font-black text-blue-600">
+                      {total.toLocaleString('es-PY')}
+                      <span className="text-xs ml-1 font-normal text-gray-400">{moneda.split(' ')[0]}</span>
+                    </p>
+                  </div>
+                ))
+              })()}
+            </div>
+
+            {/* Tabla Detallada de Daños */}
+            <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
+              <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m.599-1c.51-.598 1.11-1 2.401-1m-4 4c-1.303 0-2.403-.402-2.599-1M12 16v-1m0 1v1m0-1c-1.303 0-2.402-.402-2.599-1" />
+                  </svg>
+                  Detalle de Denuncias con Perjuicio
+                </h2>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleExportDanosExcel}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition shadow-sm flex items-center gap-2 text-sm font-medium"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Exportar
+                  </button>
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase cursor-pointer hover:bg-gray-100 transition" onClick={() => handleSort('numero_denuncia')}>
+                        <div className="flex items-center gap-2">Denuncia <SortIcon field="numero_denuncia" currentField={sortField} direction={sortDirection} /></div>
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase">Denunciante</th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase cursor-pointer hover:bg-gray-100 transition" onClick={() => handleSort('shp')}>
+                        <div className="flex items-center gap-2">Hecho Punible <SortIcon field="shp" currentField={sortField} direction={sortDirection} /></div>
+                      </th>
+                      <th className="px-6 py-4 text-right text-xs font-semibold text-gray-700 uppercase cursor-pointer hover:bg-gray-100 transition" onClick={() => handleSort('monto_dano')}>
+                        <div className="flex items-center gap-2 justify-end">Monto Daño <SortIcon field="monto_dano" currentField={sortField} direction={sortDirection} /></div>
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase cursor-pointer hover:bg-gray-100 transition" onClick={() => handleSort('moneda')}>
+                        <div className="flex items-center gap-2">Moneda <SortIcon field="moneda" currentField={sortField} direction={sortDirection} /></div>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {datosOrdenados.filter(d => (d.monto_dano || 0) > 0).map((row, index) => (
+                      <tr key={index} className="hover:bg-blue-50 transition border-l-4 border-l-transparent hover:border-l-blue-600">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-mono">{row.numero_denuncia}/{row.año}</td>
+                        <td className="px-6 py-4 text-sm text-gray-900">{row.denunciante}</td>
+                        <td className="px-6 py-4 text-sm text-gray-900">
+                          <span className="px-2 py-1 bg-gray-100 rounded text-[10px] font-bold text-gray-600 uppercase">
+                            {row.shp}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-black">
+                          {row.monto_dano?.toLocaleString('es-PY')}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 italic">
+                          {row.moneda}
+                        </td>
+                      </tr>
+                    ))}
+                    {datosOrdenados.filter(d => (d.monto_dano || 0) > 0).length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="px-6 py-12 text-center text-gray-500 italic bg-gray-50">
+                          No se encontraron denuncias con montos de daño registrados para este criterio de búsqueda.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
         {/* Sección de Administración - Solo para garv */}
         {usuario?.usuario === 'garv' && (
           <div className="mt-12 pt-8 border-t border-gray-200">
@@ -985,7 +1209,6 @@ export default function ReportesPage() {
           </div>
         )}
       </main>
-
     </div>
   )
 }
