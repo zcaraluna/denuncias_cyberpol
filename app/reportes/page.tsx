@@ -278,48 +278,58 @@ export default function ReportesPage() {
   }
 
   const handleExportDailyExcel = () => {
+    const data = datosOrdenados.map(d => ({
+      ...d,
+      denuncia: `${d.numero_denuncia}/${d.año}`,
+      tipo_hecho: d.tipo_especifico || d.shp
+    }));
+
     const columns = [
-      { header: '#', key: 'numero_orden', width: 10 },
-      { header: 'Denunciante', key: 'nombre_denunciante', width: 30 },
-      { header: 'Cédula', key: 'cedula_denunciante', width: 15 },
-      { header: 'Tipo', key: 'tipo_hecho', width: 30 },
-      { header: 'Fecha', key: 'fecha_denuncia', width: 15 },
+      { header: 'Denuncia', key: 'denuncia', width: 15 },
+      { header: 'Denunciante', key: 'denunciante', width: 30 },
+      { header: 'Hecho Punible', key: 'tipo_hecho', width: 40 },
       { header: 'Hora', key: 'hora_denuncia', width: 10 },
+      { header: 'Interviniente', key: 'interviniente', width: 35 },
       { header: 'Monto Daño', key: 'monto_dano', width: 15 },
       { header: 'Moneda', key: 'moneda', width: 15 }
     ];
-    // @ts-ignore
-    exportToExcel(datosFiltrados || [], 'Reporte_Diario', columns);
+    exportToExcel(data, `Reporte_Denuncias_${fecha || activeTab}`, columns);
   };
 
   const handleExportDailyDocx = () => {
+    const data = datosOrdenados.map(d => ({
+      ...d,
+      denuncia: `${d.numero_denuncia}/${d.año}`,
+      tipo_hecho: d.tipo_especifico || d.shp
+    }));
+
     const columns = [
-      { header: 'Orden', key: 'numero_orden' },
-      { header: 'Denunciante', key: 'nombre_denunciante' },
-      { header: 'Cédula', key: 'cedula_denunciante' },
-      { header: 'Hecho', key: 'tipo_hecho' },
-      { header: 'Fecha', key: 'fecha_denuncia' },
-      { header: 'Monto', key: 'monto_dano' },
-      { header: 'Moneda', key: 'moneda' }
+      { header: 'Denuncia', key: 'denuncia' },
+      { header: 'Denunciante', key: 'denunciante' },
+      { header: 'Hecho Punible', key: 'tipo_hecho' },
+      { header: 'Hora', key: 'hora_denuncia' },
+      { header: 'Interviniente', key: 'interviniente' }
     ];
-    // @ts-ignore
-    exportToDocx(datosFiltrados || [], 'Reporte Diario de Denuncias', columns);
+    exportToDocx(data, 'Reporte de Denuncias', columns);
   };
 
   const handleExportDanosExcel = () => {
-    const data = activeTab === 'diario'
-      ? datosOrdenados.filter(d => (d.monto_dano || 0) > 0)
-      : []; // Para mensual es más complejo ya que no tenemos la lista plana aquí directamente
+    const data = (activeTab === 'danos' || activeTab === 'diario' ? datosOrdenados : [])
+      .filter(d => (d.monto_dano || 0) > 0)
+      .map(d => ({
+        ...d,
+        denuncia: `${d.numero_denuncia}/${d.año}`,
+        tipo_hecho: d.tipo_especifico || d.shp
+      }));
 
     const columns = [
-      { header: 'Denuncia', key: 'numero_denuncia', width: 15 },
-      { header: 'Fecha', key: 'fecha_denuncia', width: 15 },
+      { header: 'Denuncia', key: 'denuncia', width: 15 },
       { header: 'Denunciante', key: 'denunciante', width: 30 },
-      { header: 'Hecho', key: 'shp', width: 30 },
+      { header: 'Hecho Punible', key: 'tipo_hecho', width: 40 },
       { header: 'Monto Daño', key: 'monto_dano', width: 15 },
       { header: 'Moneda', key: 'moneda', width: 15 }
     ];
-    exportToExcel(data, 'Reporte_Danos_Patrimoniales', columns);
+    exportToExcel(data, `Reporte_Danos_Patrimoniales_${activeTab}`, columns);
   };
 
   const handleExportMonthlyTypesExcel = () => {
