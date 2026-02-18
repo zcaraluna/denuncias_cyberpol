@@ -18,7 +18,9 @@ export async function POST(request: NextRequest) {
         d.estado,
         d.relato,
         den.nombres as nombre_denunciante,
-        den.cedula as cedula_denunciante
+        den.cedula as cedula_denunciante,
+        d.monto_dano,
+        d.moneda
       FROM denuncias d
       LEFT JOIN denunciantes den ON d.denunciante_id = den.id
       WHERE d.estado = 'completada'
