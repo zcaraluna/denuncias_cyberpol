@@ -44,8 +44,6 @@ export default function BuscadorRelatoPage() {
     ]
 
     const realizarBusqueda = useCallback(async () => {
-        // No buscar si el término es muy corto para evitar resultados irrelevantes
-        // a menos que haya otros filtros activos
         if (!termino.trim() && !fechaDesde && !fechaHasta && !tipoHecho) {
             setResultados([])
             return
@@ -79,8 +77,6 @@ export default function BuscadorRelatoPage() {
             setBuscando(false)
         }
     }, [termino, fechaDesde, fechaHasta, tipoHecho])
-
-    // Eliminar el useEffect de búsqueda en tiempo real
 
     if (authLoading) {
         return (
@@ -118,7 +114,7 @@ export default function BuscadorRelatoPage() {
                             Volver a Denuncias
                         </Link>
                         <h1 className="text-lg font-bold text-gray-800">Buscador Especial por Relato</h1>
-                        <div className="w-32"></div> {/* Espaciador */}
+                        <div className="w-32"></div>
                     </div>
                 </div>
             </nav>
@@ -126,7 +122,7 @@ export default function BuscadorRelatoPage() {
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden mb-8">
                     <div className="p-8 border-b border-gray-100 bg-gradient-to-r from-blue-50/50 to-transparent">
-                        <div className="flex flex-col gap-6">
+                        <div className="flex flex-col">
                             {/* Barra de Búsqueda Principal */}
                             <div className="flex flex-col md:flex-row gap-4">
                                 <div className="relative flex-1">
@@ -156,70 +152,72 @@ export default function BuscadorRelatoPage() {
                                     BUSCAR
                                 </button>
                             </div>
-                        </div>
 
-                        {/* Filtros Secundarios */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                    </svg>
-                                    Rango de Fechas
-                                </label>
-                                <DateRangePicker
-                                    startDate={fechaDesde}
-                                    endDate={fechaHasta}
-                                    onStartDateChange={setFechaDesde}
-                                    onEndDateChange={setFechaHasta}
-                                    onApply={() => realizarBusqueda()}
-                                    onCancel={() => {
-                                        setFechaDesde('')
-                                        setFechaHasta('')
-                                    }}
-                                />
-                            </div>
+                            {/* Filtros Secundarios */}
+                            <div className="mt-6 p-4 bg-gray-50/50 rounded-xl border border-gray-100/50">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                            </svg>
+                                            Rango de Fechas
+                                        </label>
+                                        <DateRangePicker
+                                            startDate={fechaDesde}
+                                            endDate={fechaHasta}
+                                            onStartDateChange={setFechaDesde}
+                                            onEndDateChange={setFechaHasta}
+                                            onApply={() => realizarBusqueda()}
+                                            onCancel={() => {
+                                                setFechaDesde('')
+                                                setFechaHasta('')
+                                            }}
+                                        />
+                                    </div>
 
-                            <div className="space-y-2">
-                                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                                    </svg>
-                                    Tipo de Hecho
-                                </label>
-                                <Select
-                                    options={opcionesTipos}
-                                    value={opcionesTipos.find(op => op.value === tipoHecho)}
-                                    onChange={(op) => setTipoHecho(op?.value || '')}
-                                    isSearchable
-                                    placeholder="Filtrar por tipo..."
-                                    classNamePrefix="react-select"
-                                    styles={{
-                                        control: (base, state) => ({
-                                            ...base,
-                                            borderRadius: '0.75rem',
-                                            padding: '2px',
-                                            fontSize: '0.875rem',
-                                            borderColor: state.isFocused ? '#3b82f6' : '#e5e7eb',
-                                            boxShadow: state.isFocused ? '0 0 0 4px rgba(59, 130, 246, 0.1)' : 'none',
-                                            '&:hover': { borderColor: '#d1d5db' },
-                                            backgroundColor: 'white'
-                                        }),
-                                        option: (base, state) => ({
-                                            ...base,
-                                            padding: '8px 12px',
-                                            fontSize: '0.875rem',
-                                            backgroundColor: state.isFocused ? '#eff6ff' : state.isSelected ? '#3b82f6' : 'white',
-                                            color: state.isSelected ? 'white' : '#1f2937',
-                                            cursor: 'pointer',
-                                            '&:active': { backgroundColor: '#dbeafe' }
-                                        }),
-                                        singleValue: (base) => ({
-                                            ...base,
-                                            color: '#1f2937'
-                                        })
-                                    }}
-                                />
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                                            </svg>
+                                            Tipo de Hecho
+                                        </label>
+                                        <Select
+                                            options={opcionesTipos}
+                                            value={opcionesTipos.find(op => op.value === tipoHecho)}
+                                            onChange={(op) => setTipoHecho(op?.value || '')}
+                                            isSearchable
+                                            placeholder="Filtrar por tipo..."
+                                            classNamePrefix="react-select"
+                                            styles={{
+                                                control: (base, state) => ({
+                                                    ...base,
+                                                    borderRadius: '0.75rem',
+                                                    padding: '2px',
+                                                    fontSize: '0.875rem',
+                                                    borderColor: state.isFocused ? '#3b82f6' : '#e5e7eb',
+                                                    boxShadow: state.isFocused ? '0 0 0 4px rgba(59, 130, 246, 0.1)' : 'none',
+                                                    '&:hover': { borderColor: '#d1d5db' },
+                                                    backgroundColor: 'white'
+                                                }),
+                                                option: (base, state) => ({
+                                                    ...base,
+                                                    padding: '8px 12px',
+                                                    fontSize: '0.875rem',
+                                                    backgroundColor: state.isFocused ? '#eff6ff' : state.isSelected ? '#3b82f6' : 'white',
+                                                    color: state.isSelected ? 'white' : '#1f2937',
+                                                    cursor: 'pointer',
+                                                    '&:active': { backgroundColor: '#dbeafe' }
+                                                }),
+                                                singleValue: (base) => ({
+                                                    ...base,
+                                                    color: '#1f2937'
+                                                })
+                                            }}
+                                        />
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -333,7 +331,6 @@ export default function BuscadorRelatoPage() {
                     </div>
                 )}
 
-                {/* Sin Resultados */}
                 {!buscando && !error && resultados.length === 0 && (termino || fechaDesde || fechaHasta || tipoHecho) && (
                     <div className="p-20 text-center">
                         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4 text-gray-400">
@@ -346,7 +343,6 @@ export default function BuscadorRelatoPage() {
                     </div>
                 )}
 
-                {/* Mensaje Inicial */}
                 {!buscando && !error && resultados.length === 0 && !termino && !fechaDesde && !fechaHasta && !tipoHecho && (
                     <div className="p-16 text-center bg-gray-50/50">
                         <h3 className="text-base font-medium text-gray-400">Ingrese un término de búsqueda para comenzar</h3>
