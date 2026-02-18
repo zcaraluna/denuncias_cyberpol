@@ -31,31 +31,31 @@ export default function DenunciasPage() {
   const [error, setError] = useState<string | null>(null)
   const [denunciasPorCedula, setDenunciasPorCedula] = useState<Denuncia[]>([])
   const [mostrarResultadosCedula, setMostrarResultadosCedula] = useState(false)
-  
+
   // Estados temporales para filtros (valores que el usuario está escribiendo)
   const [filtroNombreTemp, setFiltroNombreTemp] = useState('')
   const [filtroCedulaTemp, setFiltroCedulaTemp] = useState('')
   const [filtroTipoTemp, setFiltroTipoTemp] = useState('')
   const [filtroFechaDesdeTemp, setFiltroFechaDesdeTemp] = useState('')
   const [filtroFechaHastaTemp, setFiltroFechaHastaTemp] = useState('')
-  
+
   // Estados aplicados para filtros (valores que realmente se usan para filtrar)
   const [filtroNombre, setFiltroNombre] = useState('')
   const [filtroCedula, setFiltroCedula] = useState('')
   const [filtroTipo, setFiltroTipo] = useState('')
   const [filtroFechaDesde, setFiltroFechaDesde] = useState('')
   const [filtroFechaHasta, setFiltroFechaHasta] = useState('')
-  
+
   const [paginaActual, setPaginaActual] = useState(1)
   const itemsPorPagina = 10
 
   const cargarDenuncias = async () => {
     if (!usuario) return
-    
+
     try {
       const response = await fetch('/api/denuncias/todas')
       if (!response.ok) throw new Error('Error al cargar denuncias')
-      
+
       const data = await response.json()
       setDenuncias(data)
     } catch (error) {
@@ -100,7 +100,7 @@ export default function DenunciasPage() {
     try {
       const response = await fetch(`/api/denuncias/buscar/${hashBusqueda.trim()}`, { cache: 'no-store' })
       if (!response.ok) throw new Error('Denuncia no encontrada')
-      
+
       const data = await response.json()
       router.push(`/ver-denuncia/${data.id}`)
     } catch (error) {
@@ -122,7 +122,7 @@ export default function DenunciasPage() {
     try {
       const response = await fetch(`/api/denuncias/buscar-cedula/${cedulaBusqueda.trim()}`, { cache: 'no-store' })
       if (!response.ok) throw new Error('No se encontraron denuncias')
-      
+
       const data = await response.json()
       setDenunciasPorCedula(data)
       setMostrarResultadosCedula(true)
@@ -154,13 +154,13 @@ export default function DenunciasPage() {
   // Filtrar denuncias
   const denunciasFiltradas = useMemo(() => {
     return denuncias.filter(denuncia => {
-      const nombreMatch = !filtroNombre || 
+      const nombreMatch = !filtroNombre ||
         denuncia.nombre_denunciante.toLowerCase().includes(filtroNombre.toLowerCase())
-      const cedulaMatch = !filtroCedula || 
+      const cedulaMatch = !filtroCedula ||
         denuncia.cedula_denunciante.includes(filtroCedula)
-      const tipoMatch = !filtroTipo || 
+      const tipoMatch = !filtroTipo ||
         denuncia.tipo_hecho?.toUpperCase() === filtroTipo
-      
+
       let fechaMatch = true
       if (filtroFechaDesde || filtroFechaHasta) {
         const fechaDenuncia = new Date(denuncia.fecha_denuncia)
@@ -175,7 +175,7 @@ export default function DenunciasPage() {
           if (fechaDenuncia > fechaHasta) fechaMatch = false
         }
       }
-      
+
       return nombreMatch && cedulaMatch && tipoMatch && fechaMatch
     })
   }, [denuncias, filtroNombre, filtroCedula, filtroTipo, filtroFechaDesde, filtroFechaHasta])
@@ -261,9 +261,20 @@ export default function DenunciasPage() {
         {isAdmin ? (
           // Vista para admin/superadmin: mostrar todas las denuncias
           <>
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">Todas las Denuncias</h2>
-              <p className="text-gray-600">Lista completa de denuncias del sistema</p>
+            <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Todas las Denuncias</h2>
+                <p className="text-gray-600">Lista completa de denuncias del sistema</p>
+              </div>
+              <Link
+                href="/denuncias/buscador-relato"
+                className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition shadow-lg shadow-blue-500/20 group"
+              >
+                <svg className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                Buscador Especial por Relato
+              </Link>
             </div>
 
             {/* Filtros */}
@@ -504,9 +515,20 @@ export default function DenunciasPage() {
         ) : (
           // Vista para operadores: buscar por hash o cédula
           <>
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">Buscar Denuncia</h2>
-              <p className="text-gray-600">Busque por hash de denuncia o por cédula del denunciante</p>
+            <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Buscar Denuncia</h2>
+                <p className="text-gray-600">Busque por hash de denuncia o por cédula del denunciante</p>
+              </div>
+              <Link
+                href="/denuncias/buscador-relato"
+                className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition shadow-lg shadow-blue-500/20 group text-center flex justify-center"
+              >
+                <svg className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                Buscador Especial por Relato
+              </Link>
             </div>
 
             <div className="bg-white rounded-lg shadow-md p-8 mb-6">
