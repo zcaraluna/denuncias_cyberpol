@@ -117,7 +117,7 @@ export default function BuscadorRelatoPage() {
                             </svg>
                             Volver a Denuncias
                         </Link>
-                        <h1 className="text-xl font-bold text-gray-800">Buscador Especial por Relato</h1>
+                        <h1 className="text-lg font-bold text-gray-800">Buscador Especial por Relato</h1>
                         <div className="w-32"></div> {/* Espaciador */}
                     </div>
                 </div>
@@ -141,16 +141,16 @@ export default function BuscadorRelatoPage() {
                                         onChange={(e) => setTermino(e.target.value)}
                                         onKeyPress={(e) => e.key === 'Enter' && realizarBusqueda()}
                                         placeholder="Escriba palabras clave del relato... (ej: estafa, tarjeta, sim-swap)"
-                                        className="block w-full pl-12 pr-4 py-4 text-lg border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none bg-white placeholder:text-gray-400"
+                                        className="block w-full pl-10 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none bg-white placeholder:text-gray-400"
                                         autoComplete="off"
                                     />
                                 </div>
                                 <button
                                     onClick={realizarBusqueda}
                                     disabled={buscando}
-                                    className="px-8 py-4 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                    className="px-6 py-2.5 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-700 transition shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                                 >
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                                     </svg>
                                     BUSCAR
@@ -198,7 +198,8 @@ export default function BuscadorRelatoPage() {
                                         control: (base, state) => ({
                                             ...base,
                                             borderRadius: '0.75rem',
-                                            padding: '4px',
+                                            padding: '2px',
+                                            fontSize: '0.875rem',
                                             borderColor: state.isFocused ? '#3b82f6' : '#e5e7eb',
                                             boxShadow: state.isFocused ? '0 0 0 4px rgba(59, 130, 246, 0.1)' : 'none',
                                             '&:hover': { borderColor: '#d1d5db' },
@@ -206,6 +207,8 @@ export default function BuscadorRelatoPage() {
                                         }),
                                         option: (base, state) => ({
                                             ...base,
+                                            padding: '8px 12px',
+                                            fontSize: '0.875rem',
                                             backgroundColor: state.isFocused ? '#eff6ff' : state.isSelected ? '#3b82f6' : 'white',
                                             color: state.isSelected ? 'white' : '#1f2937',
                                             cursor: 'pointer',
@@ -236,56 +239,42 @@ export default function BuscadorRelatoPage() {
                         <table className="min-w-full divide-y divide-gray-200">
                             <thead className="bg-gray-50">
                                 <tr>
-                                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Orden</th>
-                                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Denunciante</th>
-                                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Tipo/Hecho</th>
-                                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Fecha</th>
-                                    <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Acciones</th>
+                                    <th className="px-4 py-3 text-left text-[10px] font-bold text-gray-500 uppercase tracking-wider">Orden</th>
+                                    <th className="px-4 py-3 text-left text-[10px] font-bold text-gray-500 uppercase tracking-wider">Denunciante</th>
+                                    <th className="px-4 py-3 text-left text-[10px] font-bold text-gray-500 uppercase tracking-wider">Tipo/Hecho</th>
+                                    <th className="px-4 py-3 text-left text-[10px] font-bold text-gray-500 uppercase tracking-wider">Fecha</th>
+                                    <th className="px-4 py-3 text-right text-[10px] font-bold text-gray-500 uppercase tracking-wider">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
                                 {resultados.map((res) => (
                                     <React.Fragment key={res.id}>
                                         <tr className="hover:bg-blue-50/10 transition-colors border-b border-gray-100">
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-blue-600">
+                                            <td className="px-4 py-3 whitespace-nowrap text-xs font-bold text-blue-600">
                                                 #{res.numero_orden}
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm font-medium text-gray-900">{res.nombre_denunciante}</div>
-                                                <div className="text-xs text-gray-500">{res.cedula_denunciante}</div>
+                                            <td className="px-4 py-3 whitespace-nowrap">
+                                                <div className="text-xs font-medium text-gray-900">{res.nombre_denunciante}</div>
+                                                <div className="text-[10px] text-gray-500">{res.cedula_denunciante}</div>
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className="px-2.5 py-1 text-xs font-semibold bg-gray-100 text-gray-700 rounded-full uppercase">
+                                            <td className="px-4 py-3 whitespace-nowrap">
+                                                <span className="px-2 py-0.5 text-[10px] font-semibold bg-gray-100 text-gray-700 rounded-full uppercase">
                                                     {res.tipo_hecho}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                            <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-600">
                                                 {formatearFechaSinTimezone(res.fecha_denuncia)}
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex items-center justify-end gap-3">
+                                            <td className="px-4 py-3 whitespace-nowrap text-right text-xs font-medium flex items-center justify-end gap-2">
                                                 <button
                                                     onClick={() => setFilaExpandida(filaExpandida === res.id ? null : res.id)}
-                                                    className="inline-flex items-center px-3 py-2 text-sm font-semibold text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-blue-100"
+                                                    className="inline-flex items-center px-2 py-1.5 text-xs font-semibold text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-blue-100"
                                                 >
-                                                    {filaExpandida === res.id ? (
-                                                        <>
-                                                            <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                                                            </svg>
-                                                            Contraer
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                                            </svg>
-                                                            Expandir detalles
-                                                        </>
-                                                    )}
+                                                    {filaExpandida === res.id ? 'Contraer' : 'Expandir'}
                                                 </button>
                                                 <Link
                                                     href={`/ver-denuncia/${res.id}`}
-                                                    className="inline-flex items-center px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition"
+                                                    className="inline-flex items-center px-2 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-xs"
                                                 >
                                                     Ver acta
                                                 </Link>
@@ -302,7 +291,7 @@ export default function BuscadorRelatoPage() {
                                                                 </svg>
                                                                 Relato de los Hechos
                                                             </h4>
-                                                            <div className="bg-white p-4 rounded-xl border border-blue-100 text-sm text-gray-700 leading-relaxed shadow-sm">
+                                                            <div className="bg-white p-4 rounded-xl border border-blue-100 text-xs text-gray-700 leading-relaxed shadow-sm">
                                                                 {resaltarTermino(res.relato || '', termino)}
                                                             </div>
                                                         </div>
@@ -315,7 +304,7 @@ export default function BuscadorRelatoPage() {
                                                             </h4>
                                                             <div className="bg-white p-4 rounded-xl border border-blue-100 shadow-sm">
                                                                 <div className="text-xs text-gray-500 mb-1">Impacto Patrimonial:</div>
-                                                                <div className="text-lg font-bold text-gray-900">
+                                                                <div className="text-base font-bold text-gray-900">
                                                                     {res.monto_dano
                                                                         ? `${parseInt(res.monto_dano.toString()).toLocaleString('es-PY')} ${res.moneda || ''}`
                                                                         : 'No declarado'}
@@ -359,8 +348,8 @@ export default function BuscadorRelatoPage() {
 
                 {/* Mensaje Inicial */}
                 {!buscando && !error && resultados.length === 0 && !termino && !fechaDesde && !fechaHasta && !tipoHecho && (
-                    <div className="p-20 text-center bg-gray-50/50">
-                        <h3 className="text-lg font-medium text-gray-400">Ingrese un término de búsqueda para comenzar</h3>
+                    <div className="p-16 text-center bg-gray-50/50">
+                        <h3 className="text-base font-medium text-gray-400">Ingrese un término de búsqueda para comenzar</h3>
                     </div>
                 )}
 
