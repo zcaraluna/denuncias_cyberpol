@@ -4,58 +4,76 @@ import pool from '@/lib/db'
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json()
-        const { termino, fechaDesde, fechaHasta, tipoHecho } = body
+        const { termino, fechaDesde, fechaHasta, tipoHecho, pagina = 1, limite = 20 } = body
+        const offset = (pagina - 1) * limite
 
-        let query = `
-      SELECT 
-        d.id,
-        d.denunciante_id,
-        d.orden as numero_orden,
-        d.fecha_denuncia,
-        d.hora_denuncia,
-        d.tipo_denuncia as tipo_hecho,
-        d.hash as hash_denuncia,
-        d.estado,
-        d.relato,
-        den.nombres as nombre_denunciante,
-        den.cedula as cedula_denunciante,
-        d.monto_dano,
-        d.moneda
-      FROM denuncias d
-      LEFT JOIN denunciantes den ON d.denunciante_id = den.id
-      WHERE d.estado = 'completada'
-    `
+        let baseQuery = `
+            FROM denuncias d
+            LEFT JOIN denunciantes den ON d.denunciante_id = den.id
+            WHERE d.estado = 'completada'
+        `
         const values: any[] = []
         let paramIndex = 1
 
         if (termino && termino.trim() !== '') {
-            query += ` AND d.relato ILIKE $${paramIndex}`
+            baseQuery += ` AND d.relato ILIKE $${paramIndex}`
             values.push(`%${termino.trim()}%`)
             paramIndex++
         }
 
         if (tipoHecho && tipoHecho !== '') {
-            query += ` AND d.tipo_denuncia = $${paramIndex}`
+            baseQuery += ` AND d.tipo_denuncia = $${paramIndex}`
             values.push(tipoHecho)
             paramIndex++
         }
 
         if (fechaDesde) {
-            query += ` AND d.fecha_denuncia >= $${paramIndex}`
+            baseQuery += ` AND d.fecha_denuncia >= $${paramIndex}`
             values.push(fechaDesde)
             paramIndex++
         }
 
         if (fechaHasta) {
-            query += ` AND d.fecha_denuncia <= $${paramIndex}`
+            baseQuery += ` AND d.fecha_denuncia <= $${paramIndex}`
             values.push(fechaHasta)
             paramIndex++
         }
 
-        query += ` ORDER BY d.fecha_denuncia DESC, d.hora_denuncia DESC LIMIT 100`
+        // Query para contar total
+        const countQuery = `SELECT COUNT(*) as total ${baseQuery}`
+        const countResult = await pool.query(countQuery, values)
+        const total = parseInt(countResult.rows[0].total)
 
-        const result = await pool.query(query, values)
-        return NextResponse.json(result.rows)
+        // Query para resultados paginados
+        let dataQuery = `
+            SELECT 
+                d.id,
+                d.denunciante_id,
+                d.orden as numero_orden,
+                d.fecha_denuncia,
+                d.hora_denuncia,
+                d.tipo_denuncia as tipo_hecho,
+                d.hash as hash_denuncia,
+                d.estado,
+                d.relato,
+                den.nombres as nombre_denunciante,
+                den.cedula as cedula_denunciante,
+                d.monto_dano,
+                d.moneda
+            ${baseQuery}
+            ORDER BY d.fecha_denuncia DESC, d.hora_denuncia DESC
+            LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+        `
+        values.push(limite, offset)
+
+        const result = await pool.query(dataQuery, values)
+
+        return NextResponse.json({
+            resultados: result.rows,
+            total,
+            pagina,
+            limite
+        })
     } catch (error) {
         console.error('Error en búsqueda por relato:', error)
         return NextResponse.json(
