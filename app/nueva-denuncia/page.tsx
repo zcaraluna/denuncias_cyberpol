@@ -469,7 +469,8 @@ export default function NuevaDenunciaPage() {
     'Bancop',
     'GNB Paraguay',
     'Visión Banco',
-    'Ueno Bank'
+    'Ueno Bank',
+    'OTRO'
   ]
 
   // Opciones para descripción física
