@@ -69,7 +69,7 @@ export default function DateRangePicker({
     const month = String(date.getMonth() + 1).padStart(2, '0')
     const day = String(date.getDate()).padStart(2, '0')
     const dateStr = `${year}-${month}-${day}`
-    
+
     if (selectingStart || !tempStartDate) {
       setTempStartDate(dateStr)
       setTempEndDate('')
@@ -134,17 +134,17 @@ export default function DateRangePicker({
   const days = eachDayOfInterval({ start: calendarStart, end: calendarEnd })
 
   const weekDays = ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá']
-  
+
   const monthNames = [
     'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
     'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
   ]
-  
+
   const monthAbbr = [
     'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
     'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'
   ]
-  
+
   const formatDateRangeSpanish = () => {
     if (!tempStartDate && !tempEndDate) return 'Seleccionar rango de fechas'
     if (tempStartDate && !tempEndDate) {
@@ -166,11 +166,11 @@ export default function DateRangePicker({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-left bg-white hover:bg-gray-50 transition flex items-center justify-between"
+        className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 text-left bg-white hover:border-gray-300 transition-all flex items-center justify-between outline-none"
       >
         <span className="text-sm text-gray-700">{formatDateRangeSpanish()}</span>
         <svg
-          className={`w-4 h-4 text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          className={`w-4 h-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -180,24 +180,24 @@ export default function DateRangePicker({
       </button>
 
       {isOpen && (
-        <div className="absolute z-50 mt-2 bg-white border border-gray-300 rounded-lg shadow-lg p-4 w-full md:w-auto md:min-w-[400px]">
+        <div className="absolute z-50 mt-2 bg-white border border-gray-100 rounded-2xl shadow-2xl shadow-blue-900/10 p-4 w-full md:w-auto md:min-w-[320px] ring-1 ring-black/5">
           {/* Quick select buttons */}
-          <div className="flex gap-2 mb-4">
+          <div className="flex gap-2 mb-4 p-1 bg-gray-50 rounded-lg">
             <button
               onClick={() => handleQuickSelect(1)}
-              className="px-3 py-1 text-sm text-gray-700 hover:bg-gray-100 rounded transition"
+              className="flex-1 py-1.5 text-xs font-bold text-gray-600 hover:bg-white hover:text-blue-600 hover:shadow-sm rounded-md transition-all uppercase tracking-wider"
             >
               1d
             </button>
             <button
               onClick={() => handleQuickSelect(7)}
-              className="px-3 py-1 text-sm text-gray-700 hover:bg-gray-100 rounded transition"
+              className="flex-1 py-1.5 text-xs font-bold text-gray-600 hover:bg-white hover:text-blue-600 hover:shadow-sm rounded-md transition-all uppercase tracking-wider"
             >
               7d
             </button>
             <button
               onClick={() => handleQuickSelect(30)}
-              className="px-3 py-1 text-sm text-gray-700 hover:bg-gray-100 rounded transition"
+              className="flex-1 py-1.5 text-xs font-bold text-gray-600 hover:bg-white hover:text-blue-600 hover:shadow-sm rounded-md transition-all uppercase tracking-wider"
             >
               30d
             </button>

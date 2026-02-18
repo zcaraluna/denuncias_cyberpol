@@ -120,7 +120,7 @@ export default function BuscadorRelatoPage() {
             </nav>
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden mb-8">
+                <div className="bg-white rounded-2xl shadow-xl border border-gray-100 mb-8">
                     <div className="p-8 border-b border-gray-100 bg-gradient-to-r from-blue-50/50 to-transparent">
                         <div className="flex flex-col">
                             {/* Barra de Búsqueda Principal */}
@@ -157,8 +157,8 @@ export default function BuscadorRelatoPage() {
                             <div className="mt-6 p-4 bg-gray-50/50 rounded-xl border border-gray-100/50">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <label className="text-[10px] font-bold text-blue-600/60 uppercase tracking-widest flex items-center gap-1.5 ml-1">
+                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                             </svg>
                                             Rango de Fechas
@@ -177,8 +177,8 @@ export default function BuscadorRelatoPage() {
                                     </div>
 
                                     <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <label className="text-[10px] font-bold text-blue-600/60 uppercase tracking-widest flex items-center gap-1.5 ml-1">
+                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                                             </svg>
                                             Tipo de Hecho
@@ -194,12 +194,19 @@ export default function BuscadorRelatoPage() {
                                                 control: (base, state) => ({
                                                     ...base,
                                                     borderRadius: '0.75rem',
-                                                    padding: '2px',
+                                                    padding: '3px',
                                                     fontSize: '0.875rem',
                                                     borderColor: state.isFocused ? '#3b82f6' : '#e5e7eb',
                                                     boxShadow: state.isFocused ? '0 0 0 4px rgba(59, 130, 246, 0.1)' : 'none',
                                                     '&:hover': { borderColor: '#d1d5db' },
-                                                    backgroundColor: 'white'
+                                                    backgroundColor: 'white',
+                                                    minHeight: '44px'
+                                                }),
+                                                indicatorSeparator: () => ({ display: 'none' }),
+                                                dropdownIndicator: (base) => ({
+                                                    ...base,
+                                                    color: '#9ca3af',
+                                                    '&:hover': { color: '#6b7280' }
                                                 }),
                                                 option: (base, state) => ({
                                                     ...base,
