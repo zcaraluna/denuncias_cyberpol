@@ -4691,7 +4691,7 @@ export default function NuevaDenunciaPage() {
                 </div>
 
                 <p className="text-xs text-blue-600 mb-4 bg-white/60 p-3 rounded-lg border border-blue-100/50 leading-relaxed shadow-sm">
-                  El siguiente campo se solicita <strong>únicamente con fines estadísticos</strong> para ayudar a cuantificar el impacto de los hechos punibles denunciados en esta Dirección. Esta información <strong>no se incluirá en el acta formal de la denuncia</strong>.
+                  Los siguientes campos se solicitan <strong>únicamente con fines estadísticos</strong> para ayudar a cuantificar el impacto de los hechos punibles denunciados en esta Dirección. Esta información <strong>no se incluirá en el acta formal de la denuncia</strong>.
                 </p>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -4771,6 +4771,12 @@ export default function NuevaDenunciaPage() {
                             ...base,
                             color: '#1e40af',
                             fontWeight: '500',
+                          }),
+                          option: (base, state) => ({
+                            ...base,
+                            backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
+                            color: state.isSelected ? 'white' : '#1f2937',
+                            cursor: 'pointer',
                           }),
                         }}
                         classNamePrefix="react-select"
