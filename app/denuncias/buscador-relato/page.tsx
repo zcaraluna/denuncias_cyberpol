@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Select from 'react-select'
@@ -245,97 +245,99 @@ export default function BuscadorRelatoPage() {
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
                                 {resultados.map((res) => (
-                                    <tr key={res.id} className="hover:bg-blue-50/10 transition-colors border-b border-gray-100">
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-blue-600">
-                                            #{res.numero_orden}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm font-medium text-gray-900">{res.nombre_denunciante}</div>
-                                            <div className="text-xs text-gray-500">{res.cedula_denunciante}</div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className="px-2.5 py-1 text-xs font-semibold bg-gray-100 text-gray-700 rounded-full uppercase">
-                                                {res.tipo_hecho}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                            {formatearFechaSinTimezone(res.fecha_denuncia)}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex items-center justify-end gap-3">
-                                            <button
-                                                onClick={() => setFilaExpandida(filaExpandida === res.id ? null : res.id)}
-                                                className="inline-flex items-center px-3 py-2 text-sm font-semibold text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-blue-100"
-                                            >
-                                                {filaExpandida === res.id ? (
-                                                    <>
-                                                        <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                                                        </svg>
-                                                        Contraer
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                                        </svg>
-                                                        Expandir detalles
-                                                    </>
-                                                )}
-                                            </button>
-                                            <Link
-                                                href={`/ver-denuncia/${res.id}`}
-                                                className="inline-flex items-center px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition"
-                                            >
-                                                Ver acta
-                                            </Link>
-                                        </td>
-                                    </tr>
-                                { filaExpandida === res.id && (
-                                        <tr>
-                                            <td colSpan={5} className="px-8 py-6 bg-blue-50/30">
-                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                                                    <div className="md:col-span-2 space-y-3">
-                                                        <h4 className="text-xs font-bold text-blue-700 uppercase tracking-wider flex items-center gap-2">
-                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    <React.Fragment key={res.id}>
+                                        <tr className="hover:bg-blue-50/10 transition-colors border-b border-gray-100">
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-blue-600">
+                                                #{res.numero_orden}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="text-sm font-medium text-gray-900">{res.nombre_denunciante}</div>
+                                                <div className="text-xs text-gray-500">{res.cedula_denunciante}</div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <span className="px-2.5 py-1 text-xs font-semibold bg-gray-100 text-gray-700 rounded-full uppercase">
+                                                    {res.tipo_hecho}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                                {formatearFechaSinTimezone(res.fecha_denuncia)}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex items-center justify-end gap-3">
+                                                <button
+                                                    onClick={() => setFilaExpandida(filaExpandida === res.id ? null : res.id)}
+                                                    className="inline-flex items-center px-3 py-2 text-sm font-semibold text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-blue-100"
+                                                >
+                                                    {filaExpandida === res.id ? (
+                                                        <>
+                                                            <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
                                                             </svg>
-                                                            Relato de los Hechos
-                                                        </h4>
-                                                        <div className="bg-white p-4 rounded-xl border border-blue-100 text-sm text-gray-700 leading-relaxed shadow-sm">
-                                                            {resaltarTermino(res.relato || '', termino)}
-                                                        </div>
-                                                    </div>
-                                                    <div className="space-y-3">
-                                                        <h4 className="text-xs font-bold text-blue-700 uppercase tracking-wider flex items-center gap-2">
-                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                            Contraer
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                                             </svg>
-                                                            Perjuicio Económico
-                                                        </h4>
-                                                        <div className="bg-white p-4 rounded-xl border border-blue-100 shadow-sm">
-                                                            <div className="text-xs text-gray-500 mb-1">Impacto Patrimonial:</div>
-                                                            <div className="text-lg font-bold text-gray-900">
-                                                                {res.monto_dano
-                                                                    ? `${parseInt(res.monto_dano.toString()).toLocaleString('es-PY')} ${res.moneda || ''}`
-                                                                    : 'No declarado'}
-                                                            </div>
-                                                        </div>
-                                                        <div className="pt-2">
-                                                            <Link
-                                                                href={`/ver-denuncia/${res.id}`}
-                                                                className="text-xs text-blue-600 hover:text-blue-800 font-bold flex items-center gap-1 group"
-                                                            >
-                                                                IR AL EXPEDIENTE COMPLETO
-                                                                <svg className="w-3 h-3 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                                                                </svg>
-                                                            </Link>
-                                                        </div>
-                                                    </div>
-                                                </div>
+                                                            Expandir detalles
+                                                        </>
+                                                    )}
+                                                </button>
+                                                <Link
+                                                    href={`/ver-denuncia/${res.id}`}
+                                                    className="inline-flex items-center px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition"
+                                                >
+                                                    Ver acta
+                                                </Link>
                                             </td>
                                         </tr>
-                                    )}
+                                        {filaExpandida === res.id && (
+                                            <tr>
+                                                <td colSpan={5} className="px-8 py-6 bg-blue-50/30">
+                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                                                        <div className="md:col-span-2 space-y-3">
+                                                            <h4 className="text-xs font-bold text-blue-700 uppercase tracking-wider flex items-center gap-2">
+                                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                                </svg>
+                                                                Relato de los Hechos
+                                                            </h4>
+                                                            <div className="bg-white p-4 rounded-xl border border-blue-100 text-sm text-gray-700 leading-relaxed shadow-sm">
+                                                                {resaltarTermino(res.relato || '', termino)}
+                                                            </div>
+                                                        </div>
+                                                        <div className="space-y-3">
+                                                            <h4 className="text-xs font-bold text-blue-700 uppercase tracking-wider flex items-center gap-2">
+                                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                                </svg>
+                                                                Perjuicio Económico
+                                                            </h4>
+                                                            <div className="bg-white p-4 rounded-xl border border-blue-100 shadow-sm">
+                                                                <div className="text-xs text-gray-500 mb-1">Impacto Patrimonial:</div>
+                                                                <div className="text-lg font-bold text-gray-900">
+                                                                    {res.monto_dano
+                                                                        ? `${parseInt(res.monto_dano.toString()).toLocaleString('es-PY')} ${res.moneda || ''}`
+                                                                        : 'No declarado'}
+                                                                </div>
+                                                            </div>
+                                                            <div className="pt-2">
+                                                                <Link
+                                                                    href={`/ver-denuncia/${res.id}`}
+                                                                    className="text-xs text-blue-600 hover:text-blue-800 font-bold flex items-center gap-1 group"
+                                                                >
+                                                                    IR AL EXPEDIENTE COMPLETO
+                                                                    <svg className="w-3 h-3 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                                                    </svg>
+                                                                </Link>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </React.Fragment>
                                 ))}
                             </tbody>
                         </table>
