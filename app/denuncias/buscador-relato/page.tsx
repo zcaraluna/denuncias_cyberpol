@@ -135,6 +135,43 @@ export default function BuscadorRelatoPage() {
         }
     }
 
+    const manejarExportacionJSON = async () => {
+        if (resultados.length === 0) return
+
+        setExportando(true)
+        try {
+            const response = await fetch('/api/denuncias/buscar-relato', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ termino, fechaDesde, fechaHasta, tipoHecho, pagina: 1, limite: 1000 })
+            })
+
+            if (!response.ok) throw new Error('Error al obtener datos para exportar')
+            const data = await response.json()
+
+            const jsonString = JSON.stringify(data.resultados, null, 2)
+            const blob = new Blob([jsonString], { type: 'application/json' })
+            const url = URL.createObjectURL(blob)
+            const link = document.createElement('a')
+
+            // Nombre del archivo con el término de búsqueda
+            const termSafe = termino.trim() ? termino.trim().toLowerCase().replace(/[^a-z0-9]/g, '_') : 'todos'
+            const fileName = `denuncias_relato_${termSafe}_${new Date().toISOString().split('T')[0]}.json`
+
+            link.href = url
+            link.download = fileName
+            document.body.appendChild(link)
+            link.click()
+            document.body.removeChild(link)
+            URL.revokeObjectURL(url)
+        } catch (err) {
+            console.error(err)
+            alert('Error al exportar a JSON')
+        } finally {
+            setExportando(false)
+        }
+    }
+
     if (authLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
@@ -212,17 +249,30 @@ export default function BuscadorRelatoPage() {
                                         BUSCAR
                                     </button>
                                     {resultados.length > 0 && (
-                                        <button
-                                            onClick={manejarExportacion}
-                                            disabled={exportando}
-                                            className="px-4 py-2.5 bg-green-600 text-white text-sm font-bold rounded-xl hover:bg-green-700 transition shadow-lg shadow-green-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
-                                            title="Exportar todos los resultados a Excel"
-                                        >
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                            </svg>
-                                            {exportando ? '...' : 'EXCEL'}
-                                        </button>
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={manejarExportacion}
+                                                disabled={exportando}
+                                                className="px-4 py-2.5 bg-green-600 text-white text-sm font-bold rounded-xl hover:bg-green-700 transition shadow-lg shadow-green-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
+                                                title="Exportar todos los resultados a Excel"
+                                            >
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                </svg>
+                                                {exportando ? '...' : 'EXCEL'}
+                                            </button>
+                                            <button
+                                                onClick={manejarExportacionJSON}
+                                                disabled={exportando}
+                                                className="px-4 py-2.5 bg-amber-500 text-white text-sm font-bold rounded-xl hover:bg-amber-600 transition shadow-lg shadow-amber-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
+                                                title="Exportar todos los resultados a JSON para análisis IA"
+                                            >
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                                                </svg>
+                                                {exportando ? '...' : 'JSON'}
+                                            </button>
+                                        </div>
                                     )}
                                 </div>
                             </div>
@@ -458,8 +508,8 @@ export default function BuscadorRelatoPage() {
                                                 key={p}
                                                 onClick={() => realizarBusqueda(p)}
                                                 className={`w-10 h-10 rounded-xl text-xs font-bold transition-all shadow-sm ${pagina === p
-                                                        ? 'bg-blue-600 text-white shadow-blue-500/20'
-                                                        : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+                                                    ? 'bg-blue-600 text-white shadow-blue-500/20'
+                                                    : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
                                                     }`}
                                             >
                                                 {p}
