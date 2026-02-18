@@ -510,6 +510,7 @@ export async function POST(request: NextRequest) {
           usuario.apellido,
           montoDano,
           moneda,
+          denuncia?.bancosRelacionados ? JSON.stringify(denuncia.bancosRelacionados) : null,
           hash,
           denuncia?.esDenunciaEscrita || false,
           denuncia?.archivoDenunciaUrl || null,

@@ -152,6 +152,7 @@ const denunciaSchema = z.object({
   relato: z.string().optional(),
   montoDano: z.string().optional(),
   moneda: z.string().optional(),
+  bancosRelacionados: z.array(z.string()).optional(),
   esDenunciaEscrita: z.boolean().optional(),
   archivoDenunciaUrl: z.string().optional(),
 }).superRefine((data, ctx) => {
@@ -1168,6 +1169,7 @@ export default function NuevaDenunciaPage() {
       relato: '',
       montoDano: '',
       moneda: '',
+      bancosRelacionados: [],
     }
   })
 
@@ -4731,6 +4733,50 @@ export default function NuevaDenunciaPage() {
                       <option value="Reales (BRL)">Reales (BRL)</option>
                     </select>
                   </div>
+                </div>
+
+                <div className="mt-5 space-y-1.5">
+                  <label className="block text-sm font-semibold text-gray-700">
+                    Entidad(es) bancaria(s) relacionada(s)
+                  </label>
+                  <Controller
+                    name="bancosRelacionados"
+                    control={controlDenuncia}
+                    render={({ field }) => (
+                      <Select
+                        {...field}
+                        isMulti
+                        options={bancos.map(b => ({ value: b, label: b }))}
+                        placeholder="Seleccione entidad(es)..."
+                        onChange={(selected) => field.onChange(selected ? (selected as any).map((option: any) => option.value) : [])}
+                        value={field.value ? field.value.map(v => ({ value: v, label: v })) : []}
+                        styles={{
+                          control: (base, state) => ({
+                            ...base,
+                            borderRadius: '0.75rem',
+                            padding: '2px',
+                            borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
+                            boxShadow: state.isFocused ? '0 0 0 4px rgba(59, 130, 246, 0.1)' : 'none',
+                            '&:hover': {
+                              borderColor: '#9ca3af',
+                            },
+                          }),
+                          multiValue: (base) => ({
+                            ...base,
+                            backgroundColor: '#eff6ff',
+                            borderRadius: '0.375rem',
+                            color: '#1e40af',
+                          }),
+                          multiValueLabel: (base) => ({
+                            ...base,
+                            color: '#1e40af',
+                            fontWeight: '500',
+                          }),
+                        }}
+                        classNamePrefix="react-select"
+                      />
+                    )}
+                  />
                 </div>
               </div>
 
