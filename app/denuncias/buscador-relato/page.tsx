@@ -77,14 +77,7 @@ export default function BuscadorRelatoPage() {
         }
     }, [termino, fechaDesde, fechaHasta, tipoHecho])
 
-    // Debounce para búsqueda en tiempo real
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            realizarBusqueda()
-        }, 500)
-
-        return () => clearTimeout(timer)
-    }, [realizarBusqueda])
+    // Eliminar el useEffect de búsqueda en tiempo real
 
     if (authLoading) {
         return (
@@ -132,160 +125,173 @@ export default function BuscadorRelatoPage() {
                     <div className="p-8 border-b border-gray-100 bg-gradient-to-r from-blue-50/50 to-transparent">
                         <div className="flex flex-col gap-6">
                             {/* Barra de Búsqueda Principal */}
-                            <div className="relative">
-                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                    <svg className="h-6 w-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div className="flex flex-col md:flex-row gap-4">
+                                <div className="relative flex-1">
+                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                        <svg className="h-6 w-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                        </svg>
+                                    </div>
+                                    <input
+                                        type="text"
+                                        value={termino}
+                                        onChange={(e) => setTermino(e.target.value)}
+                                        onKeyPress={(e) => e.key === 'Enter' && realizarBusqueda()}
+                                        placeholder="Escriba palabras clave del relato... (ej: estafa, tarjeta, sim-swap)"
+                                        className="block w-full pl-12 pr-4 py-4 text-lg border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none bg-white placeholder:text-gray-400"
+                                        autoComplete="off"
+                                    />
+                                </div>
+                                <button
+                                    onClick={realizarBusqueda}
+                                    disabled={buscando}
+                                    className="px-8 py-4 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                                     </svg>
-                                </div>
-                                <input
-                                    type="text"
-                                    value={termino}
-                                    onChange={(e) => setTermino(e.target.value)}
-                                    placeholder="Escriba palabras clave del relato... (ej: estafa, tarjeta, sim-swap)"
-                                    className="block w-full pl-12 pr-4 py-4 text-lg border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none bg-white placeholder:text-gray-400"
-                                    autoComplete="off"
+                                    BUSCAR
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Filtros Secundarios */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                    Rango de Fechas
+                                </label>
+                                <DateRangePicker
+                                    startDate={fechaDesde}
+                                    endDate={fechaHasta}
+                                    onStartDateChange={setFechaDesde}
+                                    onEndDateChange={setFechaHasta}
+                                    onApply={() => realizarBusqueda()}
+                                    onCancel={() => {
+                                        setFechaDesde('')
+                                        setFechaHasta('')
+                                    }}
                                 />
                             </div>
 
-                            {/* Filtros Secundarios */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="space-y-2">
-                                    <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                        </svg>
-                                        Rango de Fechas
-                                    </label>
-                                    <DateRangePicker
-                                        startDate={fechaDesde}
-                                        endDate={fechaHasta}
-                                        onStartDateChange={setFechaDesde}
-                                        onEndDateChange={setFechaHasta}
-                                        onApply={() => realizarBusqueda()}
-                                        onCancel={() => {
-                                            setFechaDesde('')
-                                            setFechaHasta('')
-                                        }}
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                                        </svg>
-                                        Tipo de Hecho
-                                    </label>
-                                    <Select
-                                        options={opcionesTipos}
-                                        value={opcionesTipos.find(op => op.value === tipoHecho)}
-                                        onChange={(op) => setTipoHecho(op?.value || '')}
-                                        isSearchable
-                                        placeholder="Filtrar por tipo..."
-                                        classNamePrefix="react-select"
-                                        styles={{
-                                            control: (base, state) => ({
-                                                ...base,
-                                                borderRadius: '0.75rem',
-                                                padding: '4px',
-                                                borderColor: state.isFocused ? '#3b82f6' : '#e5e7eb',
-                                                boxShadow: state.isFocused ? '0 0 0 4px rgba(59, 130, 246, 0.1)' : 'none',
-                                                '&:hover': { borderColor: '#d1d5db' }
-                                            }),
-                                        }}
-                                    />
-                                </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                                    </svg>
+                                    Tipo de Hecho
+                                </label>
+                                <Select
+                                    options={opcionesTipos}
+                                    value={opcionesTipos.find(op => op.value === tipoHecho)}
+                                    onChange={(op) => setTipoHecho(op?.value || '')}
+                                    isSearchable
+                                    placeholder="Filtrar por tipo..."
+                                    classNamePrefix="react-select"
+                                    styles={{
+                                        control: (base, state) => ({
+                                            ...base,
+                                            borderRadius: '0.75rem',
+                                            padding: '4px',
+                                            borderColor: state.isFocused ? '#3b82f6' : '#e5e7eb',
+                                            boxShadow: state.isFocused ? '0 0 0 4px rgba(59, 130, 246, 0.1)' : 'none',
+                                            '&:hover': { borderColor: '#d1d5db' }
+                                        }),
+                                    }}
+                                />
                             </div>
                         </div>
                     </div>
-
-                    {/* Estado de Búsqueda */}
-                    {buscando && (
-                        <div className="flex items-center justify-center p-12">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                            <span className="ml-3 text-gray-500 font-medium">Buscando coincidencias...</span>
-                        </div>
-                    )}
-
-                    {/* Resultados */}
-                    {!buscando && resultados.length > 0 && (
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-gray-50">
-                                    <tr>
-                                        <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Orden</th>
-                                        <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Denunciante</th>
-                                        <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Tipo/Hecho</th>
-                                        <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Fecha</th>
-                                        <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Fragmento del Relato</th>
-                                        <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Acción</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
-                                    {resultados.map((res) => (
-                                        <tr key={res.id} className="hover:bg-blue-50/30 transition-colors">
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-blue-600">
-                                                #{res.numero_orden}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm font-medium text-gray-900">{res.nombre_denunciante}</div>
-                                                <div className="text-xs text-gray-500">{res.cedula_denunciante}</div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className="px-2.5 py-1 text-xs font-semibold bg-gray-100 text-gray-700 rounded-full uppercase">
-                                                    {res.tipo_hecho}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                                {formatearFechaSinTimezone(res.fecha_denuncia)}
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <p className="text-sm text-gray-600 line-clamp-2 max-w-md italic">
-                                                    "...{resaltarTermino(res.relato || '', termino)}..."
-                                                </p>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                <Link
-                                                    href={`/ver-denuncia/${res.id}`}
-                                                    className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shadow-sm"
-                                                >
-                                                    Ver detalle
-                                                </Link>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-
-                    {/* Sin Resultados */}
-                    {!buscando && !error && resultados.length === 0 && (termino || fechaDesde || fechaHasta || tipoHecho) && (
-                        <div className="p-20 text-center">
-                            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4 text-gray-400">
-                                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                </svg>
-                            </div>
-                            <h3 className="text-lg font-bold text-gray-900">No se encontraron coincidencias</h3>
-                            <p className="text-gray-500 max-w-xs mx-auto mt-2">Intente con otras palabras clave o ajuste los filtros de fecha y tipo.</p>
-                        </div>
-                    )}
-
-                    {/* Mensaje Inicial */}
-                    {!buscando && !error && resultados.length === 0 && !termino && !fechaDesde && !fechaHasta && !tipoHecho && (
-                        <div className="p-20 text-center bg-gray-50/50">
-                            <h3 className="text-lg font-medium text-gray-400">Ingrese un término de búsqueda para comenzar</h3>
-                        </div>
-                    )}
-
-                    {error && (
-                        <div className="p-8 text-center text-red-600 bg-red-50">
-                            <p className="font-medium">{error}</p>
-                        </div>
-                    )}
                 </div>
+
+                {/* Estado de Búsqueda */}
+                {buscando && (
+                    <div className="flex items-center justify-center p-12">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                        <span className="ml-3 text-gray-500 font-medium">Buscando coincidencias...</span>
+                    </div>
+                )}
+
+                {/* Resultados */}
+                {!buscando && resultados.length > 0 && (
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                                <tr>
+                                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Orden</th>
+                                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Denunciante</th>
+                                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Tipo/Hecho</th>
+                                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Fecha</th>
+                                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Fragmento del Relato</th>
+                                    <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                                {resultados.map((res) => (
+                                    <tr key={res.id} className="hover:bg-blue-50/30 transition-colors">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-blue-600">
+                                            #{res.numero_orden}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <div className="text-sm font-medium text-gray-900">{res.nombre_denunciante}</div>
+                                            <div className="text-xs text-gray-500">{res.cedula_denunciante}</div>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <span className="px-2.5 py-1 text-xs font-semibold bg-gray-100 text-gray-700 rounded-full uppercase">
+                                                {res.tipo_hecho}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                            {formatearFechaSinTimezone(res.fecha_denuncia)}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <p className="text-sm text-gray-600 line-clamp-2 max-w-md italic">
+                                                "...{resaltarTermino(res.relato || '', termino)}..."
+                                            </p>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                            <Link
+                                                href={`/ver-denuncia/${res.id}`}
+                                                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shadow-sm"
+                                            >
+                                                Ver detalle
+                                            </Link>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+
+                {/* Sin Resultados */}
+                {!buscando && !error && resultados.length === 0 && (termino || fechaDesde || fechaHasta || tipoHecho) && (
+                    <div className="p-20 text-center">
+                        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4 text-gray-400">
+                            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </div>
+                        <h3 className="text-lg font-bold text-gray-900">No se encontraron coincidencias</h3>
+                        <p className="text-gray-500 max-w-xs mx-auto mt-2">Intente con otras palabras clave o ajuste los filtros de fecha y tipo.</p>
+                    </div>
+                )}
+
+                {/* Mensaje Inicial */}
+                {!buscando && !error && resultados.length === 0 && !termino && !fechaDesde && !fechaHasta && !tipoHecho && (
+                    <div className="p-20 text-center bg-gray-50/50">
+                        <h3 className="text-lg font-medium text-gray-400">Ingrese un término de búsqueda para comenzar</h3>
+                    </div>
+                )}
+
+                {error && (
+                    <div className="p-8 text-center text-red-600 bg-red-50">
+                        <p className="font-medium">{error}</p>
+                    </div>
+                )}
             </main>
         </div>
     )
