@@ -6,10 +6,6 @@ import { useEffect, useState } from 'react'
 import { MainLayout } from '@/components/MainLayout'
 import {
   TrendingUp,
-  DollarSign,
-  Euro,
-  Coins,
-  ArrowRightLeft,
   RefreshCw,
   Clock
 } from 'lucide-react'
@@ -95,18 +91,18 @@ export default function InicioPage() {
         </div>
 
         {/* Currency Section Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
               <TrendingUp className="w-5 h-5" />
             </div>
-            <h2 className="text-xl font-bold text-slate-800">Cotizaciones del Mercado</h2>
+            <h2 className="text-xl font-bold text-slate-800">Conversor de Divisas</h2>
           </div>
           <button
             onClick={fetchRates}
-            className="flex items-center gap-2 text-sm font-bold text-[#002147] hover:bg-slate-100 px-4 py-2 rounded-xl transition-all"
+            className="flex items-center gap-1.5 text-xs font-bold text-[#002147] bg-white border border-slate-200 hover:bg-slate-50 px-4 py-2.5 rounded-xl shadow-sm transition-all active:scale-95"
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
             Actualizar
           </button>
         </div>
@@ -114,85 +110,103 @@ export default function InicioPage() {
         {/* Currency Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {currencies.map((currency) => (
-            <div
-              key={currency.code}
-              className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden group"
-            >
-              <div className={`absolute top-0 right-0 w-16 h-16 -mr-8 -mt-8 ${currency.color} opacity-10 rounded-full group-hover:scale-125 transition-transform duration-500`} />
-
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-2xl">{currency.flag}</span>
-                <span className="text-xs font-black text-slate-400 tracking-tighter">{currency.code}</span>
-              </div>
-
-              <div className="space-y-1">
-                <h3 className="text-sm font-bold text-slate-500">{currency.name}</h3>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-black text-[#002147]">
-                    {loading ? '---' : Math.round(currency.rate).toLocaleString('es-PY')}
-                  </span>
-                  <span className="text-xs font-bold text-slate-400">PYG</span>
-                </div>
-              </div>
-
-              <div className="mt-6 pt-4 border-t border-slate-50 flex items-center justify-between">
-                <div className="flex flex-col">
-                  <span className="text-[10px] uppercase font-black text-slate-300 tracking-wider">Compra</span>
-                  <span className="text-xs font-bold text-slate-600">
-                    {loading ? '---' : Math.round(currency.rate * 0.985).toLocaleString('es-PY')}
-                  </span>
-                </div>
-                <div className="flex flex-col text-right">
-                  <span className="text-[10px] uppercase font-black text-slate-300 tracking-wider">Venta</span>
-                  <span className="text-xs font-bold text-slate-600">
-                    {loading ? '---' : Math.round(currency.rate * 1.015).toLocaleString('es-PY')}
-                  </span>
-                </div>
-              </div>
-            </div>
+            <CurrencyCard key={currency.code} currency={currency} loading={loading} />
           ))}
         </div>
 
-        {/* Informative Section */}
-        <div className="mt-12 grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 bg-gradient-to-br from-[#002147] to-[#003366] rounded-3xl p-8 text-white relative overflow-hidden">
-            <ArrowRightLeft className="absolute right-0 bottom-0 w-64 h-64 -mb-16 -mr-16 text-white/5" />
-            <div className="relative z-10">
-              <h3 className="text-2xl font-bold mb-4">Análisis de Divisas</h3>
-              <p className="text-blue-100 leading-relaxed mb-6">
-                Este panel proporciona una visualización rápida de las tasas de conversión actuales.
-                Los valores de compra y venta son aproximados y se calculan basándose en la tasa media del mercado proporcionada por la API.
-              </p>
-              <div className="flex gap-4">
-                <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 flex-1">
-                  <span className="block text-[10px] uppercase font-bold text-blue-200 mb-1">Volatilidad</span>
-                  <span className="text-lg font-bold">Baja</span>
-                </div>
-                <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 flex-1">
-                  <span className="block text-[10px] uppercase font-bold text-blue-200 mb-1">Tendencia</span>
-                  <span className="text-lg font-bold">Estable</span>
-                </div>
-              </div>
-            </div>
+        {/* Unified Footer Info */}
+        <div className="mt-12 p-8 bg-slate-50 rounded-[2.5rem] border border-slate-200/50 flex flex-col items-center text-center">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-sm border border-slate-100 mb-4">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+            </span>
+            <span className="text-[10px] font-black text-[#002147] uppercase tracking-wider">Servicio en línea</span>
           </div>
-
-          <div className="bg-slate-50 rounded-3xl p-8 border border-slate-200">
-            <div className="flex items-center gap-3 mb-6">
-              <Coins className="w-6 h-6 text-[#002147]" />
-              <h3 className="text-lg font-bold text-slate-800">Recursos Útiles</h3>
-            </div>
-            <ul className="space-y-4">
-              {['Banco Central del Paraguay', 'Cotización SET', 'Prevención de Lavado'].map((item) => (
-                <li key={item} className="flex items-center justify-between group cursor-pointer">
-                  <span className="text-sm font-semibold text-slate-600 group-hover:text-[#002147] transition-colors">{item}</span>
-                  <span className="w-6 h-6 rounded-full bg-white flex items-center justify-center text-slate-300 group-hover:bg-[#002147] group-hover:text-white transition-all">→</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+          <h3 className="text-slate-800 font-bold mb-2">Monitor de Cotizaciones en Tiempo Real</h3>
+          <p className="text-slate-500 text-sm max-w-lg mb-0 font-medium">
+            Tasas de cambio obtenidas directamente de fuentes de mercado globales.
+            Valores de compra y venta calculados para uso referencial por personal de la
+            <b> Dirección Contra Hechos Punibles Económicos y Financieros</b>.
+          </p>
         </div>
       </div>
     </MainLayout>
   )
 }
 
+function CurrencyCard({ currency, loading }: { currency: CurrencyData, loading: boolean }) {
+  const [amount, setAmount] = useState<string>('1')
+
+  const total = loading ? 0 : (parseFloat(amount) || 0) * currency.rate
+
+  return (
+    <div className="bg-white rounded-[2rem] border border-slate-100 p-8 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-500 relative overflow-hidden group">
+      {/* Accent Background */}
+      <div className={`absolute top-0 right-0 w-32 h-32 -mr-16 -mt-16 ${currency.color} opacity-5 rounded-full group-hover:scale-150 transition-transform duration-700`} />
+
+      {/* Header */}
+      <div className="flex items-center justify-between mb-8 relative z-10">
+        <div className="flex items-center gap-3">
+          <span className="text-3xl filter drop-shadow-sm">{currency.flag}</span>
+          <div className="flex flex-col">
+            <span className="text-sm font-black text-[#002147] tracking-tight">{currency.code}</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">{currency.name.split(' ')[0]}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Converter Body */}
+      <div className="space-y-6 relative z-10">
+        <div className="relative group/input">
+          <label className="block text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest pl-1">
+            Monto en {currency.code}
+          </label>
+          <div className="relative">
+            <input
+              type="number"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              className="w-full bg-slate-50 border-2 border-transparent rounded-2xl px-5 py-4 text-xl font-black text-[#002147] focus:bg-white focus:border-[#002147]/10 transition-all outline-none"
+              placeholder="0.00"
+            />
+            <div className="absolute right-5 top-1/2 -translate-y-1/2 flex items-center gap-1.5 opacity-40">
+              <ArrowRightLeft className="w-3.5 h-3.5" />
+            </div>
+          </div>
+        </div>
+
+        <div className="pt-2">
+          <label className="block text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest pl-1">
+            Convertido a PYG
+          </label>
+          <div className="flex flex-col gap-0.5 px-1">
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-black text-[#002147] tracking-tighter">
+                {loading ? '---' : Math.round(total).toLocaleString('es-PY')}
+              </span>
+              <span className="text-[10px] font-black text-slate-300 tracking-widest">PYG</span>
+            </div>
+            <div className={`h-1 w-12 rounded-full ${currency.color} opacity-20`} />
+          </div>
+        </div>
+      </div>
+
+      {/* Spread Footer */}
+      <div className="mt-10 pt-6 border-t border-slate-50 flex items-center justify-between">
+        <div className="flex flex-col">
+          <span className="text-[9px] uppercase font-black text-slate-300 tracking-wider">Referencia Compra</span>
+          <span className="text-xs font-black text-slate-500">
+            {loading ? '---' : Math.round(currency.rate * 0.985).toLocaleString('es-PY')}
+          </span>
+        </div>
+        <div className="flex flex-col text-right">
+          <span className="text-[9px] uppercase font-black text-slate-300 tracking-wider">Referencia Venta</span>
+          <span className="text-xs font-black text-slate-500">
+            {loading ? '---' : Math.round(currency.rate * 1.015).toLocaleString('es-PY')}
+          </span>
+        </div>
+      </div>
+    </div>
+  )
+}
