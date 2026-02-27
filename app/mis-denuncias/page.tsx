@@ -119,7 +119,7 @@ export default function MisDenunciasPage() {
           </div>
         </div>
 
-        <div className="bg-card rounded-xl border border-border/60 shadow-sm overflow-hidden border-t-4 border-t-primary">
+        <div className="bg-card rounded-xl border border-border/60 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-border">
               <thead className="bg-muted/50">
