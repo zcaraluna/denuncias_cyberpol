@@ -7,8 +7,7 @@ import { MainLayout } from '@/components/MainLayout'
 import {
   TrendingUp,
   RefreshCw,
-  Clock,
-  ArrowRightLeft
+  Clock
 } from 'lucide-react'
 
 const API_KEY = 'c26434662f9a1a4869628002'
@@ -68,6 +67,10 @@ export default function InicioPage() {
     return null
   }
 
+  // Sanitizar nombre: Tomar primer nombre y primer apellido
+  const primerNombre = usuario.nombre ? usuario.nombre.split(' ')[0] : ''
+  const primerApellido = usuario.apellido ? usuario.apellido.split(' ')[0] : ''
+
   const currencies: CurrencyData[] = [
     { code: 'USD', name: 'Dólar Americano', flag: '🇺🇸', rate: rates['USD'] ? 1 / rates['USD'] : 0, color: 'text-emerald-600 bg-emerald-50' },
     { code: 'EUR', name: 'Euro', flag: '🇪🇺', rate: rates['EUR'] ? 1 / rates['EUR'] : 0, color: 'text-blue-600 bg-blue-50' },
@@ -81,11 +84,11 @@ export default function InicioPage() {
         {/* Header Section */}
         <div className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
-            <h1 className="text-2xl md:text-3xl font-extrabold text-[#002147] tracking-tight mb-1">
-              Bienvenido, {usuario.grado} {usuario.apellido}
+            <h1 className="text-2xl md:text-3xl font-extrabold text-[#002147] tracking-tight mb-1 uppercase">
+              Bienvenido, {usuario.grado} {primerNombre} {primerApellido}
             </h1>
             <p className="text-slate-400 text-sm font-semibold uppercase tracking-wider">
-              {usuario.oficina} • Dashboard Informativo
+              {usuario.oficina}
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -107,7 +110,7 @@ export default function InicioPage() {
         {/* Section Title */}
         <div className="flex items-center gap-2 mb-8 pl-1">
           <div className="w-1.5 h-6 bg-[#002147] rounded-full" />
-          <h2 className="text-lg font-bold text-slate-800">Conversor de Moneda Extranjera</h2>
+          <h2 className="text-lg font-bold text-slate-800">Cotización de monedas internacionales</h2>
         </div>
 
         {/* Grid Section */}
@@ -131,15 +134,12 @@ export default function InicioPage() {
 }
 
 function CurrencyCard({ currency, loading }: { currency: CurrencyData, loading: boolean }) {
-  const [amount, setAmount] = useState<string>('1')
-  const total = loading ? 0 : (parseFloat(amount) || 0) * currency.rate
-
   return (
     <div className="bg-white rounded-[1.5rem] border border-slate-100 p-6 shadow-sm hover:shadow-xl hover:border-[#002147]/5 transition-all duration-500 flex flex-col">
       {/* Header Moneda */}
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-3">
-          <div className="text-2xl filter drop-shadow-sm grayscale-[0.2] group-hover:grayscale-0 transition-all">{currency.flag}</div>
+          <div className="text-2xl filter drop-shadow-sm grayscale-[0.2] transition-all">{currency.flag}</div>
           <div className="flex flex-col">
             <div className="flex items-center gap-1.5">
               <span className="text-base font-extrabold text-[#002147] tracking-tight">{currency.code}</span>
@@ -150,49 +150,34 @@ function CurrencyCard({ currency, loading }: { currency: CurrencyData, loading: 
         </div>
       </div>
 
-      {/* Input Group */}
-      <div className="space-y-6 flex-grow">
-        <div className="group/input">
-          <label className="block text-[9px] font-bold uppercase text-slate-400 mb-2 tracking-[0.1em] pl-0.5">
-            Monto a Convertir
-          </label>
-          <div className="relative">
-            <input
-              type="number"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              className="w-full bg-slate-50/50 border-2 border-slate-100 rounded-2xl px-4 py-3.5 text-lg font-bold text-[#002147] focus:bg-white focus:border-[#002147] focus:ring-4 focus:ring-[#002147]/5 transition-all outline-none"
-              placeholder="0.00"
-            />
-            <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2 opacity-30">
-              <span className="text-[10px] font-black">{currency.code}</span>
-              <ArrowRightLeft className="w-3 h-3" />
-            </div>
-          </div>
-        </div>
-
-        <div className="relative pt-2">
+      {/* Conversion Body (Simplified) */}
+      <div className="space-y-4 flex-grow">
+        <div className="relative">
           <div className="flex items-center gap-2 mb-2">
             <div className="w-1 h-3 bg-slate-200 rounded-full" />
             <label className="block text-[9px] font-bold uppercase text-slate-500 tracking-[0.1em]">
-              Equivalente en PYG
+              Cotización actual
             </label>
           </div>
           <div className="flex items-baseline gap-2 pl-0.5">
-            <span className="text-2xl font-extrabold text-[#002147] tracking-tighter">
-              {loading ? '---' : Math.round(total).toLocaleString('es-PY')}
+            <span className="text-3xl font-extrabold text-[#002147] tracking-tighter">
+              {loading ? '---' : Math.round(currency.rate).toLocaleString('es-PY')}
             </span>
             <span className="text-[10px] font-black text-slate-300 tracking-wider">PYG</span>
           </div>
-          {/* Subtle underline */}
-          <div className="h-0.5 w-full bg-slate-50 mt-4 rounded-full" />
+        </div>
+
+        {/* Subtle trend indicator placeholder or tag */}
+        <div className="px-2 py-1 bg-slate-50 rounded-lg inline-flex items-center gap-2">
+          <TrendingUp className="w-3 h-3 text-emerald-500" />
+          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Mercado Estable</span>
         </div>
       </div>
 
       {/* Buying/Selling References */}
-      <div className="mt-8 grid grid-cols-2 gap-4">
+      <div className="mt-8 grid grid-cols-2 gap-4 pt-6 border-t border-slate-50">
         <div className="flex flex-col gap-1">
-          <span className="text-[8px] uppercase font-bold text-slate-400 tracking-widest">Referencia Compra</span>
+          <span className="text-[8px] uppercase font-bold text-slate-400 tracking-widest">Ref. Compra</span>
           <div className="flex items-center gap-1.5">
             <div className="w-1.5 h-1.5 rounded-full bg-emerald-400/30" />
             <span className="text-xs font-bold text-slate-600">
@@ -201,7 +186,7 @@ function CurrencyCard({ currency, loading }: { currency: CurrencyData, loading: 
           </div>
         </div>
         <div className="flex flex-col gap-1 items-end">
-          <span className="text-[8px] uppercase font-bold text-slate-400 tracking-widest">Referencia Venta</span>
+          <span className="text-[8px] uppercase font-bold text-slate-400 tracking-widest">Ref. Venta</span>
           <div className="flex items-center gap-1.5">
             <span className="text-xs font-bold text-slate-600">
               {loading ? '---' : Math.round(currency.rate * 1.012).toLocaleString('es-PY')}
