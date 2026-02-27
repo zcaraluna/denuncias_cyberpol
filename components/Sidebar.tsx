@@ -18,7 +18,7 @@ import {
 } from 'lucide-react'
 
 const navItems = [
-    { href: '/dashboard', label: 'Inicio', icon: LayoutDashboard },
+    { href: '/inicio', label: 'Inicio', icon: LayoutDashboard },
     { href: '/nueva-denuncia', label: 'Nueva Denuncia', icon: PlusCircle },
     { href: '/mis-denuncias', label: 'Mis Denuncias', icon: FileText },
     { href: '/denuncias', label: 'Consultar', icon: Search },

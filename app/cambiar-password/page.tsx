@@ -20,7 +20,7 @@ export default function CambiarPasswordPage() {
     }
     // Si hay usuario pero no debe cambiar contraseña, redirigir al dashboard
     if (!authLoading && usuario && !usuario.debe_cambiar_contraseña) {
-      router.push('/dashboard')
+      router.push('/inicio')
     }
   }, [usuario, authLoading, router])
 
@@ -72,7 +72,7 @@ export default function CambiarPasswordPage() {
       // Esperar un momento para asegurar que sessionStorage se actualizó
       // y luego redirigir al dashboard
       setTimeout(() => {
-        router.push('/dashboard')
+        router.push('/inicio')
       }, 100)
     } catch (err) {
       setError('Error de conexión. Por favor, intente nuevamente.')

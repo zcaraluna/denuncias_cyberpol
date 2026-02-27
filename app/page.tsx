@@ -42,7 +42,7 @@ export default function LoginPage() {
       if (data.debe_cambiar_contraseña) {
         router.push('/cambiar-password')
       } else {
-        router.push('/dashboard')
+        router.push('/inicio')
       }
     } catch (err) {
       setError('Error de conexión. Por favor, intente nuevamente.')
