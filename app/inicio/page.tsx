@@ -7,7 +7,8 @@ import { MainLayout } from '@/components/MainLayout'
 import {
   TrendingUp,
   RefreshCw,
-  Clock
+  Clock,
+  ArrowRightLeft
 } from 'lucide-react'
 
 const API_KEY = 'c26434662f9a1a4869628002'
