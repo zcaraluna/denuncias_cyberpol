@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/lib/hooks/useAuth'
+import { MainLayout } from '@/components/MainLayout'
 
 interface Visita {
   id: number
@@ -48,7 +49,7 @@ export default function LogVisitasPage() {
     try {
       const response = await fetch('/api/log-visitas')
       if (!response.ok) throw new Error('Error al cargar visitas')
-      
+
       const data = await response.json()
       setVisitas(data)
     } catch (error) {
@@ -85,28 +86,11 @@ export default function LogVisitasPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link href="/dashboard" className="text-gray-600 hover:text-gray-900">
-              ← Volver al Inicio
-            </Link>
-            <h1 className="text-xl font-bold text-gray-800">Log de Visitas</h1>
-            <button
-              onClick={logout}
-              className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition"
-            >
-              Cerrar Sesión
-            </button>
-          </div>
-        </div>
-      </nav>
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">Registro de Visitas a Denuncias</h2>
-          <p className="text-gray-600">Historial de todas las consultas realizadas</p>
+    <MainLayout>
+      <div className="p-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-foreground">Registro de Auditoría</h1>
+          <p className="text-muted-foreground mt-2">Historial detallado de accesos y consultas a las denuncias del sistema.</p>
         </div>
 
         {visitas.length === 0 ? (
@@ -172,8 +156,8 @@ export default function LogVisitasPage() {
             </div>
           </div>
         )}
-      </main>
-    </div>
+      </div>
+    </MainLayout>
   )
 }
 

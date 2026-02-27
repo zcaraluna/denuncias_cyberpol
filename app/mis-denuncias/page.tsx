@@ -5,6 +5,8 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { formatearFechaSinTimezone } from '@/lib/utils/fecha'
+import { MainLayout } from '@/components/MainLayout'
+import { cn } from '@/lib/utils'
 
 interface Denuncia {
   id: number
@@ -27,11 +29,11 @@ export default function MisDenunciasPage() {
 
   const cargarDenuncias = async () => {
     if (!usuario) return
-    
+
     try {
       const response = await fetch(`/api/denuncias/mias?usuario_id=${usuario.id}`, { cache: 'no-store' })
       if (!response.ok) throw new Error('Error al cargar denuncias')
-      
+
       const data = await response.json()
       setDenuncias(data)
     } catch (error) {
@@ -52,8 +54,8 @@ export default function MisDenunciasPage() {
     router.push(`/ver-denuncia/${id}`)
   }
 
-  const denunciasFiltradas = filtroEstado === 'todos' 
-    ? denuncias 
+  const denunciasFiltradas = filtroEstado === 'todos'
+    ? denuncias
     : denuncias.filter(d => d.estado === filtroEstado)
 
   if (authLoading || loading) {
@@ -69,138 +71,125 @@ export default function MisDenunciasPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link href="/dashboard" className="text-gray-600 hover:text-gray-900">
-              ← Volver al Inicio
-            </Link>
-            <h1 className="text-xl font-bold text-gray-800">Mis Denuncias</h1>
-            <div className="flex items-center space-x-4">
-              <div className="text-sm text-gray-600">
-                <span className="font-medium">{usuario.grado} {usuario.nombre} {usuario.apellido}</span>
-              </div>
-              <button
-                onClick={logout}
-                className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition"
-              >
-                Cerrar Sesión
-              </button>
-            </div>
+    <MainLayout>
+      <div className="p-8">
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Mis Denuncias</h1>
+            <p className="text-muted-foreground mt-1">Historial y seguimiento de tus diligencias</p>
           </div>
         </div>
-      </nav>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-6">
-          <div className="flex items-center space-x-4">
-            <p className="text-gray-600">
-              Filtros:
-            </p>
+          <div className="flex items-center space-x-2">
+            <span className="text-sm font-medium text-muted-foreground mr-2">Filtrar por:</span>
             <button
               onClick={() => setFiltroEstado('todos')}
-              className={`px-4 py-2 rounded-lg font-medium transition ${
+              className={cn(
+                "px-4 py-2 rounded-lg text-sm font-medium transition-all",
                 filtroEstado === 'todos'
-                  ? 'bg-gray-800 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+              )}
             >
               Todas
             </button>
             <button
               onClick={() => setFiltroEstado('completada')}
-              className={`px-4 py-2 rounded-lg font-medium transition ${
+              className={cn(
+                "px-4 py-2 rounded-lg text-sm font-medium transition-all",
                 filtroEstado === 'completada'
-                  ? 'bg-green-600 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
+                  ? "bg-green-600 text-white shadow-sm"
+                  : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+              )}
             >
               Completadas
             </button>
             <button
               onClick={() => setFiltroEstado('borrador')}
-              className={`px-4 py-2 rounded-lg font-medium transition ${
+              className={cn(
+                "px-4 py-2 rounded-lg text-sm font-medium transition-all",
                 filtroEstado === 'borrador'
-                  ? 'bg-yellow-600 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
+                  ? "bg-amber-500 text-white shadow-sm"
+                  : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+              )}
             >
               Borradores
             </button>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <div className="bg-card rounded-xl border shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-border">
+              <thead className="bg-muted/50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    #
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Orden
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     Denunciante
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Cédula
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Documento
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Tipo
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Hecho Punible
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     Fecha y Hora
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     Estado
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     Acciones
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="divide-y divide-border">
                 {denunciasFiltradas.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
-                      No hay denuncias
+                    <td colSpan={7} className="px-6 py-12 text-center text-muted-foreground">
+                      No se encontraron denuncias en esta categoría.
                     </td>
                   </tr>
                 ) : (
                   denunciasFiltradas.map((denuncia) => (
-                    <tr key={denuncia.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {denuncia.numero_orden}
+                    <tr key={denuncia.id} className="hover:bg-muted/30 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-foreground">
+                        #{denuncia.numero_orden}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-900">
+                      <td className="px-6 py-4 text-sm text-foreground font-medium">
                         {denuncia.nombre_denunciante}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                         {denuncia.cedula_denunciante}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-900">
+                      <td className="px-6 py-4 text-sm text-foreground">
                         {denuncia.tipo_hecho}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                         {formatearFechaSinTimezone(denuncia.fecha_denuncia)} {denuncia.hora_denuncia}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
-                          className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          className={cn(
+                            "px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full",
                             denuncia.estado === 'completada'
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-yellow-100 text-yellow-800'
-                          }`}
+                              ? "bg-green-100 text-green-700"
+                              : "bg-amber-100 text-amber-700"
+                          )}
                         >
                           {denuncia.estado === 'completada' ? 'Completada' : 'Borrador'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button
                           onClick={() => verDenuncia(denuncia.id)}
-                          className="text-blue-600 hover:text-blue-900"
+                          className="text-primary hover:text-primary/80 font-semibold"
                         >
-                          Ver Denuncia
+                          Ver Detalle
                         </button>
                       </td>
                     </tr>
@@ -210,9 +199,7 @@ export default function MisDenunciasPage() {
             </table>
           </div>
         </div>
-      </main>
-
-    </div>
+      </div>
+    </MainLayout>
   )
 }
-

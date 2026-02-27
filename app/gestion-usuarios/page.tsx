@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/lib/hooks/useAuth'
+import { MainLayout } from '@/components/MainLayout'
 
 interface UsuarioCompleto {
   id: number
@@ -97,13 +98,13 @@ export default function GestionUsuariosPage() {
   useEffect(() => {
     if (usuarioAuth) {
       setUsuario(usuarioAuth)
-      
+
       // Solo superadmin y admin pueden acceder a esta página
       if (usuarioAuth.rol !== 'superadmin' && usuarioAuth.rol !== 'admin') {
         router.push('/dashboard')
         return
       }
-      
+
       cargarUsuarios()
     }
   }, [usuarioAuth, router])
@@ -112,7 +113,7 @@ export default function GestionUsuariosPage() {
     try {
       const response = await fetch('/api/usuarios')
       if (!response.ok) throw new Error('Error al cargar usuarios')
-      
+
       const data = await response.json()
       setUsuarios(data)
     } catch (error) {
@@ -247,35 +248,16 @@ export default function GestionUsuariosPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link href="/dashboard" className="text-gray-600 hover:text-gray-900">
-              ← Volver al Inicio
-            </Link>
-            <h1 className="text-xl font-bold text-gray-800">Gestión de Usuarios</h1>
-            <div className="flex items-center space-x-4">
-              <div className="text-sm text-gray-600">
-                <span className="font-medium">{usuario.grado} {usuario.nombre} {usuario.apellido}</span>
-              </div>
-              <button
-                onClick={handleLogout}
-                className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition"
-              >
-                Cerrar Sesión
-              </button>
-            </div>
+    <MainLayout>
+      <div className="p-8">
+        <div className="mb-8 flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Gestión de Usuarios</h1>
+            <p className="text-muted-foreground mt-2">Administre las cuentas, roles y accesos de los funcionarios.</p>
           </div>
-        </div>
-      </nav>
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-6 flex justify-between items-center">
-          <p className="text-gray-600">Administre los usuarios del sistema</p>
           <button
             onClick={() => setMostrarModalCrear(true)}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-medium"
+            className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 font-medium shadow-md transition"
           >
             + Crear Usuario
           </button>
@@ -333,20 +315,18 @@ export default function GestionUsuariosPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
-                          className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-${
-                            getRolColor(user.rol)
-                          }-100 text-${getRolColor(user.rol)}-800`}
+                          className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-${getRolColor(user.rol)
+                            }-100 text-${getRolColor(user.rol)}-800`}
                         >
                           {roles.find(r => r.value === user.rol)?.label}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
-                          className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            user.activo
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-red-100 text-red-800'
-                          }`}
+                          className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${user.activo
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-red-100 text-red-800'
+                            }`}
                         >
                           {user.activo ? 'Activo' : 'Inactivo'}
                         </span>
@@ -378,50 +358,22 @@ export default function GestionUsuariosPage() {
             </table>
           </div>
         </div>
-      </main>
 
-      {/* Modal de Crear Usuario */}
-      {mostrarModalCrear && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <h3 className="text-2xl font-bold text-gray-900 mb-4">Crear Nuevo Usuario</h3>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nombre de Usuario *
-                </label>
-                <input
-                  type="text"
-                  value={nuevoUsuario.usuario}
-                  onChange={(e) => setNuevoUsuario({ ...nuevoUsuario, usuario: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                />
-              </div>
+        {/* Modal de Crear Usuario */}
+        {mostrarModalCrear && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full max-h-[90vh] overflow-y-auto">
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">Crear Nuevo Usuario</h3>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Contraseña *
-                </label>
-                <input
-                  type="password"
-                  value={nuevoUsuario.contraseña}
-                  onChange={(e) => setNuevoUsuario({ ...nuevoUsuario, contraseña: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Nombre *
+                    Nombre de Usuario *
                   </label>
                   <input
                     type="text"
-                    value={nuevoUsuario.nombre}
-                    onChange={(e) => setNuevoUsuario({ ...nuevoUsuario, nombre: e.target.value })}
+                    value={nuevoUsuario.usuario}
+                    onChange={(e) => setNuevoUsuario({ ...nuevoUsuario, usuario: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
                   />
@@ -429,233 +381,261 @@ export default function GestionUsuariosPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Apellido *
+                    Contraseña *
                   </label>
                   <input
-                    type="text"
-                    value={nuevoUsuario.apellido}
-                    onChange={(e) => setNuevoUsuario({ ...nuevoUsuario, apellido: e.target.value })}
+                    type="password"
+                    value={nuevoUsuario.contraseña}
+                    onChange={(e) => setNuevoUsuario({ ...nuevoUsuario, contraseña: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
                   />
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Grado *
-                </label>
-                <select
-                  value={nuevoUsuario.grado}
-                  onChange={(e) => setNuevoUsuario({ ...nuevoUsuario, grado: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                >
-                  <option value="">Seleccione...</option>
-                  {grados.map((grado) => (
-                    <option key={grado} value={grado}>
-                      {grado}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Nombre *
+                    </label>
+                    <input
+                      type="text"
+                      value={nuevoUsuario.nombre}
+                      onChange={(e) => setNuevoUsuario({ ...nuevoUsuario, nombre: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required
+                    />
+                  </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Oficina *
-                </label>
-                <select
-                  value={nuevoUsuario.oficina}
-                  onChange={(e) => setNuevoUsuario({ ...nuevoUsuario, oficina: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                >
-                  <option value="">Seleccione...</option>
-                  {oficinas.map((oficina) => (
-                    <option key={oficina} value={oficina}>
-                      {oficina}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Rol *
-                </label>
-                <select
-                  value={nuevoUsuario.rol}
-                  onChange={(e) => setNuevoUsuario({ ...nuevoUsuario, rol: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                >
-                  {roles.map((rol) => (
-                    <option key={rol.value} value={rol.value}>
-                      {rol.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="flex gap-4 mt-6">
-              <button
-                onClick={() => setMostrarModalCrear(false)}
-                className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 font-medium"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleCrearUsuario}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-medium"
-              >
-                Crear
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal de Editar Usuario */}
-      {mostrarModalEditar && usuarioEditando && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <h3 className="text-2xl font-bold text-gray-900 mb-4">Editar Usuario</h3>
-            
-            <div className="space-y-4">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                <p className="text-sm text-blue-800">
-                  <strong>Usuario:</strong> {usuarioEditando.usuario}
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Nombre *
-                  </label>
-                  <input
-                    type="text"
-                    value={editUsuario.nombre}
-                    onChange={(e) => setEditUsuario({ ...editUsuario, nombre: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  />
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Apellido *
+                    </label>
+                    <input
+                      type="text"
+                      value={nuevoUsuario.apellido}
+                      onChange={(e) => setNuevoUsuario({ ...nuevoUsuario, apellido: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required
+                    />
+                  </div>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Apellido *
+                    Grado *
                   </label>
-                  <input
-                    type="text"
-                    value={editUsuario.apellido}
-                    onChange={(e) => setEditUsuario({ ...editUsuario, apellido: e.target.value })}
+                  <select
+                    value={nuevoUsuario.grado}
+                    onChange={(e) => setNuevoUsuario({ ...nuevoUsuario, grado: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
-                  />
+                  >
+                    <option value="">Seleccione...</option>
+                    {grados.map((grado) => (
+                      <option key={grado} value={grado}>
+                        {grado}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Oficina *
+                  </label>
+                  <select
+                    value={nuevoUsuario.oficina}
+                    onChange={(e) => setNuevoUsuario({ ...nuevoUsuario, oficina: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  >
+                    <option value="">Seleccione...</option>
+                    {oficinas.map((oficina) => (
+                      <option key={oficina} value={oficina}>
+                        {oficina}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Rol *
+                  </label>
+                  <select
+                    value={nuevoUsuario.rol}
+                    onChange={(e) => setNuevoUsuario({ ...nuevoUsuario, rol: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  >
+                    {roles.map((rol) => (
+                      <option key={rol.value} value={rol.value}>
+                        {rol.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Grado *
-                </label>
-                <select
-                  value={editUsuario.grado}
-                  onChange={(e) => setEditUsuario({ ...editUsuario, grado: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
+              <div className="flex gap-4 mt-6">
+                <button
+                  onClick={() => setMostrarModalCrear(false)}
+                  className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 font-medium"
                 >
-                  <option value="">Seleccione...</option>
-                  {grados.map((grado) => (
-                    <option key={grado} value={grado}>
-                      {grado}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Oficina *
-                </label>
-                <select
-                  value={editUsuario.oficina}
-                  onChange={(e) => setEditUsuario({ ...editUsuario, oficina: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleCrearUsuario}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-medium"
                 >
-                  <option value="">Seleccione...</option>
-                  {oficinas.map((oficina) => (
-                    <option key={oficina} value={oficina}>
-                      {oficina}
-                    </option>
-                  ))}
-                </select>
+                  Crear
+                </button>
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Rol *
-                </label>
-                <select
-                  value={editUsuario.rol}
-                  onChange={(e) => setEditUsuario({ ...editUsuario, rol: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                >
-                  {roles.map((rol) => (
-                    <option key={rol.value} value={rol.value}>
-                      {rol.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Contraseña (dejar en blanco para no cambiar)
-                </label>
-                <input
-                  type="password"
-                  value={editUsuario.contraseña}
-                  onChange={(e) => setEditUsuario({ ...editUsuario, contraseña: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={editUsuario.activo}
-                  onChange={(e) => setEditUsuario({ ...editUsuario, activo: e.target.checked })}
-                  className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                />
-                <label className="block text-sm font-medium text-gray-700">
-                  Usuario Activo
-                </label>
-              </div>
-            </div>
-
-            <div className="flex gap-4 mt-6">
-              <button
-                onClick={() => setMostrarModalEditar(false)}
-                className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 font-medium"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleActualizarUsuario}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-medium"
-              >
-                Guardar
-              </button>
             </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+
+        {/* Modal de Editar Usuario */}
+        {mostrarModalEditar && usuarioEditando && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full max-h-[90vh] overflow-y-auto">
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">Editar Usuario</h3>
+
+              <div className="space-y-4">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <p className="text-sm text-blue-800">
+                    <strong>Usuario:</strong> {usuarioEditando.usuario}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Nombre *
+                    </label>
+                    <input
+                      type="text"
+                      value={editUsuario.nombre}
+                      onChange={(e) => setEditUsuario({ ...editUsuario, nombre: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Apellido *
+                    </label>
+                    <input
+                      type="text"
+                      value={editUsuario.apellido}
+                      onChange={(e) => setEditUsuario({ ...editUsuario, apellido: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Grado *
+                  </label>
+                  <select
+                    value={editUsuario.grado}
+                    onChange={(e) => setEditUsuario({ ...editUsuario, grado: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  >
+                    <option value="">Seleccione...</option>
+                    {grados.map((grado) => (
+                      <option key={grado} value={grado}>
+                        {grado}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Oficina *
+                  </label>
+                  <select
+                    value={editUsuario.oficina}
+                    onChange={(e) => setEditUsuario({ ...editUsuario, oficina: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  >
+                    <option value="">Seleccione...</option>
+                    {oficinas.map((oficina) => (
+                      <option key={oficina} value={oficina}>
+                        {oficina}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Rol *
+                  </label>
+                  <select
+                    value={editUsuario.rol}
+                    onChange={(e) => setEditUsuario({ ...editUsuario, rol: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  >
+                    {roles.map((rol) => (
+                      <option key={rol.value} value={rol.value}>
+                        {rol.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Contraseña (dejar en blanco para no cambiar)
+                  </label>
+                  <input
+                    type="password"
+                    value={editUsuario.contraseña}
+                    onChange={(e) => setEditUsuario({ ...editUsuario, contraseña: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={editUsuario.activo}
+                    onChange={(e) => setEditUsuario({ ...editUsuario, activo: e.target.checked })}
+                    className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label className="block text-sm font-medium text-gray-700">
+                    Usuario Activo
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex gap-4 mt-6">
+                <button
+                  onClick={() => setMostrarModalEditar(false)}
+                  className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 font-medium"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleActualizarUsuario}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-medium"
+                >
+                  Guardar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </MainLayout >
   )
 }
 

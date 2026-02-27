@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/lib/hooks/useAuth'
+import { MainLayout } from '@/components/MainLayout'
 import { formatearFechaSinTimezone } from '@/lib/utils/fecha'
 
 interface Visita {
@@ -74,7 +75,7 @@ export default function PerfilUsuarioPage({ params }: { params: Promise<{ id: st
   useEffect(() => {
     if (usuarioAuth) {
       setUsuarioActivo(usuarioAuth)
-      
+
       if (usuarioAuth.rol !== 'superadmin' && usuarioAuth.rol !== 'admin') {
         router.push('/dashboard')
         return
@@ -158,25 +159,15 @@ export default function PerfilUsuarioPage({ params }: { params: Promise<{ id: st
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link href="/gestion-usuarios" className="text-gray-600 hover:text-gray-900">
-              ← Volver a Gestión de Usuarios
-            </Link>
-            <h1 className="text-xl font-bold text-gray-800">Perfil de Usuario</h1>
-            <button
-              onClick={handleLogout}
-              className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition"
-            >
-              Cerrar Sesión
-            </button>
-          </div>
+    <MainLayout>
+      <div className="p-8">
+        <div className="mb-8">
+          <Link href="/gestion-usuarios" className="text-sm font-medium text-primary hover:underline mb-4 inline-block">
+            ← Volver a Gestión de Usuarios
+          </Link>
+          <h1 className="text-3xl font-bold text-foreground">Perfil de Funcionario</h1>
+          <p className="text-muted-foreground mt-2">Detalle de actividad y desempeño del usuario seleccionado.</p>
         </div>
-      </nav>
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-lg shadow-md p-8 mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Información del Usuario</h2>
           <div className="grid grid-cols-2 gap-4">
@@ -202,9 +193,8 @@ export default function PerfilUsuarioPage({ params }: { params: Promise<{ id: st
             </div>
             <div>
               <p className="text-sm font-medium text-gray-600">Estado</p>
-              <span className={`px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full ${
-                usuario.activo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-              }`}>
+              <span className={`px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full ${usuario.activo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                }`}>
                 {usuario.activo ? 'Activo' : 'Inactivo'}
               </span>
             </div>
@@ -218,11 +208,10 @@ export default function PerfilUsuarioPage({ params }: { params: Promise<{ id: st
                 setPestañaActiva('consultadas')
                 setPaginaActual(1)
               }}
-              className={`px-6 py-3 font-medium border-b-2 transition-colors ${
-                pestañaActiva === 'consultadas'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
+              className={`px-6 py-3 font-medium border-b-2 transition-colors ${pestañaActiva === 'consultadas'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
             >
               Denuncias Consultadas ({visitas.length})
             </button>
@@ -231,11 +220,10 @@ export default function PerfilUsuarioPage({ params }: { params: Promise<{ id: st
                 setPestañaActiva('tomadas')
                 setPaginaActualTomadas(1)
               }}
-              className={`px-6 py-3 font-medium border-b-2 transition-colors ${
-                pestañaActiva === 'tomadas'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
+              className={`px-6 py-3 font-medium border-b-2 transition-colors ${pestañaActiva === 'tomadas'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
             >
               Denuncias Tomadas ({denunciasTomadas.length})
             </button>
@@ -427,8 +415,8 @@ export default function PerfilUsuarioPage({ params }: { params: Promise<{ id: st
             )}
           </>
         )}
-      </main>
-    </div>
+      </div>
+    </MainLayout>
   )
 }
 

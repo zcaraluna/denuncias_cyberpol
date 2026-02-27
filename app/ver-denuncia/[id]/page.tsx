@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/lib/hooks/useAuth'
+import { MainLayout } from '@/components/MainLayout'
 import { formatearFechaSinTimezone } from '@/lib/utils/fecha'
 
 interface Ampliacion {
@@ -276,47 +277,29 @@ export default function VerDenunciaPage({ params }: { params: Promise<{ id: stri
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link href="/mis-denuncias" className="text-gray-600 hover:text-gray-900">
-              ← Volver a Mis Denuncias
-            </Link>
-            <h1 className="text-xl font-bold text-gray-800">Ver Denuncia</h1>
-            <button
-              onClick={handleLogout}
-              className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition"
-            >
-              Cerrar Sesión
-            </button>
-          </div>
-        </div>
-      </nav>
-
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-6">
-          <div className="flex justify-between items-center">
+    <MainLayout>
+      <div className="p-8">
+        <div className="mb-8 overflow-hidden">
+          <Link href="/mis-denuncias" className="text-sm font-medium text-primary hover:underline mb-4 inline-block">
+            ← Volver a Mis Denuncias
+          </Link>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <span className={`px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full ${denuncia.estado === 'completada'
-                ? 'bg-green-100 text-green-800'
-                : 'bg-yellow-100 text-yellow-800'
-                }`}>
-                {denuncia.estado === 'completada' ? 'Completada' : 'Borrador'}
-              </span>
+              <h1 className="text-3xl font-bold text-foreground">Detalle de Denuncia</h1>
+              <p className="text-muted-foreground mt-1">Expediente Nº {denuncia.orden} - Hash: <span className="font-mono text-xs">{denuncia.hash.substring(0, 16)}...</span></p>
             </div>
-            <div className="flex gap-4">
+            <div className="flex flex-wrap gap-3">
               {denuncia.estado === 'borrador' && (
                 <>
                   <button
                     onClick={continuarBorrador}
-                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-medium"
+                    className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 font-medium shadow-sm transition"
                   >
                     Continuar Denuncia
                   </button>
                   <button
                     onClick={abrirModalEliminar}
-                    className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 font-medium"
+                    className="px-6 py-2 bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90 focus:outline-none focus:ring-2 focus:ring-destructive focus:ring-offset-2 font-medium shadow-sm transition"
                   >
                     Eliminar Borrador
                   </button>
@@ -326,13 +309,13 @@ export default function VerDenunciaPage({ params }: { params: Promise<{ id: stri
                 <>
                   <Link
                     href={`/ampliar-denuncia/${denunciaId}`}
-                    className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 font-medium"
+                    className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 font-medium shadow-sm transition"
                   >
                     Ampliar Denuncia
                   </Link>
                   <button
                     onClick={descargarPDF}
-                    className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 font-medium"
+                    className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 font-medium shadow-sm transition"
                   >
                     Ver PDF
                   </button>
@@ -617,37 +600,37 @@ export default function VerDenunciaPage({ params }: { params: Promise<{ id: stri
             )}
           </div>
         </div>
-      </main>
 
-      {/* Modal de confirmación de eliminación */}
-      {mostrarModalEliminar && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full mx-4">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">Eliminar Borrador</h3>
-            <p className="text-gray-600 mb-6">
-              ¿Está seguro que desea eliminar este borrador? Esta acción no se puede deshacer.
-            </p>
+        {/* Modal de confirmación de eliminación */}
+        {mostrarModalEliminar && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full mx-4">
+              <h3 className="text-xl font-bold text-gray-900 mb-4">Eliminar Borrador</h3>
+              <p className="text-gray-600 mb-6">
+                ¿Está seguro que desea eliminar este borrador? Esta acción no se puede deshacer.
+              </p>
 
-            <div className="flex gap-4">
-              <button
-                onClick={() => setMostrarModalEliminar(false)}
-                disabled={eliminando}
-                className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={eliminarBorrador}
-                disabled={eliminando}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {eliminando ? 'Eliminando...' : 'Eliminar'}
-              </button>
+              <div className="flex gap-4">
+                <button
+                  onClick={() => setMostrarModalEliminar(false)}
+                  disabled={eliminando}
+                  className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={eliminarBorrador}
+                  disabled={eliminando}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {eliminando ? 'Eliminando...' : 'Eliminar'}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </MainLayout >
   )
 }
 

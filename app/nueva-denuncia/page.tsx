@@ -11,6 +11,7 @@ import { departamentosParaguay } from '@/lib/data/departamentos'
 import { obtenerBarriosPorCiudad } from '@/lib/data/barrios'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { obtenerHechosPuniblesEspecificos } from '@/lib/data/hechos-punibles'
+import { MainLayout } from '@/components/MainLayout'
 
 // Importar el mapa dinámicamente (solo en cliente)
 const MapSelector = dynamic(() => import('@/components/MapSelector'), { ssr: false })
@@ -2520,25 +2521,12 @@ export default function NuevaDenunciaPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <button
-              onClick={() => router.push('/dashboard')}
-              className="text-gray-600 hover:text-gray-900"
-            >
-              ← Volver
-            </button>
-            <h1 className="text-xl font-bold text-gray-800">Nueva Denuncia</h1>
-            <div className="text-sm text-gray-600">
-              {usuario.grado} {usuario.nombre} {usuario.apellido}
-            </div>
-          </div>
+    <MainLayout>
+      <div className="p-8 max-w-5xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-foreground">Nueva Denuncia Policial</h1>
+          <p className="text-muted-foreground mt-2">Complete los pasos para registrar una nueva diligencia en el sistema.</p>
         </div>
-      </nav>
-
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Indicador de pasos */}
         <div className="mb-8">
           <div className="flex items-center">
@@ -5120,151 +5108,151 @@ export default function NuevaDenunciaPage() {
             </div>
           </form>
         )}
-      </main>
 
-      {mostrarMapa && (
-        <MapSelector
-          onSelect={(lat, lng) => {
-            setCoordenadas({ lat, lng })
-            setMostrarMapa(false)
-          }}
-          onClose={() => setMostrarMapa(false)}
-        />
-      )}
+        {mostrarMapa && (
+          <MapSelector
+            onSelect={(lat, lng) => {
+              setCoordenadas({ lat, lng })
+              setMostrarMapa(false)
+            }}
+            onClose={() => setMostrarMapa(false)}
+          />
+        )}
 
-      {/* Modal de confirmación después de guardar borrador */}
-      {mostrarModalBorrador && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full mx-4">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">Borrador Guardado</h3>
-            <p className="text-gray-600 mb-6">
-              El borrador ha sido guardado exitosamente.
-            </p>
+        {/* Modal de confirmación después de guardar borrador */}
+        {mostrarModalBorrador && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full mx-4">
+              <h3 className="text-xl font-bold text-gray-900 mb-4">Borrador Guardado</h3>
+              <p className="text-gray-600 mb-6">
+                El borrador ha sido guardado exitosamente.
+              </p>
 
-            <div className="flex gap-4">
-              <button
-                onClick={permanecerEnPagina}
-                className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 font-medium"
-              >
-                Continuar Editando
-              </button>
-              <button
-                onClick={irAlInicio}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-medium"
-              >
-                Ir al Inicio
-              </button>
+              <div className="flex gap-4">
+                <button
+                  onClick={permanecerEnPagina}
+                  className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 font-medium"
+                >
+                  Continuar Editando
+                </button>
+                <button
+                  onClick={irAlInicio}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-medium"
+                >
+                  Ir al Inicio
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Modal de Error (No Bloqueante) */}
-      {mostrarModalError && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 animate-fadeIn p-4">
-          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4 border-l-4 border-red-500 transform transition-all scale-100">
-            <div className="flex items-start mb-4">
-              <div className="flex-shrink-0">
-                <svg className="h-6 w-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-              </div>
-              <div className="ml-3 w-full">
-                <h3 className="text-lg font-medium text-gray-900 leading-6">
-                  {mensajeErrorTitulo}
-                </h3>
-                <div className="mt-2 text-sm text-gray-600 whitespace-pre-wrap">
-                  {mensajeError}
+        {/* Modal de Error (No Bloqueante) */}
+        {mostrarModalError && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 animate-fadeIn p-4">
+            <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4 border-l-4 border-red-500 transform transition-all scale-100">
+              <div className="flex items-start mb-4">
+                <div className="flex-shrink-0">
+                  <svg className="h-6 w-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
                 </div>
-              </div>
-            </div>
-            <div className="flex justify-end pt-3">
-              <button
-                onClick={() => setMostrarModalError(false)}
-                className="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 shadow-sm transition-colors duration-200"
-              >
-                Entendido
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal de vista previa antes de finalizar */}
-      {mostrarModalVistaPrevia && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[95vh] flex flex-col overflow-hidden border border-gray-200">
-            {/* Header con gradiente */}
-            <div className="flex justify-between items-center px-8 py-6 bg-gradient-to-r from-blue-600 to-indigo-700 border-b border-blue-500">
-              <div>
-                <h3 className="text-2xl font-bold text-white mb-1">Vista Previa de la Denuncia</h3>
-                <p className="text-sm text-blue-100">Revise el contenido antes de finalizar</p>
-              </div>
-              <button
-                onClick={() => setMostrarModalVistaPrevia(false)}
-                className="text-white hover:bg-white/20 rounded-full p-2 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-200"
-                aria-label="Cerrar"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            {/* Contenido con scroll */}
-            <div className="flex-1 overflow-y-auto bg-gradient-to-br from-gray-50 to-gray-100">
-              <div className="p-8">
-                <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-10 max-w-4xl mx-auto">
-                  <div className="prose prose-lg max-w-none font-lato" style={{ fontFamily: 'var(--font-lato), Lato, sans-serif' }}>
-                    <div
-                      className="text-[15px] text-gray-900 leading-[1.8] tracking-wide antialiased font-lato"
-                      style={{ fontFamily: 'var(--font-lato), Lato, sans-serif' }}
-                      dangerouslySetInnerHTML={{ __html: textoVistaPrevia.replace(/\n/g, '<br />') }}
-                    />
+                <div className="ml-3 w-full">
+                  <h3 className="text-lg font-medium text-gray-900 leading-6">
+                    {mensajeErrorTitulo}
+                  </h3>
+                  <div className="mt-2 text-sm text-gray-600 whitespace-pre-wrap">
+                    {mensajeError}
                   </div>
                 </div>
               </div>
-            </div>
-
-            {/* Footer con botones */}
-            <div className="flex gap-4 px-8 py-6 bg-white border-t border-gray-200 rounded-b-2xl">
-              <button
-                onClick={() => setMostrarModalVistaPrevia(false)}
-                className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 font-semibold transition-all duration-200 shadow-sm hover:shadow"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={async () => {
-                  // Prevenir clics múltiples
-                  if (isSubmittingRef.current || loading) {
-                    return
-                  }
-                  setMostrarModalVistaPrevia(false)
-                  const denunciaData = watchDenuncia()
-                  // Llamar directamente a onDenunciaSubmit
-                  await onDenunciaSubmit(denunciaData)
-                }}
-                disabled={isSubmittingRef.current || loading}
-                className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:transform-none"
-              >
-                {loading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Guardando...
-                  </span>
-                ) : (
-                  'Confirmar y Finalizar'
-                )}
-              </button>
+              <div className="flex justify-end pt-3">
+                <button
+                  onClick={() => setMostrarModalError(false)}
+                  className="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 shadow-sm transition-colors duration-200"
+                >
+                  Entendido
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+
+        {/* Modal de vista previa antes de finalizar */}
+        {mostrarModalVistaPrevia && (
+          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[95vh] flex flex-col overflow-hidden border border-gray-200">
+              {/* Header con gradiente */}
+              <div className="flex justify-between items-center px-8 py-6 bg-gradient-to-r from-blue-600 to-indigo-700 border-b border-blue-500">
+                <div>
+                  <h3 className="text-2xl font-bold text-white mb-1">Vista Previa de la Denuncia</h3>
+                  <p className="text-sm text-blue-100">Revise el contenido antes de finalizar</p>
+                </div>
+                <button
+                  onClick={() => setMostrarModalVistaPrevia(false)}
+                  className="text-white hover:bg-white/20 rounded-full p-2 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-200"
+                  aria-label="Cerrar"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Contenido con scroll */}
+              <div className="flex-1 overflow-y-auto bg-gradient-to-br from-gray-50 to-gray-100">
+                <div className="p-8">
+                  <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-10 max-w-4xl mx-auto">
+                    <div className="prose prose-lg max-w-none font-lato" style={{ fontFamily: 'var(--font-lato), Lato, sans-serif' }}>
+                      <div
+                        className="text-[15px] text-gray-900 leading-[1.8] tracking-wide antialiased font-lato"
+                        style={{ fontFamily: 'var(--font-lato), Lato, sans-serif' }}
+                        dangerouslySetInnerHTML={{ __html: textoVistaPrevia.replace(/\n/g, '<br />') }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer con botones */}
+              <div className="flex gap-4 px-8 py-6 bg-white border-t border-gray-200 rounded-b-2xl">
+                <button
+                  onClick={() => setMostrarModalVistaPrevia(false)}
+                  className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 font-semibold transition-all duration-200 shadow-sm hover:shadow"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={async () => {
+                    // Prevenir clics múltiples
+                    if (isSubmittingRef.current || loading) {
+                      return
+                    }
+                    setMostrarModalVistaPrevia(false)
+                    const denunciaData = watchDenuncia()
+                    // Llamar directamente a onDenunciaSubmit
+                    await onDenunciaSubmit(denunciaData)
+                  }}
+                  disabled={isSubmittingRef.current || loading}
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:transform-none"
+                >
+                  {loading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Guardando...
+                    </span>
+                  ) : (
+                    'Confirmar y Finalizar'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </MainLayout>
   )
 }
 
