@@ -10,9 +10,12 @@ export function MainLayout({ children }: MainLayoutProps) {
     return (
         <div className="flex min-h-screen bg-background">
             <Sidebar />
-            <main className="flex-1 transition-all md:ml-64">
-                {children}
-            </main>
+            <div className="flex-1 flex flex-col md:ml-64">
+                <header className="h-1 bg-primary w-full" />
+                <main className="flex-1">
+                    {children}
+                </main>
+            </div>
         </div>
     )
 }
