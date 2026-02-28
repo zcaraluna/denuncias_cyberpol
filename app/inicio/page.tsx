@@ -35,8 +35,14 @@ export default function InicioPage() {
       const data = await response.json()
       if (!data.error) {
         // Adaptamos el formato de la API a lo que espera el estado
-        setRates(data)
-        setLastUpdate(new Date().toLocaleTimeString('es-PY', { hour: '2-digit', minute: '2-digit' }))
+        setRates(data.rates)
+
+        // Formateamos el timestamp del servidor para mostrar en el disclaimer
+        if (data.timestamp) {
+          const date = new Date(data.timestamp)
+          const formatted = `${date.toLocaleDateString('es-PY', { day: '2-digit', month: '2-digit' })} — ${date.toLocaleTimeString('es-PY', { hour: '2-digit', minute: '2-digit', hour12: false })}h`
+          setLastUpdate(formatted)
+        }
       }
     } catch (error) {
       console.error('Error fetching rates:', error)
@@ -129,7 +135,7 @@ export default function InicioPage() {
             {/* Internal Disclaimer */}
             <div className="px-4 py-2 bg-slate-50/50 border-t border-slate-100/50">
               <p className="text-[7px] font-bold text-slate-400 uppercase tracking-widest text-center">
-                Fuente: Cambios Chaco — Última Actualización: {new Date().toLocaleDateString('es-PY', { day: '2-digit', month: '2-digit' })} — {new Date().toLocaleTimeString('es-PY', { hour: '2-digit', minute: '2-digit', hour12: false })}
+                Fuente: Cambios Chaco — Última Actualización: {lastUpdate || '--/-- — --:--h'}
               </p>
             </div>
           </div>

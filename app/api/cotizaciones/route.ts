@@ -38,7 +38,10 @@ export async function GET() {
             }
         })
 
-        return NextResponse.json(results)
+        return NextResponse.json({
+            rates: results,
+            timestamp: new Date().toISOString()
+        })
     } catch (error) {
         console.error('Error fetching Chaco rates:', error)
         return NextResponse.json({ error: 'Failed to fetch rates' }, { status: 500 })
