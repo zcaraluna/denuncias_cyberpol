@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAuth } from '@/lib/hooks/useAuth'
-import { cn } from '@/lib/utils'
+import { cn, formatNombrePolicial } from '@/lib/utils'
 import {
     LayoutDashboard,
     PlusCircle,
@@ -116,7 +116,7 @@ export function Sidebar() {
                         </div>
                         <div className="flex flex-col overflow-hidden">
                             <span className="truncate text-xs font-bold text-slate-900">
-                                {usuario.grado} {usuario.apellido}
+                                {formatNombrePolicial(usuario.grado, usuario.nombre, usuario.apellido)}
                             </span>
                             <span className="truncate text-[10px] font-medium text-slate-500">
                                 {usuario.oficina}

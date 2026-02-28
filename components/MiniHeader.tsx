@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAuth } from '@/lib/hooks/useAuth'
-import { cn } from '@/lib/utils'
+import { cn, formatNombrePolicial } from '@/lib/utils'
 import {
     LayoutDashboard,
     FileText,
@@ -66,7 +66,7 @@ export function MiniHeader() {
                 <div className="flex items-center gap-4 border-l border-slate-100 pl-4 ml-2">
                     <div className="hidden lg:flex flex-col items-end">
                         <span className="text-[10px] font-black text-[#002147] uppercase leading-none mb-0.5">
-                            {usuario.grado} {usuario.apellido}
+                            {formatNombrePolicial(usuario.grado, usuario.nombre, usuario.apellido)}
                         </span>
                         <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">
                             {usuario.oficina}
