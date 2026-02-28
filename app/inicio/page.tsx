@@ -288,12 +288,12 @@ function CurrencyModal({
           {/* Rates Info */}
           <div className="flex gap-4 p-4 bg-slate-50 rounded-3xl mb-8 border border-slate-100/50">
             <div className="flex-1">
-              <span className="block text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Compra Oficial</span>
+              <span className="block text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Compra</span>
               <span className="text-lg font-black text-slate-400 tracking-tight">{buyingValue.toLocaleString('es-PY')}</span>
             </div>
             <div className="w-px bg-slate-200 my-1" />
             <div className="flex-1 pl-2">
-              <span className="block text-[8px] font-black text-[#002147] uppercase tracking-widest mb-1">Venta Chaco</span>
+              <span className="block text-[8px] font-black text-[#002147] uppercase tracking-widest mb-1">Venta</span>
               <span className="text-lg font-black text-[#002147] tracking-tight">{sellingRate.toLocaleString('es-PY')}</span>
             </div>
           </div>
@@ -312,11 +312,7 @@ function CurrencyModal({
               <span className="absolute right-6 bottom-4 text-xs font-black text-slate-300">{currency.code}</span>
             </div>
 
-            <div className="flex justify-center -my-2 relative z-10">
-              <div className="bg-[#002147] text-white p-2 rounded-full shadow-lg border-2 border-white">
-                <TrendingUp className="w-4 h-4 rotate-90" />
-              </div>
-            </div>
+            <div className="h-2" /> {/* Spacer instead of icon */}
 
             <div className="relative group">
               <label className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest ml-4 mb-1 block opacity-50">Total aproximado (PYG)</label>
@@ -334,7 +330,7 @@ function CurrencyModal({
         {/* Footer */}
         <div className="px-8 py-4 bg-slate-50 border-t border-slate-100">
           <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest text-center">
-            Conversión basada en tasa de venta
+            Cálculo basado en las fuentes de Cambios Chaco
           </p>
         </div>
       </div>
