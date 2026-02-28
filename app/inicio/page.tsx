@@ -197,7 +197,7 @@ function CurrencyListItem({
       <div className="h-8 w-px bg-slate-100/80 mx-1" />
 
       {/* Action Button */}
-      <div className="ml-auto pr-2">
+      <div className="flex items-center">
         <button
           onClick={onOpenConverter}
           className="p-2 rounded-xl bg-slate-50 text-slate-400 hover:bg-[#002147] hover:text-white transition-all duration-300 active:scale-95 group/btn border border-transparent hover:border-[#002147]/10"
