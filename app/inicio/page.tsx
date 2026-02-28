@@ -104,7 +104,7 @@ export default function InicioPage() {
         </div>
 
         {/* Optimized Ultra-Compact Single Frame Currency List */}
-        <div className="mb-10 max-w-md">
+        <div className="mb-10 max-w-lg">
           <div className="bg-white/70 backdrop-blur-md rounded-[1.8rem] border border-slate-100 p-1 shadow-sm hover:shadow-lg transition-all duration-500 overflow-hidden">
             <div className="flex flex-col">
               {currencies.map((currency, index) => (
@@ -123,7 +123,7 @@ export default function InicioPage() {
             {/* Internal Disclaimer */}
             <div className="px-4 py-2 bg-slate-50/50 border-t border-slate-100/50">
               <p className="text-[7px] font-bold text-slate-400 uppercase tracking-widest text-center">
-                Fuente: Cambios Chaco
+                Fuente: <a href="https://www.cambioschaco.com.py/" target="_blank" rel="noopener noreferrer" className="hover:text-[#002147] transition-colors underline decoration-slate-200 underline-offset-2">Cambios Chaco</a>
               </p>
             </div>
           </div>
