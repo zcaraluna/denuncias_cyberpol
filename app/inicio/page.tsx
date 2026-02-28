@@ -107,12 +107,12 @@ export default function InicioPage() {
           </div>
         </div>
 
-        {/* Cambios Chaco Widget - Versión Sutil */}
-        <div className="flex justify-center mb-6">
-          <div className="w-full max-w-sm bg-slate-50/50 p-4 rounded-3xl border border-slate-100/50 overflow-hidden">
+        {/* Cambios Chaco Widget - Versión Sutil & Reposicionada */}
+        <div className="flex justify-start mb-10 pl-1">
+          <div className="w-full max-w-sm bg-slate-50/50 p-4 rounded-3xl border border-slate-100/50 overflow-hidden shadow-sm hover:shadow-md transition-all duration-500">
             <iframe
               width="100%"
-              height="280"
+              height="320"
               src="https://www.cambioschaco.com.py/widgets/cotizacion/?lang=es"
               frameBorder="0"
               title="Cotizaciones Cambios Chaco"
