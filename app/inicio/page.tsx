@@ -108,9 +108,9 @@ export default function InicioPage() {
           </div>
         </div>
 
-        {/* Single Frame Currency List */}
-        <div className="mb-12 max-w-3xl mx-auto">
-          <div className="bg-white/70 backdrop-blur-md rounded-[2.5rem] border border-slate-100 p-2 shadow-sm hover:shadow-xl transition-all duration-500 overflow-hidden">
+        {/* Ultra-Compact Single Frame Currency List */}
+        <div className="mb-10 max-w-xl">
+          <div className="bg-white/70 backdrop-blur-md rounded-[2rem] border border-slate-100 p-1.5 shadow-sm hover:shadow-lg transition-all duration-500 overflow-hidden">
             <div className="flex flex-col">
               {currencies.map((currency, index) => (
                 <div key={currency.code}>
@@ -120,7 +120,7 @@ export default function InicioPage() {
                     buyingValue={rates[currency.code]?.compra || 0}
                   />
                   {index < currencies.length - 1 && (
-                    <div className="mx-6 h-px bg-slate-50" />
+                    <div className="mx-4 h-px bg-slate-50" />
                   )}
                 </div>
               ))}
@@ -129,11 +129,11 @@ export default function InicioPage() {
         </div>
 
         {/* Professional Footer */}
-        <div className="mt-16 flex flex-col items-center">
-          <div className="w-20 h-1 bg-gradient-to-r from-transparent via-[#002147]/10 to-transparent mb-8" />
-          <p className="text-center text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] max-w-2xl leading-relaxed">
-            Sistema de monitoreo de divisas para uso exclusivo de la Dirección Contra Hechos Punibles Económicos y Financieros.
-            <span className="block mt-1 opacity-50 italic">Los valores son obtenidos en tiempo real de Cambios Chaco para fines informativos.</span>
+        <div className="mt-12 flex flex-col items-start px-4">
+          <div className="w-12 h-1 bg-[#002147]/10 rounded-full mb-4" />
+          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider max-w-xl leading-relaxed">
+            Monitoreo exclusivo DCHPEF.
+            <span className="opacity-50 italic ml-1">Valores Tiempo Real: Cambios Chaco.</span>
           </p>
         </div>
       </div>
@@ -157,49 +157,49 @@ function CurrencyListItem({
   const convertedValue = amount ? Math.round(parseFloat(amount.replace(',', '.')) * sellingRate) : 0
 
   return (
-    <div className="p-4 hover:bg-white/80 transition-all duration-300 flex items-center justify-between group rounded-2xl">
+    <div className="py-2 px-4 hover:bg-white/90 transition-all duration-300 flex items-center justify-between group rounded-xl">
       {/* Left Part: Flag & Name */}
-      <div className="flex items-center gap-4 min-w-[140px]">
-        <div className="text-xl filter drop-shadow-sm grayscale-[0.2] group-hover:grayscale-0 transition-all">{currency.flag}</div>
+      <div className="flex items-center gap-3 min-w-[110px]">
+        <div className="text-lg filter grayscale-[0.3] group-hover:grayscale-0 transition-all">{currency.flag}</div>
         <div className="flex flex-col">
-          <span className="text-sm font-black text-[#002147] tracking-tight leading-none mb-1">{currency.code}</span>
-          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{currency.name}</span>
+          <span className="text-xs font-black text-[#002147] tracking-tighter leading-none mb-0.5">{currency.code}</span>
+          <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{currency.code === 'USD' ? 'Dólar' : currency.name.split(' ')[0]}</span>
         </div>
       </div>
 
       {/* Center: Rates */}
-      <div className="flex items-center gap-8 flex-grow justify-center px-4">
+      <div className="flex items-center gap-6 flex-grow justify-center px-2">
         <div className="flex flex-col items-end">
-          <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter mb-0.5">Compra (Ref)</span>
-          <span className="text-sm font-bold text-slate-500">
+          <span className="text-[7px] font-bold text-slate-300 uppercase tracking-tighter">Compra</span>
+          <span className="text-xs font-bold text-slate-400">
             {loading ? '---' : buyingRate.toLocaleString('es-PY')}
           </span>
         </div>
-        <div className="h-6 w-px bg-slate-100" />
+        <div className="h-4 w-px bg-slate-100" />
         <div className="flex flex-col items-start">
-          <span className="text-[8px] font-black text-[#002147] uppercase tracking-tighter mb-0.5">Venta (Real)</span>
-          <span className="text-lg font-black text-[#002147] tracking-tight">
+          <span className="text-[7px] font-black text-[#002147] uppercase tracking-tighter">Venta</span>
+          <span className="text-sm font-black text-[#002147] tracking-tight">
             {loading ? '---' : sellingRate.toLocaleString('es-PY')}
           </span>
         </div>
       </div>
 
       {/* Right: Quick Converter */}
-      <div className="flex items-center gap-3 bg-slate-50/80 p-1.5 rounded-xl border border-slate-100 group-hover:bg-white group-hover:border-[#002147]/5 transition-all">
-        <div className="relative w-16">
+      <div className="flex items-center gap-2 bg-slate-50/50 p-1 rounded-lg border border-slate-100/50 group-hover:bg-white transition-all scale-95 group-hover:scale-100 origin-right">
+        <div className="relative w-12">
           <input
             type="text"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            className="w-full bg-transparent border-none text-[11px] font-black text-[#002147] pl-1 pr-6 py-1 outline-none focus:ring-0"
+            className="w-full bg-transparent border-none text-[10px] font-black text-[#002147] pl-1 pr-4 py-0.5 outline-none focus:ring-0"
           />
-          <span className="absolute right-1 top-1/2 -translate-y-1/2 text-[8px] font-bold text-slate-300 uppercase">{currency.code}</span>
+          <span className="absolute right-0.5 top-1/2 -translate-y-1/2 text-[7px] font-bold text-slate-300 uppercase">{currency.code}</span>
         </div>
-        <div className="flex flex-col items-end min-w-[70px]">
-          <span className="text-[11px] font-black text-emerald-600 leading-none">
+        <div className="flex flex-col items-end min-w-[60px]">
+          <span className="text-[10px] font-black text-emerald-600 leading-none">
             {loading ? '---' : convertedValue.toLocaleString('es-PY')}
           </span>
-          <span className="text-[7px] font-black text-slate-300 uppercase tracking-tighter mt-0.5">Guaraníes</span>
+          <span className="text-[6px] font-black text-slate-300 uppercase tracking-tighter">PYG</span>
         </div>
       </div>
     </div>
