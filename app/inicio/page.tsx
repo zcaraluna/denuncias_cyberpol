@@ -26,7 +26,6 @@ export default function InicioPage() {
   const { usuario, loading: authLoading } = useAuth()
   const [rates, setRates] = useState<Record<string, { compra: number, venta: number }>>({})
   const [loading, setLoading] = useState(true)
-  const [lastUpdate, setLastUpdate] = useState<string>('')
 
   const fetchRates = async () => {
     setLoading(true)
@@ -34,15 +33,8 @@ export default function InicioPage() {
       const response = await fetch('/api/cotizaciones')
       const data = await response.json()
       if (!data.error) {
-        // Adaptamos el formato de la API a lo que espera el estado
-        setRates(data.rates)
-
-        // Formateamos el timestamp del servidor para mostrar en el disclaimer
-        if (data.timestamp) {
-          const date = new Date(data.timestamp)
-          const formatted = `${date.toLocaleDateString('es-PY', { day: '2-digit', month: '2-digit' })} — ${date.toLocaleTimeString('es-PY', { hour: '2-digit', minute: '2-digit', hour12: false })}h`
-          setLastUpdate(formatted)
-        }
+        // Soporta tanto el formato {} como { rates: {} }
+        setRates(data.rates || data)
       }
     } catch (error) {
       console.error('Error fetching rates:', error)
@@ -100,10 +92,6 @@ export default function InicioPage() {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <div className="hidden sm:flex flex-col items-end mr-2">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Última actualización (Chaco)</span>
-              <span className="text-xs font-bold text-[#002147]">{lastUpdate || '--:--'}</span>
-            </div>
             <button
               onClick={fetchRates}
               disabled={loading}
@@ -135,7 +123,7 @@ export default function InicioPage() {
             {/* Internal Disclaimer */}
             <div className="px-4 py-2 bg-slate-50/50 border-t border-slate-100/50">
               <p className="text-[7px] font-bold text-slate-400 uppercase tracking-widest text-center">
-                Fuente: Cambios Chaco — Última Actualización: {lastUpdate || '--/-- — --:--h'}
+                Fuente: Cambios Chaco
               </p>
             </div>
           </div>
