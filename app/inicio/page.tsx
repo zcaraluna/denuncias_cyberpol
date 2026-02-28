@@ -126,16 +126,13 @@ export default function InicioPage() {
                 </div>
               ))}
             </div>
+            {/* Internal Disclaimer */}
+            <div className="px-4 py-2 bg-slate-50/50 border-t border-slate-100/50">
+              <p className="text-[7px] font-bold text-slate-400 uppercase tracking-widest text-center">
+                Fuente: Cambios Chaco — Última Actualización: {new Date().toLocaleDateString('es-PY', { day: '2-digit', month: '2-digit' })} — {new Date().toLocaleTimeString('es-PY', { hour: '2-digit', minute: '2-digit', hour12: false })}
+              </p>
+            </div>
           </div>
-        </div>
-
-        {/* Professional Footer */}
-        <div className="mt-8 flex flex-col items-start px-2">
-          <div className="w-8 h-1 bg-[#002147]/10 rounded-full mb-3" />
-          <p className="text-[8px] font-bold text-slate-400 uppercase tracking-wider max-w-xs leading-tight">
-            Oficial DCHPEF.
-            <span className="opacity-50 italic ml-1">Fuente: Cambios Chaco.</span>
-          </p>
         </div>
       </div>
     </MainLayout>
@@ -222,6 +219,9 @@ function CurrencyListItem({
           </span>
         </div>
       </div>
+
+      {/* Vertical Separator */}
+      <div className="h-8 w-px bg-slate-100/80 mx-1" />
 
       {/* Right: Dual-Input Interactive Converter */}
       <div className="ml-auto flex items-center gap-1.5 shrink-0">
