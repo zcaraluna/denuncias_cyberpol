@@ -107,22 +107,16 @@ export default function InicioPage() {
           </div>
         </div>
 
-        {/* Section Title */}
-        <div className="flex items-center gap-2 mb-8 pl-1">
-          <div className="w-1.5 h-6 bg-[#002147] rounded-full" />
-          <h2 className="text-lg font-bold text-slate-800">Cotización de monedas internacionales</h2>
-        </div>
-
-        {/* Cambios Chaco Widget */}
-        <div className="flex justify-center mb-12">
-          <div className="w-full max-w-3xl bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
+        {/* Cambios Chaco Widget - Versión Sutil */}
+        <div className="flex justify-center mb-6">
+          <div className="w-full max-w-sm bg-slate-50/50 p-4 rounded-3xl border border-slate-100/50 overflow-hidden">
             <iframe
               width="100%"
-              height="350"
+              height="280"
               src="https://www.cambioschaco.com.py/widgets/cotizacion/?lang=es"
               frameBorder="0"
               title="Cotizaciones Cambios Chaco"
-              className="rounded-xl"
+              className="rounded-2xl grayscale-[0.3] opacity-90 hover:grayscale-0 hover:opacity-100 transition-all duration-500"
             ></iframe>
           </div>
         </div>
