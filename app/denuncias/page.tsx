@@ -501,7 +501,7 @@ export default function DenunciasPage() {
 
               {/* Single Multi-Search Card */}
               <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 p-6 sm:p-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start relative">
                   {/* Hash Segment */}
                   <div className="space-y-4">
                     <div className="flex items-center gap-3">
