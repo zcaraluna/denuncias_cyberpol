@@ -8,6 +8,18 @@ import { formatearFechaSinTimezone } from '@/lib/utils/fecha'
 import { MainLayout } from '@/components/MainLayout'
 import { cn } from '@/lib/utils'
 
+interface Denuncia {
+  id: number
+  nombre_denunciante: string
+  cedula_denunciante: string
+  fecha_denuncia: string
+  hora_denuncia: string
+  numero_orden: number
+  tipo_hecho: string
+  hash_denuncia: string
+  estado: string
+}
+
 import { Eye, Search, Filter, FileText, Calendar, Clock, ChevronRight } from 'lucide-react'
 
 export default function MisDenunciasPage() {
