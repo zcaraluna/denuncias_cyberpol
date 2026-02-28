@@ -108,8 +108,8 @@ export default function InicioPage() {
         </div>
 
         {/* Optimized Ultra-Compact Single Frame Currency List */}
-        <div className="mb-10 max-w-[280px]">
-          <div className="bg-white/70 backdrop-blur-md rounded-[1.5rem] border border-slate-100 p-0.5 shadow-sm hover:shadow-lg transition-all duration-500 overflow-hidden">
+        <div className="mb-10 max-w-sm">
+          <div className="bg-white/70 backdrop-blur-md rounded-[1.8rem] border border-slate-100 p-1 shadow-sm hover:shadow-lg transition-all duration-500 overflow-hidden">
             <div className="flex flex-col">
               {currencies.map((currency, index) => (
                 <div key={currency.code}>
@@ -166,41 +166,44 @@ function CurrencyListItem({
 
 
   return (
-    <div className="py-1.5 px-2 hover:bg-white/90 transition-all duration-300 flex items-center gap-2 group rounded-lg">
+    <div className="py-2 px-3 hover:bg-white/90 transition-all duration-300 flex items-center gap-4 group rounded-xl">
       {/* Left Part: Flag & Name */}
-      <div className="flex items-center gap-1.5 w-[70px] shrink-0">
-        <div className="text-base group-hover:scale-110 transition-transform">{currency.flag}</div>
+      <div className="flex items-center gap-3 w-24 shrink-0">
+        <div className="text-lg filter grayscale-[0.3] group-hover:grayscale-0 transition-all">{currency.flag}</div>
         <div className="flex flex-col">
-          <span className="text-[10px] font-black text-[#002147] tracking-tighter leading-none">{currency.code}</span>
-          <span className="text-[6px] font-bold text-slate-400 uppercase tracking-tighter">{currency.code === 'USD' ? 'Dólar' : currency.name.split(' ')[0]}</span>
+          <span className="text-xs font-black text-[#002147] tracking-tighter leading-none mb-0.5">{currency.code}</span>
+          <span className="text-[7px] font-bold text-slate-400 uppercase tracking-tighter">{currency.code === 'USD' ? 'Dólar' : currency.name.split(' ')[0]}</span>
         </div>
       </div>
 
       {/* Center: Rates */}
-      <div className="flex items-center gap-1.5 shrink-0">
-        <div className="flex flex-col items-end min-w-[35px]">
-          <span className="text-[5px] font-bold text-slate-300 uppercase tracking-tighter">C</span>
-          <span className="text-[10px] font-bold text-slate-400">
+      <div className="flex items-center gap-3 shrink-0">
+        <div className="flex flex-col items-end min-w-[45px]">
+          <span className="text-[6px] font-bold text-slate-300 uppercase tracking-tighter">Compra</span>
+          <span className="text-[11px] font-bold text-slate-400">
             {loading ? '---' : buyingRate.toLocaleString('es-PY')}
           </span>
         </div>
-        <div className="h-3 w-px bg-slate-100" />
-        <div className="flex flex-col items-start min-w-[40px]">
-          <span className="text-[5px] font-black text-[#002147] uppercase tracking-tighter">V</span>
-          <span className="text-[11px] font-black text-[#002147] tracking-tight">
+        <div className="h-4 w-px bg-slate-100" />
+        <div className="flex flex-col items-start min-w-[50px]">
+          <span className="text-[6px] font-black text-[#002147] uppercase tracking-tighter">Venta</span>
+          <span className="text-xs font-black text-[#002147] tracking-tight">
             {loading ? '---' : sellingRate.toLocaleString('es-PY')}
           </span>
         </div>
       </div>
 
+      {/* Vertical Separator */}
+      <div className="h-8 w-px bg-slate-100/80 mx-1" />
+
       {/* Action Button */}
-      <div className="ml-auto">
+      <div className="ml-auto pr-2">
         <button
           onClick={onOpenConverter}
-          className="p-1.5 rounded-lg bg-slate-50 text-slate-300 hover:bg-[#002147] hover:text-white transition-all duration-300 active:scale-90"
-          title="Convertir"
+          className="p-2 rounded-xl bg-slate-50 text-slate-400 hover:bg-[#002147] hover:text-white transition-all duration-300 active:scale-95 group/btn border border-transparent hover:border-[#002147]/10"
+          title="Abrir conversor"
         >
-          <Calculator className="w-3 h-3" />
+          <Calculator className="w-4 h-4" />
         </button>
       </div>
     </div>

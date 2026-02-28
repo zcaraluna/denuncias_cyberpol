@@ -1,0 +1,47 @@
+[
+  {
+    "id": 758,
+    "denunciante_id": 705,
+    "numero_orden": 511,
+    "fecha_denuncia": "2026-02-16T00:00:00.000Z",
+    "hora_denuncia": "08:31",
+    "tipo_hecho": "Acceso indebido a sistemas informáticos",
+    "hash_denuncia": "9829D9A26",
+    "estado": "completada",
+    "relato": "Manifiesta que en fecha 11/02/2026, siendo las 09:50 horas aproximadamente, procedió a realizar una transferencia bancaria desde su cuenta del banco Ueno Bank N.º 6191753859 a favor de la cuenta N.º 900013851, correspondiente a Comunicaciones Celulares S.A. Refiere la denunciante que cuenta con un pequeño negocio y que necesitaba efectuar una carga a su línea telefónica, motivo por el cual realizó dicha transferencia. Agrega que, posteriormente, tomó conocimiento de que la referida empresa no se encontraba activa. En razón de ello, en fecha 12/02/2026, en horas de la mañana, solicitó asistencia a través de la aplicación de Ueno Bank, con la intención de gestionar la recuperación del monto transferido. Continúa manifestando que, en horas de la tarde del mismo día, recibió una llamada de una persona que se identificó como supuesto funcionario de Ueno Bank, quien le indicó que la comunicación guardaba relación con la transferencia realizada. Dicho sujeto le manifestó que, para poder recibir la reversión de su dinero, debía activar primeramente una tarjeta de crédito. Agrega la recurrente que, confiando en lo manifestado por el supuesto funcionario, siguió los pasos que este le iba indicando.\nPosteriormente, se percató de que se había efectuado la activación de una tarjeta de crédito, así como la acreditación de un préstamo por la suma de Gs. 3.636.259 (tres millones seiscientos treinta y seis mil doscientos cincuenta y nueve guaraníes). Asimismo, constató que se realizó una transferencia por el monto de Gs. 3.763.331 (tres millones setecientos sesenta y tres mil trescientos treinta y un guaraníes), a favor de la cuenta N.º 301020874 del Banco Solar S.A.E., siendo las 13:50 horas, con comprobante N.º 2602122473611, figurando como titular Hermelinda Álvarez. Aclara que dichas operaciones fueron realizadas sin su consentimiento, ya que en ningún momento estuvo interesada en adquirir un préstamo. Agrega además que realizó averiguaciones en el Banco Solar, donde le informaron que la cuenta N.º 301020874 se encuentra a nombre de MARIA ANGELA GABAGLIO LOPEZ, con C.I. N.º 668.574, asociada al número telefónico 0972-933-464. Refiere que intentó comunicarse con dicho número, pero el mismo se encontraba apagado, asimismo, manifiesta que funcionarios de la mencionada entidad bancaria le sugirieron formalizar la denuncia correspondiente.\nPor último, señala que procedió a realizar una transferencia desde otra cuenta de su titularidad a su cuenta de Ueno Bank por el monto de Gs. 10.000 (diez mil guaraníes). Posteriormente, se efectuó un débito en concepto de “Vta. minutos” por la suma de Gs. 5.000 (cinco mil guaraníes), a las 18:06 horas, con comprobante N.º 82378417. Asimismo, se registró un pago a “Azar Latino” por la suma de Gs. 5.000 (cinco mil guaraníes), con comprobante N.º 82387193, siendo las 18:50 horas. Alega que todos estos hechos ocurrieron el día jueves 12 de febrero de 2026.\n\n\n",
+    "nombre_denunciante": "HERMELINDA ALVAREZ GONZALEZ",
+    "cedula_denunciante": "5942072",
+    "monto_dano": 3763331,
+    "moneda": "Guaraníes (PYG)"
+  },
+  {
+    "id": 548,
+    "denunciante_id": 476,
+    "numero_orden": 342,
+    "fecha_denuncia": "2026-02-02T00:00:00.000Z",
+    "hora_denuncia": "11:26",
+    "tipo_hecho": "Acceso indebido a sistemas informáticos",
+    "hash_denuncia": "4D9AA0A26",
+    "estado": "completada",
+    "relato": "La recurrente manifiesta que, en fecha indicada más arriba, se encontraba navegando en la red social Instagram, ocasión en la que visualizó una publicación referente a un préstamo ofrecido por la entidad bancaria denominada TU FINANCIERA, ingresando al enlace correspondiente con el URL:\nhttps://www.instagram.com/p/DUEk2H7jHmH/.\nPosteriormente, se puso en contacto con el abonado telefónico N.º 0992 682 373, correspondiente a una persona que se identificó como JOSE ALEXIS VERA, quien se presentó como supuesto asesor de la mencionada entidad financiera. Al manifestarle que se encontraba interesada en acceder a un préstamo, dicha persona le indicó los supuestos requisitos necesarios para la gestión, solicitándole copia de su cédula de identidad paraguaya y certificado de trabajo.\n\nSeguidamente, la recurrente recibió una llamada desde el mismo número telefónico, la cual no pudo concretarse debido a inconvenientes de señal. Minutos después, recibió otra llamada desde el abonado N.º 0976 118 770, desde donde continuaron con el supuesto procedimiento para la obtención del préstamo.\nEn dicha comunicación, le solicitaron además una imagen sosteniendo su cédula de identidad, así como fotografías de la cédula de identidad por ambos lados, documentos que fueron enviados confiando en la legitimidad del trámite.\nPosteriormente, la recurrente se percató de que con la información proporcionada se habría creado una cuenta bancaria sin su consentimiento, y que además se habría accedido de manera indebida a su cuenta bancaria MANGO, desde la cual se realizó una transacción no autorizada por la suma de Gs. 600.000 (seiscientos mil guaraníes).\nDicho monto fue transferido a otra cuenta bancaria a nombre de la recurrente, correspondiente al BANCO SOLAR, cuenta que igualmente fue creada sin su consentimiento. La recurrente manifiesta que dicha cuenta registra numerosos movimientos que desconoce, y que actualmente no puede acceder a la misma, ignorando el destino y origen de las operaciones realizadas",
+    "nombre_denunciante": "ADRIANA FAVIOLA SALDIVAR GIMENEZ",
+    "cedula_denunciante": "8416628",
+    "monto_dano": null,
+    "moneda": null
+  },
+  {
+    "id": 361,
+    "denunciante_id": 269,
+    "numero_orden": 180,
+    "fecha_denuncia": "2026-01-20T00:00:00.000Z",
+    "hora_denuncia": "15:43",
+    "tipo_hecho": "Acceso indebido a sistemas informáticos",
+    "hash_denuncia": "70143DA26",
+    "estado": "completada",
+    "relato": "Manifiesta el recurrente que en fecha y hora mencionada mas arriba recibe una notificacion del acceso de un dispositivo a su correo franciscogimenez.landfix@gmail.com siendo el dispositivo Galaxy S22, posterior a ello se realiza una transferencia  de 4.800.000 gs (Cuatro millones ochocientos mil guaranies) desde la cuenta del denunciante del banco familiar, teniendo como beneficiario a la cuenta Nº 301019171 de la entidad bancaria Solar banco, la misma a nombre de Julian Israel Fleitas Salinas con CINº 6.235.223, asi tambien el 19/01/2026 se registra compras en la tienda Game Cell por el valor de 30.100.000 gs (Treinta millones cien mil guaranies), sigue relatando el denunciante que habia realizado una denuncia del robo de su dispositivo celular Galaxy S22 en fecha 19/01/2026 en la comisaria 10ma de Asuncion. Tambien menciona que realizo el cambio de sus credenciales de acceso a sus cuentas personales. ",
+    "nombre_denunciante": "FRANCISCO GIMENEZ RECALDE",
+    "cedula_denunciante": "1193432",
+    "monto_dano": null,
+    "moneda": null
+  }
+]
