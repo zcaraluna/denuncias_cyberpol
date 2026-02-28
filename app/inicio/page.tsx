@@ -108,16 +108,30 @@ export default function InicioPage() {
           </div>
         </div>
 
-        {/* Grid Section - Real Data + Custom Design */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {currencies.map((currency) => (
-            <CurrencyCard
-              key={currency.code}
-              currency={currency}
-              loading={loading}
-              buyingValue={rates[currency.code]?.compra || 0}
-            />
-          ))}
+        {/* Compact Currency List Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+          {/* Left Column: Currencies 1 & 2 */}
+          <div className="space-y-4">
+            {currencies.slice(0, 2).map((currency) => (
+              <CurrencyListItem
+                key={currency.code}
+                currency={currency}
+                loading={loading}
+                buyingValue={rates[currency.code]?.compra || 0}
+              />
+            ))}
+          </div>
+          {/* Right Column: Currencies 3 & 4 */}
+          <div className="space-y-4">
+            {currencies.slice(2, 4).map((currency) => (
+              <CurrencyListItem
+                key={currency.code}
+                currency={currency}
+                loading={loading}
+                buyingValue={rates[currency.code]?.compra || 0}
+              />
+            ))}
+          </div>
         </div>
 
         {/* Professional Footer */}
@@ -133,7 +147,7 @@ export default function InicioPage() {
   )
 }
 
-function CurrencyCard({
+function CurrencyListItem({
   currency,
   loading,
   buyingValue
@@ -149,73 +163,49 @@ function CurrencyCard({
   const convertedValue = amount ? Math.round(parseFloat(amount.replace(',', '.')) * sellingRate) : 0
 
   return (
-    <div className="bg-white rounded-[1.5rem] border border-slate-100 p-6 shadow-sm hover:shadow-xl hover:border-[#002147]/5 transition-all duration-500 flex flex-col">
-      {/* Header Moneda */}
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-3">
-          <div className="text-2xl filter drop-shadow-sm grayscale-[0.2] transition-all">{currency.flag}</div>
-          <div className="flex flex-col">
-            <div className="flex items-center gap-1.5">
-              <span className="text-base font-extrabold text-[#002147] tracking-tight">{currency.code}</span>
-            </div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">{currency.name.split(' ')[0]}</span>
-          </div>
+    <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-100 p-4 hover:shadow-lg hover:border-[#002147]/10 transition-all duration-300 flex items-center justify-between group">
+      {/* Left Part: Flag & Name */}
+      <div className="flex items-center gap-4 min-w-[140px]">
+        <div className="text-xl filter drop-shadow-sm grayscale-[0.2] group-hover:grayscale-0 transition-all">{currency.flag}</div>
+        <div className="flex flex-col">
+          <span className="text-sm font-black text-[#002147] tracking-tight leading-none mb-1">{currency.code}</span>
+          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{currency.name}</span>
         </div>
       </div>
 
-      {/* Conversion Body */}
-      <div className="space-y-6 flex-grow">
-        <div className="relative">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-1 h-3 bg-[#002147]/20 rounded-full" />
-            <label className="block text-[9px] font-bold uppercase text-slate-500 tracking-[0.1em]">
-              Cotización referencial de venta
-            </label>
-          </div>
-          <div className="flex items-baseline gap-2 pl-0.5">
-            <span className="text-3xl font-extrabold text-[#002147] tracking-tighter">
-              {loading ? '---' : sellingRate.toLocaleString('es-PY')}
-            </span>
-            <span className="text-[10px] font-black text-slate-300 tracking-wider">PYG</span>
-          </div>
-        </div>
-
-        {/* Subtle Converter */}
-        <div className="pt-4 border-t border-slate-50">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Conversor rápido</span>
-          </div>
-          <div className="flex flex-col gap-2">
-            <div className="relative group">
-              <input
-                type="text"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="Cantidad"
-                className="w-full bg-slate-50/50 border-none text-sm font-bold text-[#002147] px-3 py-2 rounded-xl focus:ring-1 focus:ring-[#002147]/10 transition-all outline-none"
-              />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-300 uppercase">{currency.code}</span>
-            </div>
-            {amount && !loading && (
-              <div className="px-1 flex items-center justify-between">
-                <span className="text-[10px] font-bold text-slate-400 italic">Equivale a:</span>
-                <span className="text-xs font-black text-emerald-600">
-                  {convertedValue.toLocaleString('es-PY')} <span className="text-[9px] opacity-70">PYG</span>
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Footer Reference */}
-      <div className="mt-8 pt-4 border-t border-slate-50 flex items-center justify-between">
-        <span className="text-[8px] uppercase font-bold text-slate-400 tracking-widest">Ref. Compra</span>
-        <div className="flex items-center gap-1.5">
-          <div className="w-1 h-1 rounded-full bg-slate-200" />
-          <span className="text-[11px] font-bold text-slate-500">
+      {/* Center: Rates */}
+      <div className="flex items-center gap-8 flex-grow justify-center px-4">
+        <div className="flex flex-col items-end">
+          <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter mb-0.5">Compra (Ref)</span>
+          <span className="text-sm font-bold text-slate-500">
             {loading ? '---' : buyingRate.toLocaleString('es-PY')}
           </span>
+        </div>
+        <div className="h-6 w-px bg-slate-100" />
+        <div className="flex flex-col items-start">
+          <span className="text-[8px] font-black text-[#002147] uppercase tracking-tighter mb-0.5">Venta (Real)</span>
+          <span className="text-lg font-black text-[#002147] tracking-tight">
+            {loading ? '---' : sellingRate.toLocaleString('es-PY')}
+          </span>
+        </div>
+      </div>
+
+      {/* Right: Quick Converter */}
+      <div className="flex items-center gap-3 bg-slate-50/80 p-1.5 rounded-xl border border-slate-100 group-hover:bg-white group-hover:border-[#002147]/5 transition-all">
+        <div className="relative w-16">
+          <input
+            type="text"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            className="w-full bg-transparent border-none text-[11px] font-black text-[#002147] pl-1 pr-6 py-1 outline-none focus:ring-0"
+          />
+          <span className="absolute right-1 top-1/2 -translate-y-1/2 text-[8px] font-bold text-slate-300 uppercase">{currency.code}</span>
+        </div>
+        <div className="flex flex-col items-end min-w-[70px]">
+          <span className="text-[11px] font-black text-emerald-600 leading-none">
+            {loading ? '---' : convertedValue.toLocaleString('es-PY')}
+          </span>
+          <span className="text-[7px] font-black text-slate-300 uppercase tracking-tighter mt-0.5">Guaraníes</span>
         </div>
       </div>
     </div>
