@@ -127,7 +127,6 @@ function ConfirmacionPage() {
                   </svg>
                 </div>
                 <h2 className="text-xl font-black text-white tracking-tight uppercase mb-1">Denuncia Registrada</h2>
-                <p className="text-blue-100 font-medium opacity-80 uppercase tracking-widest text-[9px]">Sistema de Gestión Policial</p>
               </div>
             </div>
 
@@ -186,9 +185,6 @@ function ConfirmacionPage() {
             </div>
           </div>
 
-          <p className="mt-8 text-center text-slate-400 text-xs font-semibold uppercase tracking-[0.2em]">
-            Departamento de Informática • Policía Nacional
-          </p>
         </div>
       </div>
     </MainLayout>
