@@ -2532,11 +2532,11 @@ export default function NuevaDenunciaPage() {
             <p className="text-slate-500 font-medium max-w-2xl mx-auto">Complete los pasos para registrar una nueva diligencia en el sistema con precisión y rigor legal.</p>
           </div>
           <div className="mb-12">
-            <div className="flex items-center justify-between max-w-3xl mx-auto relative px-4">
+            <div className="flex items-center justify-between max-w-2xl mx-auto relative px-4">
               {/* Step Progress Line */}
-              <div className="absolute top-5 left-8 right-8 h-0.5 bg-slate-200 -z-10" />
+              <div className="absolute top-4 left-8 right-8 h-0.5 bg-slate-200 -z-10" />
               <div
-                className="absolute top-5 left-8 h-0.5 bg-[#002147] transition-all duration-500 -z-10"
+                className="absolute top-4 left-8 h-0.5 bg-[#002147] transition-all duration-500 -z-10"
                 style={{ width: `${(paso - 1) * 50}%` }}
               />
 
@@ -2552,7 +2552,7 @@ export default function NuevaDenunciaPage() {
                   <div key={step.num} className="flex flex-col items-center group">
                     <div
                       className={cn(
-                        "flex items-center justify-center w-10 h-10 rounded-xl border-2 transition-all duration-300 shadow-sm",
+                        "flex items-center justify-center w-8 h-8 rounded-lg border-2 transition-all duration-300 shadow-sm",
                         isActive
                           ? "bg-[#002147] border-[#002147] text-white scale-110 shadow-blue-900/20"
                           : isCompleted
@@ -2561,15 +2561,15 @@ export default function NuevaDenunciaPage() {
                       )}
                     >
                       {isCompleted ? (
-                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                         </svg>
                       ) : (
-                        <span className="font-bold text-sm">{step.num}</span>
+                        <span className="font-bold text-xs">{step.num}</span>
                       )}
                     </div>
                     <span className={cn(
-                      "text-[11px] font-bold uppercase tracking-wider mt-3 transition-colors duration-200",
+                      "text-[10px] font-bold uppercase tracking-wider mt-2 transition-colors duration-200",
                       isActive ? "text-[#002147]" : isCompleted ? "text-green-600" : "text-slate-400"
                     )}>
                       {step.label}
