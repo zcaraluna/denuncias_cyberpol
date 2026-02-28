@@ -7,7 +7,8 @@ import { MainLayout } from '@/components/MainLayout'
 import {
   TrendingUp,
   RefreshCw,
-  Clock
+  Clock,
+  ArrowLeftRight
 } from 'lucide-react'
 
 const API_KEY = 'c26434662f9a1a4869628002'
@@ -151,10 +152,25 @@ function CurrencyListItem({
   buyingValue: number
 }) {
   const [amount, setAmount] = useState<string>('1')
+  const [isReverse, setIsReverse] = useState(false)
 
   const sellingRate = currency.rate
   const buyingRate = buyingValue
-  const convertedValue = amount ? Math.round(parseFloat(amount.replace(',', '.')) * sellingRate) : 0
+
+  // Lógica de cálculo bidireccional
+  const calculateConversion = () => {
+    const val = parseFloat(amount.replace(',', '.'))
+    if (isNaN(val)) return 0
+    if (isReverse) {
+      // De PYG a Moneda
+      return val / sellingRate
+    } else {
+      // De Moneda a PYG
+      return val * sellingRate
+    }
+  }
+
+  const convertedValue = calculateConversion()
 
   return (
     <div className="py-2 px-3 hover:bg-white/90 transition-all duration-300 flex items-center gap-4 group rounded-xl">
@@ -184,22 +200,41 @@ function CurrencyListItem({
         </div>
       </div>
 
-      {/* Right: Quick Converter (Compact) */}
+      {/* Right: Bidirectional Quick Converter */}
       <div className="ml-auto flex items-center gap-2 bg-slate-50/50 p-1 rounded-lg border border-slate-100/50 group-hover:bg-white transition-all scale-95 group-hover:scale-100 origin-right">
-        <div className="relative w-10">
+        <button
+          onClick={() => {
+            setIsReverse(!isReverse)
+            setAmount(isReverse ? '1' : '1.000.000')
+          }}
+          className="p-1 hover:bg-[#002147]/10 rounded-md transition-colors text-slate-400 hover:text-[#002147]"
+          title="Invertir dirección"
+        >
+          <ArrowLeftRight className="w-3 h-3" />
+        </button>
+
+        <div className="relative w-16">
           <input
             type="text"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            className="w-full bg-transparent border-none text-[10px] font-black text-[#002147] pl-1 pr-3 py-0.5 outline-none focus:ring-0"
+            className="w-full bg-transparent border-none text-[10px] font-black text-[#002147] pl-1 pr-6 py-0.5 outline-none focus:ring-0"
           />
-          <span className="absolute right-0.5 top-1/2 -translate-y-1/2 text-[6px] font-bold text-slate-300 uppercase">{currency.code}</span>
-        </div>
-        <div className="flex flex-col items-end min-w-[55px]">
-          <span className="text-[10px] font-black text-emerald-600 leading-none">
-            {loading ? '---' : convertedValue.toLocaleString('es-PY')}
+          <span className="absolute right-0.5 top-1/2 -translate-y-1/2 text-[7px] font-bold text-slate-300 uppercase">
+            {isReverse ? 'PYG' : currency.code}
           </span>
-          <span className="text-[5px] font-black text-slate-300 uppercase tracking-tighter">PYG</span>
+        </div>
+
+        <div className="flex flex-col items-end min-w-[65px]">
+          <span className="text-[10px] font-black text-emerald-600 leading-none">
+            {loading ? '---' : isReverse
+              ? convertedValue.toLocaleString('es-PY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+              : convertedValue.toLocaleString('es-PY')
+            }
+          </span>
+          <span className="text-[5px] font-black text-slate-300 uppercase tracking-tighter">
+            {isReverse ? currency.code : 'PYG'}
+          </span>
         </div>
       </div>
     </div>
