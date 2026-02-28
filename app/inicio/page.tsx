@@ -113,12 +113,28 @@ export default function InicioPage() {
           <h2 className="text-lg font-bold text-slate-800">Cotización de monedas internacionales</h2>
         </div>
 
-        {/* Grid Section */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {currencies.map((currency) => (
-            <CurrencyCard key={currency.code} currency={currency} loading={loading} />
-          ))}
+        {/* Cambios Chaco Widget */}
+        <div className="flex justify-center mb-12">
+          <div className="w-full max-w-3xl bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
+            <iframe
+              width="100%"
+              height="350"
+              src="https://www.cambioschaco.com.py/widgets/cotizacion/?lang=es"
+              frameBorder="0"
+              title="Cotizaciones Cambios Chaco"
+              className="rounded-xl"
+            ></iframe>
+          </div>
         </div>
+
+        {/* Grid Section (Oculto por ahora) */}
+        {false && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {currencies.map((currency) => (
+              <CurrencyCard key={currency.code} currency={currency} loading={loading} />
+            ))}
+          </div>
+        )}
 
         {/* Professional Footer */}
         <div className="mt-16 flex flex-col items-center">
