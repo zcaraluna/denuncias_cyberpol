@@ -8,7 +8,9 @@ import {
   TrendingUp,
   RefreshCw,
   Clock,
-  ArrowRight
+  ArrowRight,
+  Calculator,
+  X
 } from 'lucide-react'
 
 const API_KEY = 'c26434662f9a1a4869628002'
@@ -26,6 +28,8 @@ export default function InicioPage() {
   const { usuario, loading: authLoading } = useAuth()
   const [rates, setRates] = useState<Record<string, { compra: number, venta: number }>>({})
   const [loading, setLoading] = useState(true)
+  const [selectedCurrency, setSelectedCurrency] = useState<CurrencyData | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
   const fetchRates = async () => {
     setLoading(true)
@@ -113,6 +117,10 @@ export default function InicioPage() {
                     currency={currency}
                     loading={loading}
                     buyingValue={rates[currency.code]?.compra || 0}
+                    onOpenConverter={() => {
+                      setSelectedCurrency(currency)
+                      setIsModalOpen(true)
+                    }}
                   />
                   {index < currencies.length - 1 && (
                     <div className="mx-4 h-px bg-slate-50/50" />
@@ -128,6 +136,15 @@ export default function InicioPage() {
             </div>
           </div>
         </div>
+
+        {/* Currency Converter Modal */}
+        {isModalOpen && selectedCurrency && (
+          <CurrencyModal
+            currency={selectedCurrency}
+            buyingValue={rates[selectedCurrency.code]?.compra || 0}
+            onClose={() => setIsModalOpen(false)}
+          />
+        )}
       </div>
     </MainLayout>
   )
@@ -136,55 +153,17 @@ export default function InicioPage() {
 function CurrencyListItem({
   currency,
   loading,
-  buyingValue
+  buyingValue,
+  onOpenConverter
 }: {
   currency: CurrencyData,
   loading: boolean,
-  buyingValue: number
+  buyingValue: number,
+  onOpenConverter: () => void
 }) {
-  const [currencyAmount, setCurrencyAmount] = useState<string>('1')
-  const [pygAmount, setPygAmount] = useState<string>('')
-
   const sellingRate = currency.rate
   const buyingRate = buyingValue
 
-  // Sincronización inicial
-  useEffect(() => {
-    if (!loading && sellingRate) {
-      setPygAmount(Math.round(1 * sellingRate).toLocaleString('es-PY'))
-    }
-  }, [loading, sellingRate])
-
-  const handleCurrencyChange = (val: string) => {
-    setCurrencyAmount(val)
-    const num = parseFloat(val.replace(',', '.'))
-    if (!isNaN(num)) {
-      setPygAmount(Math.round(num * sellingRate).toLocaleString('es-PY'))
-    } else {
-      setPygAmount('')
-    }
-  }
-
-  const handlePygChange = (val: string) => {
-    // Limpiamos los puntos de millares para el cálculo
-    const cleanVal = val.replace(/\./g, '')
-    setPygAmount(val)
-
-    const num = parseFloat(cleanVal.replace(',', '.'))
-    if (!isNaN(num)) {
-      const result = num / sellingRate
-      setCurrencyAmount(result.toLocaleString('es-PY', { maximumFractionDigits: 2 }))
-    } else {
-      setCurrencyAmount('')
-    }
-  }
-
-  // Función para formatear mientras se escribe en PYG (opcional, pero ayuda)
-  const formatPygInput = (val: string) => {
-    const clean = val.replace(/\./g, '').replace(/\D/g, '')
-    if (clean === '') return ''
-    return parseInt(clean).toLocaleString('es-PY')
-  }
 
   return (
     <div className="py-2 px-3 hover:bg-white/90 transition-all duration-300 flex items-center gap-4 group rounded-xl">
@@ -217,30 +196,146 @@ function CurrencyListItem({
       {/* Vertical Separator */}
       <div className="h-8 w-px bg-slate-100/80 mx-1" />
 
-      {/* Right: Dual-Input Interactive Converter */}
-      <div className="ml-auto flex items-center gap-1.5 shrink-0">
-        {/* Currency Input */}
-        <div className="relative w-12 group/input">
-          <input
-            type="text"
-            value={currencyAmount}
-            onChange={(e) => handleCurrencyChange(e.target.value)}
-            className="w-full bg-slate-50/50 border border-transparent group-hover/input:border-slate-100 text-[10px] font-black text-[#002147] pl-1 pr-4 py-1 rounded-md outline-none focus:bg-white focus:ring-1 focus:ring-[#002147]/10 transition-all"
-          />
-          <span className="absolute right-1 top-1/2 -translate-y-1/2 text-[6px] font-bold text-slate-300 uppercase">{currency.code}</span>
+      {/* Action Button */}
+      <div className="ml-auto pr-2">
+        <button
+          onClick={onOpenConverter}
+          className="p-2 rounded-xl bg-slate-50 text-slate-400 hover:bg-[#002147] hover:text-white transition-all duration-300 active:scale-95 group/btn border border-transparent hover:border-[#002147]/10"
+          title="Abrir conversor"
+        >
+          <Calculator className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function CurrencyModal({
+  currency,
+  buyingValue,
+  onClose
+}: {
+  currency: CurrencyData,
+  buyingValue: number,
+  onClose: () => void
+}) {
+  const [currencyAmount, setCurrencyAmount] = useState<string>('1')
+  const [pygAmount, setPygAmount] = useState<string>('')
+  const sellingRate = currency.rate
+
+  useEffect(() => {
+    if (sellingRate) {
+      setPygAmount(Math.round(1 * sellingRate).toLocaleString('es-PY'))
+    }
+  }, [sellingRate])
+
+  const handleCurrencyChange = (val: string) => {
+    setCurrencyAmount(val)
+    const num = parseFloat(val.replace(',', '.'))
+    if (!isNaN(num)) {
+      setPygAmount(Math.round(num * sellingRate).toLocaleString('es-PY'))
+    } else {
+      setPygAmount('')
+    }
+  }
+
+  const handlePygChange = (val: string) => {
+    const cleanVal = val.replace(/\./g, '')
+    setPygAmount(val)
+    const num = parseFloat(cleanVal.replace(',', '.'))
+    if (!isNaN(num)) {
+      const result = num / sellingRate
+      setCurrencyAmount(result.toLocaleString('es-PY', { maximumFractionDigits: 2 }))
+    } else {
+      setCurrencyAmount('')
+    }
+  }
+
+  const formatPygInput = (val: string) => {
+    const clean = val.replace(/\./g, '').replace(/\D/g, '')
+    if (clean === '') return ''
+    return parseInt(clean).toLocaleString('es-PY')
+  }
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-[#002147]/20 backdrop-blur-sm transition-opacity"
+        onClick={onClose}
+      />
+
+      {/* Modal Content */}
+      <div className="relative bg-white rounded-[2.5rem] shadow-2xl border border-slate-100 w-full max-w-sm overflow-hidden animate-in fade-in zoom-in duration-300">
+        <div className="p-8">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-4">
+              <div className="text-3xl p-3 bg-slate-50 rounded-2xl">{currency.flag}</div>
+              <div className="flex flex-col">
+                <span className="text-xl font-black text-[#002147] tracking-tighter leading-none">{currency.code}</span>
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{currency.name}</span>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400 hover:text-[#002147]"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Rates Info */}
+          <div className="flex gap-4 p-4 bg-slate-50 rounded-3xl mb-8 border border-slate-100/50">
+            <div className="flex-1">
+              <span className="block text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Compra Oficial</span>
+              <span className="text-lg font-black text-slate-400 tracking-tight">{buyingValue.toLocaleString('es-PY')}</span>
+            </div>
+            <div className="w-px bg-slate-200 my-1" />
+            <div className="flex-1 pl-2">
+              <span className="block text-[8px] font-black text-[#002147] uppercase tracking-widest mb-1">Venta Chaco</span>
+              <span className="text-lg font-black text-[#002147] tracking-tight">{sellingRate.toLocaleString('es-PY')}</span>
+            </div>
+          </div>
+
+          {/* Converter Inputs */}
+          <div className="space-y-4">
+            <div className="relative group">
+              <label className="text-[10px] font-bold text-[#002147] uppercase tracking-widest ml-4 mb-1 block opacity-50">Cantidad ({currency.code})</label>
+              <input
+                type="text"
+                value={currencyAmount}
+                onChange={(e) => handleCurrencyChange(e.target.value)}
+                autoFocus
+                className="w-full bg-slate-50 border-2 border-transparent focus:border-[#002147]/10 text-2xl font-black text-[#002147] px-6 py-4 rounded-3xl outline-none transition-all"
+              />
+              <span className="absolute right-6 bottom-4 text-xs font-black text-slate-300">{currency.code}</span>
+            </div>
+
+            <div className="flex justify-center -my-2 relative z-10">
+              <div className="bg-[#002147] text-white p-2 rounded-full shadow-lg border-2 border-white">
+                <TrendingUp className="w-4 h-4 rotate-90" />
+              </div>
+            </div>
+
+            <div className="relative group">
+              <label className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest ml-4 mb-1 block opacity-50">Total aproximado (PYG)</label>
+              <input
+                type="text"
+                value={pygAmount}
+                onChange={(e) => handlePygChange(formatPygInput(e.target.value))}
+                className="w-full bg-emerald-50 border-2 border-transparent focus:border-emerald-100 text-2xl font-black text-emerald-600 px-6 py-4 rounded-3xl outline-none transition-all"
+              />
+              <span className="absolute right-6 bottom-4 text-xs font-black text-emerald-200">PYG</span>
+            </div>
+          </div>
         </div>
 
-        <ArrowRight className="w-2.5 h-2.5 text-slate-200" />
-
-        {/* PYG Input */}
-        <div className="relative w-24 group/input">
-          <input
-            type="text"
-            value={loading ? '---' : pygAmount}
-            onChange={(e) => handlePygChange(formatPygInput(e.target.value))}
-            className="w-full bg-slate-50/50 border border-transparent group-hover/input:border-slate-100 text-[10px] font-black text-emerald-600 pl-1 pr-6 py-1 rounded-md outline-none focus:bg-white focus:ring-1 focus:ring-[#002147]/10 transition-all text-right"
-          />
-          <span className="absolute right-1 top-1/2 -translate-y-1/2 text-[6px] font-bold text-slate-300 uppercase">PYG</span>
+        {/* Footer */}
+        <div className="px-8 py-4 bg-slate-50 border-t border-slate-100">
+          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest text-center">
+            Conversión basada en tasa de venta
+          </p>
         </div>
       </div>
     </div>
