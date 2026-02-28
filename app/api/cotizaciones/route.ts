@@ -13,20 +13,27 @@ export async function GET() {
         const results: Record<string, { compra: number; venta: number }> = {}
 
         const currencies = [
-            { name: 'Dolar', code: 'USD' },
-            { name: 'Euro', code: 'EUR' },
-            { name: 'Real', code: 'BRL' },
-            { name: 'Peso', code: 'ARS' }
+            { class: 'dolarUs', code: 'USD' },
+            { class: 'euro', code: 'EUR' },
+            { class: 'real', code: 'BRL' },
+            { class: 'pesoAr', code: 'ARS' }
         ]
 
         currencies.forEach(curr => {
-            // Buscamos la fila que contiene el nombre de la moneda y extraemos los dos siguientes <td>
-            const regex = new RegExp(`${curr.name}.*?<td>([\\d.]+)</td>.*?<td>([\\d.]+)</td>`, 's')
+            // Usamos la clase del icono como ancla más fiable que el texto con acentos
+            const regex = new RegExp(`class="moneda ${curr.class}".*?<td[^>]*>\\s*([\\d.,]+).*?<td[^>]*>\\s*([\\d.,]+)`, 'is')
             const match = html.match(regex)
+
             if (match) {
+                // Limpiamos los números: quitar puntos (miles) y cambiar coma por punto (decimal)
+                const parseValue = (val: string) => {
+                    const clean = val.replace(/\./g, '').replace(',', '.')
+                    return parseFloat(clean)
+                }
+
                 results[curr.code] = {
-                    compra: parseInt(match[1].replace(/\./g, '')),
-                    venta: parseInt(match[2].replace(/\./g, ''))
+                    compra: Math.round(parseValue(match[1])),
+                    venta: Math.round(parseValue(match[2]))
                 }
             }
         })
