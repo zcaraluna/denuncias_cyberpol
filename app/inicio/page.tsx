@@ -134,6 +134,12 @@ export default function InicioPage() {
 }
 
 function CurrencyCard({ currency, loading }: { currency: CurrencyData, loading: boolean }) {
+  const [amount, setAmount] = useState<string>('1')
+
+  const sellingRate = Math.round(currency.rate * 1.012)
+  const buyingRate = Math.round(currency.rate * 0.988)
+  const convertedValue = amount ? Math.round(parseFloat(amount.replace(',', '.')) * sellingRate) : 0
+
   return (
     <div className="bg-white rounded-[1.5rem] border border-slate-100 p-6 shadow-sm hover:shadow-xl hover:border-[#002147]/5 transition-all duration-500 flex flex-col">
       {/* Header Moneda */}
@@ -143,56 +149,65 @@ function CurrencyCard({ currency, loading }: { currency: CurrencyData, loading: 
           <div className="flex flex-col">
             <div className="flex items-center gap-1.5">
               <span className="text-base font-extrabold text-[#002147] tracking-tight">{currency.code}</span>
-              <div className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter ${currency.color.includes('emerald') ? 'text-emerald-700 bg-emerald-50' : currency.color.includes('blue') ? 'text-blue-700 bg-blue-50' : currency.color.includes('amber') ? 'text-amber-700 bg-amber-50' : 'text-sky-700 bg-sky-50'}`}>Live</div>
             </div>
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">{currency.name.split(' ')[0]}</span>
           </div>
         </div>
       </div>
 
-      {/* Conversion Body (Simplified) */}
-      <div className="space-y-4 flex-grow">
+      {/* Conversion Body */}
+      <div className="space-y-6 flex-grow">
         <div className="relative">
           <div className="flex items-center gap-2 mb-2">
-            <div className="w-1 h-3 bg-slate-200 rounded-full" />
+            <div className="w-1 h-3 bg-[#002147]/20 rounded-full" />
             <label className="block text-[9px] font-bold uppercase text-slate-500 tracking-[0.1em]">
-              Cotización actual
+              Cotización referencial de venta
             </label>
           </div>
           <div className="flex items-baseline gap-2 pl-0.5">
             <span className="text-3xl font-extrabold text-[#002147] tracking-tighter">
-              {loading ? '---' : Math.round(currency.rate).toLocaleString('es-PY')}
+              {loading ? '---' : sellingRate.toLocaleString('es-PY')}
             </span>
             <span className="text-[10px] font-black text-slate-300 tracking-wider">PYG</span>
           </div>
         </div>
 
-        {/* Subtle trend indicator placeholder or tag */}
-        <div className="px-2 py-1 bg-slate-50 rounded-lg inline-flex items-center gap-2">
-          <TrendingUp className="w-3 h-3 text-emerald-500" />
-          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Mercado Estable</span>
+        {/* Subtle Converter */}
+        <div className="pt-4 border-t border-slate-50">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Conversor rápido</span>
+          </div>
+          <div className="flex flex-col gap-2">
+            <div className="relative group">
+              <input
+                type="text"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="Cantidad"
+                className="w-full bg-slate-50/50 border-none text-sm font-bold text-[#002147] px-3 py-2 rounded-xl focus:ring-1 focus:ring-[#002147]/10 transition-all outline-none"
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-300 uppercase">{currency.code}</span>
+            </div>
+            {amount && !loading && (
+              <div className="px-1 flex items-center justify-between">
+                <span className="text-[10px] font-bold text-slate-400 italic">Equivale a:</span>
+                <span className="text-xs font-black text-emerald-600">
+                  {convertedValue.toLocaleString('es-PY')} <span className="text-[9px] opacity-70">PYG</span>
+                </span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Buying/Selling References */}
-      <div className="mt-8 grid grid-cols-2 gap-4 pt-6 border-t border-slate-50">
-        <div className="flex flex-col gap-1">
-          <span className="text-[8px] uppercase font-bold text-slate-400 tracking-widest">Ref. Compra</span>
-          <div className="flex items-center gap-1.5">
-            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400/30" />
-            <span className="text-xs font-bold text-slate-600">
-              {loading ? '---' : Math.round(currency.rate * 0.988).toLocaleString('es-PY')}
-            </span>
-          </div>
-        </div>
-        <div className="flex flex-col gap-1 items-end">
-          <span className="text-[8px] uppercase font-bold text-slate-400 tracking-widest">Ref. Venta</span>
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs font-bold text-slate-600">
-              {loading ? '---' : Math.round(currency.rate * 1.012).toLocaleString('es-PY')}
-            </span>
-            <div className="w-1.5 h-1.5 rounded-full bg-rose-400/30" />
-          </div>
+      {/* Footer Reference */}
+      <div className="mt-8 pt-4 border-t border-slate-50 flex items-center justify-between">
+        <span className="text-[8px] uppercase font-bold text-slate-400 tracking-widest">Ref. Compra</span>
+        <div className="flex items-center gap-1.5">
+          <div className="w-1 h-1 rounded-full bg-slate-200" />
+          <span className="text-[11px] font-bold text-slate-500">
+            {loading ? '---' : buyingRate.toLocaleString('es-PY')}
+          </span>
         </div>
       </div>
     </div>
