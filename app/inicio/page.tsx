@@ -108,7 +108,7 @@ export default function InicioPage() {
         </div>
 
         {/* Optimized Ultra-Compact Single Frame Currency List */}
-        <div className="mb-10 max-w-[310px]">
+        <div className="mb-10 w-fit min-w-[320px]">
           <div className="bg-white/70 backdrop-blur-md rounded-[1.8rem] border border-slate-100 p-1 shadow-sm hover:shadow-lg transition-all duration-500 overflow-hidden">
             <div className="flex flex-col">
               {currencies.map((currency, index) => (
