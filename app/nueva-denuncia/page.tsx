@@ -2525,9 +2525,9 @@ export default function NuevaDenunciaPage() {
   return (
     <MainLayout hideSidebar={true}>
       <MiniHeader />
-      <div className="min-h-[calc(100-4rem)] bg-[#f8fafc] py-12 px-4 sm:px-6 lg:px-8 font-sans">
+      <div className="min-h-[calc(100-4rem)] bg-[#f8fafc] py-6 px-4 sm:px-6 lg:px-8 font-sans">
         <div className="max-w-5xl mx-auto">
-          <div className="mb-12">
+          <div className="mb-8">
             <div className="flex items-center justify-between max-w-2xl mx-auto relative px-4">
               {/* Step Progress Line */}
               <div className="absolute top-4 left-8 right-8 h-0.5 bg-slate-200 -z-10" />
@@ -2581,9 +2581,9 @@ export default function NuevaDenunciaPage() {
             <form
               onSubmit={handlePaso1Submit}
               autoComplete="off"
-              className="bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-100 p-8 sm:p-10 transition-all duration-300 hover:shadow-slate-200/80"
+              className="bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-100 p-6 sm:p-8 transition-all duration-300 hover:shadow-slate-200/80"
             >
-              <h2 className="text-2xl font-bold text-gray-800 mb-6">
+              <h2 className="text-xl font-bold text-gray-800 mb-4">
                 Datos del Denunciante
               </h2>
 
