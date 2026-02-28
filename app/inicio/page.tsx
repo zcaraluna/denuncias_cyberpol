@@ -23,17 +23,18 @@ interface CurrencyData {
 export default function InicioPage() {
   const router = useRouter()
   const { usuario, loading: authLoading } = useAuth()
-  const [rates, setRates] = useState<Record<string, number>>({})
+  const [rates, setRates] = useState<Record<string, { compra: number, venta: number }>>({})
   const [loading, setLoading] = useState(true)
   const [lastUpdate, setLastUpdate] = useState<string>('')
 
   const fetchRates = async () => {
     setLoading(true)
     try {
-      const response = await fetch(`https://v6.exchangerate-api.com/v6/${API_KEY}/latest/PYG`)
+      const response = await fetch('/api/cotizaciones')
       const data = await response.json()
-      if (data.result === 'success') {
-        setRates(data.conversion_rates)
+      if (!data.error) {
+        // Adaptamos el formato de la API a lo que espera el estado
+        setRates(data)
         setLastUpdate(new Date().toLocaleTimeString('es-PY', { hour: '2-digit', minute: '2-digit' }))
       }
     } catch (error) {
@@ -72,10 +73,10 @@ export default function InicioPage() {
   const primerApellido = usuario.apellido ? usuario.apellido.split(' ')[0] : ''
 
   const currencies: CurrencyData[] = [
-    { code: 'USD', name: 'Dólar Americano', flag: '🇺🇸', rate: rates['USD'] ? 1 / rates['USD'] : 0, color: 'text-emerald-600 bg-emerald-50' },
-    { code: 'EUR', name: 'Euro', flag: '🇪🇺', rate: rates['EUR'] ? 1 / rates['EUR'] : 0, color: 'text-blue-600 bg-blue-50' },
-    { code: 'BRL', name: 'Real Brasileño', flag: '🇧🇷', rate: rates['BRL'] ? 1 / rates['BRL'] : 0, color: 'text-amber-600 bg-amber-50' },
-    { code: 'ARS', name: 'Peso Argentino', flag: '🇦🇷', rate: rates['ARS'] ? 1 / rates['ARS'] : 0, color: 'text-sky-600 bg-sky-50' },
+    { code: 'USD', name: 'Dólar Americano', flag: '🇺🇸', rate: rates['USD']?.venta || 0, color: 'text-emerald-600 bg-emerald-50' },
+    { code: 'EUR', name: 'Euro', flag: '🇪🇺', rate: rates['EUR']?.venta || 0, color: 'text-blue-600 bg-blue-50' },
+    { code: 'BRL', name: 'Real Brasileño', flag: '🇧🇷', rate: rates['BRL']?.venta || 0, color: 'text-amber-600 bg-amber-50' },
+    { code: 'ARS', name: 'Peso Argentino', flag: '🇦🇷', rate: rates['ARS']?.venta || 0, color: 'text-sky-600 bg-sky-50' },
   ]
 
   return (
@@ -93,7 +94,7 @@ export default function InicioPage() {
           </div>
           <div className="flex items-center gap-3">
             <div className="hidden sm:flex flex-col items-end mr-2">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Última actualización</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Última actualización (Chaco)</span>
               <span className="text-xs font-bold text-[#002147]">{lastUpdate || '--:--'}</span>
             </div>
             <button
@@ -107,35 +108,24 @@ export default function InicioPage() {
           </div>
         </div>
 
-        {/* Cambios Chaco Widget - Versión Sutil & Reposicionada */}
-        <div className="flex justify-start mb-10 pl-1">
-          <div className="w-full max-w-sm bg-slate-50/50 p-4 rounded-3xl border border-slate-100/50 overflow-hidden shadow-sm hover:shadow-md transition-all duration-500">
-            <iframe
-              width="100%"
-              height="320"
-              src="https://www.cambioschaco.com.py/widgets/cotizacion/?lang=es"
-              frameBorder="0"
-              title="Cotizaciones Cambios Chaco"
-              className="rounded-2xl grayscale-[0.3] opacity-90 hover:grayscale-0 hover:opacity-100 transition-all duration-500"
-            ></iframe>
-          </div>
+        {/* Grid Section - Real Data + Custom Design */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {currencies.map((currency) => (
+            <CurrencyCard
+              key={currency.code}
+              currency={currency}
+              loading={loading}
+              buyingValue={rates[currency.code]?.compra || 0}
+            />
+          ))}
         </div>
-
-        {/* Grid Section (Oculto por ahora) */}
-        {false && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {currencies.map((currency) => (
-              <CurrencyCard key={currency.code} currency={currency} loading={loading} />
-            ))}
-          </div>
-        )}
 
         {/* Professional Footer */}
         <div className="mt-16 flex flex-col items-center">
           <div className="w-20 h-1 bg-gradient-to-r from-transparent via-[#002147]/10 to-transparent mb-8" />
           <p className="text-center text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] max-w-2xl leading-relaxed">
             Sistema de monitoreo de divisas para uso exclusivo de la Dirección Contra Hechos Punibles Económicos y Financieros.
-            <span className="block mt-1 opacity-50 italic">Los valores son de carácter informativo y pueden variar según el mercado local.</span>
+            <span className="block mt-1 opacity-50 italic">Los valores son obtenidos en tiempo real de Cambios Chaco para fines informativos.</span>
           </p>
         </div>
       </div>
@@ -143,11 +133,19 @@ export default function InicioPage() {
   )
 }
 
-function CurrencyCard({ currency, loading }: { currency: CurrencyData, loading: boolean }) {
+function CurrencyCard({
+  currency,
+  loading,
+  buyingValue
+}: {
+  currency: CurrencyData,
+  loading: boolean,
+  buyingValue: number
+}) {
   const [amount, setAmount] = useState<string>('1')
 
-  const sellingRate = Math.round(currency.rate * 1.012)
-  const buyingRate = Math.round(currency.rate * 0.988)
+  const sellingRate = currency.rate
+  const buyingRate = buyingValue
   const convertedValue = amount ? Math.round(parseFloat(amount.replace(',', '.')) * sellingRate) : 0
 
   return (
