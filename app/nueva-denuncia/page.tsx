@@ -2527,10 +2527,6 @@ export default function NuevaDenunciaPage() {
       <MiniHeader />
       <div className="min-h-[calc(100-4rem)] bg-[#f8fafc] py-12 px-4 sm:px-6 lg:px-8 font-sans">
         <div className="max-w-5xl mx-auto">
-          <div className="mb-12 text-center">
-            <h1 className="text-4xl font-black text-[#002147] tracking-tight uppercase mb-3">Nueva Denuncia Policial</h1>
-            <p className="text-slate-500 font-medium max-w-2xl mx-auto">Complete los pasos para registrar una nueva diligencia en el sistema con precisión y rigor legal.</p>
-          </div>
           <div className="mb-12">
             <div className="flex items-center justify-between max-w-2xl mx-auto relative px-4">
               {/* Step Progress Line */}
