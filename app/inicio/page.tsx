@@ -108,29 +108,23 @@ export default function InicioPage() {
           </div>
         </div>
 
-        {/* Compact Currency List Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
-          {/* Left Column: Currencies 1 & 2 */}
-          <div className="space-y-4">
-            {currencies.slice(0, 2).map((currency) => (
-              <CurrencyListItem
-                key={currency.code}
-                currency={currency}
-                loading={loading}
-                buyingValue={rates[currency.code]?.compra || 0}
-              />
-            ))}
-          </div>
-          {/* Right Column: Currencies 3 & 4 */}
-          <div className="space-y-4">
-            {currencies.slice(2, 4).map((currency) => (
-              <CurrencyListItem
-                key={currency.code}
-                currency={currency}
-                loading={loading}
-                buyingValue={rates[currency.code]?.compra || 0}
-              />
-            ))}
+        {/* Single Frame Currency List */}
+        <div className="mb-12 max-w-3xl mx-auto">
+          <div className="bg-white/70 backdrop-blur-md rounded-[2.5rem] border border-slate-100 p-2 shadow-sm hover:shadow-xl transition-all duration-500 overflow-hidden">
+            <div className="flex flex-col">
+              {currencies.map((currency, index) => (
+                <div key={currency.code}>
+                  <CurrencyListItem
+                    currency={currency}
+                    loading={loading}
+                    buyingValue={rates[currency.code]?.compra || 0}
+                  />
+                  {index < currencies.length - 1 && (
+                    <div className="mx-6 h-px bg-slate-50" />
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -163,7 +157,7 @@ function CurrencyListItem({
   const convertedValue = amount ? Math.round(parseFloat(amount.replace(',', '.')) * sellingRate) : 0
 
   return (
-    <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-100 p-4 hover:shadow-lg hover:border-[#002147]/10 transition-all duration-300 flex items-center justify-between group">
+    <div className="p-4 hover:bg-white/80 transition-all duration-300 flex items-center justify-between group rounded-2xl">
       {/* Left Part: Flag & Name */}
       <div className="flex items-center gap-4 min-w-[140px]">
         <div className="text-xl filter drop-shadow-sm grayscale-[0.2] group-hover:grayscale-0 transition-all">{currency.flag}</div>
