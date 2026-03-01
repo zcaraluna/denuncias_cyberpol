@@ -302,16 +302,6 @@ export default function VerDenunciaPage({ params }: { params: Promise<{ id: stri
       <div className="min-h-screen bg-slate-50/50 p-4 md:p-8">
         {/* Header Section */}
         <div className="max-w-6xl mx-auto mb-8">
-          <Link
-            href="/mis-denuncias"
-            className="group inline-flex items-center text-sm font-bold text-slate-500 hover:text-[#002147] transition-colors mb-6"
-          >
-            <div className="mr-2 p-1.5 rounded-lg bg-white border border-slate-200 group-hover:border-blue-200 group-hover:bg-blue-50 transition-all shadow-sm">
-              <ArrowLeft className="h-4 w-4" />
-            </div>
-            VOLVER A MIS DENUNCIAS
-          </Link>
-
           <div className="bg-white rounded-3xl border border-slate-200/60 p-6 md:p-8 shadow-sm relative overflow-hidden">
             {/* Fondo decorativo */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-slate-50 rounded-full -mr-32 -mt-32 z-0 opacity-50"></div>
@@ -327,8 +317,8 @@ export default function VerDenunciaPage({ params }: { params: Promise<{ id: stri
                       EXPEDIENTE Nº {denuncia.orden}
                     </span>
                     <span className={`px-3 py-0.5 text-[10px] font-black uppercase tracking-widest rounded-full border ${denuncia.estado === 'completada'
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
-                        : 'bg-amber-50 text-amber-700 border-amber-100'
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+                      : 'bg-amber-50 text-amber-700 border-amber-100'
                       }`}>
                       {denuncia.estado}
                     </span>
@@ -514,8 +504,8 @@ export default function VerDenunciaPage({ params }: { params: Promise<{ id: stri
                         <div key={index} className="p-6 bg-slate-50 border border-slate-100 rounded-3xl">
                           <div className="flex items-center gap-2 mb-4">
                             <span className={`px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-full border ${autor.autor_conocido === 'Conocido'
-                                ? 'bg-blue-50 text-blue-700 border-blue-100'
-                                : 'bg-slate-200 text-slate-700 border-slate-300'
+                              ? 'bg-blue-50 text-blue-700 border-blue-100'
+                              : 'bg-slate-200 text-slate-700 border-slate-300'
                               }`}>
                               {autor.autor_conocido === 'Conocido' ? 'Autor Identificado' : 'Sin Identificar'}
                             </span>
