@@ -63,7 +63,7 @@ export const exportToDocx = async (
                                     text: col.header,
                                     bold: true,
                                     font: 'Roboto',
-                                    size: 18 // 9pt
+                                    size: 16 // 8pt
                                 })
                             ]
                         })
@@ -94,7 +94,7 @@ export const exportToDocx = async (
                                     new TextRun({
                                         text: text,
                                         font: 'Roboto',
-                                        size: 18 // 9pt
+                                        size: 16 // 8pt
                                     })
                                 ]
                             })
