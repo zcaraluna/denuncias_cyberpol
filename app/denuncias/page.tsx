@@ -59,6 +59,7 @@ export default function DenunciasPage() {
   // Estados aplicados para filtros
   const [filtroNombre, setFiltroNombre] = useState('')
   const [filtroCedula, setFiltroCedula] = useState('')
+  const [filtroHash, setFiltroHash] = useState('')
   const [filtroTipo, setFiltroTipo] = useState('')
   const [filtroFechaDesde, setFiltroFechaDesde] = useState('')
   const [filtroFechaHasta, setFiltroFechaHasta] = useState('')
@@ -95,6 +96,7 @@ export default function DenunciasPage() {
   useEffect(() => {
     setFiltroNombreTemp(filtroNombre)
     setFiltroCedulaTemp(filtroCedula)
+    setFiltroHashTemp(filtroHash)
     setFiltroTipoTemp(filtroTipo)
     setFiltroFechaDesdeTemp(filtroFechaDesde)
     setFiltroFechaHastaTemp(filtroFechaHasta)
@@ -168,6 +170,8 @@ export default function DenunciasPage() {
         denuncia.nombre_denunciante.toLowerCase().includes(filtroNombre.toLowerCase())
       const cedulaMatch = !filtroCedula ||
         denuncia.cedula_denunciante.includes(filtroCedula)
+      const hashMatch = !filtroHash ||
+        denuncia.hash_denuncia?.toLowerCase().includes(filtroHash.toLowerCase())
       const tipoMatch = !filtroTipo ||
         denuncia.tipo_hecho?.toUpperCase() === filtroTipo
 
@@ -202,6 +206,7 @@ export default function DenunciasPage() {
   const aplicarFiltros = () => {
     setFiltroNombre(filtroNombreTemp)
     setFiltroCedula(filtroCedulaTemp)
+    setFiltroHash(filtroHashTemp)
     setFiltroTipo(filtroTipoTemp)
     setFiltroFechaDesde(filtroFechaDesdeTemp)
     setFiltroFechaHasta(filtroFechaHastaTemp)
@@ -211,11 +216,13 @@ export default function DenunciasPage() {
   const limpiarFiltros = () => {
     setFiltroNombreTemp('')
     setFiltroCedulaTemp('')
+    setFiltroHashTemp('')
     setFiltroTipoTemp('')
     setFiltroFechaDesdeTemp('')
     setFiltroFechaHastaTemp('')
     setFiltroNombre('')
     setFiltroCedula('')
+    setFiltroHash('')
     setFiltroTipo('')
     setFiltroFechaDesde('')
     setFiltroFechaHasta('')
@@ -280,10 +287,10 @@ export default function DenunciasPage() {
                   <h2 className="text-[10px] font-black text-[#002147] uppercase tracking-widest">Filtros de Búsqueda</h2>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                   {/* Filtro Nombre */}
-                  <div className="space-y-1.5">
-                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                  <div className="space-y-1.5 flex flex-col justify-end">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-1">
                       <User className="w-2.5 h-2.5" /> Denunciante
                     </label>
                     <input
@@ -292,13 +299,13 @@ export default function DenunciasPage() {
                       onChange={(e) => setFiltroNombreTemp(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && aplicarFiltros()}
                       placeholder="Nombre..."
-                      className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#002147]/10 focus:border-[#002147] text-xs font-medium transition-all outline-none"
+                      className="w-full h-[34px] px-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#002147]/10 focus:border-[#002147] text-xs font-bold uppercase transition-all outline-none placeholder:normal-case placeholder:font-medium"
                     />
                   </div>
 
                   {/* Filtro Cédula */}
-                  <div className="space-y-1.5">
-                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                  <div className="space-y-1.5 flex flex-col justify-end">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-1">
                       <Hash className="w-2.5 h-2.5" /> N.º Cédula
                     </label>
                     <input
@@ -307,66 +314,97 @@ export default function DenunciasPage() {
                       onChange={(e) => setFiltroCedulaTemp(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && aplicarFiltros()}
                       placeholder="Documento..."
-                      className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#002147]/10 focus:border-[#002147] text-xs font-medium transition-all outline-none"
+                      className="w-full h-[34px] px-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#002147]/10 focus:border-[#002147] text-xs font-bold transition-all outline-none placeholder:font-medium"
+                    />
+                  </div>
+
+                  {/* Filtro Hash (NUEVO PARA ADMIN) */}
+                  <div className="space-y-1.5 flex flex-col justify-end">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-1">
+                      <Hash className="w-2.5 h-2.5" /> Hash de Denuncia
+                    </label>
+                    <input
+                      type="text"
+                      value={filtroHashTemp}
+                      onChange={(e) => setFiltroHashTemp(e.target.value.toUpperCase())}
+                      onKeyPress={(e) => e.key === 'Enter' && aplicarFiltros()}
+                      placeholder="Ej: ABC12..."
+                      className="w-full h-[34px] px-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#002147]/10 focus:border-[#002147] text-xs font-bold uppercase transition-all outline-none placeholder:normal-case placeholder:font-medium"
                     />
                   </div>
 
                   {/* Filtro Tipo (react-select) */}
-                  <div className="space-y-1.5">
-                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                  <div className="space-y-1.5 flex flex-col justify-end">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-1">
                       <AlertCircle className="w-2.5 h-2.5" /> Hecho Punible
                     </label>
-                    <Select
-                      options={opcionesTipos}
-                      value={opcionesTipos.find(opcion => opcion.value === filtroTipoTemp)}
-                      onChange={(option) => setFiltroTipoTemp(option?.value || '')}
-                      isSearchable
-                      placeholder="Seleccionar..."
-                      className="text-xs font-medium"
-                      classNamePrefix="react-select"
-                      styles={{
-                        control: (base, state) => ({
-                          ...base,
-                          background: '#f8fafc',
-                          borderRadius: '0.5rem',
-                          minHeight: '34px',
-                          borderColor: state.isFocused ? '#002147' : '#e2e8f0',
-                          boxShadow: state.isFocused ? '0 0 0 2px rgba(0, 33, 71, 0.1)' : 'none',
-                          '&:hover': { borderColor: '#002147' }
-                        }),
-                        valueContainer: (base) => ({ ...base, padding: '0 8px' }),
-                        menu: (base) => ({
-                          ...base,
-                          borderRadius: '0.5rem',
-                          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-                          zIndex: 50
-                        }),
-                        option: (base, state) => ({
-                          ...base,
-                          fontSize: '10px',
-                          fontWeight: '700',
-                          padding: '8px 12px',
-                          textTransform: 'uppercase',
-                          backgroundColor: state.isSelected ? '#002147' : state.isFocused ? '#f1f5f9' : 'white',
-                          color: state.isSelected ? 'white' : '#002147'
-                        })
-                      }}
-                    />
+                    <div className="h-[34px]">
+                      <Select
+                        options={opcionesTipos}
+                        value={opcionesTipos.find(opcion => opcion.value === filtroTipoTemp)}
+                        onChange={(option) => setFiltroTipoTemp(option?.value || '')}
+                        isSearchable
+                        placeholder="Seleccionar..."
+                        className="text-xs font-bold"
+                        classNamePrefix="react-select"
+                        styles={{
+                          control: (base, state) => ({
+                            ...base,
+                            background: '#f8fafc',
+                            borderRadius: '0.5rem',
+                            minHeight: '34px',
+                            height: '34px',
+                            borderColor: state.isFocused ? '#002147' : '#e2e8f0',
+                            boxShadow: state.isFocused ? '0 0 0 2px rgba(0, 33, 71, 0.1)' : 'none',
+                            '&:hover': { borderColor: '#002147' }
+                          }),
+                          valueContainer: (base) => ({ ...base, padding: '0 8px', height: '34px', display: 'flex', alignItems: 'center' }),
+                          indicatorsContainer: (base) => ({ ...base, height: '32px' }),
+                          menu: (base) => ({
+                            ...base,
+                            borderRadius: '0.5rem',
+                            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                            zIndex: 50
+                          }),
+                          option: (base, state) => ({
+                            ...base,
+                            fontSize: '10px',
+                            fontWeight: '700',
+                            padding: '8px 12px',
+                            textTransform: 'uppercase',
+                            backgroundColor: state.isSelected ? '#002147' : state.isFocused ? '#f1f5f9' : 'white',
+                            color: state.isSelected ? 'white' : '#002147'
+                          }),
+                          singleValue: (base) => ({
+                            ...base,
+                            textTransform: 'uppercase',
+                            color: '#002147'
+                          }),
+                          placeholder: (base) => ({
+                            ...base,
+                            textTransform: 'none',
+                            fontWeight: '500'
+                          })
+                        }}
+                      />
+                    </div>
                   </div>
 
                   {/* Filtro Fecha */}
-                  <div className="space-y-1.5">
-                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                  <div className="space-y-1.5 flex flex-col justify-end">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-1">
                       <Calendar className="w-2.5 h-2.5" /> Rango Fechas
                     </label>
-                    <DateRangePicker
-                      startDate={filtroFechaDesdeTemp}
-                      endDate={filtroFechaHastaTemp}
-                      onStartDateChange={setFiltroFechaDesdeTemp}
-                      onEndDateChange={setFiltroFechaHastaTemp}
-                      onApply={handleFechaApply}
-                      onCancel={handleFechaCancel}
-                    />
+                    <div className="h-[34px] flex items-center">
+                      <DateRangePicker
+                        startDate={filtroFechaDesdeTemp}
+                        endDate={filtroFechaHastaTemp}
+                        onStartDateChange={setFiltroFechaDesdeTemp}
+                        onEndDateChange={setFiltroFechaHastaTemp}
+                        onApply={handleFechaApply}
+                        onCancel={handleFechaCancel}
+                      />
+                    </div>
                   </div>
                 </div>
 
