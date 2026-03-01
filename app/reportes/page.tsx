@@ -669,435 +669,398 @@ export default function ReportesPage() {
 
           {/* Resultados Mensual */}
           {activeTab === 'mensual' && datosMensuales && (
-            <div className="space-y-6">
+            <div className="space-y-8 animate-in fade-in slide-in-from-right-4">
               {/* Resumen por Tipos y Ranking de Operadores */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-                  <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 flex justify-between items-center">
-                    <div className="flex items-center gap-4">
-                      <h3 className="text-lg font-semibold text-gray-800">
-                        Desglose por Tipos
-                      </h3>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Desglose por Tipos */}
+                <div className="bg-white rounded-2xl shadow-xl shadow-blue-900/5 border border-slate-100 overflow-hidden relative">
+                  <div className="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
+                  <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-[#002147] rounded-xl shadow-lg shadow-blue-900/10">
+                        <Users className="w-4 h-4 text-white" />
+                      </div>
+                      <h3 className="text-[11px] font-black text-[#002147] uppercase tracking-widest">Resumen por Tipo</h3>
+                    </div>
+                    <div className="flex bg-white p-1 rounded-xl shadow-sm border border-slate-200">
                       <button
-                        onClick={handleExportMonthlyTypesExcel}
+                        onClick={() => setMostrarGeneral(false)}
+                        className={`px-3 py-1.5 text-[9px] font-black rounded-lg transition-all uppercase tracking-widest ${!mostrarGeneral
+                          ? 'bg-blue-50 text-blue-700'
+                          : 'text-slate-400 hover:text-slate-600'
+                          }`}
+                      >
+                        Específico
+                      </button>
+                      <button
+                        onClick={() => setMostrarGeneral(true)}
+                        className={`px-3 py-1.5 text-[9px] font-black rounded-lg transition-all uppercase tracking-widest ${mostrarGeneral
+                          ? 'bg-blue-50 text-blue-700'
+                          : 'text-slate-400 hover:text-slate-600'
+                          }`}
+                      >
+                        General
+                      </button>
+                    </div>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full border-separate border-spacing-0">
+                      <thead>
+                        <tr className="bg-slate-50/20">
+                          <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Categoría</th>
+                          <th className="px-6 py-4 text-right text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Total</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-50 font-medium">
+                        {(mostrarGeneral ? datosMensuales.resumen_general : datosMensuales.resumen_especifico).map((tipo: ResumenTipo, idx: number) => (
+                          <tr key={idx} className="group hover:bg-slate-50 transition-all">
+                            <td className="px-6 py-4 text-[10px] font-bold text-slate-600 uppercase tracking-tight">{tipo.tipo}</td>
+                            <td className="px-6 py-4 text-[10px] font-black text-[#002147] text-right bg-slate-50/30">{tipo.total}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Top 5 Intervinientes */}
+                <div className="bg-white rounded-2xl shadow-xl shadow-blue-900/5 border border-slate-100 overflow-hidden relative">
+                  <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500"></div>
+                  <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-emerald-600 rounded-xl shadow-lg shadow-emerald-900/10">
+                        <Users className="w-4 h-4 text-white" />
+                      </div>
+                      <h3 className="text-[11px] font-black text-[#002147] uppercase tracking-widest">Top 5 Intervinientes</h3>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleExportMonthlyOperatorsExcel}
                         title="Exportar a Excel"
-                        className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition"
+                        className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition"
                       >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                      </button>
-                      <button
-                        onClick={handleExportMonthlyTypesDocx}
-                        title="Exportar a Word"
-                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
+                        <Download className="w-4 h-4" />
                       </button>
                     </div>
-                    {/* Toggle en tabla */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-                      {/* Resumen por Tipo */}
-                      <div className="bg-white rounded-2xl shadow-xl shadow-blue-900/5 border border-slate-100 overflow-hidden relative">
-                        <div className="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
-                        <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                          <div className="flex items-center gap-3">
-                            <div className="p-2 bg-[#002147] rounded-xl shadow-lg shadow-blue-900/10">
-                              <Users className="w-4 h-4 text-white" />
-                            </div>
-                            <h3 className="text-[11px] font-black text-[#002147] uppercase tracking-widest">Resumen por Tipo</h3>
-                          </div>
-                          <div className="flex bg-white p-1 rounded-xl shadow-sm border border-slate-200">
-                            <button
-                              onClick={() => setMostrarGeneral(false)}
-                              className={`px-3 py-1.5 text-[9px] font-black rounded-lg transition-all uppercase tracking-widest ${!mostrarGeneral
-                                ? 'bg-blue-50 text-blue-700'
-                                : 'text-slate-400 hover:text-slate-600'
-                                }`}
-                            >
-                              Específico
-                            </button>
-                            <button
-                              onClick={() => setMostrarGeneral(true)}
-                              className={`px-3 py-1.5 text-[9px] font-black rounded-lg transition-all uppercase tracking-widest ${mostrarGeneral
-                                ? 'bg-blue-50 text-blue-700'
-                                : 'text-slate-400 hover:text-slate-600'
-                                }`}
-                            >
-                              General
-                            </button>
-                          </div>
-                        </div>
-                        <div className="overflow-x-auto">
-                          <table className="min-w-full border-separate border-spacing-0">
-                            <thead>
-                              <tr className="bg-slate-50/20">
-                                <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Categoría</th>
-                                <th className="px-6 py-4 text-right text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Total</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-50 font-medium">
-                              {(mostrarGeneral ? datosMensuales.resumen_general : datosMensuales.resumen_especifico).map((tipo: ResumenTipo, idx: number) => (
-                                <tr key={idx} className="group hover:bg-slate-50 transition-all">
-                                  <td className="px-6 py-4 text-[10px] font-bold text-slate-600 uppercase tracking-tight">{tipo.tipo}</td>
-                                  <td className="px-6 py-4 text-[10px] font-black text-[#002147] text-right bg-slate-50/30">{tipo.total}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full border-separate border-spacing-0">
+                      <thead>
+                        <tr className="bg-slate-50/20">
+                          <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Personal</th>
+                          <th className="px-6 py-4 text-right text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Denuncias</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-50">
+                        {datosMensuales.top_operadores?.map((op, idx) => (
+                          <tr key={idx} className="group hover:bg-emerald-50/30 transition-all">
+                            <td className="px-6 py-4 text-[10px] text-slate-600 uppercase tracking-tight flex items-center gap-3">
+                              <span className="flex items-center justify-center w-5 h-5 rounded-lg bg-emerald-100 text-emerald-700 font-black text-[10px] shadow-sm">
+                                {idx + 1}
+                              </span>
+                              <span className="font-bold">{op.operador || 'Desconocido'}</span>
+                            </td>
+                            <td className="px-6 py-4 text-[10px] font-black text-[#002147] text-right bg-slate-50/30">{op.total}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
 
-                      {/* Top 5 Intervinientes */}
-                      <div className="bg-white rounded-2xl shadow-xl shadow-blue-900/5 border border-slate-100 overflow-hidden relative">
-                        <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500"></div>
-                        <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="p-2 bg-emerald-600 rounded-xl shadow-lg shadow-emerald-900/10">
-                              <Users className="w-4 h-4 text-white" />
-                            </div>
-                            <h3 className="text-[11px] font-black text-[#002147] uppercase tracking-widest">Top 5 Intervinientes</h3>
-                          </div>
-                          <div className="flex gap-2">
-                            <button
-                              onClick={handleExportMonthlyOperatorsExcel}
-                              title="Exportar a Excel"
-                              className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition"
-                            >
-                              <Download className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-                        <div className="overflow-x-auto">
-                          <table className="min-w-full border-separate border-spacing-0">
-                            <thead>
-                              <tr className="bg-slate-50/20">
-                                <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Personal</th>
-                                <th className="px-6 py-4 text-right text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Denuncias</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-50">
-                              {datosMensuales.top_operadores?.map((op, idx) => (
-                                <tr key={idx} className="group hover:bg-emerald-50/30 transition-all">
-                                  <td className="px-6 py-4 text-[10px] text-slate-600 uppercase tracking-tight flex items-center gap-3">
-                                    <span className="flex items-center justify-center w-5 h-5 rounded-lg bg-emerald-100 text-emerald-700 font-black text-[10px] shadow-sm">
-                                      {idx + 1}
-                                    </span>
-                                    <span className="font-bold">{op.operador || 'Desconocido'}</span>
-                                  </td>
-                                  <td className="px-6 py-4 text-[10px] font-black text-[#002147] text-right bg-slate-50/30">{op.total}</td>
-                                </tr>
-                              ))}
-                              {(!datosMensuales.top_operadores || datosMensuales.top_operadores.length === 0) && (
-                                <tr>
-                                  <td colSpan={2} className="px-6 py-12 text-center text-slate-400 italic text-[10px] font-bold uppercase tracking-widest">
-                                    Sin datos registrados en el periodo.
-                                  </td>
-                                </tr>
-                              )}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
+              {/* Denunciantes Recurrentes */}
+              <div className="bg-white rounded-2xl shadow-xl shadow-blue-900/5 border border-slate-100 overflow-hidden relative">
+                <div className="absolute top-0 left-0 w-1 h-full bg-red-500"></div>
+                <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-red-600 rounded-xl shadow-lg shadow-red-900/10">
+                      <AlertCircle className="w-4 h-4 text-white" />
                     </div>
-
-                    {/* Denunciantes Recurrentes */}
-                    <div className="bg-white rounded-2xl shadow-xl shadow-blue-900/5 border border-slate-100 overflow-hidden mb-8 relative">
-                      <div className="absolute top-0 left-0 w-1 h-full bg-red-500"></div>
-                      <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-red-600 rounded-xl shadow-lg shadow-red-900/10">
-                            <AlertCircle className="w-4 h-4 text-white" />
+                    <h3 className="text-[11px] font-black text-[#002147] uppercase tracking-widest">Denunciantes Recurrentes</h3>
+                  </div>
+                </div>
+                <div className="p-6">
+                  {datosMensuales.denunciantes_recurrentes.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {datosMensuales.denunciantes_recurrentes.map((rec, idx) => (
+                        <div key={idx} className="bg-slate-50/50 rounded-2xl p-5 border border-slate-100 shadow-sm hover:shadow-md transition-all group">
+                          <div className="flex justify-between items-start mb-4">
+                            <div>
+                              <h4 className="font-black text-[#002147] text-xs uppercase tracking-tight group-hover:text-blue-600 transition-colors">{rec.denunciante}</h4>
+                              <div className="flex items-center gap-1.5 mt-1">
+                                <Hash className="w-3 h-3 text-slate-300" />
+                                <p className="text-[9px] text-slate-400 font-black font-mono tracking-widest">DOC: {rec.cedula}</p>
+                              </div>
+                            </div>
+                            <div className="flex flex-col items-end gap-2">
+                              <span className="px-2 py-1 bg-red-50 text-red-600 text-[10px] font-black rounded-lg uppercase tracking-widest shadow-sm">
+                                {rec.cantidad} denuncias
+                              </span>
+                            </div>
                           </div>
-                          <h3 className="text-[11px] font-black text-[#002147] uppercase tracking-widest">Denunciantes Recurrentes</h3>
-                        </div>
-                      </div>
-                      <div className="p-6">
-                        {datosMensuales.denunciantes_recurrentes.length > 0 ? (
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {datosMensuales.denunciantes_recurrentes.map((rec, idx) => (
-                              <div key={idx} className="bg-slate-50/50 rounded-2xl p-5 border border-slate-100 shadow-sm hover:shadow-md transition-all group">
-                                <div className="flex justify-between items-start mb-4">
-                                  <div>
-                                    <h4 className="font-black text-[#002147] text-xs uppercase tracking-tight group-hover:text-blue-600 transition-colors">{rec.denunciante}</h4>
-                                    <div className="flex items-center gap-1.5 mt-1">
-                                      <Hash className="w-3 h-3 text-slate-300" />
-                                      <p className="text-[9px] text-slate-400 font-black font-mono tracking-widest">DOC: {rec.cedula}</p>
-                                    </div>
-                                  </div>
-                                  <div className="flex flex-col items-end gap-2">
-                                    <span className="px-2 py-1 bg-red-50 text-red-600 text-[10px] font-black rounded-lg uppercase tracking-widest shadow-sm">
-                                      {rec.cantidad} denuncias
-                                    </span>
-                                  </div>
+                          <div className="space-y-2 max-h-[200px] overflow-y-auto no-scrollbar pr-1">
+                            {rec.numeros_denuncia.map((num, i) => (
+                              <div key={i} className="flex flex-col gap-1 text-[10px] text-slate-600 bg-white p-3 rounded-xl border border-slate-100 shadow-sm group/item">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-black text-blue-600 text-[9px] font-mono whitespace-nowrap">{num}</span>
+                                  <span className="text-slate-100">—</span>
+                                  <span className="truncate flex-1 font-bold text-slate-500 uppercase tracking-tighter">{rec.tipos[i]}</span>
                                 </div>
-                                <div className="space-y-2 max-h-[200px] overflow-y-auto no-scrollbar pr-1">
-                                  {rec.numeros_denuncia.map((num, i) => (
-                                    <div key={i} className="flex flex-col gap-1 text-[10px] text-slate-600 bg-white p-3 rounded-xl border border-slate-100 shadow-sm group/item">
-                                      <div className="flex items-center gap-2">
-                                        <span className="font-black text-blue-600 text-[9px] font-mono whitespace-nowrap">{num}</span>
-                                        <span className="text-slate-100">—</span>
-                                        <span className="truncate flex-1 font-bold text-slate-500 uppercase tracking-tighter">{rec.tipos[i]}</span>
-                                      </div>
-                                      <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-50">
-                                        <div className="flex items-center gap-1.5">
-                                          <Calendar className="w-2.5 h-2.5 text-slate-300" />
-                                          <span className="text-[9px] text-slate-400 font-bold">{formatearFecha(rec.fechas[i])}</span>
-                                        </div>
-                                        {rec.oficiales && rec.oficiales[i] && (
-                                          <div className="flex items-center gap-1.5">
-                                            <User className="w-2.5 h-2.5 text-slate-300" />
-                                            <span className="text-[9px] text-slate-400 italic font-medium truncate max-w-[80px]">{rec.oficiales[i].split(',')[0]}</span>
-                                          </div>
-                                        )}
-                                      </div>
+                                <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-50">
+                                  <div className="flex items-center gap-1.5">
+                                    <Calendar className="w-2.5 h-2.5 text-slate-300" />
+                                    <span className="text-[9px] text-slate-400 font-bold">{formatearFecha(rec.fechas[i])}</span>
+                                  </div>
+                                  {rec.oficiales && rec.oficiales[i] && (
+                                    <div className="flex items-center gap-1.5">
+                                      <User className="w-2.5 h-2.5 text-slate-300" />
+                                      <span className="text-[9px] text-slate-400 italic font-medium truncate max-w-[80px]">{rec.oficiales[i].split(',')[0]}</span>
                                     </div>
-                                  ))}
+                                  )}
                                 </div>
                               </div>
                             ))}
                           </div>
-                        ) : (
-                          <div className="text-center py-12 text-slate-400 font-bold uppercase tracking-widest text-[10px] bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
-                            Sin anomalías de recurrencia en este periodo.
-                          </div>
-                        )}
-                      </div>
+                        </div>
+                      ))}
                     </div>
-
-                    {/* Evolución Diaria (Al final) */}
-                    <div className="bg-white rounded-2xl shadow-xl shadow-blue-900/5 border border-slate-100 overflow-hidden relative">
-                      <div className="absolute top-0 left-0 w-1 h-full bg-[#002147]"></div>
-                      <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-[#002147] rounded-xl shadow-lg shadow-blue-900/10">
-                            <TrendingUp className="w-4 h-4 text-white" />
-                          </div>
-                          <h3 className="text-[11px] font-black text-[#002147] uppercase tracking-widest">Evolución Diaria</h3>
-                        </div>
-                        <button
-                          onClick={handleExportChartImage}
-                          className="px-4 py-2 bg-white border border-slate-200 text-[#002147] rounded-xl hover:bg-slate-50 shadow-sm transition-all flex items-center gap-2 text-[10px] font-black uppercase tracking-widest"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                          Capturar Gráfico
-                        </button>
-                      </div>
-                      <div className="p-6 md:p-8" id="chart-evolution">
-                        <div className="h-[300px] w-full">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <BarChart
-                              data={datosMensuales.evolucion_diaria}
-                              margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-                            >
-                              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                              <XAxis
-                                dataKey="dia"
-                                fontSize={9}
-                                tickLine={false}
-                                axisLine={false}
-                                tick={{ fill: '#64748b', fontWeight: 700 }}
-                                dy={10}
-                              />
-                              <YAxis
-                                fontSize={9}
-                                tickLine={false}
-                                axisLine={false}
-                                tick={{ fill: '#64748b', fontWeight: 700 }}
-                                allowDecimals={false}
-                              />
-                              <Tooltip
-                                cursor={{ fill: '#f8fafc' }}
-                                content={({ active, payload }) => {
-                                  if (active && payload && payload.length) {
-                                    return (
-                                      <div className="bg-[#002147] p-3 shadow-2xl rounded-xl border border-white/10">
-                                        <p className="text-[9px] text-blue-200 font-black uppercase tracking-widest mb-1.5 border-b border-white/10 pb-1.5 flex items-center gap-2">
-                                          <Calendar className="w-3 h-3" /> Día {payload[0].payload.dia}
-                                        </p>
-                                        <p className="text-xl font-black text-white">{payload[0].value} <span className="text-[10px] font-bold text-blue-300 uppercase tracking-widest ml-1">Denuncias</span></p>
-                                      </div>
-                                    );
-                                  }
-                                  return null;
-                                }}
-                              />
-                              <Bar
-                                dataKey="total"
-                                radius={[6, 6, 0, 0]}
-                              >
-                                {datosMensuales.evolucion_diaria.map((entry, index) => (
-                                  <Cell
-                                    key={`cell-${index}`}
-                                    fill={entry.total > 0 ? '#002147' : '#f1f5f9'}
-                                    fillOpacity={entry.total > 0 ? 0.9 : 1}
-                                    className="transition-all duration-300 hover:fill-blue-600"
-                                  />
-                                ))}
-                              </Bar>
-                            </BarChart>
-                          </ResponsiveContainer>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-          )}
-
-                  {/* Resultados Daños */}
-                  {activeTab === 'danos' && (
-                    <div className="space-y-8 animate-in fade-in slide-in-from-right-4">
-                      {/* Resumen de Daños (Tarjetas) */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {(() => {
-                          const stats: Record<string, number> = {}
-                          datosOrdenados.forEach(d => {
-                            if (d.monto_dano && d.moneda) {
-                              stats[d.moneda] = (stats[d.moneda] || 0) + (typeof d.monto_dano === 'string' ? parseInt(d.monto_dano, 10) : d.monto_dano)
-                            }
-                          })
-                          const entries = Object.entries(stats)
-                          if (entries.length === 0) {
-                            return (
-                              <div className="md:col-span-4 bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl p-12 text-center flex flex-col items-center gap-4">
-                                <div className="p-4 bg-white rounded-full shadow-sm">
-                                  <DollarSign className="w-8 h-8 text-slate-300" />
-                                </div>
-                                <p className="text-slate-400 font-black uppercase tracking-widest text-xs">Sin registros de perjuicio patrimonial</p>
-                              </div>
-                            )
-                          }
-                          return entries.map(([moneda, total], idx) => (
-                            <div key={idx} className="bg-white p-6 rounded-2xl shadow-xl shadow-blue-900/5 border border-slate-100 group hover:-translate-y-1 transition-all duration-300 relative overflow-hidden">
-                              <div className="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-10 transition-opacity">
-                                <DollarSign className="w-12 h-12 text-[#002147]" />
-                              </div>
-                              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                                <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div> Total Perjuicio {moneda}
-                              </p>
-                              <p className="text-3xl font-black text-[#002147] tracking-tight">
-                                {total.toLocaleString('es-PY')}
-                                <span className="text-[11px] ml-1.5 font-black text-blue-500 uppercase tracking-widest">{moneda.split(' ')[0]}</span>
-                              </p>
-                            </div>
-                          ))
-                        })()}
-                      </div>
-
-                      {/* Tabla Detallada de Daños */}
-                      <div className="bg-white rounded-2xl shadow-xl shadow-blue-900/5 overflow-hidden border border-slate-100 relative">
-                        <div className="absolute top-0 left-0 w-1 h-full bg-[#002147]"></div>
-                        <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                          <div className="flex items-center gap-3">
-                            <div className="p-2 bg-[#002147] rounded-xl shadow-lg shadow-blue-900/10">
-                              <Briefcase className="w-4 h-4 text-white" />
-                            </div>
-                            <div>
-                              <h3 className="text-[11px] font-black text-[#002147] uppercase tracking-widest">Detalle de Perjuicios</h3>
-                              <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Desglose individual por denuncia</p>
-                            </div>
-                          </div>
-                          <button
-                            onClick={handleExportDanosExcel}
-                            className="flex items-center gap-2 px-5 py-2 bg-[#002147] text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-[#003366] transition-all shadow-lg shadow-blue-900/20"
-                          >
-                            <Download className="w-3.5 h-3.5" />
-                            Exportar Datos
-                          </button>
-                        </div>
-                        <div className="overflow-x-auto">
-                          <table className="min-w-full border-separate border-spacing-0">
-                            <thead>
-                              <tr className="bg-slate-50/20">
-                                <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 cursor-pointer hover:text-[#002147] transition" onClick={() => handleSort('numero_denuncia')}>
-                                  <div className="flex items-center gap-2">Nº Acta <SortIcon field="numero_denuncia" currentField={sortField} direction={sortDirection} /></div>
-                                </th>
-                                <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Denunciante</th>
-                                <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Hecho Punible</th>
-                                <th className="px-6 py-4 text-right text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 cursor-pointer hover:text-[#002147] transition" onClick={() => handleSort('monto_dano')}>
-                                  <div className="flex items-center gap-2 justify-end">Monto <SortIcon field="monto_dano" currentField={sortField} direction={sortDirection} /></div>
-                                </th>
-                                <th className="px-6 py-4 text-center text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Moneda</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-50 font-medium">
-                              {datosOrdenados.filter(d => (d.monto_dano || 0) > 0).map((row, index) => (
-                                <tr key={index} className="group hover:bg-slate-50 transition-all">
-                                  <td className="px-6 py-4 whitespace-nowrap text-[10px] font-black text-[#002147]/70 font-mono italic">{row.numero_denuncia}/{row.año}</td>
-                                  <td className="px-6 py-4 text-[10px] font-bold text-slate-600 uppercase tracking-tight">{row.denunciante}</td>
-                                  <td className="px-6 py-4">
-                                    <span className="inline-block px-2 py-0.5 bg-slate-100 border border-slate-200 rounded text-[8px] font-black text-slate-500 uppercase tracking-wider">
-                                      {row.shp}
-                                    </span>
-                                  </td>
-                                  <td className="px-6 py-4 whitespace-nowrap text-[11px] font-black text-[#002147] text-right bg-slate-50/30">
-                                    {row.monto_dano?.toLocaleString('es-PY')}
-                                  </td>
-                                  <td className="px-6 py-4 whitespace-nowrap text-[9px] font-black text-blue-500 text-center uppercase tracking-widest italic">
-                                    {row.moneda}
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
+                  ) : (
+                    <div className="text-center py-12 text-slate-400 font-bold uppercase tracking-widest text-[10px] bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+                      Sin anomalías de recurrencia en este periodo.
                     </div>
                   )}
-                  {/* Sección de Administración - Solo para garv */}
-                  {usuario?.usuario === 'garv' && (
-                    <div className="mt-16 sm:mt-24 pt-12 border-t border-slate-200">
-                      <div className="flex items-center gap-3 mb-8">
-                        <div className="p-2 bg-indigo-50 rounded-xl">
-                          <Database className="w-5 h-5 text-indigo-600" />
+                </div>
+              </div>
+
+              {/* Evolución Diaria */}
+              <div className="bg-white rounded-2xl shadow-xl shadow-blue-900/5 border border-slate-100 overflow-hidden relative">
+                <div className="absolute top-0 left-0 w-1 h-full bg-[#002147]"></div>
+                <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-[#002147] rounded-xl shadow-lg shadow-blue-900/10">
+                      <TrendingUp className="w-4 h-4 text-white" />
+                    </div>
+                    <h3 className="text-[11px] font-black text-[#002147] uppercase tracking-widest">Evolución Diaria</h3>
+                  </div>
+                  <button
+                    onClick={handleExportChartImage}
+                    className="px-4 py-2 bg-white border border-slate-200 text-[#002147] rounded-xl hover:bg-slate-50 shadow-sm transition-all flex items-center gap-2 text-[10px] font-black uppercase tracking-widest"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    Capturar Gráfico
+                  </button>
+                </div>
+                <div className="p-6 md:p-8" id="chart-evolution">
+                  <div className="h-[300px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={datosMensuales.evolucion_diaria}
+                        margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                        <XAxis
+                          dataKey="dia"
+                          fontSize={9}
+                          tickLine={false}
+                          axisLine={false}
+                          tick={{ fill: '#64748b', fontWeight: 700 }}
+                          dy={10}
+                        />
+                        <YAxis
+                          fontSize={9}
+                          tickLine={false}
+                          axisLine={false}
+                          tick={{ fill: '#64748b', fontWeight: 700 }}
+                          allowDecimals={false}
+                        />
+                        <Tooltip
+                          cursor={{ fill: '#f8fafc' }}
+                          content={({ active, payload }) => {
+                            if (active && payload && payload.length) {
+                              return (
+                                <div className="bg-[#002147] p-3 shadow-2xl rounded-xl border border-white/10">
+                                  <p className="text-[9px] text-blue-200 font-black uppercase tracking-widest mb-1.5 border-b border-white/10 pb-1.5 flex items-center gap-2">
+                                    <Calendar className="w-3 h-3" /> Día {payload[0].payload.dia}
+                                  </p>
+                                  <p className="text-xl font-black text-white">{payload[0].value} <span className="text-[10px] font-bold text-blue-300 uppercase tracking-widest ml-1">Denuncias</span></p>
+                                </div>
+                              );
+                            }
+                            return null;
+                          }}
+                        />
+                        <Bar
+                          dataKey="total"
+                          radius={[6, 6, 0, 0]}
+                        >
+                          {datosMensuales.evolucion_diaria.map((entry, index) => (
+                            <Cell
+                              key={`cell-${index}`}
+                              fill={entry.total > 0 ? '#002147' : '#f1f5f9'}
+                              fillOpacity={entry.total > 0 ? 0.9 : 1}
+                              className="transition-all duration-300 hover:fill-blue-600"
+                            />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Resultados Daños */}
+          {activeTab === 'danos' && (
+            <div className="space-y-8 animate-in fade-in slide-in-from-right-4">
+              {/* Resumen de Daños (Tarjetas) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {(() => {
+                  const stats: Record<string, number> = {}
+                  datosOrdenados.forEach(d => {
+                    if (d.monto_dano && d.moneda) {
+                      stats[d.moneda] = (stats[d.moneda] || 0) + (typeof d.monto_dano === 'string' ? parseInt(d.monto_dano, 10) : d.monto_dano)
+                    }
+                  })
+                  const entries = Object.entries(stats)
+                  if (entries.length === 0) {
+                    return (
+                      <div className="md:col-span-4 bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl p-12 text-center flex flex-col items-center gap-4">
+                        <div className="p-4 bg-white rounded-full shadow-sm">
+                          <DollarSign className="w-8 h-8 text-slate-300" />
                         </div>
-                        <h2 className="text-base font-black text-[#002147] uppercase tracking-widest">
-                          Panel de Continuidad Operativa
-                        </h2>
+                        <p className="text-slate-400 font-black uppercase tracking-widest text-xs">Sin registros de perjuicio patrimonial</p>
                       </div>
-                      <div className="bg-[#002147] rounded-3xl shadow-2xl shadow-blue-900/40 overflow-hidden group border border-white/5 transition-all duration-500 relative">
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-32 translate-x-32 blur-3xl group-hover:bg-blue-500/10 transition-colors duration-1000"></div>
-                        <div className="p-8 sm:p-12 flex flex-col md:flex-row items-center justify-between gap-10 relative z-10">
-                          <div className="max-w-xl text-center md:text-left">
-                            <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500/10 rounded-full border border-blue-400/20 text-blue-300 text-[10px] font-black uppercase tracking-widest mb-6">
-                              <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span> Sistema de Resguardo Activo
-                            </div>
-                            <h3 className="text-white text-3xl font-black tracking-tight mb-4">Copia de Seguridad Integral</h3>
-                            <p className="text-blue-100/60 text-sm leading-relaxed font-medium">
-                              Genere un respaldo completo en formato <code className="bg-white/10 px-2 py-0.5 rounded text-blue-200 font-mono text-[11px] border border-white/10 mx-1">.sql</code> con la estructura y datos actuales. Mantener respaldos periódicos es crítico para la integridad de la información institucional ante cualquier eventualidad técnica.
-                            </p>
-                          </div>
-                          <div className="shrink-0">
-                            <a
-                              href="/api/admin/backup"
-                              className="inline-flex items-center gap-3 px-10 py-5 bg-white text-[#002147] font-black rounded-2xl hover:bg-blue-50 transition-all shadow-2xl active:scale-95 group/btn"
-                            >
-                              <Download className="w-5 h-5 group-hover/btn:animate-bounce" />
-                              DESCARGAR SQL BACKUP
-                            </a>
-                          </div>
-                        </div>
-                        <div className="bg-black/20 px-8 sm:px-12 py-4 border-t border-white/5 flex items-center justify-center md:justify-start gap-6">
-                          <div className="flex items-center gap-2 opacity-40">
-                            <Database className="w-3.5 h-3.5 text-white" />
-                            <span className="text-white text-[9px] font-black uppercase tracking-widest">PostgreSQL v15</span>
-                          </div>
-                          <div className="w-1 h-1 rounded-full bg-white/10 hidden sm:block"></div>
-                          <div className="flex items-center gap-2 opacity-40">
-                            <Clock className="w-3.5 h-3.5 text-white" />
-                            <span className="text-white text-[9px] font-black uppercase tracking-widest leading-none">Automático: 03:00 AM</span>
-                          </div>
-                        </div>
+                    )
+                  }
+                  return entries.map(([moneda, total], idx) => (
+                    <div key={idx} className="bg-white p-6 rounded-2xl shadow-xl shadow-blue-900/5 border border-slate-100 group hover:-translate-y-1 transition-all duration-300 relative overflow-hidden">
+                      <div className="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-10 transition-opacity">
+                        <DollarSign className="w-12 h-12 text-[#002147]" />
                       </div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div> Total Perjuicio {moneda}
+                      </p>
+                      <p className="text-3xl font-black text-[#002147] tracking-tight">
+                        {total.toLocaleString('es-PY')}
+                        <span className="text-[11px] ml-1.5 font-black text-blue-500 uppercase tracking-widest">{moneda.split(' ')[0]}</span>
+                      </p>
+                    </div>
+                  ))
+                })()}
+              </div>
+
+              {/* Tabla Detallada de Daños */}
+              <div className="bg-white rounded-2xl shadow-xl shadow-blue-900/5 overflow-hidden border border-slate-100 relative">
+                <div className="absolute top-0 left-0 w-1 h-full bg-[#002147]"></div>
+                <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-[#002147] rounded-xl shadow-lg shadow-blue-900/10">
+                      <Briefcase className="w-4 h-4 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-[11px] font-black text-[#002147] uppercase tracking-widest">Detalle de Perjuicios</h3>
+                      <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Desglose individual por denuncia</p>
                     </div>
                   </div>
+                  <button
+                    onClick={handleExportDanosExcel}
+                    className="flex items-center gap-2 px-5 py-2 bg-[#002147] text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-[#003366] transition-all shadow-lg shadow-blue-900/20"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    Exportar Datos
+                  </button>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full border-separate border-spacing-0">
+                    <thead>
+                      <tr className="bg-slate-50/20">
+                        <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 cursor-pointer hover:text-[#002147] transition" onClick={() => handleSort('numero_denuncia')}>
+                          <div className="flex items-center gap-2">Nº Acta <SortIcon field="numero_denuncia" currentField={sortField} direction={sortDirection} /></div>
+                        </th>
+                        <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Denunciante</th>
+                        <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Hecho Punible</th>
+                        <th className="px-6 py-4 text-right text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 cursor-pointer hover:text-[#002147] transition" onClick={() => handleSort('monto_dano')}>
+                          <div className="flex items-center gap-2 justify-end">Monto <SortIcon field="monto_dano" currentField={sortField} direction={sortDirection} /></div>
+                        </th>
+                        <th className="px-6 py-4 text-center text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Moneda</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50 font-medium">
+                      {datosOrdenados.filter(d => (d.monto_dano || 0) > 0).map((row, index) => (
+                        <tr key={index} className="group hover:bg-slate-50 transition-all">
+                          <td className="px-6 py-4 whitespace-nowrap text-[10px] font-black text-[#002147]/70 font-mono italic">{row.numero_denuncia}/{row.año}</td>
+                          <td className="px-6 py-4 text-[10px] font-bold text-slate-600 uppercase tracking-tight">{row.denunciante}</td>
+                          <td className="px-6 py-4">
+                            <span className="inline-block px-2 py-0.5 bg-slate-100 border border-slate-200 rounded text-[8px] font-black text-slate-500 uppercase tracking-wider">
+                              {row.shp}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-[11px] font-black text-[#002147] text-right bg-slate-50/30">
+                            {row.monto_dano?.toLocaleString('es-PY')}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-[9px] font-black text-blue-500 text-center uppercase tracking-widest italic">
+                            {row.moneda}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-              )}
             </div>
-          </div>
+          )}
+
+          {/* Sección de Administración - Solo para garv */}
+          {usuario?.usuario === 'garv' && (
+            <div className="mt-16 sm:mt-24 pt-12 border-t border-slate-200">
+              <div className="flex items-center gap-3 mb-8">
+                <div className="p-2 bg-indigo-50 rounded-xl">
+                  <Database className="w-5 h-5 text-indigo-600" />
+                </div>
+                <h2 className="text-base font-black text-[#002147] uppercase tracking-widest">
+                  Panel de Continuidad Operativa
+                </h2>
+              </div>
+              <div className="bg-[#002147] rounded-3xl shadow-2xl shadow-blue-900/40 overflow-hidden group border border-white/5 transition-all duration-500 relative">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-32 translate-x-32 blur-3xl group-hover:bg-blue-500/10 transition-colors duration-1000"></div>
+                <div className="p-8 sm:p-12 flex flex-col md:flex-row items-center justify-between gap-10 relative z-10">
+                  <div className="max-w-xl text-center md:text-left">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500/10 rounded-full border border-blue-400/20 text-blue-300 text-[10px] font-black uppercase tracking-widest mb-6">
+                      <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span> Sistema de Resguardo Activo
+                    </div>
+                    <h3 className="text-white text-3xl font-black tracking-tight mb-4">Copia de Seguridad Integral</h3>
+                    <p className="text-blue-100/60 text-sm leading-relaxed font-medium">
+                      Genere un respaldo completo en formato <code className="bg-white/10 px-2 py-0.5 rounded text-blue-200 font-mono text-[11px] border border-white/10 mx-1">.sql</code> con la estructura y datos actuales. Mantener respaldos periódicos es crítico para la integridad de la información institucional ante cualquier eventualidad técnica.
+                    </p>
+                  </div>
+                  <div className="shrink-0">
+                    <a
+                      href="/api/admin/backup"
+                      className="inline-flex items-center gap-3 px-10 py-5 bg-white text-[#002147] font-black rounded-2xl hover:bg-blue-50 transition-all shadow-2xl active:scale-95 group/btn"
+                    >
+                      <Download className="w-5 h-5 group-hover/btn:animate-bounce" />
+                      DESCARGAR SQL BACKUP
+                    </a>
+                  </div>
+                </div>
+                <div className="bg-black/20 px-8 sm:px-12 py-4 border-t border-white/5 flex items-center justify-center md:justify-start gap-6">
+                  <div className="flex items-center gap-2 opacity-40">
+                    <Database className="w-3.5 h-3.5 text-white" />
+                    <span className="text-white text-[9px] font-black uppercase tracking-widest">PostgreSQL v15</span>
+                  </div>
+                  <div className="w-1 h-1 rounded-full bg-white/10 hidden sm:block"></div>
+                  <div className="flex items-center gap-2 opacity-40">
+                    <Clock className="w-3.5 h-3.5 text-white" />
+                    <span className="text-white text-[9px] font-black uppercase tracking-widest leading-none">Automático: 03:00 AM</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
-    </MainLayout >
+    </MainLayout>
   )
 }
