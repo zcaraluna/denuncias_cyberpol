@@ -125,16 +125,18 @@ export default function ReportesPage() {
     }).format(new Date())
   })
   const [tipoDenuncia, setTipoDenuncia] = useState('')
-  const [datos, setDatos] = useState<ReporteRow[]>([])
+  const [datosDiario, setDatosDiario] = useState<ReporteRow[]>([])
   const [tiposDisponibles, setTiposDisponibles] = useState<string[]>([])
-  const [filtrosTipos, setFiltrosTipos] = useState<string[]>([]) // Filtros seleccionados
+  const [filtrosTiposDiario, setFiltrosTiposDiario] = useState<string[]>([])
   const [sortField, setSortField] = useState<SortField>('hora_denuncia')
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
 
-  // Estado para reporte mensual
+  // Estado para reporte mensual y daños
   const [mes, setMes] = useState(new Date().getMonth() + 1 + '')
   const [año, setAño] = useState(new Date().getFullYear() + '')
   const [datosMensuales, setDatosMensuales] = useState<DatosMensuales | null>(null)
+  const [datosDanos, setDatosDanos] = useState<ReporteRow[]>([])
+  const [filtrosTiposDanos, setFiltrosTiposDanos] = useState<string[]>([])
 
   const [cargando, setCargando] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -180,7 +182,7 @@ export default function ReportesPage() {
 
     setError(null)
     setCargando(true)
-    setDatos([])
+    setDatosDiario([])
 
     try {
       const params = new URLSearchParams()
@@ -194,10 +196,10 @@ export default function ReportesPage() {
         throw new Error(data.error || 'Error al obtener reporte')
       }
 
-      setDatos(data)
+      setDatosDiario(data)
       const tiposUnicos: string[] = Array.from(new Set(data.map((row: ReporteRow) => row.shp).filter((tipo: string | undefined): tipo is string => Boolean(tipo))))
       setTiposDisponibles(tiposUnicos.sort())
-      setFiltrosTipos(tiposUnicos) // Select all by default
+      setFiltrosTiposDiario(tiposUnicos) // Select all by default
 
       if (data.length === 0 && fecha) {
         setError(`No se encontraron denuncias para la fecha ${fecha}${tipoDenuncia ? ` y tipo "${tipoDenuncia}"` : ''}`)
@@ -208,7 +210,7 @@ export default function ReportesPage() {
       console.error('Error:', error)
       const errorMessage = error instanceof Error ? error.message : 'Error al cargar el reporte'
       setError(errorMessage)
-      setDatos([])
+      setDatosDiario([])
     } finally {
       setCargando(false)
     }
@@ -234,9 +236,9 @@ export default function ReportesPage() {
       setDatosMensuales(data)
       if (activeTab === 'danos') {
         const rows: ReporteRow[] = data.denuncias_danos || []
-        setDatos(rows)
+        setDatosDanos(rows)
         const tiposUnicos: string[] = Array.from(new Set(rows.map(d => d.shp).filter((shp): shp is string => Boolean(shp))))
-        setFiltrosTipos(tiposUnicos) // Select all by default
+        setFiltrosTiposDanos(tiposUnicos) // Select all by default
       }
 
       if (data.resumen_especifico.length === 0 && data.resumen_general.length === 0 && (!data.denuncias_danos || data.denuncias_danos.length === 0)) {
@@ -260,37 +262,51 @@ export default function ReportesPage() {
     }
   }
 
-  const datosOrdenados = useMemo(() => {
-    // Si no se ha buscado nada yet (datos vacíos), no filtramos estrictamente para evitar mostrar nada
-    // Pero si hay datos, filtramos por los seleccionados
-    const sorted = datos.length > 0
-      ? datos.filter(d => filtrosTipos.includes(d.tipo_especifico || d.shp || ''))
+  const datosDiarioOrdenados = useMemo(() => {
+    const sorted = datosDiario.length > 0
+      ? datosDiario.filter(d => filtrosTiposDiario.includes(rowKey(d)))
       : []
 
     sorted.sort((a, b) => {
       let comparison = 0
-
       if (sortField === 'numero_denuncia') {
         comparison = a.numero_denuncia - b.numero_denuncia
       } else if (sortField === 'hora_denuncia') {
-        const horaA = a.hora_denuncia || '00:00'
-        const horaB = b.hora_denuncia || '00:00'
-        comparison = horaA.localeCompare(horaB)
+        comparison = (a.hora_denuncia || '00:00').localeCompare(b.hora_denuncia || '00:00')
       } else if (sortField === 'shp') {
         comparison = (a.tipo_especifico || a.shp || '').localeCompare(b.tipo_especifico || b.shp || '')
       } else if (sortField === 'monto_dano') {
         comparison = (a.monto_dano || 0) - (b.monto_dano || 0)
-      } else if (sortField === 'moneda') {
-        comparison = (a.moneda || '').localeCompare(b.moneda || '')
       } else if (sortField === 'entidad_reportada') {
         comparison = (a.entidad_reportada || '').localeCompare(b.entidad_reportada || '')
       }
-
       return sortDirection === 'asc' ? comparison : -comparison
     })
-
     return sorted
-  }, [datos, sortField, sortDirection, filtrosTipos])
+  }, [datosDiario, sortField, sortDirection, filtrosTiposDiario])
+
+  const datosDanosOrdenados = useMemo(() => {
+    const sorted = datosDanos.length > 0
+      ? datosDanos.filter(d => filtrosTiposDanos.includes(rowKey(d)))
+      : []
+
+    sorted.sort((a, b) => {
+      let comparison = 0
+      if (sortField === 'numero_denuncia') {
+        comparison = a.numero_denuncia - b.numero_denuncia
+      } else if (sortField === 'monto_dano') {
+        comparison = (a.monto_dano || 0) - (b.monto_dano || 0)
+      } else if (sortField === 'entidad_reportada') {
+        comparison = (a.entidad_reportada || '').localeCompare(b.entidad_reportada || '')
+      }
+      return sortDirection === 'asc' ? comparison : -comparison
+    })
+    return sorted
+  }, [datosDanos, sortField, sortDirection, filtrosTiposDanos])
+
+  function rowKey(row: ReporteRow) {
+    return row.tipo_especifico || row.shp || ''
+  }
 
   const handleLogout = () => {
     logout()
@@ -300,21 +316,21 @@ export default function ReportesPage() {
     if (activeTab === 'diario') {
       setFecha('')
       setTipoDenuncia('')
-      setDatos([])
+      setDatosDiario([])
       setTiposDisponibles([])
-      setFiltrosTipos([])
+      setFiltrosTiposDiario([])
     } else {
       setMes(new Date().getMonth() + 1 + '')
       setAño(new Date().getFullYear() + '')
       setDatosMensuales(null)
-      setDatos([])
-      setFiltrosTipos([])
+      setDatosDanos([])
+      setFiltrosTiposDanos([])
     }
     setError(null)
   }
 
   const handleExportDailyExcel = () => {
-    const data = datosOrdenados.map(d => ({
+    const data = datosDiarioOrdenados.map(d => ({
       ...d,
       denuncia: `${d.numero_denuncia}/${d.año}`,
       tipo_hecho: d.tipo_especifico || d.shp
@@ -333,7 +349,7 @@ export default function ReportesPage() {
   };
 
   const handleExportDailyDocx = () => {
-    const data = datosOrdenados.map(d => ({
+    const data = datosDiarioOrdenados.map(d => ({
       ...d,
       denuncia: `${d.numero_denuncia}/${d.año}`,
       tipo_hecho: d.tipo_especifico || d.shp
@@ -350,7 +366,7 @@ export default function ReportesPage() {
   };
 
   const handleExportDanosExcel = () => {
-    const data = (activeTab === 'danos' || activeTab === 'diario' ? datosOrdenados : [])
+    const data = datosDanosOrdenados
       .filter(d => (d.monto_dano || 0) > 0)
       .map(d => ({
         ...d,
@@ -592,7 +608,7 @@ export default function ReportesPage() {
           </div>
 
           {/* Filtro por Hecho Punible (Multiselección) - SOLO EN DAÑOS */}
-          {activeTab === 'danos' && datos.length > 0 && (
+          {activeTab === 'danos' && datosDanos.length > 0 && (
             <div className="bg-white rounded-2xl shadow-xl shadow-blue-900/5 border border-slate-100 p-6 mb-8 animate-in fade-in slide-in-from-top-4 relative overflow-hidden">
               <div className="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
@@ -606,13 +622,13 @@ export default function ReportesPage() {
                 </div>
                 <div className="flex gap-4 w-full sm:w-auto">
                   <button
-                    onClick={() => setFiltrosTipos(Array.from(new Set(datos.map(d => d.tipo_especifico || d.shp || '').filter(Boolean))))}
+                    onClick={() => setFiltrosTiposDanos(Array.from(new Set(datosDanos.map(d => rowKey(d)).filter(Boolean))))}
                     className="flex-1 sm:flex-none text-[9px] font-black text-blue-600 hover:text-blue-800 uppercase tracking-widest bg-blue-50 px-3 py-1.5 rounded-lg transition-all"
                   >
                     Marcar Todos
                   </button>
                   <button
-                    onClick={() => setFiltrosTipos([])}
+                    onClick={() => setFiltrosTiposDanos([])}
                     className="flex-1 sm:flex-none text-[9px] font-black text-slate-400 hover:text-slate-600 uppercase tracking-widest px-3 py-1.5 rounded-lg transition-all border border-slate-100"
                   >
                     Desmarcar
@@ -648,7 +664,7 @@ export default function ReportesPage() {
             </div>
           )}
           {/* Resultados Diario */}
-          {activeTab === 'diario' && datosOrdenados.length > 0 && (
+          {activeTab === 'diario' && datosDiarioOrdenados.length > 0 && (
             <div className="bg-white rounded-2xl shadow-xl shadow-blue-900/5 overflow-hidden border border-slate-100 animate-in fade-in slide-in-from-bottom-4">
               <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
@@ -661,26 +677,6 @@ export default function ReportesPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3 w-full sm:w-auto overflow-x-auto pb-2 sm:pb-0">
-                  <div className="flex bg-white p-1 rounded-xl shadow-sm border border-slate-200 mr-2">
-                    <button
-                      onClick={() => setMostrarGeneral(false)}
-                      className={`px-3 py-1.5 text-[9px] font-black rounded-lg transition-all uppercase tracking-widest ${!mostrarGeneral
-                        ? 'bg-blue-50 text-blue-700'
-                        : 'text-slate-400 hover:text-slate-600'
-                        }`}
-                    >
-                      Detalle
-                    </button>
-                    <button
-                      onClick={() => setMostrarGeneral(true)}
-                      className={`px-3 py-1.5 text-[9px] font-black rounded-lg transition-all uppercase tracking-widest ${mostrarGeneral
-                        ? 'bg-blue-50 text-blue-700'
-                        : 'text-slate-400 hover:text-slate-600'
-                        }`}
-                    >
-                      General
-                    </button>
-                  </div>
                   <button
                     onClick={handleExportDailyExcel}
                     title="Exportar a Excel"
@@ -717,7 +713,7 @@ export default function ReportesPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
-                    {datosOrdenados.map((row, index) => (
+                    {datosDiarioOrdenados.map((row, index) => (
                       <tr key={index} className="group hover:bg-slate-50/80 transition-all">
                         <td className="px-6 py-4 whitespace-nowrap text-[10px] font-black text-[#002147]/70 font-mono italic">{row.numero_denuncia}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-[10px] font-bold text-[#002147]/60">
@@ -999,7 +995,7 @@ export default function ReportesPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {(() => {
                   const stats: Record<string, number> = {}
-                  datosOrdenados.forEach(d => {
+                  datosDanosOrdenados.forEach(d => {
                     if (d.monto_dano && d.moneda) {
                       stats[d.moneda] = (stats[d.moneda] || 0) + (typeof d.monto_dano === 'string' ? parseInt(d.monto_dano, 10) : d.monto_dano)
                     }
@@ -1055,7 +1051,7 @@ export default function ReportesPage() {
                     <thead>
                       <tr className="bg-slate-50/20">
                         <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 cursor-pointer hover:text-[#002147] transition" onClick={() => handleSort('numero_denuncia')}>
-                          <div className="flex items-center gap-2">Nº Acta <SortIcon field="numero_denuncia" currentField={sortField} direction={sortDirection} /></div>
+                          <div className="flex items-center gap-2">NUM. <SortIcon field="numero_denuncia" currentField={sortField} direction={sortDirection} /></div>
                         </th>
                         <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Denunciante</th>
                         <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Hecho Punible</th>
@@ -1066,7 +1062,7 @@ export default function ReportesPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50 font-medium">
-                      {datosOrdenados.filter(d => (d.monto_dano || 0) > 0).map((row, index) => (
+                      {datosDanosOrdenados.filter(d => (d.monto_dano || 0) > 0).map((row, index) => (
                         <tr key={index} className="group hover:bg-slate-50 transition-all">
                           <td className="px-6 py-4 whitespace-nowrap text-[10px] font-black text-[#002147]/70 font-mono italic">{row.numero_denuncia}/{row.año}</td>
                           <td className="px-6 py-4 text-[10px] font-bold text-slate-600 uppercase tracking-tight">{row.denunciante}</td>
