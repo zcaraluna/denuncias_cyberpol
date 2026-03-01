@@ -52,6 +52,7 @@ export default function DenunciasPage() {
   // Estados temporales para filtros
   const [filtroNombreTemp, setFiltroNombreTemp] = useState('')
   const [filtroCedulaTemp, setFiltroCedulaTemp] = useState('')
+  const [filtroHashTemp, setFiltroHashTemp] = useState('')
   const [filtroTipoTemp, setFiltroTipoTemp] = useState('')
   const [filtroFechaDesdeTemp, setFiltroFechaDesdeTemp] = useState('')
   const [filtroFechaHastaTemp, setFiltroFechaHastaTemp] = useState('')
