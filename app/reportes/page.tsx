@@ -649,8 +649,9 @@ export default function ReportesPage() {
             <div className="absolute top-0 left-0 w-1 h-full bg-[#002147]"></div>
             <div className="flex flex-col lg:flex-row items-end gap-6">
               {activeTab === 'diario' ? (
-                <div className="flex-1 w-full lg:w-auto grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="w-full flex gap-2">
+                <div className="flex-1 w-full lg:w-auto grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Bloque Desde */}
+                  <div className="flex flex-col gap-3">
                     <div className="flex-1">
                       <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Fecha Desde</label>
                       <div className="relative group">
@@ -665,8 +666,8 @@ export default function ReportesPage() {
                         />
                       </div>
                     </div>
-                    <div className="w-24">
-                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Hora</label>
+                    <div className="w-full sm:w-32">
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Hora Inicio</label>
                       <div className="relative">
                         <input
                           type="time"
@@ -677,7 +678,9 @@ export default function ReportesPage() {
                       </div>
                     </div>
                   </div>
-                  <div className="w-full flex gap-2">
+
+                  {/* Bloque Hasta */}
+                  <div className="flex flex-col gap-3">
                     <div className="flex-1">
                       <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Fecha Hasta</label>
                       <div className="relative group">
@@ -692,8 +695,8 @@ export default function ReportesPage() {
                         />
                       </div>
                     </div>
-                    <div className="w-24">
-                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Hora</label>
+                    <div className="w-full sm:w-32">
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Hora Fin</label>
                       <div className="relative">
                         <input
                           type="time"

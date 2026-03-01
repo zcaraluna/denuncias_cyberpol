@@ -51,33 +51,60 @@ export async function GET(request: NextRequest) {
 
     const whereClause = condiciones.join(' AND ')
 
-    // Obtener denuncias del día con denunciante e interviniente (personal policial)
-    // Usar comparación directa de DATE en lugar de convertir a texto
-    const result = await pool.query(
-      `SELECT 
-        d.orden as numero_denuncia,
-        EXTRACT(YEAR FROM d.fecha_denuncia)::integer as año,
-        d.hora_denuncia,
-        d.tipo_denuncia as shp,
-        den.nombres as denunciante,
-        TRIM(
-          COALESCE(d.operador_grado, '') || ' ' || 
-          COALESCE(d.operador_nombre, '') || ' ' || 
-          COALESCE(d.operador_apellido, '')
-        ) as interviniente,
-        d.operador_grado,
-        d.operador_nombre,
-        d.operador_apellido,
-        d.oficina,
-        d.monto_dano,
-        d.moneda,
-        (SELECT sa.entidad_bancaria FROM supuestos_autores sa WHERE sa.denuncia_id = d.id AND sa.entidad_bancaria IS NOT NULL AND sa.entidad_bancaria != '' LIMIT 1) as entidad_reportada
-      FROM denuncias d
-      LEFT JOIN denunciantes den ON d.denunciante_id = den.id
-      WHERE ${whereClause}
-      ORDER BY d.hora_denuncia ASC`,
-      valores
-    )
+    // Obtener denuncias y ampliaciones en una sola consulta cronológica
+    const query = `
+      WITH denuncias_query AS (
+        SELECT 
+          d.orden::text as numero_denuncia,
+          EXTRACT(YEAR FROM d.fecha_denuncia)::integer as año,
+          d.fecha_denuncia,
+          d.hora_denuncia,
+          d.tipo_denuncia as shp,
+          den.nombres as denunciante,
+          TRIM(
+            COALESCE(d.operador_grado, '') || ' ' || 
+            COALESCE(d.operador_nombre, '') || ' ' || 
+            COALESCE(d.operador_apellido, '')
+          ) as interviniente,
+          d.oficina,
+          d.monto_dano,
+          d.moneda,
+          (SELECT sa.entidad_bancaria FROM supuestos_autores sa WHERE sa.denuncia_id = d.id AND sa.entidad_bancaria IS NOT NULL AND sa.entidad_bancaria != '' LIMIT 1) as entidad_reportada
+        FROM denuncias d
+        LEFT JOIN denunciantes den ON d.denunciante_id = den.id
+        WHERE ${whereClause}
+      ),
+      ampliaciones_query AS (
+        SELECT 
+          'AMP-' || a.numero_ampliacion || '-' || d.orden as numero_denuncia,
+          EXTRACT(YEAR FROM a.fecha_ampliacion)::integer as año,
+          a.fecha_ampliacion as fecha_denuncia,
+          a.hora_ampliacion as hora_denuncia,
+          'AMPLIACION' as shp,
+          den.nombres as denunciante,
+          TRIM(
+            COALESCE(a.operador_grado, '') || ' ' || 
+            COALESCE(a.operador_nombre, '') || ' ' || 
+            COALESCE(a.operador_apellido, '')
+          ) as interviniente,
+          d.oficina,
+          0 as monto_dano,
+          d.moneda,
+          (SELECT sa.entidad_bancaria FROM supuestos_autores sa WHERE sa.denuncia_id = d.id AND sa.entidad_bancaria IS NOT NULL AND sa.entidad_bancaria != '' LIMIT 1) as entidad_reportada
+        FROM ampliaciones_denuncia a
+        JOIN denuncias d ON a.denuncia_id = d.id
+        LEFT JOIN denunciantes den ON d.denunciante_id = den.id
+        WHERE (a.fecha_ampliacion + a.hora_ampliacion::TIME) >= $1::TIMESTAMP
+          AND (a.fecha_ampliacion + a.hora_ampliacion::TIME) < ($2::DATE + INTERVAL '${intervalFin}' + $3::TIME)
+          ${tipoDenuncia ? "AND d.tipo_denuncia = $4" : ""}
+      )
+      SELECT * FROM denuncias_query
+      UNION ALL
+      SELECT * FROM ampliaciones_query
+      ORDER BY fecha_denuncia ASC, hora_denuncia ASC
+    `;
+
+    const result = await pool.query(query, valores)
 
     console.log(`Encontradas ${result.rows.length} denuncias para la fecha ${fecha}`)
     if (result.rows.length > 0) {
