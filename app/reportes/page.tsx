@@ -351,18 +351,22 @@ export default function ReportesPage() {
   const handleExportDailyDocx = () => {
     const data = datosDiarioOrdenados.map(d => ({
       ...d,
-      denuncia: `${d.numero_denuncia}/${d.año}`,
-      tipo_hecho: d.tipo_especifico || d.shp
+      num: d.numero_denuncia,
+      tipo_hecho: d.tipo_especifico || d.shp,
+      perdida: d.monto_dano ? d.monto_dano.toLocaleString('es-PY') : '0'
     }));
 
     const columns = [
-      { header: 'Denuncia', key: 'denuncia' },
-      { header: 'Denunciante', key: 'denunciante' },
-      { header: 'Hecho Punible', key: 'tipo_hecho' },
-      { header: 'Hora', key: 'hora_denuncia' },
-      { header: 'Interviniente', key: 'interviniente' }
+      { header: 'NUM.', key: 'num' },
+      { header: 'HORA', key: 'hora_denuncia' },
+      { header: 'S.H.P.', key: 'tipo_hecho' },
+      { header: 'DENUNCIANTE', key: 'denunciante' },
+      { header: 'INTERVINIENTE', key: 'interviniente' },
+      { header: 'DPTO. A CARGO', key: 'oficina' },
+      { header: 'PÉRDIDA (Gs.)', key: 'perdida' },
+      { header: 'ENTIDAD REPORTADA', key: 'entidad_reportada' }
     ];
-    exportToDocx(data, 'Reporte de Denuncias', columns);
+    exportToDocx(data, 'Reporte Diario de Denuncias', columns);
   };
 
   const handleExportDanosExcel = () => {
