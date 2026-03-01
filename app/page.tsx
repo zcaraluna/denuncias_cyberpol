@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { Shield, Lock, User, Eye, EyeOff, Loader2 } from 'lucide-react'
+import { Shield, Lock, User, Eye, EyeOff, Loader2, Phone, Globe } from 'lucide-react'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -138,10 +138,53 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className="mt-8 pt-6 border-t border-slate-50 text-center">
-            <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">
-              D.C.H.P.E.F. © {new Date().getFullYear()}
-            </p>
+          <div className="mt-10 pt-8 border-t border-slate-50">
+            <div className="text-center mb-4">
+              <p className="text-[9px] font-bold text-slate-300 uppercase tracking-[0.2em]">
+                desarrollado por <span className="text-slate-400 font-black">s1mple.dev</span>
+              </p>
+            </div>
+
+            <div className="bg-slate-50/50 rounded-2xl p-4 border border-slate-100 group hover:border-blue-100 transition-all">
+              <p className="text-[9px] font-black text-[#002147] uppercase tracking-tight mb-3 text-center">
+                Oficial Segundo PS Lic. GUILLERMO RECALDE
+              </p>
+
+              <div className="space-y-2.5">
+                <a
+                  href="https://wa.me/595973408754"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2.5 text-[9px] font-bold text-slate-500 hover:text-emerald-600 transition-colors"
+                >
+                  <div className="p-1.5 bg-white rounded-lg shadow-sm border border-slate-100 group-hover:border-emerald-100">
+                    <Phone className="h-3 w-3" />
+                  </div>
+                  +595 973 408 754
+                </a>
+
+                <div className="flex items-center gap-2">
+                  <a
+                    href="https://s1mple.dev"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 flex items-center justify-center gap-2 py-2 bg-white border border-slate-100 rounded-xl text-[9px] font-black text-slate-400 hover:text-[#002147] hover:border-blue-100 transition-all shadow-sm"
+                  >
+                    <Globe className="h-2.5 w-2.5" />
+                    s1mple.dev
+                  </a>
+                  <a
+                    href="https://s1mple.cloud"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 flex items-center justify-center gap-2 py-2 bg-white border border-slate-100 rounded-xl text-[9px] font-black text-slate-400 hover:text-[#002147] hover:border-blue-100 transition-all shadow-sm"
+                  >
+                    <Globe className="h-2.5 w-2.5" />
+                    s1mple.cloud
+                  </a>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
