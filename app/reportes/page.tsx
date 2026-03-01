@@ -636,17 +636,17 @@ export default function ReportesPage() {
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-3 p-1">
-                {Array.from(new Set(datos.map(d => d.tipo_especifico || d.shp || '').filter(Boolean))).sort().map((tipo) => (
+                {Array.from(new Set(datosDanos.map(d => rowKey(d)).filter(Boolean))).sort().map((tipo) => (
                   <label key={tipo} className="flex items-center gap-3 group cursor-pointer">
                     <div className="relative flex items-center">
                       <input
                         type="checkbox"
-                        checked={filtrosTipos.includes(tipo)}
+                        checked={filtrosTiposDanos.includes(tipo)}
                         onChange={(e) => {
                           if (e.target.checked) {
-                            setFiltrosTipos([...filtrosTipos, tipo])
+                            setFiltrosTiposDanos([...filtrosTiposDanos, tipo])
                           } else {
-                            setFiltrosTipos(filtrosTipos.filter(t => t !== tipo))
+                            setFiltrosTiposDanos(filtrosTiposDanos.filter(t => t !== tipo))
                           }
                         }}
                         className="peer h-4 w-4 cursor-pointer appearance-none rounded border-2 border-slate-200 checked:bg-[#002147] checked:border-[#002147] transition-all focus:ring-4 focus:ring-blue-100"
