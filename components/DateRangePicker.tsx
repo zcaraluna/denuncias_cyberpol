@@ -10,6 +10,7 @@ interface DateRangePickerProps {
   onEndDateChange: (date: string) => void
   onApply: () => void
   onCancel: () => void
+  align?: 'left' | 'right'
 }
 
 export default function DateRangePicker({
@@ -18,7 +19,8 @@ export default function DateRangePicker({
   onStartDateChange,
   onEndDateChange,
   onApply,
-  onCancel
+  onCancel,
+  align = 'left'
 }: DateRangePickerProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [currentMonth, setCurrentMonth] = useState(new Date())
@@ -180,7 +182,7 @@ export default function DateRangePicker({
       </button>
 
       {isOpen && (
-        <div className="absolute z-50 mt-2 bg-white border border-gray-100 rounded-2xl shadow-2xl shadow-blue-900/10 p-4 w-full md:w-auto md:min-w-[320px] ring-1 ring-black/5">
+        <div className={`absolute z-50 mt-2 bg-white border border-gray-100 rounded-2xl shadow-2xl shadow-blue-900/10 p-4 w-full md:w-auto md:min-w-[320px] ring-1 ring-black/5 ${align === 'right' ? 'right-0' : 'left-0'}`}>
           {/* Quick select buttons */}
           <div className="flex gap-2 mb-4 p-1 bg-gray-50 rounded-lg">
             <button

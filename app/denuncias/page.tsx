@@ -404,6 +404,7 @@ export default function DenunciasPage() {
                         onEndDateChange={setFiltroFechaHastaTemp}
                         onApply={handleFechaApply}
                         onCancel={handleFechaCancel}
+                        align="right"
                       />
                     </div>
                   </div>
