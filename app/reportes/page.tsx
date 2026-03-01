@@ -383,14 +383,14 @@ export default function ReportesPage() {
     });
 
     const columns = [
-      { header: 'NUM.', key: 'num' },
-      { header: 'HORA', key: 'hora_denuncia' },
-      { header: 'S.H.P.', key: 'tipo_hecho' },
-      { header: 'DENUNCIANTE', key: 'denunciante' },
-      { header: 'INTERVINIENTE', key: 'interviniente' },
-      { header: 'DPTO. A CARGO', key: 'oficina_vacia' },
-      { header: 'PÉRDIDA (Gs.)', key: 'perdida' },
-      { header: 'ENTIDAD REPORTADA', key: 'entidad_reportada' }
+      { header: 'NUM.', key: 'num', width: 6 },
+      { header: 'HORA', key: 'hora_denuncia', width: 8 },
+      { header: 'S.H.P.', key: 'tipo_hecho', width: 16 },
+      { header: 'DENUNCIANTE', key: 'denunciante', width: 18 },
+      { header: 'INTERVINIENTE', key: 'interviniente', width: 16 },
+      { header: 'DPTO. A CARGO', key: 'oficina_vacia', width: 12 },
+      { header: 'PÉRDIDA (Gs.)', key: 'perdida', width: 12 },
+      { header: 'ENTIDAD REPORTADA', key: 'entidad_reportada', width: 12 }
     ];
     exportToDocx(data, 'Reporte Diario de Denuncias', columns);
   };

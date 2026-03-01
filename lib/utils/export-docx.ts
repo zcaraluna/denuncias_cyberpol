@@ -1,7 +1,7 @@
 import { Document, Packer, Paragraph, Table, TableRow, TableCell, WidthType, AlignmentType, TextRun, PageOrientation } from 'docx';
 import { saveAs } from 'file-saver';
 
-export const exportToDocx = async (data: any[], fileName: string, columns: { header: string; key: string }[]) => {
+export const exportToDocx = async (data: any[], fileName: string, columns: { header: string; key: string; width?: number }[]) => {
     const table = new Table({
         width: {
             size: 100,
@@ -11,6 +11,7 @@ export const exportToDocx = async (data: any[], fileName: string, columns: { hea
             // Encabezado
             new TableRow({
                 children: columns.map(col => new TableCell({
+                    width: col.width ? { size: col.width, type: WidthType.PERCENTAGE } : undefined,
                     children: [
                         new Paragraph({
                             alignment: AlignmentType.CENTER,
@@ -19,7 +20,7 @@ export const exportToDocx = async (data: any[], fileName: string, columns: { hea
                                     text: col.header,
                                     bold: true,
                                     font: 'Roboto',
-                                    size: 20
+                                    size: 16 // Reducido para evitar cortes
                                 })
                             ]
                         })
@@ -27,10 +28,10 @@ export const exportToDocx = async (data: any[], fileName: string, columns: { hea
                     shading: { fill: 'F2F2F2' },
                     verticalAlign: AlignmentType.CENTER,
                     margins: {
-                        top: 120,
-                        bottom: 120,
-                        left: 100,
-                        right: 100
+                        top: 100,
+                        bottom: 100,
+                        left: 50,
+                        right: 50
                     }
                 })),
                 tableHeader: true,
@@ -42,6 +43,7 @@ export const exportToDocx = async (data: any[], fileName: string, columns: { hea
                     const text = (value === undefined || value === null || String(value).trim() === '') ? '-------' : String(value);
 
                     return new TableCell({
+                        width: col.width ? { size: col.width, type: WidthType.PERCENTAGE } : undefined,
                         children: [
                             new Paragraph({
                                 alignment: AlignmentType.LEFT,
@@ -49,17 +51,17 @@ export const exportToDocx = async (data: any[], fileName: string, columns: { hea
                                     new TextRun({
                                         text: text,
                                         font: 'Roboto',
-                                        size: 18
+                                        size: 16 // Reducido para consistencia
                                     })
                                 ]
                             })
                         ],
                         verticalAlign: AlignmentType.CENTER,
                         margins: {
-                            top: 120,
-                            bottom: 120,
-                            left: 100,
-                            right: 100
+                            top: 100,
+                            bottom: 100,
+                            left: 50,
+                            right: 50
                         }
                     });
                 }),
