@@ -63,8 +63,8 @@ export async function GET(request: NextRequest) {
           den.nombres as denunciante,
           TRIM(
             COALESCE(d.operador_grado, '') || ' ' || 
-            COALESCE(d.operador_nombre, '') || ' ' || 
-            COALESCE(d.operador_apellido, '')
+            COALESCE(SPLIT_PART(TRIM(d.operador_nombre), ' ', 1), '') || ' ' || 
+            COALESCE(SPLIT_PART(TRIM(d.operador_apellido), ' ', 1), '')
           ) as interviniente,
           d.oficina,
           d.monto_dano,
@@ -80,12 +80,12 @@ export async function GET(request: NextRequest) {
           EXTRACT(YEAR FROM a.fecha_ampliacion)::integer as año,
           a.fecha_ampliacion as fecha_denuncia,
           a.hora_ampliacion as hora_denuncia,
-          'AMPLIACION' as shp,
+          d.tipo_denuncia as shp,
           den.nombres as denunciante,
           TRIM(
             COALESCE(a.operador_grado, '') || ' ' || 
-            COALESCE(a.operador_nombre, '') || ' ' || 
-            COALESCE(a.operador_apellido, '')
+            COALESCE(SPLIT_PART(TRIM(a.operador_nombre), ' ', 1), '') || ' ' || 
+            COALESCE(SPLIT_PART(TRIM(a.operador_apellido), ' ', 1), '')
           ) as interviniente,
           d.oficina,
           0 as monto_dano,
