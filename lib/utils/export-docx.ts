@@ -269,7 +269,7 @@ export const exportToDocx = async (
                     new TextRun({ text: "D.C.H.P.E.F.", bold: true, font: 'Roboto', size: 22 })
                 ]
             }),
-            new Paragraph({ children: [new TextRun("")] }),
+
             new Paragraph({
                 alignment: AlignmentType.JUSTIFIED,
                 indent: { firstLine: 850 }, // Aprox 1.5 cm en primera línea
@@ -326,7 +326,7 @@ export const exportToDocx = async (
                     })
                 ]
             }),
-            new Paragraph({ children: [new TextRun("")] })
+
         );
     } else {
         // Formato antiguo por si acaso
