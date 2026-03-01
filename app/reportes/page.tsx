@@ -115,7 +115,14 @@ export default function ReportesPage() {
   const [mostrarGeneral, setMostrarGeneral] = useState(true)
 
   // Estado para reporte diario
-  const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0])
+  const [fecha, setFecha] = useState(() => {
+    return new Intl.DateTimeFormat('sv-SE', {
+      timeZone: 'America/Asuncion',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).format(new Date())
+  })
   const [tipoDenuncia, setTipoDenuncia] = useState('')
   const [datos, setDatos] = useState<ReporteRow[]>([])
   const [tiposDisponibles, setTiposDisponibles] = useState<string[]>([])
