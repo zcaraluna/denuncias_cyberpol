@@ -25,7 +25,13 @@ export const exportToDocx = async (data: any[], fileName: string, columns: { hea
                         })
                     ],
                     shading: { fill: 'F2F2F2' },
-                    verticalAlign: AlignmentType.CENTER
+                    verticalAlign: AlignmentType.CENTER,
+                    margins: {
+                        top: 120,
+                        bottom: 120,
+                        left: 100,
+                        right: 100
+                    }
                 })),
                 tableHeader: true,
             }),
@@ -48,7 +54,13 @@ export const exportToDocx = async (data: any[], fileName: string, columns: { hea
                                 ]
                             })
                         ],
-                        verticalAlign: AlignmentType.CENTER
+                        verticalAlign: AlignmentType.CENTER,
+                        margins: {
+                            top: 120,
+                            bottom: 120,
+                            left: 100,
+                            right: 100
+                        }
                     });
                 }),
             })),

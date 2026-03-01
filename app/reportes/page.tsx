@@ -348,14 +348,39 @@ export default function ReportesPage() {
     exportToExcel(data, `Reporte_Denuncias_${fecha || activeTab}`, columns);
   };
 
-  const handleExportDailyDocx = () => {
-    const data = datosDiarioOrdenados.map(d => ({
-      ...d,
-      num: d.numero_denuncia,
-      tipo_hecho: d.tipo_especifico || d.shp,
-      oficina_vacia: '', // Departamento a cargo será un campo en blanco
-      perdida: (!d.monto_dano || d.monto_dano === 0) ? '-------' : d.monto_dano.toLocaleString('es-PY')
-    }));
+  const handleExportDailyDocx = async () => {
+    // Obtener cotizaciones para conversión
+    let cotizaciones: Record<string, { compra: number; venta: number }> = {};
+    try {
+      const resp = await fetch('/api/cotizaciones');
+      const json = await resp.json();
+      cotizaciones = json.rates || {};
+    } catch (e) {
+      console.error('Error al obtener cotizaciones para exportación:', e);
+    }
+
+    const data = datosDiarioOrdenados.map(d => {
+      let montoGs = d.monto_dano || 0;
+
+      // Conversión automática si no es Guaraníes
+      if (d.moneda && d.moneda !== 'Guaraníes' && montoGs > 0) {
+        let tasa = 1;
+        if (d.moneda === 'Dólares') tasa = cotizaciones['USD']?.venta || 1;
+        else if (d.moneda === 'Euros') tasa = cotizaciones['EUR']?.venta || 1;
+        else if (d.moneda === 'Reales') tasa = cotizaciones['BRL']?.venta || 1;
+        else if (d.moneda === 'Pesos Argentinos') tasa = cotizaciones['ARS']?.venta || 1;
+
+        montoGs = Math.round(montoGs * tasa);
+      }
+
+      return {
+        ...d,
+        num: d.numero_denuncia,
+        tipo_hecho: (d.tipo_especifico || d.shp || '').toUpperCase(), // MAYÚSCULAS
+        oficina_vacia: '', // Completamente en blanco
+        perdida: montoGs > 0 ? `${montoGs.toLocaleString('es-PY')} Gs.` : '-------' // Sufijo Gs. y guiones para 0
+      };
+    });
 
     const columns = [
       { header: 'NUM.', key: 'num' },
