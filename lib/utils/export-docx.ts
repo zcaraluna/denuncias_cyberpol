@@ -187,7 +187,6 @@ export const exportToDocx = async (
     // Cuerpo del documento (Secciones)
     const children: any[] = [
         headerTable,
-        new Paragraph({ children: [new TextRun("")] }),
         new Paragraph({
             alignment: AlignmentType.CENTER,
             children: [
@@ -210,7 +209,6 @@ export const exportToDocx = async (
                 })
             ],
         }),
-        new Paragraph({ children: [new TextRun("")] }),
         new Paragraph({
             alignment: AlignmentType.CENTER,
             children: [
@@ -222,12 +220,10 @@ export const exportToDocx = async (
                 new TextRun({ text: "ayudantia@delitoseconomicos.gov.py", size: 14, font: 'Roboto' }) // 7pt
             ],
         }),
-        new Paragraph({ children: [new TextRun("")] }),
         new Paragraph({
             border: { bottom: { color: "000000", space: 1, style: BorderStyle.SINGLE, size: 6 } },
             children: [new TextRun("")]
         }),
-        new Paragraph({ children: [new TextRun("")] }),
     ];
 
     // Si hay metadatos, construir el formato de Nota de Elevación
@@ -244,7 +240,6 @@ export const exportToDocx = async (
                 ]
             }),
             new Paragraph({ children: [new TextRun("")] }),
-            new Paragraph({ children: [new TextRun("")] }),
             new Paragraph({
                 alignment: AlignmentType.LEFT,
                 children: [
@@ -256,7 +251,6 @@ export const exportToDocx = async (
                     })
                 ]
             }),
-            new Paragraph({ children: [new TextRun("")] }),
             new Paragraph({
                 alignment: AlignmentType.LEFT,
                 children: [
@@ -269,15 +263,12 @@ export const exportToDocx = async (
                     new TextRun({ text: `${metadata.destinatarioNombre}, ${metadata.destinatarioCargo}`, bold: true, font: 'Roboto', size: 22 })
                 ]
             }),
-            new Paragraph({ children: [new TextRun("")] }),
-            new Paragraph({ children: [new TextRun("")] }),
             new Paragraph({
                 alignment: AlignmentType.LEFT,
                 children: [
                     new TextRun({ text: "D.C.H.P.E.F.", bold: true, font: 'Roboto', size: 22 })
                 ]
             }),
-            new Paragraph({ children: [new TextRun("")] }),
             new Paragraph({ children: [new TextRun("")] }),
             new Paragraph({
                 alignment: AlignmentType.JUSTIFIED,
@@ -317,7 +308,6 @@ export const exportToDocx = async (
     // Añadir Cierre y Firmas si hay metadatos
     if (metadata) {
         children.push(
-            new Paragraph({ children: [new TextRun("")] }),
             new Paragraph({
                 alignment: AlignmentType.LEFT,
                 indent: { left: 850 },
@@ -367,7 +357,6 @@ export const exportToDocx = async (
                     })
                 ]
             }),
-            new Paragraph({ children: [new TextRun("")] }),
             new Paragraph({ children: [new TextRun("")] }),
             // Párrafo de Elevación
             new Paragraph({
