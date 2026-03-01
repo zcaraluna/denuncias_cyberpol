@@ -56,6 +56,15 @@ export const exportToDocx = async (data: any[], fileName: string, columns: { hea
     });
 
     const doc = new Document({
+        styles: {
+            default: {
+                document: {
+                    run: {
+                        font: 'Arial', // Fallback global del documento
+                    },
+                },
+            },
+        },
         sections: [{
             properties: {
                 page: {
