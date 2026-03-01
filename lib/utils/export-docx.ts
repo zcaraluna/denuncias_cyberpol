@@ -265,6 +265,7 @@ export const exportToDocx = async (
             }),
             new Paragraph({
                 alignment: AlignmentType.LEFT,
+                spacing: { after: 0, before: 0 },
                 children: [
                     new TextRun({ text: "D.C.H.P.E.F.", bold: true, font: 'Roboto', size: 22 })
                 ]
@@ -273,7 +274,7 @@ export const exportToDocx = async (
             new Paragraph({
                 alignment: AlignmentType.JUSTIFIED,
                 indent: { firstLine: 850 }, // Aprox 1.5 cm en primera línea
-                spacing: { line: 276 }, // Interlineado 1.15
+                spacing: { line: 276, before: 0, after: 0 }, // Interlineado 1.15, sin espacios extra antes/después
                 children: [
                     new TextRun({
                         text: "Tengo el honor de dirigirme a esa superioridad, a objeto de elevar resumen de denuncias recepcionadas en la Sala de Denuncias de esta Dirección, correspondiente al grupo de guardia del día ",
