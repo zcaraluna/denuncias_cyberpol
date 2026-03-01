@@ -5,6 +5,19 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { MainLayout } from '@/components/MainLayout'
+import {
+  Monitor,
+  Key,
+  Smartphone,
+  ShieldCheck,
+  ShieldAlert,
+  Clock,
+  Activity,
+  Globe,
+  Ban,
+  Fingerprint,
+  Plus
+} from 'lucide-react'
 
 interface Usuario {
   id: number
@@ -164,143 +177,204 @@ export default function GestionDispositivosPage() {
 
   return (
     <MainLayout>
-      <div className="p-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground">Gestión de Dispositivos y Códigos</h1>
-          <p className="text-muted-foreground mt-2">Administre los accesos autorizados y genere códigos de activación para nuevos terminales.</p>
+      <div className="min-h-screen bg-slate-50/50 p-4 md:p-8">
+        <div className="max-w-7xl mx-auto mb-8">
+          <div className="bg-white rounded-3xl border border-slate-200/60 p-6 md:p-8 shadow-sm relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-slate-50 rounded-full -mr-32 -mt-32 z-0 opacity-50"></div>
+
+            <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div className="flex items-start gap-5">
+                <div className="p-4 bg-[#002147] rounded-2xl shadow-lg shadow-blue-900/10 shrink-0">
+                  <Monitor className="h-8 w-8 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-3xl font-black text-[#002147] leading-tight text-balance">Gestión de Dispositivos y Códigos</h1>
+                  <p className="text-slate-500 font-medium mt-1">
+                    Administre los terminales autorizados y gestione los accesos de seguridad a la red.
+                  </p>
+                </div>
+              </div>
+
+              {usuario.usuario === 'garv' && (
+                <button
+                  onClick={() => {/* Lógica para generar código si existiera modal, o redirigir */ }}
+                  className="group flex items-center justify-center gap-2 px-6 py-3.5 bg-[#002147] text-white rounded-2xl hover:bg-[#003366] transition-all shadow-lg shadow-blue-900/10 font-black text-sm uppercase tracking-widest shrink-0"
+                >
+                  <Plus className="h-4 w-4" />
+                  GENERAR CÓDIGO
+                </button>
+              )}
+            </div>
+          </div>
         </div>
 
-
-        {/* Tabs */}
-        <div className="border-b border-gray-200 mb-6">
-          <nav className="-mb-px flex space-x-8">
+        {/* Tabs Modernos */}
+        <div className="max-w-7xl mx-auto mb-6">
+          <div className="flex p-1 bg-slate-100 rounded-2xl w-fit border border-slate-200">
             <button
               onClick={() => setTabActivo('dispositivos')}
-              className={`${tabActivo === 'dispositivos'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+              className={`flex items-center gap-2.5 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${tabActivo === 'dispositivos'
+                  ? 'bg-white text-[#002147] shadow-sm'
+                  : 'text-slate-500 hover:text-slate-700'
+                }`}
             >
-              Dispositivos Autorizados ({dispositivos.length})
+              <Smartphone className="h-3.5 w-3.5" />
+              Terminales Autorizados ({dispositivos.length})
             </button>
             <button
               onClick={() => setTabActivo('codigos')}
-              className={`${tabActivo === 'codigos'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+              className={`flex items-center gap-2.5 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${tabActivo === 'codigos'
+                  ? 'bg-white text-[#002147] shadow-sm'
+                  : 'text-slate-500 hover:text-slate-700'
+                }`}
             >
-              Códigos de Activación ({codigos.length})
+              <Key className="h-3.5 w-3.5" />
+              Códigos Generados ({codigos.length})
             </button>
-          </nav>
+          </div>
         </div>
 
-        {/* Tab Dispositivos */}
-        {tabActivo === 'dispositivos' && (
-          <div className="bg-white shadow overflow-hidden sm:rounded-md">
-            <ul className="divide-y divide-gray-200">
+        <div className="max-w-7xl mx-auto">
+          {/* Contenido Dispositivos */}
+          {tabActivo === 'dispositivos' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {dispositivos.length === 0 ? (
-                <li className="px-6 py-4 text-center text-gray-500">
-                  No hay dispositivos autorizados
-                </li>
+                <div className="col-span-full bg-white rounded-3xl border border-dashed border-slate-200 p-12 text-center">
+                  <p className="text-slate-400 font-black uppercase tracking-widest text-xs italic">No hay dispositivos autorizados bajo este perfil</p>
+                </div>
               ) : (
                 dispositivos.map((dispositivo) => (
-                  <li key={dispositivo.id} className="px-6 py-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center">
-                          <h3 className="text-lg font-medium text-gray-900">
-                            {dispositivo.nombre || 'Dispositivo sin nombre'}
-                          </h3>
-                          {dispositivo.activo ? (
-                            <span className="ml-3 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                              Activo
-                            </span>
-                          ) : (
-                            <span className="ml-3 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                              Desactivado
-                            </span>
-                          )}
-                        </div>
-                        <div className="mt-2 text-sm text-gray-500 space-y-1">
-                          <p><strong>Fingerprint:</strong> {dispositivo.fingerprint.substring(0, 16)}...</p>
-                          <p><strong>IP:</strong> {dispositivo.ip_address || 'N/A'}</p>
-                          <p><strong>Autorizado:</strong> {formatearFecha(dispositivo.autorizado_en)}</p>
-                          <p><strong>Último acceso:</strong> {formatearFecha(dispositivo.ultimo_acceso)}</p>
-                          {dispositivo.codigo_activacion && (
-                            <p><strong>Código usado:</strong> {formatearCodigo(dispositivo.codigo_activacion)}</p>
-                          )}
-                        </div>
+                  <div key={dispositivo.id} className="bg-white rounded-3xl border border-slate-200/60 p-6 shadow-sm hover:shadow-md transition-all group relative overflow-hidden">
+                    <div className="flex justify-between items-start mb-4 relative z-10">
+                      <div className={`p-3 rounded-2xl ${dispositivo.activo ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-50 text-slate-400'}`}>
+                        <Smartphone className="h-6 w-6" />
                       </div>
                       {dispositivo.activo && (
                         <button
                           onClick={() => handleDesactivar('dispositivo', dispositivo.id)}
-                          className="ml-4 bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700"
+                          className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                          title="Revocar acceso"
                         >
-                          Desactivar
+                          <Ban className="h-5 w-5" />
                         </button>
                       )}
                     </div>
-                  </li>
-                ))
-              )}
-            </ul>
-          </div>
-        )}
 
-        {/* Tab Códigos */}
-        {tabActivo === 'codigos' && (
-          <div className="bg-white shadow overflow-hidden sm:rounded-md">
-            <ul className="divide-y divide-gray-200">
-              {codigos.length === 0 ? (
-                <li className="px-6 py-4 text-center text-gray-500">
-                  No hay códigos de activación
-                </li>
-              ) : (
-                codigos.map((codigo) => {
-                  const estado = obtenerEstadoCodigo(codigo)
-                  return (
-                    <li key={codigo.id} className="px-6 py-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center">
-                            <h3 className="text-lg font-medium text-gray-900">
-                              {codigo.nombre || 'Código sin nombre'}
-                            </h3>
-                            <span className={`ml-3 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${estado.className}`}>
-                              {estado.texto}
-                            </span>
+                    <div className="relative z-10">
+                      <h3 className="text-lg font-black text-[#002147] uppercase truncate pr-8">
+                        {dispositivo.nombre || 'Terminal Desconocido'}
+                      </h3>
+
+                      <div className="mt-4 space-y-3">
+                        <div className="flex items-center gap-2 text-slate-400">
+                          <Fingerprint className="h-3.5 w-3.5 opacity-50" />
+                          <span className="text-[10px] font-mono tracking-tighter truncate opacity-75">{dispositivo.fingerprint}</span>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-2 border-t border-slate-50 pt-3 mt-3">
+                          <div className="flex flex-col">
+                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Última IP registrada</span>
+                            <div className="flex items-center gap-1.5 font-bold text-slate-600 text-xs">
+                              <Globe className="h-3 w-3" />
+                              {dispositivo.ip_address || '---'}
+                            </div>
                           </div>
-                          <div className="mt-2 text-sm text-gray-500 space-y-1">
-                            <p><strong>Código:</strong> {formatearCodigo(codigo.codigo)}</p>
-                            <p><strong>Creado:</strong> {formatearFecha(codigo.creado_en)}</p>
-                            {codigo.expira_en && (
-                              <p><strong>Expira:</strong> {formatearFecha(codigo.expira_en)}</p>
-                            )}
-                            {codigo.usado && codigo.usado_en && (
-                              <p><strong>Usado:</strong> {formatearFecha(codigo.usado_en)}</p>
-                            )}
-                            {codigo.dispositivo_fingerprint && (
-                              <p><strong>Fingerprint dispositivo:</strong> {codigo.dispositivo_fingerprint.substring(0, 16)}...</p>
-                            )}
+
+                          <div className="flex flex-col">
+                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Última Actividad</span>
+                            <div className="flex items-center gap-1.5 font-bold text-slate-600 text-xs">
+                              <Clock className="h-3 w-3" />
+                              {new Date(dispositivo.ultimo_acceso).toLocaleDateString('es-PY')} a las {new Date(dispositivo.ultimo_acceso).toLocaleTimeString('es-PY', { hour: '2-digit', minute: '2-digit' })}
+                            </div>
                           </div>
                         </div>
-                        {codigo.activo && !codigo.usado && (
-                          <button
-                            onClick={() => handleDesactivar('codigo', codigo.id)}
-                            className="ml-4 bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700"
-                          >
-                            Desactivar
-                          </button>
-                        )}
+
+                        <div className="mt-4 pt-4 border-t border-slate-50 flex items-center justify-between">
+                          <div className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 ${dispositivo.activo ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-400'
+                            }`}>
+                            {dispositivo.activo ? <ShieldCheck className="h-2.5 w-2.5" /> : <ShieldAlert className="h-2.5 w-2.5" />}
+                            {dispositivo.activo ? 'ACCESO VÁLIDO' : 'DEBAJA'}
+                          </div>
+                        </div>
                       </div>
-                    </li>
-                  )
-                })
-              )}
-            </ul>
-          </div>
-        )}
+                    </div>
+                  </div>
+                )
+                ))}
+            </div>
+          )}
+
+          {/* Contenido Códigos */}
+          {tabActivo === 'codigos' && (
+            <div className="bg-white rounded-[32px] border border-slate-200/60 shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-slate-100">
+                  <thead>
+                    <tr className="bg-slate-50/50 text-left border-b border-slate-100">
+                      <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Código</th>
+                      <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Identificador</th>
+                      <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Estado</th>
+                      <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Creación / Expiración</th>
+                      <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Control</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {codigos.length === 0 ? (
+                      <tr><td colSpan={5} className="px-8 py-12 text-center text-slate-400 uppercase font-black text-[10px] tracking-widest italic">No existen códigos pendientes de uso</td></tr>
+                    ) : (
+                      codigos.map((codigo) => {
+                        const estado = obtenerEstadoCodigo(codigo)
+                        return (
+                          <tr key={codigo.id} className="hover:bg-slate-50/50 transition-colors group">
+                            <td className="px-8 py-4 whitespace-nowrap">
+                              <span className="text-sm font-black text-[#002147] font-mono tracking-widest bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200 shadow-inner">
+                                {formatearCodigo(codigo.codigo)}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className="text-xs font-bold text-slate-600 uppercase">{codigo.nombre || '---'}</span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`px-2.5 py-1 text-[10px] font-black uppercase tracking-widest rounded-lg flex items-center w-fit gap-1.5 ${estado.className.includes('bg-green') ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' :
+                                  estado.className.includes('bg-orange') ? 'bg-orange-50 text-orange-700 border-orange-100' :
+                                    'bg-slate-50 text-slate-500 border-slate-100'
+                                }`}>
+                                <Activity className="h-2.5 w-2.5" />
+                                {estado.texto}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-[10px]">
+                              <div className="flex flex-col gap-1 font-bold">
+                                <div className="flex items-center gap-1.5 text-slate-400">
+                                  <Plus className="h-2.5 w-2.5" />
+                                  <span>{new Date(codigo.creado_en).toLocaleDateString()}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5 text-orange-400">
+                                  <Clock className="h-2.5 w-2.5" />
+                                  <span>{codigo.expira_en ? new Date(codigo.expira_en).toLocaleDateString() : 'SIN EXPIRACIÓN'}</span>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-8 py-4 whitespace-nowrap text-right">
+                              {codigo.activo && !codigo.usado && (
+                                <button
+                                  onClick={() => handleDesactivar('codigo', codigo.id)}
+                                  className="text-[10px] font-black text-red-500 uppercase tracking-widest px-3 py-2 hover:bg-red-50 rounded-xl transition-all border border-transparent hover:border-red-100"
+                                >
+                                  DESACTIVAR
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        )
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </MainLayout>
   )
