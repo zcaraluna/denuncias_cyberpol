@@ -115,7 +115,7 @@ export default function ReportesPage() {
   const [mostrarGeneral, setMostrarGeneral] = useState(true)
 
   // Estado para reporte diario
-  const [fecha, setFecha] = useState('')
+  const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0])
   const [tipoDenuncia, setTipoDenuncia] = useState('')
   const [datos, setDatos] = useState<ReporteRow[]>([])
   const [tiposDisponibles, setTiposDisponibles] = useState<string[]>([])
@@ -716,7 +716,7 @@ export default function ReportesPage() {
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          <span className={`inline-block px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest border ${mostrarGeneral ? 'bg-indigo-50/50 text-indigo-700 border-indigo-100' : 'bg-blue-50/50 text-blue-700 border-blue-100'
+                          <span className={`text-[10px] font-black uppercase tracking-tight ${mostrarGeneral ? 'text-indigo-600' : 'text-blue-600'
                             }`}>
                             {mostrarGeneral ? (row.tipo_general || row.tipo_especifico || row.shp) : (row.tipo_especifico || row.shp || '-')}
                           </span>
@@ -863,7 +863,7 @@ export default function ReportesPage() {
                               </span>
                             </div>
                           </div>
-                          <div className="space-y-2 max-h-[200px] overflow-y-auto no-scrollbar pr-1">
+                          <div className="space-y-2 pr-1">
                             {rec.numeros_denuncia.map((num, i) => (
                               <div key={i} className="flex flex-col gap-1 text-[10px] text-slate-600 bg-white p-3 rounded-xl border border-slate-100 shadow-sm group/item">
                                 <div className="flex items-center gap-2">
@@ -871,16 +871,19 @@ export default function ReportesPage() {
                                   <span className="text-slate-100">—</span>
                                   <span className="truncate flex-1 font-bold text-slate-500 uppercase tracking-tighter">{rec.tipos[i]}</span>
                                 </div>
-                                <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-50">
+                                <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-50 text-[9px] text-slate-400 font-bold">
                                   <div className="flex items-center gap-1.5">
                                     <Calendar className="w-2.5 h-2.5 text-slate-300" />
-                                    <span className="text-[9px] text-slate-400 font-bold">{formatearFecha(rec.fechas[i])}</span>
+                                    <span>{formatearFecha(rec.fechas[i])}</span>
                                   </div>
                                   {rec.oficiales && rec.oficiales[i] && (
-                                    <div className="flex items-center gap-1.5">
-                                      <User className="w-2.5 h-2.5 text-slate-300" />
-                                      <span className="text-[9px] text-slate-400 italic font-medium truncate max-w-[80px]">{rec.oficiales[i].split(',')[0]}</span>
-                                    </div>
+                                    <>
+                                      <span className="text-slate-200">|</span>
+                                      <div className="flex items-center gap-1.5 min-w-0">
+                                        <User className="w-2.5 h-2.5 text-slate-300 shrink-0" />
+                                        <span className="italic truncate">{rec.oficiales[i].split(',')[0]}</span>
+                                      </div>
+                                    </>
                                   )}
                                 </div>
                               </div>
@@ -999,16 +1002,13 @@ export default function ReportesPage() {
                     )
                   }
                   return entries.map(([moneda, total], idx) => (
-                    <div key={idx} className="bg-white p-6 rounded-2xl shadow-xl shadow-blue-900/5 border border-slate-100 group hover:-translate-y-1 transition-all duration-300 relative overflow-hidden">
-                      <div className="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-10 transition-opacity">
-                        <DollarSign className="w-12 h-12 text-[#002147]" />
-                      </div>
+                    <div key={idx} className="bg-white p-6 rounded-2xl shadow-xl shadow-blue-900/5 border border-slate-100 group hover:-translate-y-1 transition-all duration-300 relative">
                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
                         <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div> Total Perjuicio {moneda}
                       </p>
-                      <p className="text-3xl font-black text-[#002147] tracking-tight">
+                      <p className="text-2xl font-black text-[#002147] tracking-tighter">
                         {total.toLocaleString('es-PY')}
-                        <span className="text-[11px] ml-1.5 font-black text-blue-500 uppercase tracking-widest">{moneda.split(' ')[0]}</span>
+                        <span className="text-[11px] ml-1.5 font-black text-blue-500 uppercase tracking-widest">{moneda}</span>
                       </p>
                     </div>
                   ))
