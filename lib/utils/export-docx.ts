@@ -12,6 +12,9 @@ export interface DocxMetadata {
     destinatarioGrado: string;
     destinatarioNombre: string;
     destinatarioCargo: string;
+    remitenteGrado: string;
+    remitenteNombre: string;
+    remitenteCargo: string;
     fechaDesde: string;
     fechaHasta: string;
     oficina?: string;
@@ -211,7 +214,12 @@ export const exportToDocx = async (
             alignment: AlignmentType.CENTER,
             spacing: { before: 100 },
             children: [
-                new TextRun({ text: "Dirección: E. V. Haedo 725 casi O'Leary | Teléfono: (021) 443-159 Fax: (021) 443-126 (021) 441-111 | E-mail: ayudantia@delitoseconomicos.gov.py", size: 14, font: 'Roboto' }) // 7pt
+                new TextRun({ text: "Dirección: ", bold: true, size: 14, font: 'Roboto' }),
+                new TextRun({ text: "E. V. Haedo 725 casi O'Leary | ", size: 14, font: 'Roboto' }),
+                new TextRun({ text: "Teléfono: ", bold: true, size: 14, font: 'Roboto' }),
+                new TextRun({ text: "(021) 443-159 Fax: (021) 443-126 (021) 441-111 | ", size: 14, font: 'Roboto' }),
+                new TextRun({ text: "E-mail: ", bold: true, size: 14, font: 'Roboto' }),
+                new TextRun({ text: "ayudantia@delitoseconomicos.gov.py", size: 14, font: 'Roboto' }) // 7pt
             ],
         }),
         new Paragraph({
@@ -300,19 +308,88 @@ export const exportToDocx = async (
     // Añadir Tabla
     children.push(table);
 
-    // Añadir Cierre si hay metadatos
+    // Añadir Cierre y Firmas si hay metadatos
     if (metadata) {
         children.push(
             new Paragraph({
                 alignment: AlignmentType.LEFT,
                 indent: { left: 850 },
-                spacing: { before: 400 },
+                spacing: { before: 200, after: 600 },
                 children: [
                     new TextRun({
                         text: "Respetuosamente.-",
                         font: 'Roboto',
                         size: 22
                     })
+                ]
+            }),
+            // Firma del Remitente (Centrado, pero alineado a la izquierda. Usamos indent left para llegar a esa zona central)
+            new Paragraph({
+                alignment: AlignmentType.LEFT,
+                indent: { left: 5500 }, // Aproximación visual al centro alineado a la izquierda
+                children: [
+                    new TextRun({ text: metadata.remitenteNombre.toUpperCase(), font: 'Roboto', size: 22, bold: true })
+                ]
+            }),
+            new Paragraph({
+                alignment: AlignmentType.LEFT,
+                indent: { left: 5500 },
+                children: [
+                    new TextRun({ text: metadata.remitenteGrado, font: 'Roboto', size: 22 })
+                ]
+            }),
+            new Paragraph({
+                alignment: AlignmentType.LEFT,
+                indent: { left: 5500 },
+                spacing: { after: 300 },
+                children: [
+                    new TextRun({ text: `${metadata.remitenteCargo} - D.C.H.P.E.F.`, font: 'Roboto', size: 22 })
+                ]
+            }),
+            // Fecha de nuevo alineada a la derecha
+            new Paragraph({
+                alignment: AlignmentType.RIGHT,
+                spacing: { after: 300 },
+                children: [
+                    new TextRun({
+                        text: fechaNotaStr,
+                        font: 'Roboto',
+                        size: 22
+                    })
+                ]
+            }),
+            // Párrafo de Elevación
+            new Paragraph({
+                alignment: AlignmentType.LEFT,
+                spacing: { after: 600 },
+                children: [
+                    new TextRun({
+                        text: "Elevo a la División de Talento Humano, para su conocimiento y fines pertinentes.",
+                        font: 'Roboto',
+                        size: 22
+                    })
+                ]
+            }),
+            // Firma del Destinatario (Misma configuración, adaptado a su cargo)
+            new Paragraph({
+                alignment: AlignmentType.LEFT,
+                indent: { left: 5500 },
+                children: [
+                    new TextRun({ text: metadata.destinatarioNombre.toUpperCase(), font: 'Roboto', size: 22, bold: true })
+                ]
+            }),
+            new Paragraph({
+                alignment: AlignmentType.LEFT,
+                indent: { left: 5500 },
+                children: [
+                    new TextRun({ text: metadata.destinatarioGrado, font: 'Roboto', size: 22 })
+                ]
+            }),
+            new Paragraph({
+                alignment: AlignmentType.LEFT,
+                indent: { left: 5500 },
+                children: [
+                    new TextRun({ text: `${metadata.destinatarioCargo} - D.C.H.P.E.F.`, font: 'Roboto', size: 22 })
                 ]
             })
         );

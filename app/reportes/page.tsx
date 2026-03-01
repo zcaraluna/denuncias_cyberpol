@@ -357,7 +357,10 @@ export default function ReportesPage() {
     numeroNota: '',
     destinatarioGrado: '',
     destinatarioNombre: '',
-    destinatarioCargo: 'Jefe de Servicio'
+    destinatarioCargo: 'Jefe de Servicio',
+    remitenteGrado: '',
+    remitenteNombre: '',
+    remitenteCargo: 'Jefe de Cuartel'
   });
 
   const handleExportDailyDocx = async () => {
@@ -1207,7 +1210,7 @@ export default function ReportesPage() {
                 </div>
                 <div>
                   <h3 className="text-sm font-black text-[#002147] uppercase tracking-wider">Metadatos de la Nota</h3>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Complete los datos oficiales</p>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Complete remitente y destinatario</p>
                 </div>
               </div>
               <button
@@ -1263,6 +1266,48 @@ export default function ReportesPage() {
                     <option value="Jefe de Cuartel">Jefe de Cuartel</option>
                     <option value="Oficial de Guardia">Oficial de Guardia</option>
                   </select>
+                </div>
+              </div>
+
+              <div className="border-t border-slate-100 pt-4 mt-2">
+                <h4 className="text-[11px] font-black text-[#002147] uppercase tracking-widest mb-3">Datos del Remitente (Firma)</h4>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Grado del Remitente</label>
+                    <input
+                      type="text"
+                      placeholder="Ej: Oficial Inspector P.S."
+                      value={docxMeta.remitenteGrado}
+                      onChange={(e) => setDocxMeta({ ...docxMeta, remitenteGrado: e.target.value })}
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-[#002147] focus:ring-4 focus:ring-blue-50 outline-none transition-all"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="col-span-1">
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Nombre y Apellido</label>
+                      <input
+                        type="text"
+                        placeholder="Ej: PEDRO GÓMEZ"
+                        value={docxMeta.remitenteNombre}
+                        onChange={(e) => setDocxMeta({ ...docxMeta, remitenteNombre: e.target.value.toUpperCase() })}
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-[#002147] uppercase focus:ring-4 focus:ring-blue-50 outline-none transition-all"
+                      />
+                    </div>
+                    <div className="col-span-1">
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Cargo</label>
+                      <select
+                        value={docxMeta.remitenteCargo}
+                        onChange={(e) => setDocxMeta({ ...docxMeta, remitenteCargo: e.target.value })}
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-[#002147] focus:ring-4 focus:ring-blue-50 outline-none transition-all appearance-none"
+                      >
+                        <option value="Jefe de Cuartel">Jefe de Cuartel</option>
+                        <option value="Oficial de Guardia">Oficial de Guardia</option>
+                        <option value="Jefe de Servicio">Jefe de Servicio</option>
+                      </select>
+                    </div>
+                  </div>
                 </div>
               </div>
 
