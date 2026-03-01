@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
           d.oficina,
           d.monto_dano,
           d.moneda,
-          (SELECT sa.entidad_bancaria FROM supuestos_autores sa WHERE sa.denuncia_id = d.id AND sa.entidad_bancaria IS NOT NULL AND sa.entidad_bancaria != '' LIMIT 1) as entidad_reportada
+          d.entidad_bancaria_vulnerada as entidad_reportada
         FROM denuncias d
         LEFT JOIN denunciantes den ON d.denunciante_id = den.id
         WHERE ${whereClause}
@@ -90,7 +90,7 @@ export async function GET(request: NextRequest) {
           d.oficina,
           0 as monto_dano,
           d.moneda,
-          (SELECT sa.entidad_bancaria FROM supuestos_autores sa WHERE sa.denuncia_id = d.id AND sa.entidad_bancaria IS NOT NULL AND sa.entidad_bancaria != '' LIMIT 1) as entidad_reportada
+          d.entidad_bancaria_vulnerada as entidad_reportada
         FROM ampliaciones_denuncia a
         JOIN denuncias d ON a.denuncia_id = d.id
         LEFT JOIN denunciantes den ON d.denunciante_id = den.id
