@@ -186,12 +186,12 @@ export const exportToDocx = async (
         headerTable,
         new Paragraph({
             alignment: AlignmentType.CENTER,
-            spacing: { before: 200 },
+            spacing: { before: 200 }, // Mantenido para separación visual de logos
             children: [
                 new TextRun({
                     text: "DIRECCIÓN CONTRA HECHOS PUNIBLES ECONÓMICOS Y FINANCIEROS",
                     bold: true,
-                    size: 24, // 12pt
+                    size: 22, // 11pt
                     font: 'Roboto'
                 })
             ],
@@ -202,7 +202,7 @@ export const exportToDocx = async (
                 new TextRun({
                     text: "OFICINA DE GUARDIA",
                     bold: true,
-                    size: 22, // 11pt
+                    size: 20, // 10pt
                     font: 'Roboto'
                 })
             ],
@@ -211,22 +211,7 @@ export const exportToDocx = async (
             alignment: AlignmentType.CENTER,
             spacing: { before: 100 },
             children: [
-                new TextRun({ text: "Dirección: ", bold: true, size: 20, font: 'Roboto' }), // 10pt
-                new TextRun({ text: "E. V. Haedo 725 casi O'Leary", size: 20, font: 'Roboto' }) // 10pt
-            ],
-        }),
-        new Paragraph({
-            alignment: AlignmentType.CENTER,
-            children: [
-                new TextRun({ text: "Teléfono: ", bold: true, size: 20, font: 'Roboto' }), // 10pt
-                new TextRun({ text: "(021) 443-159 Fax: (021) 443-126 (021) 441-111", size: 20, font: 'Roboto' }) // 10pt
-            ],
-        }),
-        new Paragraph({
-            alignment: AlignmentType.CENTER,
-            children: [
-                new TextRun({ text: "E-mail: ", bold: true, size: 20, font: 'Roboto' }), // 10pt
-                new TextRun({ text: "ayudantia@delitoseconomicos.gov.py", size: 20, font: 'Roboto' }) // 10pt
+                new TextRun({ text: "Dirección: E. V. Haedo 725 casi O'Leary | Teléfono: (021) 443-159 Fax: (021) 443-126 (021) 441-111 | E-mail: ayudantia@delitoseconomicos.gov.py", size: 14, font: 'Roboto' }) // 7pt
             ],
         }),
         new Paragraph({
@@ -340,6 +325,12 @@ export const exportToDocx = async (
                     run: {
                         font: 'Arial',
                     },
+                    paragraph: {
+                        spacing: {
+                            before: 0,
+                            after: 0
+                        }
+                    }
                 },
             },
         },

@@ -1246,10 +1246,10 @@ export default function ReportesPage() {
                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Nombre y Apellido</label>
                   <input
                     type="text"
-                    placeholder="Ej: Juan Pérez"
+                    placeholder="Ej: JUAN PÉREZ"
                     value={docxMeta.destinatarioNombre}
-                    onChange={(e) => setDocxMeta({ ...docxMeta, destinatarioNombre: e.target.value })}
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-[#002147] focus:ring-4 focus:ring-blue-50 outline-none transition-all"
+                    onChange={(e) => setDocxMeta({ ...docxMeta, destinatarioNombre: e.target.value.toUpperCase() })}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-[#002147] uppercase focus:ring-4 focus:ring-blue-50 outline-none transition-all"
                   />
                 </div>
                 <div className="col-span-1">
