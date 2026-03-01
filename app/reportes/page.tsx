@@ -353,7 +353,8 @@ export default function ReportesPage() {
       ...d,
       num: d.numero_denuncia,
       tipo_hecho: d.tipo_especifico || d.shp,
-      perdida: d.monto_dano ? d.monto_dano.toLocaleString('es-PY') : '0'
+      oficina_vacia: '', // Departamento a cargo será un campo en blanco
+      perdida: (!d.monto_dano || d.monto_dano === 0) ? '-------' : d.monto_dano.toLocaleString('es-PY')
     }));
 
     const columns = [
@@ -362,7 +363,7 @@ export default function ReportesPage() {
       { header: 'S.H.P.', key: 'tipo_hecho' },
       { header: 'DENUNCIANTE', key: 'denunciante' },
       { header: 'INTERVINIENTE', key: 'interviniente' },
-      { header: 'DPTO. A CARGO', key: 'oficina' },
+      { header: 'DPTO. A CARGO', key: 'oficina_vacia' },
       { header: 'PÉRDIDA (Gs.)', key: 'perdida' },
       { header: 'ENTIDAD REPORTADA', key: 'entidad_reportada' }
     ];
