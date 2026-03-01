@@ -276,7 +276,51 @@ export const exportToDocx = async (
                 spacing: { line: 276 }, // Interlineado 1.15
                 children: [
                     new TextRun({
-                        text: `Tengo el honor de dirigirme a esa superioridad, a objeto de elevar resumen de denuncias recepcionadas en la Sala de Denuncias de esta Dirección, correspondiente al grupo de guardia del día ${metadata.fechaDesde} desde las 07:00 horas hasta el día ${metadata.fechaHasta} a las 07:00 horas, todas las actas fueron remitidas a los Departamentos correspondientes cuyos datos se detallan a continuación:`,
+                        text: "Tengo el honor de dirigirme a esa superioridad, a objeto de elevar resumen de denuncias recepcionadas en la Sala de Denuncias de esta Dirección, correspondiente al grupo de guardia del día ",
+                        font: 'Roboto',
+                        size: 22
+                    }),
+                    new TextRun({
+                        text: metadata.fechaDesde,
+                        bold: true,
+                        font: 'Roboto',
+                        size: 22
+                    }),
+                    new TextRun({
+                        text: " desde las ",
+                        font: 'Roboto',
+                        size: 22
+                    }),
+                    new TextRun({
+                        text: "07:00 horas",
+                        bold: true,
+                        font: 'Roboto',
+                        size: 22
+                    }),
+                    new TextRun({
+                        text: " hasta el día ",
+                        font: 'Roboto',
+                        size: 22
+                    }),
+                    new TextRun({
+                        text: metadata.fechaHasta,
+                        bold: true,
+                        font: 'Roboto',
+                        size: 22
+                    }),
+                    new TextRun({
+                        text: " a las ",
+                        font: 'Roboto',
+                        size: 22
+                    }),
+                    new TextRun({
+                        text: "07:00 horas",
+                        bold: true,
+                        font: 'Roboto',
+                        size: 22
+                    }),
+                    new TextRun({
+                        text: ", todas las actas fueron remitidas a los Departamentos correspondientes cuyos datos se detallan a continuación:",
                         font: 'Roboto',
                         size: 22
                     })
@@ -341,7 +385,7 @@ export const exportToDocx = async (
                 alignment: AlignmentType.CENTER,
                 indent: { left: 5500 },
                 children: [
-                    new TextRun({ text: `${metadata.remitenteCargo} - D.C.H.P.E.F.`, font: 'Roboto', size: 22 })
+                    new TextRun({ text: `${metadata.remitenteCargo} - D.C.H.P.E.F.`, font: 'Roboto', size: 22, bold: true })
                 ]
             }),
             new Paragraph({ children: [new TextRun("")] }),
@@ -363,7 +407,18 @@ export const exportToDocx = async (
                 alignment: AlignmentType.LEFT,
                 children: [
                     new TextRun({
-                        text: "Elevo a la División de Talento Humano, para su conocimiento y fines pertinentes.",
+                        text: "Elevo a la ",
+                        font: 'Roboto',
+                        size: 22
+                    }),
+                    new TextRun({
+                        text: "División de Talento Humano",
+                        bold: true,
+                        font: 'Roboto',
+                        size: 22
+                    }),
+                    new TextRun({
+                        text: ", para su conocimiento y fines pertinentes.",
                         font: 'Roboto',
                         size: 22
                     })
@@ -391,7 +446,7 @@ export const exportToDocx = async (
                 alignment: AlignmentType.CENTER,
                 indent: { left: 5500 },
                 children: [
-                    new TextRun({ text: `${metadata.destinatarioCargo} - D.C.H.P.E.F.`, font: 'Roboto', size: 22 })
+                    new TextRun({ text: `${metadata.destinatarioCargo} - D.C.H.P.E.F.`, font: 'Roboto', size: 22, bold: true })
                 ]
             })
         );
