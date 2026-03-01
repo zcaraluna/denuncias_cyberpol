@@ -6,6 +6,27 @@ import Link from 'next/link'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { MainLayout } from '@/components/MainLayout'
 import { formatearFechaSinTimezone } from '@/lib/utils/fecha'
+import {
+  ArrowLeft,
+  User,
+  FileText,
+  MapPin,
+  Clock,
+  Trash2,
+  Download,
+  Plus,
+  Hash,
+  Gavel,
+  AlertCircle,
+  Shield,
+  Calendar,
+  CreditCard,
+  Phone,
+  Mail,
+  Briefcase,
+  Map,
+  BadgeAlert
+} from 'lucide-react'
 
 interface Ampliacion {
   id: number
@@ -278,359 +299,366 @@ export default function VerDenunciaPage({ params }: { params: Promise<{ id: stri
 
   return (
     <MainLayout>
-      <div className="p-8">
-        <div className="mb-8 overflow-hidden">
-          <Link href="/mis-denuncias" className="text-sm font-medium text-primary hover:underline mb-4 inline-block">
-            ← Volver a Mis Denuncias
-          </Link>
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">Detalle de Denuncia</h1>
-              <p className="text-muted-foreground mt-1">Expediente Nº {denuncia.orden} - Hash: <span className="font-mono text-xs">{denuncia.hash.substring(0, 16)}...</span></p>
+      <div className="min-h-screen bg-slate-50/50 p-4 md:p-8">
+        {/* Header Section */}
+        <div className="max-w-6xl mx-auto mb-8">
+          <Link
+            href="/mis-denuncias"
+            className="group inline-flex items-center text-sm font-bold text-slate-500 hover:text-[#002147] transition-colors mb-6"
+          >
+            <div className="mr-2 p-1.5 rounded-lg bg-white border border-slate-200 group-hover:border-blue-200 group-hover:bg-blue-50 transition-all shadow-sm">
+              <ArrowLeft className="h-4 w-4" />
             </div>
-            <div className="flex flex-wrap gap-3">
-              {denuncia.estado === 'borrador' && (
-                <>
-                  <button
-                    onClick={continuarBorrador}
-                    className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 font-medium shadow-sm transition"
-                  >
-                    Continuar Denuncia
-                  </button>
-                  <button
-                    onClick={abrirModalEliminar}
-                    className="px-6 py-2 bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90 focus:outline-none focus:ring-2 focus:ring-destructive focus:ring-offset-2 font-medium shadow-sm transition"
-                  >
-                    Eliminar Borrador
-                  </button>
-                </>
-              )}
-              {denuncia.estado === 'completada' && (
-                <>
-                  <Link
-                    href={`/ampliar-denuncia/${denunciaId}`}
-                    className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 font-medium shadow-sm transition"
-                  >
-                    Ampliar Denuncia
-                  </Link>
-                  <button
-                    onClick={descargarPDF}
-                    className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 font-medium shadow-sm transition"
-                  >
-                    Ver PDF
-                  </button>
-                </>
-              )}
+            VOLVER A MIS DENUNCIAS
+          </Link>
+
+          <div className="bg-white rounded-3xl border border-slate-200/60 p-6 md:p-8 shadow-sm relative overflow-hidden">
+            {/* Fondo decorativo */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-slate-50 rounded-full -mr-32 -mt-32 z-0 opacity-50"></div>
+
+            <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div className="flex items-start gap-5">
+                <div className="p-4 bg-[#002147] rounded-2xl shadow-lg shadow-blue-900/10 shrink-0">
+                  <FileText className="h-8 w-8 text-white" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="px-3 py-0.5 bg-blue-50 text-[#002147] text-[10px] font-black uppercase tracking-widest rounded-full border border-blue-100">
+                      EXPEDIENTE Nº {denuncia.orden}
+                    </span>
+                    <span className={`px-3 py-0.5 text-[10px] font-black uppercase tracking-widest rounded-full border ${denuncia.estado === 'completada'
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+                        : 'bg-amber-50 text-amber-700 border-amber-100'
+                      }`}>
+                      {denuncia.estado}
+                    </span>
+                  </div>
+                  <h1 className="text-3xl font-black text-[#002147] leading-tight">Detalle de Denuncia</h1>
+                  <div className="flex items-center gap-2 mt-2 text-slate-500">
+                    <Hash className="h-3.5 w-3.5" />
+                    <span className="text-xs font-mono bg-slate-100 px-2 py-0.5 rounded-md">
+                      {denuncia.hash}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-3">
+                {denuncia.estado === 'borrador' && (
+                  <>
+                    <button
+                      onClick={continuarBorrador}
+                      className="group flex items-center gap-2 px-6 py-3 bg-[#002147] text-white rounded-xl hover:bg-[#003366] transition-all shadow-md shadow-blue-900/10 font-bold text-sm"
+                    >
+                      <Plus className="h-4 w-4" />
+                      CONTINUAR DENUNCIA
+                    </button>
+                    <button
+                      onClick={abrirModalEliminar}
+                      className="group flex items-center gap-2 px-6 py-3 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 border border-red-100 transition-all font-bold text-sm"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      ELIMINAR
+                    </button>
+                  </>
+                )}
+                {denuncia.estado === 'completada' && (
+                  <>
+                    <Link
+                      href={`/ampliar-denuncia/${denunciaId}`}
+                      className="group flex items-center gap-2 px-6 py-3 bg-indigo-50 text-indigo-700 rounded-xl hover:bg-indigo-100 border border-indigo-100 transition-all font-bold text-sm"
+                    >
+                      <Plus className="h-4 w-4 text-indigo-500" />
+                      AMPLIAR DENUNCIA
+                    </Link>
+                    <button
+                      onClick={descargarPDF}
+                      className="group flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-all shadow-md shadow-emerald-900/10 font-bold text-sm"
+                    >
+                      <Download className="h-4 w-4" />
+                      VER PDF
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="p-8 space-y-8">
-            {/* Información del Denunciante */}
-            <div>
-              <h2 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">
-                Datos del Denunciante
-              </h2>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Nombres y Apellidos</p>
-                  <p className="text-base text-gray-900">{denuncia.nombres_denunciante}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Tipo de Documento</p>
-                  <p className="text-base text-gray-900">{denuncia.tipo_documento || 'Cédula de Identidad Paraguaya'}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Número de Documento</p>
-                  <p className="text-base text-gray-900">{denuncia.cedula}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Nacionalidad</p>
-                  <p className="text-base text-gray-900">{denuncia.nacionalidad}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Fecha de Nacimiento</p>
-                  <p className="text-base text-gray-900">{formatearFechaSinTimezone(denuncia.fecha_nacimiento)}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Edad</p>
-                  <p className="text-base text-gray-900">{denuncia.edad} años</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Lugar de Nacimiento</p>
-                  <p className="text-base text-gray-900">{denuncia.lugar_nacimiento}</p>
-                </div>
-                {denuncia.domicilio && (
-                  <div className="col-span-2">
-                    <p className="text-sm font-medium text-gray-600">Domicilio</p>
-                    <p className="text-base text-gray-900">{denuncia.domicilio}</p>
-                  </div>
-                )}
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Estado Civil</p>
-                  <p className="text-base text-gray-900">{denuncia.estado_civil}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Teléfono</p>
-                  <p className="text-base text-gray-900">{denuncia.telefono}</p>
-                </div>
-                {denuncia.correo && (
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Correo Electrónico</p>
-                    <p className="text-base text-gray-900">{denuncia.correo}</p>
-                  </div>
-                )}
-                {denuncia.profesion && (
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Profesión</p>
-                    <p className="text-base text-gray-900">{denuncia.profesion}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Información de la Denuncia */}
-            <div>
-              <h2 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">
-                Detalles de la Denuncia
-              </h2>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Número de Orden</p>
-                  <p className="text-base text-gray-900">{denuncia.orden}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Hash</p>
-                  <p className="text-base text-gray-900 font-mono">{denuncia.hash}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Tipo de Denuncia</p>
-                  <p className="text-base text-gray-900">{denuncia.tipo_denuncia === 'OTRO' ? denuncia.otro_tipo : denuncia.tipo_denuncia}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Fecha del Hecho</p>
-                  <p className="text-base text-gray-900">{formatearFechaSinTimezone(denuncia.fecha_hecho)} {denuncia.hora_hecho}</p>
-                </div>
-                <div className="col-span-2">
-                  <p className="text-sm font-medium text-gray-600">Lugar del Hecho</p>
-                  <p className="text-base text-gray-900">{denuncia.lugar_hecho}</p>
-                </div>
-                {denuncia.latitud && denuncia.longitud && (
-                  <div className="col-span-2">
-                    <p className="text-sm font-medium text-gray-600">Coordenadas GPS</p>
-                    <p className="text-base text-gray-900 font-mono">{typeof denuncia.latitud === 'string' ? parseFloat(denuncia.latitud).toFixed(6) : denuncia.latitud.toFixed(6)}, {typeof denuncia.longitud === 'string' ? parseFloat(denuncia.longitud).toFixed(6) : denuncia.longitud.toFixed(6)}</p>
-                  </div>
-                )}
-                <div className="col-span-2">
-                  <p className="text-sm font-medium text-gray-600">Relato del Hecho</p>
-                  <p className="text-base text-gray-900 whitespace-pre-wrap">{denuncia.relato}</p>
-                </div>
-                {denuncia.monto_dano && (
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Monto del Daño</p>
-                    <p className="text-base text-gray-900">{typeof denuncia.monto_dano === 'string' ? parseFloat(denuncia.monto_dano).toLocaleString('es-PY') : denuncia.monto_dano.toLocaleString('es-PY')} {denuncia.moneda}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Supuestos Autores */}
-            {denuncia.supuestos_autores && denuncia.supuestos_autores.length > 0 && (
-              <div>
-                <h2 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">
-                  Supuestos Autores
-                </h2>
-                {denuncia.supuestos_autores.map((autor, index) => (
-                  <div key={index} className="mb-6 p-4 border border-gray-200 rounded-lg">
-                    <div className="mb-3">
-                      <span className={`px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full ${autor.autor_conocido === 'Conocido'
-                        ? 'bg-blue-100 text-blue-800'
-                        : 'bg-gray-100 text-gray-800'
-                        }`}>
-                        {autor.autor_conocido === 'Conocido' ? 'Autor Conocido' : 'Autor Desconocido'}
-                      </span>
+        <div className="max-w-6xl mx-auto space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Columna Izquierda: Datos del Denunciante */}
+            <div className="lg:col-span-1 space-y-6">
+              <div className="bg-white rounded-3xl border border-slate-200/60 shadow-sm overflow-hidden h-full">
+                <div className="h-2 bg-blue-500"></div>
+                <div className="p-6 md:p-8">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600">
+                      <User className="h-5 w-5" />
                     </div>
+                    <h2 className="text-sm font-black text-[#002147] uppercase tracking-widest">
+                      Denunciante
+                    </h2>
+                  </div>
+
+                  <div className="space-y-6">
+                    <DataGroup label="Nombres y Apellidos" value={denuncia.nombres_denunciante} icon={<User className="h-3.5 w-3.5" />} />
+                    <DataGroup label="Documento" value={`${denuncia.tipo_documento || 'C.I.'}: ${denuncia.cedula}`} icon={<CreditCard className="h-3.5 w-3.5" />} />
+                    <DataGroup label="Nacionalidad" value={denuncia.nacionalidad} icon={<Map className="h-3.5 w-3.5" />} />
+
                     <div className="grid grid-cols-2 gap-4">
-                      {autor.autor_conocido === 'Conocido' ? (
-                        <>
-                          {autor.nombre_autor && (
+                      <DataGroup label="Edad" value={`${denuncia.edad} años`} />
+                      <DataGroup label="Estado Civil" value={denuncia.estado_civil} />
+                    </div>
+
+                    <DataGroup label="Teléfono" value={denuncia.telefono} icon={<Phone className="h-3.5 w-3.5" />} />
+                    {denuncia.correo && <DataGroup label="Correo" value={denuncia.correo} icon={<Mail className="h-3.5 w-3.5" />} />}
+                    {denuncia.profesion && <DataGroup label="Profesión" value={denuncia.profesion} icon={<Briefcase className="h-3.5 w-3.5" />} />}
+
+                    {denuncia.domicilio && (
+                      <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Domicilio Declarado</label>
+                        <p className="text-sm text-[#002147] font-bold leading-relaxed">{denuncia.domicilio}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Columna Derecha: Detalles de la Denuncia */}
+            <div className="lg:col-span-2 space-y-6">
+              <div className="bg-white rounded-3xl border border-slate-200/60 shadow-sm overflow-hidden">
+                <div className="h-2 bg-indigo-500"></div>
+                <div className="p-6 md:p-8">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="p-2.5 bg-indigo-50 rounded-xl text-indigo-600">
+                      <Shield className="h-5 w-5" />
+                    </div>
+                    <h2 className="text-sm font-black text-[#002147] uppercase tracking-widest">
+                      Detalles del Hecho
+                    </h2>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                    <DataGroup
+                      label="Tipo de Denuncia"
+                      value={denuncia.tipo_denuncia === 'OTRO' ? denuncia.otro_tipo : denuncia.tipo_denuncia}
+                      icon={<Gavel className="h-3.5 w-3.5" />}
+                    />
+                    <DataGroup
+                      label="Fecha y Hora del Hecho"
+                      value={`${formatearFechaSinTimezone(denuncia.fecha_hecho)} - ${denuncia.hora_hecho}`}
+                      icon={<Clock className="h-3.5 w-3.5" />}
+                    />
+                    <div className="md:col-span-2">
+                      <DataGroup
+                        label="Lugar del Hecho"
+                        value={denuncia.lugar_hecho}
+                        icon={<MapPin className="h-3.5 w-3.5" />}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="relative mb-8">
+                    <label className="absolute -top-2.5 left-4 px-2 bg-white text-[10px] font-black text-indigo-500 uppercase tracking-widest">Relato del Hecho</label>
+                    <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100 min-h-[150px]">
+                      <p className="text-sm text-[#002147] font-medium leading-relaxed whitespace-pre-wrap">{denuncia.relato}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-between gap-4 p-5 bg-slate-50 rounded-2xl border border-slate-100">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-white rounded-lg border border-slate-200 text-slate-400">
+                        <CreditCard className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Impacto Financiero</p>
+                        <p className="text-lg font-black text-[#002147]">
+                          {denuncia.monto_dano ? `${typeof denuncia.monto_dano === 'string' ? parseFloat(denuncia.monto_dano).toLocaleString('es-PY') : denuncia.monto_dano.toLocaleString('es-PY')} ${denuncia.moneda}` : 'NO APLICA'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 pr-4">
+                      <div className="p-2 bg-white rounded-lg border border-slate-200 text-slate-400">
+                        <Map className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Ubicación GPS</p>
+                        <p className="text-xs font-bold text-[#002147]">
+                          {denuncia.latitud && denuncia.longitud ? `${parseFloat(String(denuncia.latitud)).toFixed(6)}, ${parseFloat(String(denuncia.longitud)).toFixed(6)}` : 'SIN REGISTRO'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Supuestos Autores */}
+              {denuncia.supuestos_autores && denuncia.supuestos_autores.length > 0 && (
+                <div className="bg-white rounded-3xl border border-slate-200/60 shadow-sm overflow-hidden">
+                  <div className="h-2 bg-slate-400"></div>
+                  <div className="p-6 md:p-8">
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="p-2.5 bg-slate-50 rounded-xl text-slate-600">
+                        <BadgeAlert className="h-5 w-5" />
+                      </div>
+                      <h2 className="text-sm font-black text-[#002147] uppercase tracking-widest">
+                        Supuestos Autores
+                      </h2>
+                    </div>
+
+                    <div className="space-y-4">
+                      {denuncia.supuestos_autores.map((autor, index) => (
+                        <div key={index} className="p-6 bg-slate-50 border border-slate-100 rounded-3xl">
+                          <div className="flex items-center gap-2 mb-4">
+                            <span className={`px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-full border ${autor.autor_conocido === 'Conocido'
+                                ? 'bg-blue-50 text-blue-700 border-blue-100'
+                                : 'bg-slate-200 text-slate-700 border-slate-300'
+                              }`}>
+                              {autor.autor_conocido === 'Conocido' ? 'Autor Identificado' : 'Sin Identificar'}
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {autor.autor_conocido === 'Conocido' ? (
+                              <>
+                                <DataGroup label="Nombre del Autor" value={autor.nombre_autor || 'N/A'} icon={<User className="h-3.5 w-3.5" />} />
+                                <DataGroup label="Cédula" value={autor.cedula_autor || 'N/A'} icon={<CreditCard className="h-3.5 w-3.5" />} />
+                                <div className="md:col-span-2">
+                                  <DataGroup label="Domicilio" value={autor.domicilio_autor || 'N/A'} icon={<MapPin className="h-3.5 w-3.5" />} />
+                                </div>
+                                <DataGroup label="Teléfono" value={autor.telefono_autor || 'N/A'} icon={<Phone className="h-3.5 w-3.5" />} />
+                                <DataGroup label="Entidad Asociada" value={autor.entidad_bancaria || 'N/A'} icon={<BadgeAlert className="h-3.5 w-3.5" />} />
+                              </>
+                            ) : (
+                              <>
+                                {autor.descripcion_fisica && formatearDescripcionFisica(autor.descripcion_fisica) && (
+                                  <div className="md:col-span-2">
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Descripción Física Detallada</label>
+                                    <div className="p-4 bg-white rounded-2xl border border-slate-200 text-xs font-medium text-slate-700 leading-relaxed whitespace-pre-line">
+                                      {formatearDescripcionFisica(autor.descripcion_fisica)}
+                                    </div>
+                                  </div>
+                                )}
+                                <DataGroup label="Cuentas/Teléfonos Involucrados" value={autor.telefonos_involucrados || autor.numero_cuenta_beneficiaria || 'N/A'} icon={<AlertCircle className="h-3.5 w-3.5" />} />
+                                <DataGroup label="Entidad Bancaria" value={autor.entidad_bancaria || 'N/A'} icon={<Shield className="h-3.5 w-3.5" />} />
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Ampliaciones */}
+              {denuncia.estado === 'completada' && ampliaciones.length > 0 && (
+                <div className="bg-white rounded-3xl border border-slate-200/60 shadow-sm overflow-hidden">
+                  <div className="h-2 bg-purple-500"></div>
+                  <div className="p-6 md:p-8">
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="p-2.5 bg-purple-50 rounded-xl text-purple-600">
+                        <Plus className="h-5 w-5" />
+                      </div>
+                      <h2 className="text-sm font-black text-[#002147] uppercase tracking-widest">
+                        Ampliaciones del Expediente
+                      </h2>
+                    </div>
+
+                    <div className="space-y-4">
+                      {ampliaciones.map((ampliacion) => (
+                        <div key={ampliacion.id} className="p-6 border border-slate-100 rounded-3xl bg-slate-50/70 hover:bg-slate-50 transition-colors">
+                          <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-4 pb-4 border-b border-slate-200/60">
                             <div>
-                              <p className="text-sm font-medium text-gray-600">Nombre</p>
-                              <p className="text-base text-gray-900">{autor.nombre_autor}</p>
-                            </div>
-                          )}
-                          {autor.cedula_autor && (
-                            <div>
-                              <p className="text-sm font-medium text-gray-600">Cédula</p>
-                              <p className="text-base text-gray-900">{autor.cedula_autor}</p>
-                            </div>
-                          )}
-                          {autor.domicilio_autor && (
-                            <div className="col-span-2">
-                              <p className="text-sm font-medium text-gray-600">Domicilio</p>
-                              <p className="text-base text-gray-900">{autor.domicilio_autor}</p>
-                            </div>
-                          )}
-                          {autor.nacionalidad_autor && (
-                            <div>
-                              <p className="text-sm font-medium text-gray-600">Nacionalidad</p>
-                              <p className="text-base text-gray-900">{autor.nacionalidad_autor}</p>
-                            </div>
-                          )}
-                          {autor.estado_civil_autor && (
-                            <div>
-                              <p className="text-sm font-medium text-gray-600">Estado Civil</p>
-                              <p className="text-base text-gray-900">{autor.estado_civil_autor}</p>
-                            </div>
-                          )}
-                          {autor.edad_autor && (
-                            <div>
-                              <p className="text-sm font-medium text-gray-600">Edad</p>
-                              <p className="text-base text-gray-900">{autor.edad_autor} años</p>
-                            </div>
-                          )}
-                          {autor.fecha_nacimiento_autor && (
-                            <div>
-                              <p className="text-sm font-medium text-gray-600">Fecha de Nacimiento</p>
-                              <p className="text-base text-gray-900">{formatearFechaSinTimezone(autor.fecha_nacimiento_autor)}</p>
-                            </div>
-                          )}
-                          {autor.lugar_nacimiento_autor && (
-                            <div className="col-span-2">
-                              <p className="text-sm font-medium text-gray-600">Lugar de Nacimiento</p>
-                              <p className="text-base text-gray-900">{autor.lugar_nacimiento_autor}</p>
-                            </div>
-                          )}
-                          {autor.telefono_autor && (
-                            <div>
-                              <p className="text-sm font-medium text-gray-600">Teléfono</p>
-                              <p className="text-base text-gray-900">{autor.telefono_autor}</p>
-                            </div>
-                          )}
-                          {autor.profesion_autor && (
-                            <div>
-                              <p className="text-sm font-medium text-gray-600">Profesión</p>
-                              <p className="text-base text-gray-900">{autor.profesion_autor}</p>
-                            </div>
-                          )}
-                        </>
-                      ) : (
-                        <>
-                          {autor.descripcion_fisica && formatearDescripcionFisica(autor.descripcion_fisica) && (
-                            <div className="col-span-2">
-                              <p className="text-sm font-medium text-gray-600 mb-2">Descripción Física</p>
-                              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                                <p className="text-base text-gray-900 whitespace-pre-line text-sm leading-relaxed">
-                                  {formatearDescripcionFisica(autor.descripcion_fisica)}
-                                </p>
+                              <h3 className="text-base font-black text-[#002147]">
+                                AMPLACIÓN Nº {ampliacion.numero_ampliacion}
+                              </h3>
+                              <div className="flex items-center gap-3 mt-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                <span className="flex items-center gap-1.5"><Calendar className="h-3 w-3" /> {formatearFechaSinTimezone(ampliacion.fecha_ampliacion)}</span>
+                                <span className="flex items-center gap-1.5"><Clock className="h-3 w-3" /> {ampliacion.hora_ampliacion}</span>
                               </div>
                             </div>
-                          )}
-                          {autor.telefonos_involucrados && (
-                            <div>
-                              <p className="text-sm font-medium text-gray-600">Teléfono(s) Involucrado(s)</p>
-                              <p className="text-base text-gray-900">{autor.telefonos_involucrados}</p>
+                            <button
+                              onClick={() => descargarPDFAmpliacion(ampliacion.id)}
+                              className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-[#002147] rounded-xl hover:border-blue-200 hover:bg-blue-50 transition-all shadow-sm text-xs font-bold"
+                            >
+                              <Download className="h-3.5 w-3.5 text-blue-500" />
+                              VER AMPLIACIÓN
+                            </button>
+                          </div>
+                          <div>
+                            <p className="text-sm text-[#002147] font-medium leading-relaxed whitespace-pre-wrap">{ampliacion.relato}</p>
+                            <div className="mt-4 flex items-center gap-2">
+                              <Shield className="h-3 w-3 text-slate-400" />
+                              <p className="text-[10px] font-bold text-slate-400 italic">
+                                Interviniente: {ampliacion.operador_grado} {ampliacion.operador_nombre} {ampliacion.operador_apellido}
+                              </p>
                             </div>
-                          )}
-                          {autor.numero_cuenta_beneficiaria && (
-                            <div>
-                              <p className="text-sm font-medium text-gray-600">Número de Cuenta</p>
-                              <p className="text-base text-gray-900">{autor.numero_cuenta_beneficiaria}</p>
-                            </div>
-                          )}
-                          {autor.nombre_cuenta_beneficiaria && (
-                            <div className="col-span-2">
-                              <p className="text-sm font-medium text-gray-600">Nombre de Cuenta</p>
-                              <p className="text-base text-gray-900">{autor.nombre_cuenta_beneficiaria}</p>
-                            </div>
-                          )}
-                          {autor.entidad_bancaria && (
-                            <div>
-                              <p className="text-sm font-medium text-gray-600">Entidad Bancaria</p>
-                              <p className="text-base text-gray-900">{autor.entidad_bancaria}</p>
-                            </div>
-                          )}
-                        </>
-                      )}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-
-            {/* Ampliaciones */}
-            {denuncia.estado === 'completada' && ampliaciones.length > 0 && (
-              <div>
-                <h2 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">
-                  Ampliaciones de Denuncia
-                </h2>
-                <div className="space-y-4">
-                  {ampliaciones.map((ampliacion) => (
-                    <div key={ampliacion.id} className="p-4 border border-gray-200 rounded-lg">
-                      <div className="flex justify-between items-start mb-3">
-                        <div>
-                          <h3 className="text-lg font-semibold text-gray-800">
-                            Ampliación Nº {ampliacion.numero_ampliacion}
-                          </h3>
-                          <p className="text-sm text-gray-600">
-                            Fecha: {formatearFechaSinTimezone(ampliacion.fecha_ampliacion)} {ampliacion.hora_ampliacion}
-                          </p>
-                          <p className="text-sm text-gray-600">
-                            Operador: {ampliacion.operador_grado} {ampliacion.operador_nombre} {ampliacion.operador_apellido}
-                          </p>
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => descargarPDFAmpliacion(ampliacion.id)}
-                            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 text-sm font-medium"
-                          >
-                            Ver PDF
-                          </button>
-                        </div>
-                      </div>
-                      <div className="mt-3">
-                        <p className="text-sm font-medium text-gray-600 mb-1">Relato:</p>
-                        <p className="text-base text-gray-900 whitespace-pre-wrap">{ampliacion.relato}</p>
-                      </div>
-                    </div>
-                  ))}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Modal de confirmación de eliminación */}
+        {/* Modal Borrador */}
         {mostrarModalEliminar && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full mx-4">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Eliminar Borrador</h3>
-              <p className="text-gray-600 mb-6">
-                ¿Está seguro que desea eliminar este borrador? Esta acción no se puede deshacer.
+          <div className="fixed inset-0 bg-[#002147]/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-[32px] shadow-2xl p-8 max-w-sm w-full border border-slate-100 animate-in fade-in zoom-in duration-200">
+              <div className="h-12 w-12 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center mb-6">
+                <AlertCircle className="h-6 w-6" />
+              </div>
+              <h3 className="text-xl font-black text-[#002147] mb-2 uppercase tracking-tight">¿Eliminar Borrador?</h3>
+              <p className="text-sm text-slate-500 font-medium mb-8 leading-relaxed">
+                Esta acción es irreversible y se perderán todos los datos cargados hasta el momento.
               </p>
 
-              <div className="flex gap-4">
-                <button
-                  onClick={() => setMostrarModalEliminar(false)}
-                  disabled={eliminando}
-                  className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Cancelar
-                </button>
+              <div className="flex flex-col gap-3">
                 <button
                   onClick={eliminarBorrador}
                   disabled={eliminando}
-                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full px-6 py-3.5 bg-red-600 text-white rounded-2xl hover:bg-red-700 transition-all font-black text-sm shadow-lg shadow-red-900/10 disabled:opacity-50"
                 >
-                  {eliminando ? 'Eliminando...' : 'Eliminar'}
+                  {eliminando ? 'ELIMINANDO...' : 'ELIMINAR PERMANENTEMENTE'}
+                </button>
+                <button
+                  onClick={() => setMostrarModalEliminar(false)}
+                  disabled={eliminando}
+                  className="w-full px-6 py-3.5 bg-slate-100 text-[#002147] rounded-2xl hover:bg-slate-200 transition-all font-black text-sm"
+                >
+                  CANCELAR
                 </button>
               </div>
             </div>
           </div>
         )}
       </div>
-    </MainLayout >
+    </MainLayout>
+  )
+}
+
+function DataGroup({ label, value, icon }: { label: string, value: string | number | null, icon?: React.ReactNode }) {
+  return (
+    <div className="group">
+      <div className="flex items-center gap-1.5 mb-1.5 ml-1">
+        {icon && <span className="text-slate-300 group-hover:text-blue-400 transition-colors">{icon}</span>}
+        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">{label}</label>
+      </div>
+      <p className="text-sm text-[#002147] font-bold min-h-[1.25rem]">
+        {value === null || value === undefined || value === '' ? (
+          <span className="text-slate-300 font-medium italic">Sin Registro</span>
+        ) : (
+          value
+        )}
+      </p>
+    </div>
   )
 }
 
