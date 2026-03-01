@@ -7,7 +7,22 @@ const fetchImageAsBuffer = async (url: string): Promise<Uint8Array> => {
     return new Uint8Array(arrayBuffer);
 };
 
-export const exportToDocx = async (data: any[], fileName: string, columns: { header: string; key: string; width?: number }[]) => {
+export interface DocxMetadata {
+    numeroNota: string;
+    destinatarioGrado: string;
+    destinatarioNombre: string;
+    destinatarioCargo: string;
+    fechaDesde: string;
+    fechaHasta: string;
+    oficina?: string;
+}
+
+export const exportToDocx = async (
+    data: any[],
+    fileName: string,
+    columns: { header: string; key: string; width?: number }[],
+    metadata?: DocxMetadata
+) => {
     // Cargar logos
     let logoPolicia: Uint8Array | undefined;
     let logoDchef: Uint8Array | undefined;
@@ -26,6 +41,7 @@ export const exportToDocx = async (data: any[], fileName: string, columns: { hea
         console.error('Error cargando logos para DOCX:', e);
     }
 
+    // Preparar Tabla de Datos (La tabla principal)
     const table = new Table({
         width: {
             size: 100,
@@ -44,7 +60,7 @@ export const exportToDocx = async (data: any[], fileName: string, columns: { hea
                                     text: col.header,
                                     bold: true,
                                     font: 'Roboto',
-                                    size: 16
+                                    size: 14 // Un poco más pequeño para que quepa todo
                                 })
                             ]
                         })
@@ -70,12 +86,12 @@ export const exportToDocx = async (data: any[], fileName: string, columns: { hea
                         width: col.width ? { size: col.width, type: WidthType.PERCENTAGE } : undefined,
                         children: [
                             new Paragraph({
-                                alignment: AlignmentType.LEFT,
+                                alignment: col.key === 'num' ? AlignmentType.CENTER : AlignmentType.LEFT,
                                 children: [
                                     new TextRun({
                                         text: text,
                                         font: 'Roboto',
-                                        size: 16
+                                        size: 14
                                     })
                                 ]
                             })
@@ -93,7 +109,7 @@ export const exportToDocx = async (data: any[], fileName: string, columns: { hea
         ],
     });
 
-    // Construcción del Encabezado Institucional
+    // Construcción del Encabezado Institucional (Logos)
     const headerTable = new Table({
         width: { size: 100, type: WidthType.PERCENTAGE },
         borders: {
@@ -156,6 +172,168 @@ export const exportToDocx = async (data: any[], fileName: string, columns: { hea
         ],
     });
 
+    // Lógica de Fecha para la nota
+    const fechaActual = new Date();
+    const meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+    const dia = fechaActual.getDate().toString().padStart(2, '0');
+    const mes = meses[fechaActual.getMonth()];
+    const anio = fechaActual.getFullYear();
+    const oficina = metadata?.oficina || "Asunción";
+    const fechaNotaStr = `${oficina}, ${dia} de ${mes} del ${anio}`;
+
+    // Cuerpo del documento (Secciones)
+    const children: any[] = [
+        headerTable,
+        new Paragraph({
+            alignment: AlignmentType.CENTER,
+            spacing: { before: 200 },
+            children: [
+                new TextRun({
+                    text: "DIRECCIÓN CONTRA HECHOS PUNIBLES ECONÓMICOS Y FINANCIEROS",
+                    bold: true,
+                    size: 24, // 12pt
+                    font: 'Roboto'
+                })
+            ],
+        }),
+        new Paragraph({
+            alignment: AlignmentType.CENTER,
+            children: [
+                new TextRun({
+                    text: "OFICINA DE GUARDIA",
+                    bold: true,
+                    size: 22, // 11pt
+                    font: 'Roboto'
+                })
+            ],
+        }),
+        new Paragraph({
+            alignment: AlignmentType.CENTER,
+            spacing: { before: 100 },
+            children: [
+                new TextRun({ text: "Dirección: ", bold: true, size: 16, font: 'Roboto' }),
+                new TextRun({ text: "E. V. Haedo 725 casi O'Leary", size: 16, font: 'Roboto' })
+            ],
+        }),
+        new Paragraph({
+            alignment: AlignmentType.CENTER,
+            children: [
+                new TextRun({ text: "Teléfono: ", bold: true, size: 16, font: 'Roboto' }),
+                new TextRun({ text: "(021) 443-159 Fax: (021) 443-126 (021) 441-111", size: 16, font: 'Roboto' })
+            ],
+        }),
+        new Paragraph({
+            alignment: AlignmentType.CENTER,
+            children: [
+                new TextRun({ text: "E-mail: ", bold: true, size: 16, font: 'Roboto' }),
+                new TextRun({ text: "ayudantia@delitoseconomicos.gov.py", size: 16, font: 'Roboto' })
+            ],
+        }),
+        new Paragraph({
+            spacing: { before: 200, after: 200 },
+            border: { bottom: { color: "000000", space: 1, style: BorderStyle.SINGLE, size: 6 } },
+            children: [new TextRun("")]
+        }),
+    ];
+
+    // Si hay metadatos, construir el formato de Nota de Elevación
+    if (metadata) {
+        children.push(
+            new Paragraph({
+                alignment: AlignmentType.RIGHT,
+                spacing: { before: 200, after: 400 },
+                children: [
+                    new TextRun({
+                        text: fechaNotaStr,
+                        font: 'Roboto',
+                        size: 22
+                    })
+                ]
+            }),
+            new Paragraph({
+                alignment: AlignmentType.LEFT,
+                spacing: { after: 100 },
+                children: [
+                    new TextRun({
+                        text: `DCHPEF/OG/NV/Nº ${metadata.numeroNota}/${anio}`,
+                        bold: true,
+                        font: 'Roboto',
+                        size: 22
+                    })
+                ]
+            }),
+            new Paragraph({
+                alignment: AlignmentType.LEFT,
+                children: [
+                    new TextRun({ text: "Al: ", bold: true, font: 'Roboto', size: 22 }),
+                    new TextRun({ text: metadata.destinatarioGrado, bold: true, font: 'Roboto', size: 22 })
+                ]
+            }),
+            new Paragraph({
+                alignment: AlignmentType.LEFT,
+                children: [
+                    new TextRun({ text: `${metadata.destinatarioNombre}, ${metadata.destinatarioCargo}`, bold: true, font: 'Roboto', size: 22 })
+                ]
+            }),
+            new Paragraph({
+                alignment: AlignmentType.LEFT,
+                spacing: { after: 400 },
+                children: [
+                    new TextRun({ text: "D.C.H.P.E.F.", bold: true, font: 'Roboto', size: 22 })
+                ]
+            }),
+            new Paragraph({
+                alignment: AlignmentType.LEFT,
+                indent: { left: 850 }, // Aprox 1.5 cm
+                spacing: { after: 300 },
+                children: [
+                    new TextRun({
+                        text: `Tengo el honor de dirigirme a esa superioridad, a objeto de elevar resumen de denuncias recepcionadas en la Sala de Denuncias de esta Direccion, correspondiente al grupo de guardia del dia ${metadata.fechaDesde} desde las 07:00 horas hasata el dia ${metadata.fechaHasta} a las 07:00 horas, todas las actas fueron remitidas a los Departamentos correspondientes cuyos datos se detallan a continuacion:`,
+                        font: 'Roboto',
+                        size: 22
+                    })
+                ]
+            })
+        );
+    } else {
+        // Formato antiguo por si acaso
+        children.push(
+            new Paragraph({
+                alignment: AlignmentType.CENTER,
+                spacing: { after: 400 },
+                children: [
+                    new TextRun({
+                        text: fileName.toUpperCase(),
+                        bold: true,
+                        size: 28,
+                        font: 'Roboto'
+                    })
+                ],
+            })
+        );
+    }
+
+    // Añadir Tabla
+    children.push(table);
+
+    // Añadir Cierre si hay metadatos
+    if (metadata) {
+        children.push(
+            new Paragraph({
+                alignment: AlignmentType.LEFT,
+                indent: { left: 850 },
+                spacing: { before: 400 },
+                children: [
+                    new TextRun({
+                        text: "Respetuosamente.-",
+                        font: 'Roboto',
+                        size: 22
+                    })
+                ]
+            })
+        );
+    }
+
     const doc = new Document({
         styles: {
             default: {
@@ -175,79 +353,14 @@ export const exportToDocx = async (data: any[], fileName: string, columns: { hea
                         orientation: PageOrientation.PORTRAIT,
                     },
                     margin: {
-                        top: 720, // 0.5 inch
+                        top: 720,
                         bottom: 720,
-                        left: 720,
+                        left: 1417, // 2.5 cm
                         right: 720
                     }
                 },
             },
-            children: [
-                headerTable,
-                new Paragraph({
-                    alignment: AlignmentType.CENTER,
-                    spacing: { before: 200 },
-                    children: [
-                        new TextRun({
-                            text: "DIRECCIÓN CONTRA HECHOS PUNIBLES ECONÓMICOS Y FINANCIEROS",
-                            bold: true,
-                            size: 26, // 13pt
-                            font: 'Roboto'
-                        })
-                    ],
-                }),
-                new Paragraph({
-                    alignment: AlignmentType.CENTER,
-                    children: [
-                        new TextRun({
-                            text: "OFICINA DE GUARDIA",
-                            bold: true,
-                            size: 24, // 12pt
-                            font: 'Roboto'
-                        })
-                    ],
-                }),
-                new Paragraph({
-                    alignment: AlignmentType.CENTER,
-                    spacing: { before: 100 },
-                    children: [
-                        new TextRun({ text: "Dirección: ", bold: true, size: 20, font: 'Roboto' }),
-                        new TextRun({ text: "E. V. Haedo 725 casi O'Leary", size: 20, font: 'Roboto' })
-                    ],
-                }),
-                new Paragraph({
-                    alignment: AlignmentType.CENTER,
-                    children: [
-                        new TextRun({ text: "Teléfono: ", bold: true, size: 20, font: 'Roboto' }),
-                        new TextRun({ text: "(021) 443-159 Fax: (021) 443-126 (021) 441-111", size: 20, font: 'Roboto' })
-                    ],
-                }),
-                new Paragraph({
-                    alignment: AlignmentType.CENTER,
-                    children: [
-                        new TextRun({ text: "E-mail: ", bold: true, size: 20, font: 'Roboto' }),
-                        new TextRun({ text: "ayudantia@delitoseconomicos.gov.py", size: 20, font: 'Roboto' })
-                    ],
-                }),
-                new Paragraph({
-                    spacing: { before: 200, after: 200 },
-                    border: { bottom: { color: "000000", space: 1, style: BorderStyle.SINGLE, size: 6 } },
-                    children: [new TextRun("")]
-                }),
-                new Paragraph({
-                    alignment: AlignmentType.CENTER,
-                    spacing: { after: 400 },
-                    children: [
-                        new TextRun({
-                            text: fileName.toUpperCase(),
-                            bold: true,
-                            size: 28,
-                            font: 'Roboto'
-                        })
-                    ],
-                }),
-                table,
-            ],
+            children: children,
         }],
     });
 

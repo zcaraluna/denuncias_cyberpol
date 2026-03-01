@@ -348,7 +348,23 @@ export default function ReportesPage() {
     exportToExcel(data, `Reporte_Denuncias_${fecha || activeTab}`, columns);
   };
 
+  // Estado para Modal de Exportación DOCX (Nota de Elevación)
+  const [showDocxModal, setShowDocxModal] = useState(false);
+  const [docxMeta, setDocxMeta] = useState({
+    numeroNota: '',
+    destinatarioGrado: '',
+    destinatarioNombre: '',
+    destinatarioCargo: 'Jefe de Servicio'
+  });
+
   const handleExportDailyDocx = async () => {
+    setShowDocxModal(true);
+  };
+
+  const confirmExportDocx = async () => {
+    setShowDocxModal(false);
+    setCargando(true);
+
     // Obtener cotizaciones para conversión
     let cotizaciones: Record<string, { compra: number; venta: number }> = {};
     try {
@@ -376,9 +392,9 @@ export default function ReportesPage() {
       return {
         ...d,
         num: d.numero_denuncia,
-        tipo_hecho: (d.tipo_especifico || d.shp || '').toUpperCase(), // MAYÚSCULAS
-        oficina_vacia: '', // Completamente en blanco
-        perdida: montoGs > 0 ? `${montoGs.toLocaleString('es-PY')} Gs.` : '-------' // Sufijo Gs. y guiones para 0
+        tipo_hecho: (d.tipo_especifico || d.shp || '').toUpperCase(),
+        oficina_vacia: '',
+        perdida: montoGs > 0 ? `${montoGs.toLocaleString('es-PY')} Gs.` : '-------'
       };
     });
 
@@ -392,7 +408,26 @@ export default function ReportesPage() {
       { header: 'PÉRDIDA (Gs.)', key: 'perdida', width: 12 },
       { header: 'ENTIDAD REPORTADA', key: 'entidad_reportada', width: 12 }
     ];
-    exportToDocx(data, 'Reporte Diario de Denuncias', columns);
+
+    // Lógica para determinar el rango de fecha (guardia de 07:00 a 07:00)
+    // Usamos la fecha seleccionada en el filtro
+    const fechaFiltro = new Date(fecha + 'T12:00:00'); // Mediodía para evitar problemas de TZ
+    const fAnterior = new Date(fechaFiltro);
+    fAnterior.setDate(fAnterior.getDate() - 1); // El día anterior (inicio de la guardia si es hoy)
+
+    // Formatear fechas para el párrafo: DD/MM/AAAA
+    const fmt = (d: Date) => d.toLocaleDateString('es-PY', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const fmtDia = (d: Date) => d.toLocaleDateString('es-PY', { weekday: 'long' }).toUpperCase();
+
+    const metadataFormateada = {
+      ...docxMeta,
+      fechaDesde: `${fmtDia(fechaFiltro)} ${fmt(fechaFiltro)}`,
+      fechaHasta: `${fmtDia(new Date(fechaFiltro.getTime() + 86400000))} ${fmt(new Date(fechaFiltro.getTime() + 86400000))}`,
+      oficina: datosDiarioOrdenados[0]?.oficina || 'Asunción'
+    };
+
+    await exportToDocx(data, 'Reporte Diario de Denuncias', columns, metadataFormateada);
+    setCargando(false);
   };
 
   const handleExportDanosExcel = () => {
@@ -1146,6 +1181,96 @@ export default function ReportesPage() {
           )}
         </div>
       </div>
+
+      {/* Modal para Metadatos de Nota de Elevación (DOCX) */}
+      {showDocxModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#002147]/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 animate-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-[#002147] rounded-xl">
+                  <FileText className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-[#002147] uppercase tracking-wider">Metadatos de la Nota</h3>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Complete los datos oficiales</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowDocxModal(false)}
+                className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 transition-colors"
+              >
+                <RefreshCcw className="w-4 h-4 rotate-45" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Nº de Nota (###)</label>
+                <input
+                  type="text"
+                  placeholder="Ej: 125"
+                  value={docxMeta.numeroNota}
+                  onChange={(e) => setDocxMeta({ ...docxMeta, numeroNota: e.target.value })}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-[#002147] focus:ring-4 focus:ring-blue-50 outline-none transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Grado del Destinatario</label>
+                <input
+                  type="text"
+                  placeholder="Ej: Comisario MGAP"
+                  value={docxMeta.destinatarioGrado}
+                  onChange={(e) => setDocxMeta({ ...docxMeta, destinatarioGrado: e.target.value })}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-[#002147] focus:ring-4 focus:ring-blue-50 outline-none transition-all"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-1">
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Nombre y Apellido</label>
+                  <input
+                    type="text"
+                    placeholder="Ej: Juan Pérez"
+                    value={docxMeta.destinatarioNombre}
+                    onChange={(e) => setDocxMeta({ ...docxMeta, destinatarioNombre: e.target.value })}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-[#002147] focus:ring-4 focus:ring-blue-50 outline-none transition-all"
+                  />
+                </div>
+                <div className="col-span-1">
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Cargo</label>
+                  <select
+                    value={docxMeta.destinatarioCargo}
+                    onChange={(e) => setDocxMeta({ ...docxMeta, destinatarioCargo: e.target.value })}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-[#002147] focus:ring-4 focus:ring-blue-50 outline-none transition-all appearance-none"
+                  >
+                    <option value="Jefe de Servicio">Jefe de Servicio</option>
+                    <option value="Jefe de Cuartel">Jefe de Cuartel</option>
+                    <option value="Oficial de Guardia">Oficial de Guardia</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="pt-4 flex gap-3">
+                <button
+                  onClick={() => setShowDocxModal(false)}
+                  className="flex-1 px-4 py-3 bg-slate-100 text-slate-500 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-slate-200 transition-all"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={confirmExportDocx}
+                  disabled={!docxMeta.numeroNota || !docxMeta.destinatarioNombre}
+                  className="flex-1 px-4 py-3 bg-[#002147] text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-[#003366] transition-all shadow-lg shadow-blue-900/10 disabled:opacity-50"
+                >
+                  Exportar Nota
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </MainLayout>
   )
 }
