@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { Shield, Lock, User, Eye, EyeOff, Loader2, Phone, Globe } from 'lucide-react'
+import { Shield, Lock, User, Eye, EyeOff, Loader2, Phone, Globe, X } from 'lucide-react'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -11,6 +11,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showDevModal, setShowDevModal] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -138,57 +139,88 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className="mt-10 pt-8 border-t border-slate-50">
-            <div className="text-center mb-4">
-              <p className="text-[9px] font-bold text-slate-300 uppercase tracking-[0.2em]">
-                desarrollado por <span className="text-slate-400 font-black">s1mple.dev</span>
-              </p>
+          <div className="mt-8 pt-6 border-t border-slate-50 text-center">
+            <button
+              onClick={() => setShowDevModal(true)}
+              className="text-[9px] font-bold text-slate-300 hover:text-slate-400 uppercase tracking-[0.2em] transition-colors"
+            >
+              desarrollado por <span className="text-slate-400 font-black">s1mple.dev</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Modal de Desarrollador */}
+      {showDevModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 animate-in fade-in duration-300">
+          <div
+            className="absolute inset-0 bg-[#002147]/40 backdrop-blur-sm"
+            onClick={() => setShowDevModal(false)}
+          ></div>
+          <div className="bg-white rounded-[32px] shadow-2xl p-6 md:p-8 border border-slate-200/60 w-full max-w-[360px] relative z-10 animate-in zoom-in-95 duration-300">
+            <button
+              onClick={() => setShowDevModal(false)}
+              className="absolute top-4 right-4 p-2 hover:bg-slate-50 rounded-full text-slate-400 hover:text-[#002147] transition-all"
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            <div className="text-center mb-6">
+              <div className="inline-flex p-3 bg-slate-50 rounded-2xl mb-4 border border-slate-100">
+                <Globe className="h-6 w-6 text-[#002147]" />
+              </div>
+              <h2 className="text-sm font-black text-[#002147] uppercase tracking-widest">
+                Información de Desarrollador
+              </h2>
             </div>
 
-            <div className="bg-slate-50/50 rounded-2xl p-4 border border-slate-100 group hover:border-blue-100 transition-all">
-              <p className="text-[9px] font-black text-[#002147] uppercase tracking-tight mb-3 text-center">
-                Oficial Segundo PS Lic. GUILLERMO RECALDE
+            <div className="bg-slate-50/50 rounded-2xl p-5 border border-slate-100 mb-6">
+              <p className="text-[10px] font-black text-[#002147] uppercase tracking-tight mb-4 text-center leading-relaxed">
+                Oficial Segundo PS Lic.<br />GUILLERMO RECALDE
               </p>
 
-              <div className="space-y-2.5">
+              <div className="space-y-3">
                 <a
                   href="https://wa.me/595973408754"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2.5 text-[9px] font-bold text-slate-500 hover:text-emerald-600 transition-colors"
+                  className="flex items-center justify-center gap-3 text-[10px] font-bold text-slate-600 hover:text-emerald-600 transition-colors"
                 >
-                  <div className="p-1.5 bg-white rounded-lg shadow-sm border border-slate-100 group-hover:border-emerald-100">
-                    <Phone className="h-3 w-3" />
+                  <div className="p-2 bg-white rounded-xl shadow-sm border border-slate-100">
+                    <Phone className="h-3.5 w-3.5" />
                   </div>
                   +595 973 408 754
                 </a>
 
-                <div className="flex items-center gap-2">
+                <div className="grid grid-cols-2 gap-2 mt-4">
                   <a
                     href="https://s1mple.dev"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-1 flex items-center justify-center gap-2 py-2 bg-white border border-slate-100 rounded-xl text-[9px] font-black text-slate-400 hover:text-[#002147] hover:border-blue-100 transition-all shadow-sm"
+                    className="flex flex-col items-center justify-center gap-2 py-3 bg-white border border-slate-100 rounded-xl text-[9px] font-black text-slate-400 hover:text-[#002147] hover:border-blue-100 transition-all shadow-sm"
                   >
-                    <Globe className="h-2.5 w-2.5" />
+                    <Globe className="h-3 w-3 mb-1" />
                     s1mple.dev
                   </a>
                   <a
                     href="https://s1mple.cloud"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-1 flex items-center justify-center gap-2 py-2 bg-white border border-slate-100 rounded-xl text-[9px] font-black text-slate-400 hover:text-[#002147] hover:border-blue-100 transition-all shadow-sm"
+                    className="flex flex-col items-center justify-center gap-2 py-3 bg-white border border-slate-100 rounded-xl text-[9px] font-black text-slate-400 hover:text-[#002147] hover:border-blue-100 transition-all shadow-sm"
                   >
-                    <Globe className="h-2.5 w-2.5" />
+                    <Globe className="h-3 w-3 mb-1" />
                     s1mple.cloud
                   </a>
                 </div>
               </div>
             </div>
+
+            <p className="text-[8px] text-center text-slate-400 font-bold uppercase tracking-widest opacity-50">
+              Cyberpol System © {new Date().getFullYear()}
+            </p>
           </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }
-
