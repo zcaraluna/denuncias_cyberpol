@@ -50,25 +50,22 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 relative overflow-hidden">
-      {/* Elementos decorativos de fondo muy sutiles */}
+    <div className="min-h-screen flex items-center justify-center bg-[#002147] relative overflow-hidden">
+      {/* Elementos decorativos de fondo */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-        <div className="absolute -top-[10%] -left-[10%] w-[30%] h-[30%] rounded-full bg-blue-100/40 blur-[100px]"></div>
-        <div className="absolute -bottom-[10%] -right-[10%] w-[30%] h-[30%] rounded-full bg-slate-200/40 blur-[100px]"></div>
+        <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] rounded-full bg-blue-900/20 blur-[120px]"></div>
+        <div className="absolute -bottom-[10%] -right-[10%] w-[40%] h-[40%] rounded-full bg-slate-900/40 blur-[120px]"></div>
       </div>
 
       <div className="max-w-[400px] w-full mx-4 relative z-10">
-        <div className="bg-white rounded-[32px] shadow-2xl shadow-slate-200/50 p-8 md:p-10 border border-slate-200/50">
+        <div className="bg-white rounded-[32px] shadow-2xl p-8 md:p-10 border border-slate-200/60">
           <div className="text-center mb-8">
             <div className="inline-flex p-3 bg-slate-50 rounded-2xl mb-4 border border-slate-100">
               <Shield className="h-7 w-7 text-[#002147]" strokeWidth={2} />
             </div>
-            <h1 className="text-2xl font-black text-[#002147] tracking-tighter mb-1">
+            <h1 className="text-2xl font-black text-[#002147] tracking-tighter mb-1 uppercase">
               CYBERPOL
             </h1>
-            <p className="text-slate-400 text-[9px] font-bold uppercase tracking-[0.15em]">
-              Departamento de Delitos Económicos
-            </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
