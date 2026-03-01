@@ -1,4 +1,4 @@
-import { Document, Packer, Paragraph, Table, TableRow, TableCell, WidthType, AlignmentType, TextRun, PageSizeOrientation } from 'docx';
+import { Document, Packer, Paragraph, Table, TableRow, TableCell, WidthType, AlignmentType, TextRun, PageOrientation } from 'docx';
 import { saveAs } from 'file-saver';
 
 export const exportToDocx = async (data: any[], fileName: string, columns: { header: string; key: string }[]) => {
@@ -62,7 +62,7 @@ export const exportToDocx = async (data: any[], fileName: string, columns: { hea
                     size: {
                         width: 12240, // 8.5 inches (Legal width)
                         height: 20160, // 14 inches (Legal height/Oficio)
-                        orientation: PageSizeOrientation.PORTRAIT,
+                        orientation: PageOrientation.PORTRAIT,
                     },
                 },
             },
