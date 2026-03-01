@@ -9,13 +9,19 @@ const fetchImageAsBuffer = async (url: string): Promise<Uint8Array> => {
 
 export const exportToDocx = async (data: any[], fileName: string, columns: { header: string; key: string; width?: number }[]) => {
     // Cargar logos
-    let logoPolicia, logoDchef, logoGobierno;
+    let logoPolicia: Uint8Array | undefined;
+    let logoDchef: Uint8Array | undefined;
+    let logoGobierno: Uint8Array | undefined;
+
     try {
-        [logoPolicia, logoDchef, logoGobierno] = await Promise.all([
+        const [policia, dchef, gobierno] = await Promise.all([
             fetchImageAsBuffer('/policianacional.png'),
             fetchImageAsBuffer('/dchef.png'),
             fetchImageAsBuffer('/gobiernonacional.jpg')
         ]);
+        logoPolicia = policia;
+        logoDchef = dchef;
+        logoGobierno = gobierno;
     } catch (e) {
         console.error('Error cargando logos para DOCX:', e);
     }
@@ -110,7 +116,7 @@ export const exportToDocx = async (data: any[], fileName: string, columns: { hea
                                     new ImageRun({
                                         data: logoPolicia,
                                         transformation: { width: 100, height: 40 }
-                                    })
+                                    } as any)
                                 ]
                             })
                         ] : [],
@@ -125,7 +131,7 @@ export const exportToDocx = async (data: any[], fileName: string, columns: { hea
                                     new ImageRun({
                                         data: logoDchef,
                                         transformation: { width: 65, height: 65 }
-                                    })
+                                    } as any)
                                 ]
                             })
                         ] : [],
@@ -140,7 +146,7 @@ export const exportToDocx = async (data: any[], fileName: string, columns: { hea
                                     new ImageRun({
                                         data: logoGobierno,
                                         transformation: { width: 120, height: 60 }
-                                    })
+                                    } as any)
                                 ]
                             })
                         ] : [],
