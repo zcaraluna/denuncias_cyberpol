@@ -110,46 +110,46 @@ export const exportToDocx = async (data: any[], fileName: string, columns: { hea
                     // Logo Policía
                     new TableCell({
                         width: { size: 33, type: WidthType.PERCENTAGE },
-                        children: logoPolicia ? [
+                        children: [
                             new Paragraph({
-                                children: [
+                                children: logoPolicia ? [
                                     new ImageRun({
                                         data: logoPolicia,
                                         transformation: { width: 100, height: 40 }
                                     } as any)
-                                ]
+                                ] : [new TextRun("")]
                             })
-                        ] : [],
+                        ],
                     }),
                     // Logo DCHEF (Centro)
                     new TableCell({
                         width: { size: 34, type: WidthType.PERCENTAGE },
-                        children: logoDchef ? [
+                        children: [
                             new Paragraph({
                                 alignment: AlignmentType.CENTER,
-                                children: [
+                                children: logoDchef ? [
                                     new ImageRun({
                                         data: logoDchef,
                                         transformation: { width: 65, height: 65 }
                                     } as any)
-                                ]
+                                ] : [new TextRun("")]
                             })
-                        ] : [],
+                        ],
                     }),
                     // Logo Gobierno
                     new TableCell({
                         width: { size: 33, type: WidthType.PERCENTAGE },
-                        children: logoGobierno ? [
+                        children: [
                             new Paragraph({
                                 alignment: AlignmentType.RIGHT,
-                                children: [
+                                children: logoGobierno ? [
                                     new ImageRun({
                                         data: logoGobierno,
                                         transformation: { width: 120, height: 60 }
                                     } as any)
-                                ]
+                                ] : [new TextRun("")]
                             })
-                        ] : [],
+                        ],
                     }),
                 ],
             }),
@@ -231,7 +231,8 @@ export const exportToDocx = async (data: any[], fileName: string, columns: { hea
                 }),
                 new Paragraph({
                     spacing: { before: 200, after: 200 },
-                    border: { bottom: { color: "000000", space: 1, style: BorderStyle.SINGLE, size: 6 } }
+                    border: { bottom: { color: "000000", space: 1, style: BorderStyle.SINGLE, size: 6 } },
+                    children: [new TextRun("")]
                 }),
                 new Paragraph({
                     alignment: AlignmentType.CENTER,
