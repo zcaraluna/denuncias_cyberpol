@@ -673,7 +673,7 @@ export default function ReportesPage() {
                   </div>
                   <div>
                     <h2 className="text-[11px] font-black text-[#002147] uppercase tracking-widest">Registros Encontrados</h2>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">{datosOrdenados.length} denuncias procesadas</p>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">{datosDiarioOrdenados.length} denuncias procesadas</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 w-full sm:w-auto overflow-x-auto pb-2 sm:pb-0">
