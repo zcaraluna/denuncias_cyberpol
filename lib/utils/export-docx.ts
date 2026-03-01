@@ -187,9 +187,9 @@ export const exportToDocx = async (
     // Cuerpo del documento (Secciones)
     const children: any[] = [
         headerTable,
+        new Paragraph({ children: [new TextRun("")] }),
         new Paragraph({
             alignment: AlignmentType.CENTER,
-            spacing: { before: 200 }, // Mantenido para separación visual de logos
             children: [
                 new TextRun({
                     text: "DIRECCIÓN CONTRA HECHOS PUNIBLES ECONÓMICOS Y FINANCIEROS",
@@ -210,9 +210,9 @@ export const exportToDocx = async (
                 })
             ],
         }),
+        new Paragraph({ children: [new TextRun("")] }),
         new Paragraph({
             alignment: AlignmentType.CENTER,
-            spacing: { before: 100 },
             children: [
                 new TextRun({ text: "Dirección: ", bold: true, size: 14, font: 'Roboto' }),
                 new TextRun({ text: "E. V. Haedo 725 casi O'Leary | ", size: 14, font: 'Roboto' }),
@@ -222,11 +222,12 @@ export const exportToDocx = async (
                 new TextRun({ text: "ayudantia@delitoseconomicos.gov.py", size: 14, font: 'Roboto' }) // 7pt
             ],
         }),
+        new Paragraph({ children: [new TextRun("")] }),
         new Paragraph({
-            spacing: { before: 200, after: 200 },
             border: { bottom: { color: "000000", space: 1, style: BorderStyle.SINGLE, size: 6 } },
             children: [new TextRun("")]
         }),
+        new Paragraph({ children: [new TextRun("")] }),
     ];
 
     // Si hay metadatos, construir el formato de Nota de Elevación
@@ -234,7 +235,6 @@ export const exportToDocx = async (
         children.push(
             new Paragraph({
                 alignment: AlignmentType.RIGHT,
-                spacing: { before: 200, after: 400 },
                 children: [
                     new TextRun({
                         text: fechaNotaStr,
@@ -243,9 +243,10 @@ export const exportToDocx = async (
                     })
                 ]
             }),
+            new Paragraph({ children: [new TextRun("")] }),
+            new Paragraph({ children: [new TextRun("")] }),
             new Paragraph({
                 alignment: AlignmentType.LEFT,
-                spacing: { after: 100 },
                 children: [
                     new TextRun({
                         text: `DCHPEF/OG/NV/Nº ${metadata.numeroNota}/${anio}`,
@@ -255,6 +256,7 @@ export const exportToDocx = async (
                     })
                 ]
             }),
+            new Paragraph({ children: [new TextRun("")] }),
             new Paragraph({
                 alignment: AlignmentType.LEFT,
                 children: [
@@ -267,25 +269,29 @@ export const exportToDocx = async (
                     new TextRun({ text: `${metadata.destinatarioNombre}, ${metadata.destinatarioCargo}`, bold: true, font: 'Roboto', size: 22 })
                 ]
             }),
+            new Paragraph({ children: [new TextRun("")] }),
+            new Paragraph({ children: [new TextRun("")] }),
             new Paragraph({
                 alignment: AlignmentType.LEFT,
-                spacing: { after: 400 },
                 children: [
                     new TextRun({ text: "D.C.H.P.E.F.", bold: true, font: 'Roboto', size: 22 })
                 ]
             }),
+            new Paragraph({ children: [new TextRun("")] }),
+            new Paragraph({ children: [new TextRun("")] }),
             new Paragraph({
                 alignment: AlignmentType.JUSTIFIED,
                 indent: { firstLine: 850 }, // Aprox 1.5 cm en primera línea
-                spacing: { line: 276, after: 300 }, // Interlineado 1.15
+                spacing: { line: 276 }, // Interlineado 1.15
                 children: [
                     new TextRun({
-                        text: `Tengo el honor de dirigirme a esa superioridad, a objeto de elevar resumen de denuncias recepcionadas en la Sala de Denuncias de esta Direccion, correspondiente al grupo de guardia del dia ${metadata.fechaDesde} desde las 07:00 horas hasata el dia ${metadata.fechaHasta} a las 07:00 horas, todas las actas fueron remitidas a los Departamentos correspondientes cuyos datos se detallan a continuacion:`,
+                        text: `Tengo el honor de dirigirme a esa superioridad, a objeto de elevar resumen de denuncias recepcionadas en la Sala de Denuncias de esta Dirección, correspondiente al grupo de guardia del día ${metadata.fechaDesde} desde las 07:00 horas hasta el día ${metadata.fechaHasta} a las 07:00 horas, todas las actas fueron remitidas a los Departamentos correspondientes cuyos datos se detallan a continuación:`,
                         font: 'Roboto',
                         size: 22
                     })
                 ]
-            })
+            }),
+            new Paragraph({ children: [new TextRun("")] })
         );
     } else {
         // Formato antiguo por si acaso
@@ -311,10 +317,10 @@ export const exportToDocx = async (
     // Añadir Cierre y Firmas si hay metadatos
     if (metadata) {
         children.push(
+            new Paragraph({ children: [new TextRun("")] }),
             new Paragraph({
                 alignment: AlignmentType.LEFT,
                 indent: { left: 850 },
-                spacing: { before: 200, after: 600 },
                 children: [
                     new TextRun({
                         text: "Respetuosamente.-",
@@ -323,33 +329,36 @@ export const exportToDocx = async (
                     })
                 ]
             }),
-            // Firma del Remitente (Centrado, pero alineado a la izquierda. Usamos indent left para llegar a esa zona central)
+            new Paragraph({ children: [new TextRun("")] }),
+            new Paragraph({ children: [new TextRun("")] }),
+            new Paragraph({ children: [new TextRun("")] }),
+            // Firma del Remitente (Centrado en su margen interno 5500)
             new Paragraph({
-                alignment: AlignmentType.LEFT,
+                alignment: AlignmentType.CENTER,
                 indent: { left: 5500 }, // Aproximación visual al centro alineado a la izquierda
                 children: [
                     new TextRun({ text: metadata.remitenteNombre.toUpperCase(), font: 'Roboto', size: 22, bold: true })
                 ]
             }),
             new Paragraph({
-                alignment: AlignmentType.LEFT,
+                alignment: AlignmentType.CENTER,
                 indent: { left: 5500 },
                 children: [
                     new TextRun({ text: metadata.remitenteGrado, font: 'Roboto', size: 22 })
                 ]
             }),
             new Paragraph({
-                alignment: AlignmentType.LEFT,
+                alignment: AlignmentType.CENTER,
                 indent: { left: 5500 },
-                spacing: { after: 300 },
                 children: [
                     new TextRun({ text: `${metadata.remitenteCargo} - D.C.H.P.E.F.`, font: 'Roboto', size: 22 })
                 ]
             }),
+            new Paragraph({ children: [new TextRun("")] }),
+            new Paragraph({ children: [new TextRun("")] }),
             // Fecha de nuevo alineada a la derecha
             new Paragraph({
                 alignment: AlignmentType.RIGHT,
-                spacing: { after: 300 },
                 children: [
                     new TextRun({
                         text: fechaNotaStr,
@@ -358,10 +367,11 @@ export const exportToDocx = async (
                     })
                 ]
             }),
+            new Paragraph({ children: [new TextRun("")] }),
+            new Paragraph({ children: [new TextRun("")] }),
             // Párrafo de Elevación
             new Paragraph({
                 alignment: AlignmentType.LEFT,
-                spacing: { after: 600 },
                 children: [
                     new TextRun({
                         text: "Elevo a la División de Talento Humano, para su conocimiento y fines pertinentes.",
@@ -370,23 +380,26 @@ export const exportToDocx = async (
                     })
                 ]
             }),
+            new Paragraph({ children: [new TextRun("")] }),
+            new Paragraph({ children: [new TextRun("")] }),
+            new Paragraph({ children: [new TextRun("")] }),
             // Firma del Destinatario (Misma configuración, adaptado a su cargo)
             new Paragraph({
-                alignment: AlignmentType.LEFT,
+                alignment: AlignmentType.CENTER,
                 indent: { left: 5500 },
                 children: [
                     new TextRun({ text: metadata.destinatarioNombre.toUpperCase(), font: 'Roboto', size: 22, bold: true })
                 ]
             }),
             new Paragraph({
-                alignment: AlignmentType.LEFT,
+                alignment: AlignmentType.CENTER,
                 indent: { left: 5500 },
                 children: [
                     new TextRun({ text: metadata.destinatarioGrado, font: 'Roboto', size: 22 })
                 ]
             }),
             new Paragraph({
-                alignment: AlignmentType.LEFT,
+                alignment: AlignmentType.CENTER,
                 indent: { left: 5500 },
                 children: [
                     new TextRun({ text: `${metadata.destinatarioCargo} - D.C.H.P.E.F.`, font: 'Roboto', size: 22 })
