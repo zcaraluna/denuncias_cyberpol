@@ -430,12 +430,14 @@ export default function ReportesPage() {
     ];
 
     // Lógica para determinar el rango de fecha (guardia de 07:00 a 07:00)
-    // Usamos la fecha seleccionada en el filtro
-    // Lógica para determinar el rango de fecha (guardia de 07:00 a 07:00)
-    // Usamos las fechas seleccionadas en el filtro
     const fInicio = new Date(fecha + 'T12:00:00');
-    // Si no hay fecha fin, asumimos 24hs (día siguiente)
-    const fFin = fechaFin ? new Date(fechaFin + 'T12:00:00') : new Date(fInicio.getTime() + 86400000);
+    let fFin: Date;
+    if (fechaFin) {
+      fFin = new Date(fechaFin + 'T12:00:00');
+    } else {
+      fFin = new Date(fInicio);
+      fFin.setDate(fFin.getDate() + 1);
+    }
 
     // Formatear fechas para el párrafo: DD/MM/AAAA
     const fmt = (d: Date) => d.toLocaleDateString('es-PY', { day: '2-digit', month: '2-digit', year: 'numeric' });

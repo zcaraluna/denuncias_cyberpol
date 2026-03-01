@@ -25,17 +25,20 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    console.log('Buscando denuncias para rango:', fecha, 'al', fechaFin || fecha, 'tipo:', tipoDenuncia)
+    console.log('Buscando denuncias para guardia:', fecha, 'al', fechaFin || fecha, 'tipo:', tipoDenuncia)
 
-    // Construir condiciones WHERE
+    // Si no hay fechaFin, la guardia es de 24hs (termina el día siguiente a las 07:00)
+    const fechaHastaCalculada = fechaFin || fecha;
+
+    // Construir condiciones WHERE usando timestamps para respetar el horario 07:00 - 07:00
     const condiciones: string[] = [
-      fechaFin ? "d.fecha_denuncia BETWEEN $1::DATE AND $2::DATE" : "d.fecha_denuncia = $1::DATE",
+      "(d.fecha_denuncia + d.hora_denuncia) >= $1::TIMESTAMP",
+      "(d.fecha_denuncia + d.hora_denuncia) < ($2::DATE + INTERVAL '1 day' + TIME '07:00:00')",
       "d.estado = 'completada'"
     ]
-    const valores: any[] = [fecha]
-    if (fechaFin) valores.push(fechaFin)
+    const valores: any[] = [`${fecha} 07:00:00`, fechaHastaCalculada]
 
-    let paramIndex = fechaFin ? 3 : 2
+    let paramIndex = 3
 
     if (tipoDenuncia) {
       condiciones.push(`d.tipo_denuncia = $${paramIndex}`)
