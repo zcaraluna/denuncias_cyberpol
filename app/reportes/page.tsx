@@ -59,6 +59,7 @@ interface ReporteRow {
   oficina?: string
   monto_dano?: number
   moneda?: string
+  entidad_reportada?: string
 }
 
 interface ResumenTipo {
@@ -86,7 +87,7 @@ interface DatosMensuales {
   denuncias_danos?: ReporteRow[]
 }
 
-type SortField = 'numero_denuncia' | 'hora_denuncia' | 'shp' | 'monto_dano' | 'moneda'
+type SortField = 'numero_denuncia' | 'hora_denuncia' | 'shp' | 'monto_dano' | 'moneda' | 'entidad_reportada'
 type SortDirection = 'asc' | 'desc'
 type Tab = 'diario' | 'mensual' | 'danos'
 
@@ -236,9 +237,6 @@ export default function ReportesPage() {
         setDatos(rows)
         const tiposUnicos: string[] = Array.from(new Set(rows.map(d => d.shp).filter((shp): shp is string => Boolean(shp))))
         setFiltrosTipos(tiposUnicos) // Select all by default
-      } else {
-        setDatos([])
-        setFiltrosTipos([])
       }
 
       if (data.resumen_especifico.length === 0 && data.resumen_general.length === 0 && (!data.denuncias_danos || data.denuncias_danos.length === 0)) {
@@ -284,6 +282,8 @@ export default function ReportesPage() {
         comparison = (a.monto_dano || 0) - (b.monto_dano || 0)
       } else if (sortField === 'moneda') {
         comparison = (a.moneda || '').localeCompare(b.moneda || '')
+      } else if (sortField === 'entidad_reportada') {
+        comparison = (a.entidad_reportada || '').localeCompare(b.entidad_reportada || '')
       }
 
       return sortDirection === 'asc' ? comparison : -comparison
@@ -591,8 +591,8 @@ export default function ReportesPage() {
             </div>
           </div>
 
-          {/* Filtro por Hecho Punible (Multiselección) */}
-          {datos.length > 0 && (
+          {/* Filtro por Hecho Punible (Multiselección) - SOLO EN DAÑOS */}
+          {activeTab === 'danos' && datos.length > 0 && (
             <div className="bg-white rounded-2xl shadow-xl shadow-blue-900/5 border border-slate-100 p-6 mb-8 animate-in fade-in slide-in-from-top-4 relative overflow-hidden">
               <div className="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
@@ -702,20 +702,24 @@ export default function ReportesPage() {
                   <thead>
                     <tr className="bg-slate-50/20">
                       <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 cursor-pointer hover:text-[#002147] transition" onClick={() => handleSort('numero_denuncia')}>
-                        <div className="flex items-center gap-2">Nº Acta <SortIcon field="numero_denuncia" currentField={sortField} direction={sortDirection} /></div>
+                        <div className="flex items-center gap-2">NUM. <SortIcon field="numero_denuncia" currentField={sortField} direction={sortDirection} /></div>
                       </th>
                       <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 cursor-pointer hover:text-[#002147] transition" onClick={() => handleSort('hora_denuncia')}>
-                        <div className="flex items-center gap-2">Hora <SortIcon field="hora_denuncia" currentField={sortField} direction={sortDirection} /></div>
+                        <div className="flex items-center gap-2">HORA <SortIcon field="hora_denuncia" currentField={sortField} direction={sortDirection} /></div>
                       </th>
-                      <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Hecho Punible</th>
-                      <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Denunciante</th>
-                      <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Interviniente</th>
+                      <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">S.H.P.</th>
+                      <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">DENUNCIANTE</th>
+                      <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">INTERVINIENTE</th>
+                      <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">PÉRDIDA (Gs.)</th>
+                      <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 cursor-pointer hover:text-[#002147] transition" onClick={() => handleSort('entidad_reportada')}>
+                        <div className="flex items-center gap-2">ENTIDAD REPORTADA <SortIcon field="entidad_reportada" currentField={sortField} direction={sortDirection} /></div>
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
                     {datosOrdenados.map((row, index) => (
                       <tr key={index} className="group hover:bg-slate-50/80 transition-all">
-                        <td className="px-6 py-4 whitespace-nowrap text-[10px] font-black text-[#002147]/70 font-mono italic">{row.numero_denuncia}/{row.año}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-[10px] font-black text-[#002147]/70 font-mono italic">{row.numero_denuncia}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-[10px] font-bold text-[#002147]/60">
                           <div className="flex items-center gap-2 uppercase tracking-tighter">
                             <Clock className="w-3 h-3 text-slate-300" />
@@ -723,13 +727,16 @@ export default function ReportesPage() {
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          <span className={`text-[10px] font-black uppercase tracking-tight ${mostrarGeneral ? 'text-indigo-600' : 'text-blue-600'
-                            }`}>
-                            {mostrarGeneral ? (row.tipo_general || row.tipo_especifico || row.shp) : (row.tipo_especifico || row.shp || '-')}
+                          <span className="text-[10px] font-black uppercase tracking-tight text-blue-600">
+                            {row.tipo_especifico || row.shp || '-'}
                           </span>
                         </td>
                         <td className="px-6 py-4 text-[10px] font-bold text-slate-600 uppercase tracking-tight">{row.denunciante || '-'}</td>
                         <td className="px-6 py-4 text-[10px] font-bold text-[#002147]/80 uppercase tracking-tight italic">{row.interviniente || '-'}</td>
+                        <td className="px-6 py-4 text-[10px] font-black text-[#002147] tabular-nums">
+                          {row.monto_dano ? row.monto_dano.toLocaleString('es-PY') : '0'}
+                        </td>
+                        <td className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-tight">{row.entidad_reportada || '-'}</td>
                       </tr>
                     ))}
                   </tbody>

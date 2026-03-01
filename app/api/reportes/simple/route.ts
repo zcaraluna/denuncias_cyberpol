@@ -58,7 +58,8 @@ export async function GET(request: NextRequest) {
         ) as interviniente,
         d.oficina,
         d.monto_dano,
-        d.moneda
+        d.moneda,
+        (SELECT sa.entidad_bancaria FROM supuestos_autores sa WHERE sa.denuncia_id = d.id AND sa.entidad_bancaria IS NOT NULL AND sa.entidad_bancaria != '' LIMIT 1) as entidad_reportada
       FROM denuncias d
       LEFT JOIN denunciantes den ON d.denunciante_id = den.id
       WHERE ${whereClause}
