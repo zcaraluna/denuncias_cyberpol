@@ -32,8 +32,8 @@ export async function GET(request: NextRequest) {
 
     // Construir condiciones WHERE usando timestamps para respetar el horario 07:00 - 07:00
     const condiciones: string[] = [
-      "(d.fecha_denuncia + d.hora_denuncia) >= $1::TIMESTAMP",
-      "(d.fecha_denuncia + d.hora_denuncia) < ($2::DATE + INTERVAL '1 day' + TIME '07:00:00')",
+      "(d.fecha_denuncia + d.hora_denuncia::TIME) >= $1::TIMESTAMP",
+      "(d.fecha_denuncia + d.hora_denuncia::TIME) < ($2::DATE + INTERVAL '1 day' + TIME '07:00:00')",
       "d.estado = 'completada'"
     ]
     const valores: any[] = [`${fecha} 07:00:00`, fechaHastaCalculada]
