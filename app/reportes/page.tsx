@@ -128,6 +128,8 @@ export default function ReportesPage() {
     }).format(new Date())
   })
   const [fechaFin, setFechaFin] = useState('')
+  const [horaInicio, setHoraInicio] = useState('07:00')
+  const [horaFin, setHoraFin] = useState('07:00')
   const [tipoDenuncia, setTipoDenuncia] = useState('')
   const [datosDiario, setDatosDiario] = useState<ReporteRow[]>([])
   const [tiposDisponibles, setTiposDisponibles] = useState<string[]>([])
@@ -192,6 +194,8 @@ export default function ReportesPage() {
       const params = new URLSearchParams()
       params.append('fecha', fecha)
       if (fechaFin) params.append('fechaFin', fechaFin)
+      params.append('horaInicio', horaInicio)
+      params.append('horaFin', horaFin)
       if (tipoDenuncia) params.append('tipoDenuncia', tipoDenuncia)
 
       const response = await fetch(`/api/reportes/simple?${params.toString()}`)
@@ -321,6 +325,8 @@ export default function ReportesPage() {
     if (activeTab === 'diario') {
       setFecha('')
       setFechaFin('')
+      setHoraInicio('07:00')
+      setHoraFin('07:00')
       setTipoDenuncia('')
       setDatosDiario([])
       setTiposDisponibles([])
@@ -429,7 +435,7 @@ export default function ReportesPage() {
       { header: 'ENTIDAD REPORTADA', key: 'entidad_reportada', width: 12 }
     ];
 
-    // Lógica para determinar el rango de fecha (guardia de 07:00 a 07:00)
+    // Lógica para determinar el rango de fecha (guardia de 07:00 a 07:00 por defecto)
     const fInicio = new Date(fecha + 'T12:00:00');
     let fFin: Date;
     if (fechaFin) {
@@ -443,10 +449,16 @@ export default function ReportesPage() {
     const fmt = (d: Date) => d.toLocaleDateString('es-PY', { day: '2-digit', month: '2-digit', year: 'numeric' });
     const fmtDia = (d: Date) => d.toLocaleDateString('es-PY', { weekday: 'long' }).toUpperCase();
 
+    // Usar horas de la UI
+    const hIn = `${horaInicio} horas`;
+    const hFi = `${horaFin} horas`;
+
     const metadataFormateada = {
       ...docxMeta,
       fechaDesde: `${fmtDia(fInicio)} ${fmt(fInicio)}`,
       fechaHasta: `${fmtDia(fFin)} ${fmt(fFin)}`,
+      horaDesde: hIn,
+      horaHasta: hFi,
       oficina: datosDiarioOrdenados[0]?.oficina || 'Asunción'
     };
 
@@ -638,32 +650,58 @@ export default function ReportesPage() {
             <div className="flex flex-col lg:flex-row items-end gap-6">
               {activeTab === 'diario' ? (
                 <div className="flex-1 w-full lg:w-auto grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="w-full">
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Fecha Desde (Inicio Guardia)</label>
-                    <div className="relative group">
-                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <Calendar className="h-4 w-4 text-slate-400 group-hover:text-[#002147] transition-colors" />
+                  <div className="w-full flex gap-2">
+                    <div className="flex-1">
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Fecha Desde</label>
+                      <div className="relative group">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <Calendar className="h-3.5 w-3.5 text-slate-400 group-hover:text-[#002147] transition-colors" />
+                        </div>
+                        <input
+                          type="date"
+                          value={fecha}
+                          onChange={(e) => setFecha(e.target.value)}
+                          className="block w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 text-[#002147] text-xs font-bold rounded-xl focus:ring-4 focus:ring-blue-50 focus:border-blue-200 transition-all outline-none"
+                        />
                       </div>
-                      <input
-                        type="date"
-                        value={fecha}
-                        onChange={(e) => setFecha(e.target.value)}
-                        className="block w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 text-[#002147] text-sm font-bold rounded-xl focus:ring-4 focus:ring-blue-50 focus:border-blue-200 transition-all outline-none"
-                      />
+                    </div>
+                    <div className="w-24">
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Hora</label>
+                      <div className="relative">
+                        <input
+                          type="time"
+                          value={horaInicio}
+                          onChange={(e) => setHoraInicio(e.target.value)}
+                          className="block w-full px-3 py-2.5 bg-slate-50 border border-slate-200 text-[#002147] text-xs font-bold rounded-xl focus:ring-4 focus:ring-blue-50 focus:border-blue-200 transition-all outline-none"
+                        />
+                      </div>
                     </div>
                   </div>
-                  <div className="w-full">
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Fecha Hasta (Fin Guardia)</label>
-                    <div className="relative group">
-                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <Calendar className="h-4 w-4 text-slate-400 group-hover:text-[#002147] transition-colors" />
+                  <div className="w-full flex gap-2">
+                    <div className="flex-1">
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Fecha Hasta</label>
+                      <div className="relative group">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <Calendar className="h-3.5 w-3.5 text-slate-400 group-hover:text-[#002147] transition-colors" />
+                        </div>
+                        <input
+                          type="date"
+                          value={fechaFin}
+                          onChange={(e) => setFechaFin(e.target.value)}
+                          className="block w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 text-[#002147] text-xs font-bold rounded-xl focus:ring-4 focus:ring-blue-50 focus:border-blue-200 transition-all outline-none"
+                        />
                       </div>
-                      <input
-                        type="date"
-                        value={fechaFin}
-                        onChange={(e) => setFechaFin(e.target.value)}
-                        className="block w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 text-[#002147] text-sm font-bold rounded-xl focus:ring-4 focus:ring-blue-50 focus:border-blue-200 transition-all outline-none"
-                      />
+                    </div>
+                    <div className="w-24">
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Hora</label>
+                      <div className="relative">
+                        <input
+                          type="time"
+                          value={horaFin}
+                          onChange={(e) => setHoraFin(e.target.value)}
+                          className="block w-full px-3 py-2.5 bg-slate-50 border border-slate-200 text-[#002147] text-xs font-bold rounded-xl focus:ring-4 focus:ring-blue-50 focus:border-blue-200 transition-all outline-none"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>

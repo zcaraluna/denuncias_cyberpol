@@ -7,6 +7,8 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const fecha = searchParams.get('fecha')
     const fechaFin = searchParams.get('fechaFin')
+    const horaInicio = searchParams.get('horaInicio') || '07:00'
+    const horaFin = searchParams.get('horaFin') || '07:00'
     const tipoDenuncia = searchParams.get('tipoDenuncia')
 
     if (!fecha) {
@@ -25,20 +27,21 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    console.log('Buscando denuncias para guardia:', fecha, 'al', fechaFin || fecha, 'tipo:', tipoDenuncia)
+    console.log('Buscando denuncias para guardia:', fecha, horaInicio, 'al', fechaFin || fecha, horaFin, 'tipo:', tipoDenuncia)
 
-    // Si no hay fechaFin, la guardia es de 24hs (termina el día siguiente a las 07:00)
+    // Si no hay fechaFin, la guardia termina el día siguiente a la hora especificada
     const fechaHastaCalculada = fechaFin || fecha;
+    const intervalFin = fechaFin ? "0 days" : "1 day";
 
-    // Construir condiciones WHERE usando timestamps para respetar el horario 07:00 - 07:00
+    // Construir condiciones WHERE usando timestamps para respetar el rango manual
     const condiciones: string[] = [
       "(d.fecha_denuncia + d.hora_denuncia::TIME) >= $1::TIMESTAMP",
-      "(d.fecha_denuncia + d.hora_denuncia::TIME) < ($2::DATE + INTERVAL '1 day' + TIME '07:00:00')",
+      `(d.fecha_denuncia + d.hora_denuncia::TIME) < ($2::DATE + INTERVAL '${intervalFin}' + $3::TIME)`,
       "d.estado = 'completada'"
     ]
-    const valores: any[] = [`${fecha} 07:00:00`, fechaHastaCalculada]
+    const valores: any[] = [`${fecha} ${horaInicio}:00`, fechaHastaCalculada, `${horaFin}:00`]
 
-    let paramIndex = 3
+    let paramIndex = 4
 
     if (tipoDenuncia) {
       condiciones.push(`d.tipo_denuncia = $${paramIndex}`)
