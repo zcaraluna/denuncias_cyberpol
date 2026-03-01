@@ -127,6 +127,7 @@ export default function ReportesPage() {
       day: '2-digit'
     }).format(new Date())
   })
+  const [fechaFin, setFechaFin] = useState('')
   const [tipoDenuncia, setTipoDenuncia] = useState('')
   const [datosDiario, setDatosDiario] = useState<ReporteRow[]>([])
   const [tiposDisponibles, setTiposDisponibles] = useState<string[]>([])
@@ -190,6 +191,7 @@ export default function ReportesPage() {
     try {
       const params = new URLSearchParams()
       params.append('fecha', fecha)
+      if (fechaFin) params.append('fechaFin', fechaFin)
       if (tipoDenuncia) params.append('tipoDenuncia', tipoDenuncia)
 
       const response = await fetch(`/api/reportes/simple?${params.toString()}`)
@@ -318,6 +320,7 @@ export default function ReportesPage() {
   const handleLimpiarFiltros = () => {
     if (activeTab === 'diario') {
       setFecha('')
+      setFechaFin('')
       setTipoDenuncia('')
       setDatosDiario([])
       setTiposDisponibles([])
@@ -428,9 +431,11 @@ export default function ReportesPage() {
 
     // Lógica para determinar el rango de fecha (guardia de 07:00 a 07:00)
     // Usamos la fecha seleccionada en el filtro
-    const fechaFiltro = new Date(fecha + 'T12:00:00'); // Mediodía para evitar problemas de TZ
-    const fAnterior = new Date(fechaFiltro);
-    fAnterior.setDate(fAnterior.getDate() - 1); // El día anterior (inicio de la guardia si es hoy)
+    // Lógica para determinar el rango de fecha (guardia de 07:00 a 07:00)
+    // Usamos las fechas seleccionadas en el filtro
+    const fInicio = new Date(fecha + 'T12:00:00');
+    // Si no hay fecha fin, asumimos 24hs (día siguiente)
+    const fFin = fechaFin ? new Date(fechaFin + 'T12:00:00') : new Date(fInicio.getTime() + 86400000);
 
     // Formatear fechas para el párrafo: DD/MM/AAAA
     const fmt = (d: Date) => d.toLocaleDateString('es-PY', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -438,8 +443,8 @@ export default function ReportesPage() {
 
     const metadataFormateada = {
       ...docxMeta,
-      fechaDesde: `${fmtDia(fechaFiltro)} ${fmt(fechaFiltro)}`,
-      fechaHasta: `${fmtDia(new Date(fechaFiltro.getTime() + 86400000))} ${fmt(new Date(fechaFiltro.getTime() + 86400000))}`,
+      fechaDesde: `${fmtDia(fInicio)} ${fmt(fInicio)}`,
+      fechaHasta: `${fmtDia(fFin)} ${fmt(fFin)}`,
       oficina: datosDiarioOrdenados[0]?.oficina || 'Asunción'
     };
 
@@ -630,18 +635,34 @@ export default function ReportesPage() {
             <div className="absolute top-0 left-0 w-1 h-full bg-[#002147]"></div>
             <div className="flex flex-col lg:flex-row items-end gap-6">
               {activeTab === 'diario' ? (
-                <div className="flex-1 w-full lg:w-auto">
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Seleccionar Fecha de Reporte</label>
-                  <div className="relative group">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                      <Calendar className="h-4 w-4 text-slate-400 group-hover:text-[#002147] transition-colors" />
+                <div className="flex-1 w-full lg:w-auto grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="w-full">
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Fecha Desde (Inicio Guardia)</label>
+                    <div className="relative group">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <Calendar className="h-4 w-4 text-slate-400 group-hover:text-[#002147] transition-colors" />
+                      </div>
+                      <input
+                        type="date"
+                        value={fecha}
+                        onChange={(e) => setFecha(e.target.value)}
+                        className="block w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 text-[#002147] text-sm font-bold rounded-xl focus:ring-4 focus:ring-blue-50 focus:border-blue-200 transition-all outline-none"
+                      />
                     </div>
-                    <input
-                      type="date"
-                      value={fecha}
-                      onChange={(e) => setFecha(e.target.value)}
-                      className="block w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 text-[#002147] text-sm font-bold rounded-xl focus:ring-4 focus:ring-blue-50 focus:border-blue-200 transition-all outline-none"
-                    />
+                  </div>
+                  <div className="w-full">
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Fecha Hasta (Fin Guardia)</label>
+                    <div className="relative group">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <Calendar className="h-4 w-4 text-slate-400 group-hover:text-[#002147] transition-colors" />
+                      </div>
+                      <input
+                        type="date"
+                        value={fechaFin}
+                        onChange={(e) => setFechaFin(e.target.value)}
+                        className="block w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 text-[#002147] text-sm font-bold rounded-xl focus:ring-4 focus:ring-blue-50 focus:border-blue-200 transition-all outline-none"
+                      />
+                    </div>
                   </div>
                 </div>
               ) : (

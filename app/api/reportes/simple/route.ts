@@ -6,33 +6,36 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const fecha = searchParams.get('fecha')
+    const fechaFin = searchParams.get('fechaFin')
     const tipoDenuncia = searchParams.get('tipoDenuncia')
 
     if (!fecha) {
       return NextResponse.json(
-        { error: 'La fecha es requerida' },
+        { error: 'La fecha de inicio es requerida' },
         { status: 400 }
       )
     }
 
     // Validar formato de fecha (YYYY-MM-DD)
     const fechaRegex = /^\d{4}-\d{2}-\d{2}$/
-    if (!fechaRegex.test(fecha)) {
+    if (!fechaRegex.test(fecha) || (fechaFin && !fechaRegex.test(fechaFin))) {
       return NextResponse.json(
         { error: 'Formato de fecha inválido. Use YYYY-MM-DD' },
         { status: 400 }
       )
     }
 
-    console.log('Buscando denuncias para fecha:', fecha, 'tipo:', tipoDenuncia)
+    console.log('Buscando denuncias para rango:', fecha, 'al', fechaFin || fecha, 'tipo:', tipoDenuncia)
 
     // Construir condiciones WHERE
     const condiciones: string[] = [
-      "d.fecha_denuncia = $1::DATE",
+      fechaFin ? "d.fecha_denuncia BETWEEN $1::DATE AND $2::DATE" : "d.fecha_denuncia = $1::DATE",
       "d.estado = 'completada'"
     ]
     const valores: any[] = [fecha]
-    let paramIndex = 2
+    if (fechaFin) valores.push(fechaFin)
+
+    let paramIndex = fechaFin ? 3 : 2
 
     if (tipoDenuncia) {
       condiciones.push(`d.tipo_denuncia = $${paramIndex}`)
