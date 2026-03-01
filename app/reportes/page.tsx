@@ -520,6 +520,70 @@ export default function ReportesPage() {
             </div>
           </div>
 
+          {/* Panel de Búsqueda Principal */}
+          <div className="bg-white rounded-2xl shadow-xl shadow-blue-900/5 border border-slate-100 p-6 mb-8 animate-in fade-in slide-in-from-bottom-4 relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-1 h-full bg-[#002147]"></div>
+            <div className="flex flex-col lg:flex-row items-end gap-6">
+              {activeTab === 'diario' ? (
+                <div className="flex-1 w-full lg:w-auto">
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Seleccionar Fecha de Reporte</label>
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <Calendar className="h-4 w-4 text-slate-400 group-hover:text-[#002147] transition-colors" />
+                    </div>
+                    <input
+                      type="date"
+                      value={fecha}
+                      onChange={(e) => setFecha(e.target.value)}
+                      className="block w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 text-[#002147] text-sm font-bold rounded-xl focus:ring-4 focus:ring-blue-50 focus:border-blue-200 transition-all outline-none"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-1 w-full gap-4">
+                  <div className="flex-1">
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Mes</label>
+                    <select
+                      value={mes}
+                      onChange={(e) => setMes(e.target.value)}
+                      className="block w-full px-4 py-3 bg-slate-50 border border-slate-200 text-[#002147] text-sm font-bold rounded-xl focus:ring-4 focus:ring-blue-50 focus:border-blue-200 transition-all outline-none appearance-none"
+                    >
+                      {meses.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+                    </select>
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Año</label>
+                    <select
+                      value={año}
+                      onChange={(e) => setAño(e.target.value)}
+                      className="block w-full px-4 py-3 bg-slate-50 border border-slate-200 text-[#002147] text-sm font-bold rounded-xl focus:ring-4 focus:ring-blue-50 focus:border-blue-200 transition-all outline-none appearance-none"
+                    >
+                      {años.map(a => <option key={a} value={a}>{a}</option>)}
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center gap-3 w-full lg:w-auto">
+                <button
+                  onClick={activeTab === 'diario' ? handleBuscarDiario : handleBuscarMensual}
+                  disabled={cargando}
+                  className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-8 py-3 bg-[#002147] text-white text-[11px] font-black uppercase tracking-widest rounded-xl hover:bg-[#003366] transition-all shadow-lg shadow-blue-900/20 active:scale-95 disabled:opacity-50"
+                >
+                  {cargando ? <RefreshCcw className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                  {cargando ? 'Buscando...' : 'Consultar'}
+                </button>
+                <button
+                  onClick={handleLimpiarFiltros}
+                  className="p-3 bg-white border border-slate-200 text-slate-400 rounded-xl hover:text-red-500 hover:border-red-100 hover:bg-red-50 transition-all shadow-sm"
+                  title="Limpiar Búsqueda"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+
           {/* Filtro por Hecho Punible (Multiselección) */}
           {datos.length > 0 && (
             <div className="bg-white rounded-2xl shadow-xl shadow-blue-900/5 border border-slate-100 p-6 mb-8 animate-in fade-in slide-in-from-top-4 relative overflow-hidden">
@@ -1014,48 +1078,29 @@ export default function ReportesPage() {
 
           {/* Sección de Administración - Solo para garv */}
           {usuario?.usuario === 'garv' && (
-            <div className="mt-16 sm:mt-24 pt-12 border-t border-slate-200">
-              <div className="flex items-center gap-3 mb-8">
-                <div className="p-2 bg-indigo-50 rounded-xl">
-                  <Database className="w-5 h-5 text-indigo-600" />
+            <div className="mt-16 pt-8 border-t border-slate-200 max-w-3xl">
+              <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-6 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:opacity-10 transition-opacity">
+                  <Database className="w-16 h-16 text-[#002147]" />
                 </div>
-                <h2 className="text-base font-black text-[#002147] uppercase tracking-widest">
-                  Panel de Continuidad Operativa
-                </h2>
-              </div>
-              <div className="bg-[#002147] rounded-3xl shadow-2xl shadow-blue-900/40 overflow-hidden group border border-white/5 transition-all duration-500 relative">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-32 translate-x-32 blur-3xl group-hover:bg-blue-500/10 transition-colors duration-1000"></div>
-                <div className="p-8 sm:p-12 flex flex-col md:flex-row items-center justify-between gap-10 relative z-10">
-                  <div className="max-w-xl text-center md:text-left">
-                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500/10 rounded-full border border-blue-400/20 text-blue-300 text-[10px] font-black uppercase tracking-widest mb-6">
-                      <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span> Sistema de Resguardo Activo
-                    </div>
-                    <h3 className="text-white text-3xl font-black tracking-tight mb-4">Copia de Seguridad Integral</h3>
-                    <p className="text-blue-100/60 text-sm leading-relaxed font-medium">
-                      Genere un respaldo completo en formato <code className="bg-white/10 px-2 py-0.5 rounded text-blue-200 font-mono text-[11px] border border-white/10 mx-1">.sql</code> con la estructura y datos actuales. Mantener respaldos periódicos es crítico para la integridad de la información institucional ante cualquier eventualidad técnica.
+                <div className="flex items-start gap-4 relative z-10">
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                    <Database className="w-5 h-5 text-[#002147]" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-[#002147] uppercase tracking-wider mb-1">Copia de Seguridad</h3>
+                    <p className="text-[10px] text-slate-500 font-medium leading-relaxed max-w-sm">
+                      Genere un respaldo integral en formato <code className="bg-slate-100 px-1 rounded text-blue-600 font-mono italic">.sql</code> de la base de datos institucional.
                     </p>
                   </div>
-                  <div className="shrink-0">
-                    <a
-                      href="/api/admin/backup"
-                      className="inline-flex items-center gap-3 px-10 py-5 bg-white text-[#002147] font-black rounded-2xl hover:bg-blue-50 transition-all shadow-2xl active:scale-95 group/btn"
-                    >
-                      <Download className="w-5 h-5 group-hover/btn:animate-bounce" />
-                      DESCARGAR SQL BACKUP
-                    </a>
-                  </div>
                 </div>
-                <div className="bg-black/20 px-8 sm:px-12 py-4 border-t border-white/5 flex items-center justify-center md:justify-start gap-6">
-                  <div className="flex items-center gap-2 opacity-40">
-                    <Database className="w-3.5 h-3.5 text-white" />
-                    <span className="text-white text-[9px] font-black uppercase tracking-widest">PostgreSQL v15</span>
-                  </div>
-                  <div className="w-1 h-1 rounded-full bg-white/10 hidden sm:block"></div>
-                  <div className="flex items-center gap-2 opacity-40">
-                    <Clock className="w-3.5 h-3.5 text-white" />
-                    <span className="text-white text-[9px] font-black uppercase tracking-widest leading-none">Automático: 03:00 AM</span>
-                  </div>
-                </div>
+                <a
+                  href="/api/admin/backup"
+                  className="shrink-0 flex items-center gap-2.5 px-6 py-3 bg-[#002147] text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-[#003366] transition-all shadow-lg shadow-blue-900/20 active:scale-95 relative z-10"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  Descargar SQL
+                </a>
               </div>
             </div>
           )}
