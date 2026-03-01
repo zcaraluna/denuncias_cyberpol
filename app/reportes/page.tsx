@@ -56,6 +56,9 @@ interface ReporteRow {
   tipo_general?: string
   denunciante: string
   interviniente: string
+  operador_grado?: string
+  operador_nombre?: string
+  operador_apellido?: string
   oficina?: string
   monto_dano?: number
   moneda?: string
@@ -389,10 +392,21 @@ export default function ReportesPage() {
         montoGs = Math.round(montoGs * tasa);
       }
 
+      // Formato interviniente (GRADO PRIMERNOMBRE PRIMERAPELLIDO)
+      let intervinienteAbrev = d.interviniente || '-------';
+      if (d.operador_grado || d.operador_nombre || d.operador_apellido) {
+        const grado = d.operador_grado || '';
+        const pNombre = (d.operador_nombre || '').split(' ')[0] || '';
+        const pApellido = (d.operador_apellido || '').split(' ')[0] || '';
+        // Combinamos y quitamos espacios extra si alguna parte está vacía
+        intervinienteAbrev = `${grado} ${pNombre} ${pApellido}`.replace(/\s+/g, ' ').trim();
+      }
+
       return {
         ...d,
         num: d.numero_denuncia,
         tipo_hecho: (d.tipo_especifico || d.shp || '').toUpperCase(),
+        interviniente: intervinienteAbrev,
         oficina_vacia: '',
         perdida: montoGs > 0 ? `${montoGs.toLocaleString('es-PY')} Gs.` : '-------'
       };

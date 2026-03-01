@@ -56,6 +56,9 @@ export async function GET(request: NextRequest) {
           COALESCE(d.operador_nombre, '') || ' ' || 
           COALESCE(d.operador_apellido, '')
         ) as interviniente,
+        d.operador_grado,
+        d.operador_nombre,
+        d.operador_apellido,
         d.oficina,
         d.monto_dano,
         d.moneda,

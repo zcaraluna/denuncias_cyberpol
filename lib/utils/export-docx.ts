@@ -60,7 +60,7 @@ export const exportToDocx = async (
                                     text: col.header,
                                     bold: true,
                                     font: 'Roboto',
-                                    size: 14 // Un poco más pequeño para que quepa todo
+                                    size: 18 // 9pt
                                 })
                             ]
                         })
@@ -91,7 +91,7 @@ export const exportToDocx = async (
                                     new TextRun({
                                         text: text,
                                         font: 'Roboto',
-                                        size: 14
+                                        size: 18 // 9pt
                                     })
                                 ]
                             })
@@ -211,22 +211,22 @@ export const exportToDocx = async (
             alignment: AlignmentType.CENTER,
             spacing: { before: 100 },
             children: [
-                new TextRun({ text: "Dirección: ", bold: true, size: 16, font: 'Roboto' }),
-                new TextRun({ text: "E. V. Haedo 725 casi O'Leary", size: 16, font: 'Roboto' })
+                new TextRun({ text: "Dirección: ", bold: true, size: 20, font: 'Roboto' }), // 10pt
+                new TextRun({ text: "E. V. Haedo 725 casi O'Leary", size: 20, font: 'Roboto' }) // 10pt
             ],
         }),
         new Paragraph({
             alignment: AlignmentType.CENTER,
             children: [
-                new TextRun({ text: "Teléfono: ", bold: true, size: 16, font: 'Roboto' }),
-                new TextRun({ text: "(021) 443-159 Fax: (021) 443-126 (021) 441-111", size: 16, font: 'Roboto' })
+                new TextRun({ text: "Teléfono: ", bold: true, size: 20, font: 'Roboto' }), // 10pt
+                new TextRun({ text: "(021) 443-159 Fax: (021) 443-126 (021) 441-111", size: 20, font: 'Roboto' }) // 10pt
             ],
         }),
         new Paragraph({
             alignment: AlignmentType.CENTER,
             children: [
-                new TextRun({ text: "E-mail: ", bold: true, size: 16, font: 'Roboto' }),
-                new TextRun({ text: "ayudantia@delitoseconomicos.gov.py", size: 16, font: 'Roboto' })
+                new TextRun({ text: "E-mail: ", bold: true, size: 20, font: 'Roboto' }), // 10pt
+                new TextRun({ text: "ayudantia@delitoseconomicos.gov.py", size: 20, font: 'Roboto' }) // 10pt
             ],
         }),
         new Paragraph({
@@ -265,7 +265,6 @@ export const exportToDocx = async (
             new Paragraph({
                 alignment: AlignmentType.LEFT,
                 children: [
-                    new TextRun({ text: "Al: ", bold: true, font: 'Roboto', size: 22 }),
                     new TextRun({ text: metadata.destinatarioGrado, bold: true, font: 'Roboto', size: 22 })
                 ]
             }),
@@ -283,9 +282,9 @@ export const exportToDocx = async (
                 ]
             }),
             new Paragraph({
-                alignment: AlignmentType.LEFT,
-                indent: { left: 850 }, // Aprox 1.5 cm
-                spacing: { after: 300 },
+                alignment: AlignmentType.JUSTIFIED,
+                indent: { firstLine: 850 }, // Aprox 1.5 cm en primera línea
+                spacing: { line: 276, after: 300 }, // Interlineado 1.15
                 children: [
                     new TextRun({
                         text: `Tengo el honor de dirigirme a esa superioridad, a objeto de elevar resumen de denuncias recepcionadas en la Sala de Denuncias de esta Direccion, correspondiente al grupo de guardia del dia ${metadata.fechaDesde} desde las 07:00 horas hasata el dia ${metadata.fechaHasta} a las 07:00 horas, todas las actas fueron remitidas a los Departamentos correspondientes cuyos datos se detallan a continuacion:`,
