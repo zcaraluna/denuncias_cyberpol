@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { obtenerDispositivosAutorizados, obtenerCodigosActivacion, desactivarDispositivo, desactivarCodigoActivacion } from '@/lib/auth';
+import { obtenerDispositivosAutorizados, obtenerCodigosActivacion, desactivarDispositivo, desactivarCodigoActivacion, generarCodigoActivacion } from '@/lib/auth';
 
 // GET: Obtener todos los dispositivos y códigos
 export async function GET(request: NextRequest) {
@@ -71,22 +71,29 @@ export async function POST(request: NextRequest) {
     }
 
     let resultado = false;
+    let data_adicional = {};
+
     if (tipo === 'dispositivo') {
       resultado = await desactivarDispositivo(id);
     } else if (tipo === 'codigo') {
       resultado = await desactivarCodigoActivacion(id);
+    } else if (tipo === 'generar_codigo') {
+      // id actúa como el nombre opcional
+      const nuevoCodigo = await generarCodigoActivacion(30, id || 'ADMIN_GEN');
+      resultado = !!nuevoCodigo;
+      data_adicional = { codigo: nuevoCodigo };
     } else {
       return NextResponse.json(
-        { error: 'Tipo inválido. Debe ser "dispositivo" o "codigo"' },
+        { error: 'Tipo inválido' },
         { status: 400 }
       );
     }
 
     if (resultado) {
-      return NextResponse.json({ success: true });
+      return NextResponse.json({ success: true, ...data_adicional });
     } else {
       return NextResponse.json(
-        { error: 'Error al desactivar' },
+        { error: 'Error al procesar solicitud' },
         { status: 500 }
       );
     }

@@ -282,6 +282,7 @@ export async function POST(request: NextRequest) {
     const montoDano = denuncia?.montoDano ?? null
     const moneda = denuncia?.moneda ?? null
     const usarRango = Boolean(denuncia?.usarRango)
+    const entidadBancariaVulnerada = denuncia?.entidadBancariaVulnerada ?? null
 
     if (borradorIdParam) {
       await client.query(
@@ -311,8 +312,9 @@ export async function POST(request: NextRequest) {
           es_denuncia_escrita = $22,
           archivo_denuncia_url = $23,
           adjuntos_urls = $24,
-          usar_rango = $25
-        WHERE id = $26`,
+          usar_rango = $25,
+          entidad_bancaria_vulnerada = $26
+        WHERE id = $27`,
         [
           principalId,
           denuncia?.fechaDenuncia ?? null,
@@ -339,6 +341,7 @@ export async function POST(request: NextRequest) {
           archivoDenunciaUrl,
           adjuntosUrls,
           usarRango,
+          entidadBancariaVulnerada,
           borradorIdParam
         ]
       )
@@ -357,8 +360,9 @@ export async function POST(request: NextRequest) {
           tipo_denuncia, otro_tipo, relato, lugar_hecho, latitud, longitud,
           orden, usuario_id, oficina, operador_grado, operador_nombre,
           operador_apellido, monto_dano, moneda, bancos_relacionados, hash, pdf, estado,
-          lugar_hecho_no_aplica, es_denuncia_escrita, archivo_denuncia_url, adjuntos_urls, usar_rango
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, NULL, 'borrador', $24, $25, $26, $27, $28)
+          lugar_hecho_no_aplica, es_denuncia_escrita, archivo_denuncia_url, adjuntos_urls, usar_rango,
+          entidad_bancaria_vulnerada
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, NULL, 'borrador', $24, $25, $26, $27, $28, $29)
         RETURNING id`,
         [
           principalId,
@@ -388,7 +392,8 @@ export async function POST(request: NextRequest) {
           esDenunciaEscrita,
           archivoDenunciaUrl,
           adjuntosUrls,
-          usarRango
+          usarRango,
+          entidadBancariaVulnerada
         ]
       )
 

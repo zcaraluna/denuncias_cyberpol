@@ -58,7 +58,7 @@ export default function LogVisitasPage() {
 
   const cargarVisitas = async () => {
     try {
-      const response = await fetch('/api/log-visitas')
+      const response = await fetch('/api/auditoria')
       if (!response.ok) throw new Error('Error al cargar visitas')
 
       const data = await response.json()
@@ -167,7 +167,6 @@ export default function LogVisitasPage() {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex flex-col">
                             <span className="text-xs font-black text-slate-700 uppercase">{visita.grado_usuario} {visita.nombre_usuario} {visita.apellido_usuario}</span>
-                            <span className="text-[10px] font-bold text-slate-400 uppercase italic">Funcionario</span>
                           </div>
                         </td>
                         <td className="px-6 py-4">

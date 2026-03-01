@@ -156,6 +156,7 @@ const denunciaSchema = z.object({
   montoDano: z.string().optional(),
   moneda: z.string().optional(),
   bancosRelacionados: z.array(z.string()).optional(),
+  entidadBancariaVulnerada: z.string().optional(),
   esDenunciaEscrita: z.boolean().optional(),
   archivoDenunciaUrl: z.string().optional(),
 }).superRefine((data, ctx) => {
@@ -1174,6 +1175,7 @@ export default function NuevaDenunciaPage() {
       montoDano: '',
       moneda: '',
       bancosRelacionados: [],
+      entidadBancariaVulnerada: '',
     }
   })
 
@@ -1531,6 +1533,19 @@ export default function NuevaDenunciaPage() {
         setDenuncianteEnEdicionId(principalTransformado.id)
       } else if (data.nombres_denunciante) {
         let fechaNacimientoISO = ''
+        if (data.denuncia.bancos_relacionados) {
+          try {
+            const bancos = JSON.parse(data.denuncia.bancos_relacionados)
+            setValueDenuncia('bancosRelacionados', bancos)
+          } catch (e) {
+            console.error('Error parseando bancos_relacionados:', e)
+          }
+        }
+
+        if (data.denuncia.entidad_bancaria_vulnerada) {
+          setValueDenuncia('entidadBancariaVulnerada', data.denuncia.entidad_bancaria_vulnerada)
+        }
+
         if (data.fecha_nacimiento) {
           try {
             fechaNacimientoISO = new Date(data.fecha_nacimiento).toISOString().split('T')[0]
@@ -1909,6 +1924,8 @@ export default function NuevaDenunciaPage() {
           moneda: denunciaData.moneda || null,
           latitud: coordenadas?.lat || null,
           longitud: coordenadas?.lng || null,
+          bancosRelacionados: denunciaData.bancosRelacionados || [],
+          entidadBancariaVulnerada: denunciaData.entidadBancariaVulnerada || null,
           esDenunciaEscrita: denunciaData.esDenunciaEscrita || false,
           archivoDenunciaUrl: denunciaData.archivoDenunciaUrl || null,
           adjuntosUrls: adjuntosUrls || [],
@@ -2048,7 +2065,11 @@ export default function NuevaDenunciaPage() {
               montoDano: denunciaData.montoDano ? parseInt(denunciaData.montoDano.replace(/\./g, '')) : null,
               moneda: denunciaData.moneda || null,
               latitud: coordenadas?.lat || null,
-              longitud: coordenadas?.lng || null,
+          longitud: coordenadas?.lng || null,
+          bancosRelacionados: denunciaData.bancosRelacionados || [],
+          entidadBancariaVulnerada: denunciaData.entidadBancariaVulnerada || null,
+              bancosRelacionados: denunciaData.bancosRelacionados || [],
+              entidadBancariaVulnerada: denunciaData.entidadBancariaVulnerada || null,
               esDenunciaEscrita: denunciaData.esDenunciaEscrita || false,
               archivoDenunciaUrl: denunciaData.archivoDenunciaUrl || null,
               adjuntosUrls: adjuntosUrls || [],
@@ -2192,6 +2213,8 @@ export default function NuevaDenunciaPage() {
           moneda: denunciaData.moneda || null,
           latitud: coordenadas?.lat || null,
           longitud: coordenadas?.lng || null,
+          bancosRelacionados: denunciaData.bancosRelacionados || [],
+          entidadBancariaVulnerada: denunciaData.entidadBancariaVulnerada || null,
           esDenunciaEscrita: denunciaData.esDenunciaEscrita || false,
           archivoDenunciaUrl: denunciaData.archivoDenunciaUrl || null,
           adjuntosUrls: adjuntosUrls || [],
@@ -2324,6 +2347,8 @@ export default function NuevaDenunciaPage() {
           moneda: denunciaData.moneda || null,
           latitud: coordenadas?.lat || null,
           longitud: coordenadas?.lng || null,
+          bancosRelacionados: denunciaData.bancosRelacionados || [],
+          entidadBancariaVulnerada: denunciaData.entidadBancariaVulnerada || null,
           esDenunciaEscrita: denunciaData.esDenunciaEscrita || false,
           archivoDenunciaUrl: denunciaData.archivoDenunciaUrl || null,
           adjuntosUrls: adjuntosUrls || [],
@@ -2453,6 +2478,10 @@ export default function NuevaDenunciaPage() {
           moneda: denunciaData.moneda || null,
           latitud: coordenadas?.lat || null,
           longitud: coordenadas?.lng || null,
+          bancosRelacionados: denunciaData.bancosRelacionados || [],
+          entidadBancariaVulnerada: denunciaData.entidadBancariaVulnerada || null,
+          bancosRelacionados: denunciaData.bancosRelacionados || [],
+          entidadBancariaVulnerada: denunciaData.entidadBancariaVulnerada || null,
           esDenunciaEscrita: denunciaData.esDenunciaEscrita || false,
           archivoDenunciaUrl: denunciaData.archivoDenunciaUrl || null,
           adjuntosUrls: adjuntosUrls || [],
@@ -4746,54 +4775,95 @@ export default function NuevaDenunciaPage() {
                     </div>
                   </div>
 
-                  <div className="mt-5 space-y-1.5">
-                    <label className="block text-sm font-semibold text-gray-700">
-                      Entidad(es) bancaria(s) relacionada(s)
-                    </label>
-                    <Controller
-                      name="bancosRelacionados"
-                      control={controlDenuncia}
-                      render={({ field }) => (
-                        <Select
-                          {...field}
-                          isMulti
-                          options={bancos.map(b => ({ value: b, label: b }))}
-                          placeholder="Seleccione entidad(es)..."
-                          onChange={(selected) => field.onChange(selected ? (selected as any).map((option: any) => option.value) : [])}
-                          value={field.value ? field.value.map(v => ({ value: v, label: v })) : []}
-                          styles={{
-                            control: (base, state) => ({
-                              ...base,
-                              borderRadius: '0.75rem',
-                              padding: '2px',
-                              borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
-                              boxShadow: state.isFocused ? '0 0 0 4px rgba(59, 130, 246, 0.1)' : 'none',
-                              '&:hover': {
-                                borderColor: '#9ca3af',
-                              },
-                            }),
-                            multiValue: (base) => ({
-                              ...base,
-                              backgroundColor: '#eff6ff',
-                              borderRadius: '0.375rem',
-                              color: '#1e40af',
-                            }),
-                            multiValueLabel: (base) => ({
-                              ...base,
-                              color: '#1e40af',
-                              fontWeight: '500',
-                            }),
-                            option: (base, state) => ({
-                              ...base,
-                              backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
-                              color: state.isSelected ? 'white' : '#1f2937',
-                              cursor: 'pointer',
-                            }),
-                          }}
-                          classNamePrefix="react-select"
-                        />
-                      )}
-                    />
+                  <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div className="space-y-1.5">
+                      <label className="block text-sm font-semibold text-gray-700">
+                        Entidad bancaria vulnerada
+                      </label>
+                      <Controller
+                        name="entidadBancariaVulnerada"
+                        control={controlDenuncia}
+                        render={({ field }) => (
+                          <Select
+                            {...field}
+                            options={bancos.map(b => ({ value: b, label: b }))}
+                            placeholder="Seleccione entidad..."
+                            isClearable
+                            onChange={(option) => field.onChange((option as any)?.value || '')}
+                            value={bancos.find(b => b === field.value) ? { value: field.value, label: field.value } : null}
+                            styles={{
+                              control: (base, state) => ({
+                                ...base,
+                                borderRadius: '0.75rem',
+                                padding: '2px',
+                                borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
+                                boxShadow: state.isFocused ? '0 0 0 4px rgba(59, 130, 246, 0.1)' : 'none',
+                                '&:hover': {
+                                  borderColor: '#9ca3af',
+                                },
+                              }),
+                              option: (base, state) => ({
+                                ...base,
+                                backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
+                                color: state.isSelected ? 'white' : '#1f2937',
+                                cursor: 'pointer',
+                              }),
+                            }}
+                            classNamePrefix="react-select"
+                          />
+                        )}
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="block text-sm font-semibold text-gray-700">
+                        Entidad(es) bancaria(s) relacionada(s)
+                      </label>
+                      <Controller
+                        name="bancosRelacionados"
+                        control={controlDenuncia}
+                        render={({ field }) => (
+                          <Select
+                            {...field}
+                            isMulti
+                            options={bancos.map(b => ({ value: b, label: b }))}
+                            placeholder="Seleccione entidad(es)..."
+                            onChange={(selected) => field.onChange(selected ? (selected as any).map((option: any) => option.value) : [])}
+                            value={field.value ? field.value.map(v => ({ value: v, label: v })) : []}
+                            styles={{
+                              control: (base, state) => ({
+                                ...base,
+                                borderRadius: '0.75rem',
+                                padding: '2px',
+                                borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
+                                boxShadow: state.isFocused ? '0 0 0 4px rgba(59, 130, 246, 0.1)' : 'none',
+                                '&:hover': {
+                                  borderColor: '#9ca3af',
+                                },
+                              }),
+                              multiValue: (base) => ({
+                                ...base,
+                                backgroundColor: '#eff6ff',
+                                borderRadius: '0.375rem',
+                                color: '#1e40af',
+                              }),
+                              multiValueLabel: (base) => ({
+                                ...base,
+                                color: '#1e40af',
+                                fontWeight: '500',
+                              }),
+                              option: (base, state) => ({
+                                ...base,
+                                backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
+                                color: state.isSelected ? 'white' : '#1f2937',
+                                cursor: 'pointer',
+                              }),
+                            }}
+                            classNamePrefix="react-select"
+                          />
+                        )}
+                      />
+                    </div>
                   </div>
                 </div>
 

@@ -132,6 +132,37 @@ export default function GestionDispositivosPage() {
     }
   }
 
+  const handleGenerarCodigo = async () => {
+    if (!usuario) return
+    const nombre = prompt('Ingrese un nombre o etiqueta para este código (opcional):') || 'ADMIN_GEN'
+
+    try {
+      const response = await fetch('/api/dispositivos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tipo: 'generar_codigo',
+          id: nombre,
+          usuario_rol: usuario.rol
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        alert(data.error || 'Error al generar código')
+        return
+      }
+
+      alert(`Código generado exitosamente: ${formatearCodigo(data.codigo)}`)
+      setTabActivo('codigos')
+      cargarDatos()
+    } catch (error) {
+      console.error('Error:', error)
+      alert('Error al generar código')
+    }
+  }
+
   const handleLogout = () => {
     sessionStorage.removeItem('usuario')
     router.push('/')
@@ -195,10 +226,10 @@ export default function GestionDispositivosPage() {
                 </div>
               </div>
 
-              {usuario.usuario === 'garv' && (
+              {(usuario?.usuario === 'garv' || usuario?.rol === 'superadmin') && (
                 <button
-                  onClick={() => {/* Lógica para generar código si existiera modal, o redirigir */ }}
-                  className="group flex items-center justify-center gap-2 px-6 py-3.5 bg-[#002147] text-white rounded-2xl hover:bg-[#003366] transition-all shadow-lg shadow-blue-900/10 font-black text-sm uppercase tracking-widest shrink-0"
+                  onClick={handleGenerarCodigo}
+                  className="flex items-center gap-2 px-6 py-3 bg-[#002147] text-white rounded-2xl hover:bg-[#003366] transition-all shadow-lg shadow-blue-900/10 font-black text-sm"
                 >
                   <Plus className="h-4 w-4" />
                   GENERAR CÓDIGO
@@ -214,8 +245,8 @@ export default function GestionDispositivosPage() {
             <button
               onClick={() => setTabActivo('dispositivos')}
               className={`flex items-center gap-2.5 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${tabActivo === 'dispositivos'
-                  ? 'bg-white text-[#002147] shadow-sm'
-                  : 'text-slate-500 hover:text-slate-700'
+                ? 'bg-white text-[#002147] shadow-sm'
+                : 'text-slate-500 hover:text-slate-700'
                 }`}
             >
               <Smartphone className="h-3.5 w-3.5" />
@@ -224,8 +255,8 @@ export default function GestionDispositivosPage() {
             <button
               onClick={() => setTabActivo('codigos')}
               className={`flex items-center gap-2.5 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${tabActivo === 'codigos'
-                  ? 'bg-white text-[#002147] shadow-sm'
-                  : 'text-slate-500 hover:text-slate-700'
+                ? 'bg-white text-[#002147] shadow-sm'
+                : 'text-slate-500 hover:text-slate-700'
                 }`}
             >
               <Key className="h-3.5 w-3.5" />
@@ -336,8 +367,8 @@ export default function GestionDispositivosPage() {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <span className={`px-2.5 py-1 text-[10px] font-black uppercase tracking-widest rounded-lg flex items-center w-fit gap-1.5 ${estado.className.includes('bg-green') ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' :
-                                  estado.className.includes('bg-orange') ? 'bg-orange-50 text-orange-700 border-orange-100' :
-                                    'bg-slate-50 text-slate-500 border-slate-100'
+                                estado.className.includes('bg-orange') ? 'bg-orange-50 text-orange-700 border-orange-100' :
+                                  'bg-slate-50 text-slate-500 border-slate-100'
                                 }`}>
                                 <Activity className="h-2.5 w-2.5" />
                                 {estado.texto}

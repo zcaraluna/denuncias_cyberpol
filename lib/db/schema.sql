@@ -57,6 +57,7 @@ CREATE TABLE IF NOT EXISTS denuncias (
     monto_dano INTEGER,
     moneda VARCHAR(50),
     bancos_relacionados TEXT,
+    entidad_bancaria_vulnerada TEXT,
     hash VARCHAR(50) UNIQUE NOT NULL,
     pdf BYTEA,
     lugar_hecho_no_aplica BOOLEAN DEFAULT FALSE,

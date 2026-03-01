@@ -351,6 +351,7 @@ export async function POST(request: NextRequest) {
     const montoDano = denuncia?.montoDano ?? null
     const moneda = denuncia?.moneda ?? null
     const usarRango = Boolean(denuncia?.usarRango)
+    const entidadBancariaVulnerada = denuncia?.entidadBancariaVulnerada ?? null
 
     const hash = generarHash(usuario.oficina)
 
@@ -408,8 +409,10 @@ export async function POST(request: NextRequest) {
           lugar_hecho_no_aplica = $21,
           es_denuncia_escrita = $22,
           archivo_denuncia_url = $23,
-          usar_rango = $24
-        WHERE id = $25`,
+          usar_rango = $24,
+          bancos_relacionados = $25,
+          entidad_bancaria_vulnerada = $26
+        WHERE id = $27`,
         [
           principalId,
           fechaActual,
@@ -435,6 +438,8 @@ export async function POST(request: NextRequest) {
           denuncia?.esDenunciaEscrita || false,
           denuncia?.archivoDenunciaUrl || null,
           usarRango,
+          denuncia?.bancosRelacionados ? JSON.stringify(denuncia.bancosRelacionados) : null,
+          entidadBancariaVulnerada,
           borradorId
         ]
       )
@@ -485,8 +490,9 @@ export async function POST(request: NextRequest) {
           tipo_denuncia, otro_tipo, relato, lugar_hecho, latitud, longitud,
           orden, usuario_id, oficina, operador_grado, operador_nombre,
           operador_apellido, monto_dano, moneda, hash, pdf, estado,
-          es_denuncia_escrita, archivo_denuncia_url, lugar_hecho_no_aplica, adjuntos_urls, usar_rango
-        ) VALUES ($1, $2::DATE, $3, $4::DATE, $5, $6::DATE, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, NULL, 'completada', $23, $24, $25, $26, $27)
+          es_denuncia_escrita, archivo_denuncia_url, lugar_hecho_no_aplica, adjuntos_urls, usar_rango,
+          bancos_relacionados, entidad_bancaria_vulnerada
+        ) VALUES ($1, $2::DATE, $3, $4::DATE, $5, $6::DATE, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, NULL, 'completada', $23, $24, $25, $26, $27, $28, $29)
         RETURNING id`,
         [
           principalId,
@@ -510,13 +516,14 @@ export async function POST(request: NextRequest) {
           usuario.apellido,
           montoDano,
           moneda,
-          denuncia?.bancosRelacionados ? JSON.stringify(denuncia.bancosRelacionados) : null,
           hash,
           denuncia?.esDenunciaEscrita || false,
           denuncia?.archivoDenunciaUrl || null,
           lugarHechoNoAplica,
           adjuntosUrls,
-          usarRango
+          usarRango,
+          denuncia?.bancosRelacionados ? JSON.stringify(denuncia.bancosRelacionados) : null,
+          entidadBancariaVulnerada
         ]
       )
       denunciaId = insertDenuncia.rows[0].id
