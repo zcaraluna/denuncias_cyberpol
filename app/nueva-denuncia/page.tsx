@@ -11,6 +11,9 @@ import { departamentosParaguay } from '@/lib/data/departamentos'
 import { obtenerBarriosPorCiudad } from '@/lib/data/barrios'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { obtenerHechosPuniblesEspecificos } from '@/lib/data/hechos-punibles'
+import { MainLayout } from '@/components/MainLayout'
+import { MiniHeader } from '@/components/MiniHeader'
+import { cn } from '@/lib/utils'
 
 // Importar el mapa dinámicamente (solo en cliente)
 const MapSelector = dynamic(() => import('@/components/MapSelector'), { ssr: false })
@@ -152,6 +155,8 @@ const denunciaSchema = z.object({
   relato: z.string().optional(),
   montoDano: z.string().optional(),
   moneda: z.string().optional(),
+  bancosRelacionados: z.array(z.string()).optional(),
+  entidadBancariaVulnerada: z.string().optional(),
   esDenunciaEscrita: z.boolean().optional(),
   archivoDenunciaUrl: z.string().optional(),
 }).superRefine((data, ctx) => {
@@ -468,7 +473,8 @@ export default function NuevaDenunciaPage() {
     'Bancop',
     'GNB Paraguay',
     'Visión Banco',
-    'Ueno Bank'
+    'Ueno Bank',
+    'OTRO'
   ]
 
   // Opciones para descripción física
@@ -1168,6 +1174,8 @@ export default function NuevaDenunciaPage() {
       relato: '',
       montoDano: '',
       moneda: '',
+      bancosRelacionados: [],
+      entidadBancariaVulnerada: '',
     }
   })
 
@@ -1525,6 +1533,19 @@ export default function NuevaDenunciaPage() {
         setDenuncianteEnEdicionId(principalTransformado.id)
       } else if (data.nombres_denunciante) {
         let fechaNacimientoISO = ''
+        if (data.denuncia.bancos_relacionados) {
+          try {
+            const bancos = JSON.parse(data.denuncia.bancos_relacionados)
+            setValueDenuncia('bancosRelacionados', bancos)
+          } catch (e) {
+            console.error('Error parseando bancos_relacionados:', e)
+          }
+        }
+
+        if (data.denuncia.entidad_bancaria_vulnerada) {
+          setValueDenuncia('entidadBancariaVulnerada', data.denuncia.entidad_bancaria_vulnerada)
+        }
+
         if (data.fecha_nacimiento) {
           try {
             fechaNacimientoISO = new Date(data.fecha_nacimiento).toISOString().split('T')[0]
@@ -1903,6 +1924,8 @@ export default function NuevaDenunciaPage() {
           moneda: denunciaData.moneda || null,
           latitud: coordenadas?.lat || null,
           longitud: coordenadas?.lng || null,
+          bancosRelacionados: denunciaData.bancosRelacionados || [],
+          entidadBancariaVulnerada: denunciaData.entidadBancariaVulnerada || null,
           esDenunciaEscrita: denunciaData.esDenunciaEscrita || false,
           archivoDenunciaUrl: denunciaData.archivoDenunciaUrl || null,
           adjuntosUrls: adjuntosUrls || [],
@@ -2043,6 +2066,8 @@ export default function NuevaDenunciaPage() {
               moneda: denunciaData.moneda || null,
               latitud: coordenadas?.lat || null,
               longitud: coordenadas?.lng || null,
+              bancosRelacionados: denunciaData.bancosRelacionados || [],
+              entidadBancariaVulnerada: denunciaData.entidadBancariaVulnerada || null,
               esDenunciaEscrita: denunciaData.esDenunciaEscrita || false,
               archivoDenunciaUrl: denunciaData.archivoDenunciaUrl || null,
               adjuntosUrls: adjuntosUrls || [],
@@ -2186,6 +2211,8 @@ export default function NuevaDenunciaPage() {
           moneda: denunciaData.moneda || null,
           latitud: coordenadas?.lat || null,
           longitud: coordenadas?.lng || null,
+          bancosRelacionados: denunciaData.bancosRelacionados || [],
+          entidadBancariaVulnerada: denunciaData.entidadBancariaVulnerada || null,
           esDenunciaEscrita: denunciaData.esDenunciaEscrita || false,
           archivoDenunciaUrl: denunciaData.archivoDenunciaUrl || null,
           adjuntosUrls: adjuntosUrls || [],
@@ -2318,6 +2345,8 @@ export default function NuevaDenunciaPage() {
           moneda: denunciaData.moneda || null,
           latitud: coordenadas?.lat || null,
           longitud: coordenadas?.lng || null,
+          bancosRelacionados: denunciaData.bancosRelacionados || [],
+          entidadBancariaVulnerada: denunciaData.entidadBancariaVulnerada || null,
           esDenunciaEscrita: denunciaData.esDenunciaEscrita || false,
           archivoDenunciaUrl: denunciaData.archivoDenunciaUrl || null,
           adjuntosUrls: adjuntosUrls || [],
@@ -2446,7 +2475,9 @@ export default function NuevaDenunciaPage() {
           montoDano: denunciaData.montoDano ? parseInt(denunciaData.montoDano.replace(/\./g, '')) : null,
           moneda: denunciaData.moneda || null,
           latitud: coordenadas?.lat || null,
-          longitud: coordenadas?.lng || null,
+              longitud: coordenadas?.lng || null,
+              bancosRelacionados: denunciaData.bancosRelacionados || [],
+              entidadBancariaVulnerada: denunciaData.entidadBancariaVulnerada || null,
           esDenunciaEscrita: denunciaData.esDenunciaEscrita || false,
           archivoDenunciaUrl: denunciaData.archivoDenunciaUrl || null,
           adjuntosUrls: adjuntosUrls || [],
@@ -2517,1201 +2548,219 @@ export default function NuevaDenunciaPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <button
-              onClick={() => router.push('/dashboard')}
-              className="text-gray-600 hover:text-gray-900"
+    <MainLayout hideSidebar={true}>
+      <MiniHeader />
+      <div className="min-h-[calc(100-4rem)] bg-[#f8fafc] py-6 px-4 sm:px-6 lg:px-8 font-sans">
+        <div className="max-w-5xl mx-auto">
+          <div className="mb-6">
+            <div className="flex items-center justify-between max-w-xl mx-auto relative px-4">
+              {/* Step Progress Line */}
+              <div className="absolute top-3 left-8 right-8 h-0.5 bg-slate-200 -z-10" />
+              <div
+                className="absolute top-3 left-8 h-0.5 bg-[#002147] transition-all duration-500 -z-10"
+                style={{ width: `${(paso - 1) * 50}%` }}
+              />
+
+              {[
+                { num: 1, label: 'Denunciante', icon: 'User' },
+                { num: 2, label: 'Supuesto Autor', icon: 'ShieldAlert' },
+                { num: 3, label: 'Detalles', icon: 'FileText' }
+              ].map((step) => {
+                const isCompleted = paso > step.num;
+                const isActive = paso === step.num;
+
+                return (
+                  <div key={step.num} className="flex flex-col items-center group">
+                    <div
+                      className={cn(
+                        "flex items-center justify-center w-6 h-6 rounded-md border-2 transition-all duration-300 shadow-sm",
+                        isActive
+                          ? "bg-[#002147] border-[#002147] text-white scale-110 shadow-blue-900/20"
+                          : isCompleted
+                            ? "bg-green-500 border-green-500 text-white"
+                            : "bg-white border-slate-200 text-slate-400"
+                      )}
+                    >
+                      {isCompleted ? (
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      ) : (
+                        <span className="font-bold text-[10px]">{step.num}</span>
+                      )}
+                    </div>
+                    <span className={cn(
+                      "text-[9px] font-bold uppercase tracking-wider mt-1.5 transition-colors duration-200",
+                      isActive ? "text-[#002147]" : isCompleted ? "text-green-600" : "text-slate-400"
+                    )}>
+                      {step.label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Paso 1: Datos del Denunciante */}
+          {paso === 1 && (
+            <form
+              onSubmit={handlePaso1Submit}
+              autoComplete="off"
+              className="bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-100 p-6 sm:p-8 transition-all duration-300 hover:shadow-slate-200/80"
             >
-              ← Volver
-            </button>
-            <h1 className="text-xl font-bold text-gray-800">Nueva Denuncia</h1>
-            <div className="text-sm text-gray-600">
-              {usuario.grado} {usuario.nombre} {usuario.apellido}
-            </div>
-          </div>
-        </div>
-      </nav>
+              <h2 className="text-xl font-bold text-gray-800 mb-4">
+                Datos del Denunciante
+              </h2>
 
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Indicador de pasos */}
-        <div className="mb-8">
-          <div className="flex items-center">
-            {[
-              { num: 1, label: 'Denunciante' },
-              { num: 2, label: 'Supuesto Autor' },
-              { num: 3, label: 'Detalles' }
-            ].map((step, index) => (
-              <React.Fragment key={step.num}>
-                <div className="flex flex-col items-center relative">
-                  <div
-                    className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${paso >= step.num
-                      ? 'bg-blue-600 border-blue-600 text-white'
-                      : 'bg-white border-gray-300 text-gray-500'
-                      }`}
-                  >
-                    {step.num}
-                  </div>
-                  <span className="text-sm text-gray-600 mt-2 whitespace-nowrap">
-                    {step.label}
-                  </span>
-                </div>
-                {index < 2 && (
-                  <div
-                    className={`flex-1 h-1 mx-2 ${paso > step.num ? 'bg-blue-600' : 'bg-gray-300'
-                      }`}
-                  />
-                )}
-              </React.Fragment>
-            ))}
-          </div>
-        </div>
-
-        {/* Paso 1: Datos del Denunciante */}
-        {paso === 1 && (
-          <form
-            onSubmit={handlePaso1Submit}
-            autoComplete="off"
-            className="bg-white rounded-lg shadow-md p-8"
-          >
-            <h2 className="text-2xl font-bold text-gray-800 mb-6">
-              Datos del Denunciante
-            </h2>
-
-            <div className="space-y-4">
-              {/* Rol dentro de la denuncia */}
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Rol dentro de la denuncia *
-                </label>
-                <select
-                  {...registerDenunciante('rol')}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-sans text-sm uppercase"
-                  style={{ fontFamily: 'Inter, sans-serif' }}
-                >
-                  {ROLES_DENUNCIANTE.map((rol) => {
-                    const esRolActual = registroDenuncianteEnEdicion?.rol === rol
-                    const deshabilitarPrincipal = rol === 'principal' && existePrincipalRegistrado && !esRolActual
-                    const coDenunciantesRegistrados = denunciantes.filter((denunciante) => denunciante.rol === 'co-denunciante').length
-                    const deshabilitarCoDenunciante =
-                      rol === 'co-denunciante' && coDenunciantesRegistrados >= 2 && !esRolActual
-                    const deshabilitarAbogado = rol === 'abogado' && !principalActual && !esRolActual
-                    return (
-                      <option
-                        key={rol}
-                        value={rol}
-                        disabled={deshabilitarPrincipal || deshabilitarAbogado || deshabilitarCoDenunciante}
-                      >
-                        {rol === 'principal' && 'Denunciante principal'}
-                        {rol === 'co-denunciante' && 'Co-denunciante'}
-                        {rol === 'abogado' && 'Abogado / representante legal'}
-                      </option>
-                    )
-                  })}
-                </select>
-                {errorsDenunciante.rol && (
-                  <p className="text-red-600 text-sm mt-1">{errorsDenunciante.rol.message as string}</p>
-                )}
-
-                {/* Botón temporal para completar automáticamente (SOLO PARA PRUEBAS) */}
-                {modoPruebas && (
-                  <button
-                    type="button"
-                    onClick={completarFormularioAutomatico}
-                    className="mt-2 px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
-                  >
-                    Completar automáticamente (PRUEBAS)
-                  </button>
-                )}
-              </div>
-
-              {/* Nombres y Apellidos */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {esAbogado ? 'Nombre completo del abogado *' : 'Nombres y Apellidos *'}
-                </label>
-                <input
-                  {...registerDenunciante('nombres')}
-                  onChange={(e) => {
-                    convertirAMayusculas(e)
-                    registerDenunciante('nombres').onChange(e)
-                  }}
-                  autoComplete="off"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
-                />
-                {errorsDenunciante.nombres && (
-                  <p className="text-red-600 text-sm mt-1">{errorsDenunciante.nombres.message as string}</p>
-                )}
-              </div>
-
-              {/* 2. Tipo de Documento y Número */}
-              <div className={`grid ${esAbogado ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-2'} gap-4`}>
-                <div>
+              <div className="space-y-4">
+                {/* Rol dentro de la denuncia */}
+                <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Documento de Identidad Tipo *
+                    Rol dentro de la denuncia *
                   </label>
                   <select
-                    {...registerDenunciante('tipoDocumento')}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-sans text-sm"
+                    {...registerDenunciante('rol')}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-sans text-sm uppercase"
                     style={{ fontFamily: 'Inter, sans-serif' }}
                   >
-                    <option value="">Seleccione...</option>
-                    <option value="Cédula de Identidad Paraguaya">Cédula de Identidad Paraguaya</option>
-                    <option value="Documento de origen">Documento de origen</option>
-                    <option value="Pasaporte">Pasaporte</option>
-                  </select>
-                  {errorsDenunciante.tipoDocumento && (
-                    <p className="text-red-600 text-sm mt-1">{errorsDenunciante.tipoDocumento.message as string}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Número de Documento {esAbogado ? '*' : '*'}
-                  </label>
-                  <input
-                    {...registerDenunciante('numeroDocumento')}
-                    onChange={(e) => {
-                      const tipoDoc = watchDenunciante('tipoDocumento')
-                      if (tipoDoc === 'Pasaporte' || tipoDoc === 'Documento de origen') {
-                        convertirAMayusculas(e)
-                      } else {
-                        e.target.value = e.target.value.replace(/[^0-9]/g, '')
-                      }
-                      registerDenunciante('numeroDocumento').onChange(e)
-                    }}
-                    autoComplete="off"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
-                  />
-                  {errorsDenunciante.numeroDocumento && (
-                    <p className="text-red-600 text-sm mt-1">{errorsDenunciante.numeroDocumento.message as string}</p>
-                  )}
-                </div>
-
-                {esAbogado && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Matrícula Número *
-                    </label>
-                    <input
-                      {...registerDenunciante('matricula')}
-                      onChange={(e) => {
-                        convertirAMayusculas(e)
-                        registerDenunciante('matricula').onChange(e)
-                      }}
-                      autoComplete="off"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
-                    />
-                    {errorsDenunciante.matricula && (
-                      <p className="text-red-600 text-sm mt-1">{errorsDenunciante.matricula.message as string}</p>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* 3. Nacionalidad */}
-              {!esAbogado && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Nacionalidad *
-                  </label>
-                  <Controller
-                    name="nacionalidad"
-                    control={controlDenunciante}
-                    render={({ field }) => {
-                      const currentValue = field.value || 'PARAGUAYA'
+                    {ROLES_DENUNCIANTE.map((rol) => {
+                      const esRolActual = registroDenuncianteEnEdicion?.rol === rol
+                      const deshabilitarPrincipal = rol === 'principal' && existePrincipalRegistrado && !esRolActual
+                      const coDenunciantesRegistrados = denunciantes.filter((denunciante) => denunciante.rol === 'co-denunciante').length
+                      const deshabilitarCoDenunciante =
+                        rol === 'co-denunciante' && coDenunciantesRegistrados >= 2 && !esRolActual
+                      const deshabilitarAbogado = rol === 'abogado' && !principalActual && !esRolActual
                       return (
-                        <Select
-                          options={nacionalidades.map((nac) => ({ value: nac, label: nac }))}
-                          value={nacionalidades.find((nac) => nac === currentValue) ? { value: currentValue, label: currentValue } : { value: 'PARAGUAYA', label: 'PARAGUAYA' }}
-                          onChange={(option) => {
-                            field.onChange(option?.value || 'PARAGUAYA')
-                          }}
-                          isSearchable
-                          placeholder="Buscar nacionalidad..."
-                          className="text-sm"
-                          styles={{
-                            control: (base, state) => ({
-                              ...base,
-                              fontFamily: 'Inter, sans-serif',
-                              fontSize: '14px',
-                              minHeight: '42px',
-                              borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
-                              boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
-                              '&:hover': {
-                                borderColor: '#3b82f6',
-                              },
-                            }),
-                            menu: (base) => ({
-                              ...base,
-                              fontFamily: 'Inter, sans-serif',
-                              fontSize: '14px',
-                              maxHeight: '250px',
-                              zIndex: 9999,
-                            }),
-                            menuList: (base) => ({
-                              ...base,
-                              maxHeight: '250px',
-                            }),
-                            option: (base, state) => ({
-                              ...base,
-                              fontFamily: 'Inter, sans-serif',
-                              fontSize: '14px',
-                              padding: '8px 12px',
-                              backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
-                              color: state.isSelected ? 'white' : '#1f2937',
-                              cursor: 'pointer',
-                            }),
-                            input: (base) => ({
-                              ...base,
-                              fontFamily: 'Inter, sans-serif',
-                              fontSize: '14px',
-                              margin: 0,
-                              padding: 0,
-                            }),
-                            singleValue: (base) => ({
-                              ...base,
-                              fontFamily: 'Inter, sans-serif',
-                              fontSize: '14px',
-                              color: '#1f2937',
-                            }),
-                            placeholder: (base) => ({
-                              ...base,
-                              fontFamily: 'Inter, sans-serif',
-                              fontSize: '14px',
-                              color: '#9ca3af',
-                            }),
-                          }}
-                          classNamePrefix="react-select"
-                        />
-                      )
-                    }}
-                  />
-                  {errorsDenunciante.nacionalidad && (
-                    <p className="text-red-600 text-sm mt-1">{errorsDenunciante.nacionalidad.message as string}</p>
-                  )}
-                </div>
-              )}
-
-              {/* 4. Fecha de Nacimiento y Edad */}
-              {!esAbogado && (
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Fecha de Nacimiento *
-                    </label>
-                    <input
-                      type="date"
-                      {...registerDenunciante('fechaNacimiento')}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      max={new Date().toISOString().split('T')[0]}
-                    />
-                    {errorsDenunciante.fechaNacimiento && (
-                      <p className="text-red-600 text-sm mt-1">{errorsDenunciante.fechaNacimiento.message as string}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Edad
-                    </label>
-                    <input
-                      {...registerDenunciante('edad')}
-                      readOnly
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* 5. Lugar de Nacimiento */}
-              {!esAbogado && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Lugar de Nacimiento *
-                  </label>
-                  <input
-                    {...registerDenunciante('lugarNacimiento')}
-                    onChange={(e) => {
-                      convertirAMayusculas(e)
-                      registerDenunciante('lugarNacimiento').onChange(e)
-                    }}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
-                  />
-                  {errorsDenunciante.lugarNacimiento && (
-                    <p className="text-red-600 text-sm mt-1">{errorsDenunciante.lugarNacimiento.message as string}</p>
-                  )}
-                </div>
-              )}
-
-              {/* 6. Estado Civil */}
-              {!esAbogado && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Estado Civil *
-                  </label>
-                  <select
-                    {...registerDenunciante('estadoCivil')}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-sans text-sm"
-                    style={{ fontFamily: 'Inter, sans-serif' }}
-                  >
-                    <option value="">Seleccione...</option>
-                    {estadosCiviles.map((ec) => (
-                      <option key={ec} value={ec}>
-                        {ec}
-                      </option>
-                    ))}
-                  </select>
-                  {errorsDenunciante.estadoCivil && (
-                    <p className="text-red-600 text-sm mt-1">{errorsDenunciante.estadoCivil.message as string}</p>
-                  )}
-                </div>
-              )}
-
-              {/* 7. Contacto */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Número de Teléfono *
-                  </label>
-                  <input
-                    {...registerDenunciante('telefono')}
-                    onChange={(e) => {
-                      convertirAMayusculas(e)
-                      registerDenunciante('telefono').onChange(e)
-                    }}
-                    autoComplete="off"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
-                  />
-                  {errorsDenunciante.telefono && (
-                    <p className="text-red-600 text-sm mt-1">{errorsDenunciante.telefono.message as string}</p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Correo Electrónico
-                  </label>
-                  <input
-                    type="email"
-                    {...registerDenunciante('correo')}
-                    onChange={(e) => {
-                      e.target.value = e.target.value.toLowerCase()
-                      registerDenunciante('correo').onChange(e)
-                    }}
-                    autoComplete="off"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                  {errorsDenunciante.correo && (
-                    <p className="text-red-600 text-sm mt-1">{errorsDenunciante.correo.message as string}</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Carta Poder (solo para abogados) */}
-              {esAbogado && (
-                <div className="space-y-4">
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="conCartaPoder"
-                      {...registerDenunciante('conCartaPoder')}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                    />
-                    <label htmlFor="conCartaPoder" className="ml-2 block text-sm font-medium text-gray-700">
-                      El abogado actúa con carta poder (denunciante no presente)
-                    </label>
-                  </div>
-                  {watchDenunciante('conCartaPoder') && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-6 border-l-2 border-blue-200">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Fecha de la Carta Poder *
-                        </label>
-                        <input
-                          type="date"
-                          {...registerDenunciante('cartaPoderFecha')}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                        {errorsDenunciante.cartaPoderFecha && (
-                          <p className="text-red-600 text-sm mt-1">{errorsDenunciante.cartaPoderFecha.message as string}</p>
-                        )}
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Notario *
-                        </label>
-                        <input
-                          {...registerDenunciante('cartaPoderNotario')}
-                          onChange={(e) => {
-                            convertirAMayusculas(e)
-                            registerDenunciante('cartaPoderNotario').onChange(e)
-                          }}
-                          autoComplete="off"
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
-                        />
-                        {errorsDenunciante.cartaPoderNotario && (
-                          <p className="text-red-600 text-sm mt-1">{errorsDenunciante.cartaPoderNotario.message as string}</p>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* 8. Domicilio */}
-              {!esAbogado && (
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">
-                    Domicilio
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Departamento *
-                      </label>
-                      <Controller
-                        name="departamento"
-                        control={controlDenunciante}
-                        render={({ field }) => (
-                          <Select
-                            options={departamentoOptions}
-                            value={departamentoOptions.find((option) => option.value === field.value) || null}
-                            onChange={(option) => field.onChange(option?.value || '')}
-                            isClearable
-                            placeholder="Seleccione..."
-                            className="text-sm"
-                            styles={{
-                              control: (base, state) => ({
-                                ...base,
-                                fontFamily: 'Inter, sans-serif',
-                                fontSize: '14px',
-                                minHeight: '42px',
-                                borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
-                                boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
-                                '&:hover': {
-                                  borderColor: '#3b82f6',
-                                },
-                              }),
-                              menu: (base) => ({
-                                ...base,
-                                fontFamily: 'Inter, sans-serif',
-                                fontSize: '14px',
-                                maxHeight: '250px',
-                                zIndex: 9999,
-                              }),
-                              menuList: (base) => ({
-                                ...base,
-                                maxHeight: '250px',
-                              }),
-                              option: (base, state) => ({
-                                ...base,
-                                fontFamily: 'Inter, sans-serif',
-                                fontSize: '14px',
-                                padding: '8px 12px',
-                                backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
-                                color: state.isSelected ? 'white' : '#1f2937',
-                                cursor: 'pointer',
-                              }),
-                              input: (base) => ({
-                                ...base,
-                                fontFamily: 'Inter, sans-serif',
-                                fontSize: '14px',
-                                margin: 0,
-                                padding: 0,
-                              }),
-                              singleValue: (base) => ({
-                                ...base,
-                                fontFamily: 'Inter, sans-serif',
-                                fontSize: '14px',
-                                color: '#1f2937',
-                              }),
-                              placeholder: (base) => ({
-                                ...base,
-                                fontFamily: 'Inter, sans-serif',
-                                fontSize: '14px',
-                                color: '#9ca3af',
-                              }),
-                            }}
-                            classNamePrefix="react-select"
-                          />
-                        )}
-                      />
-                      {errorsDenunciante.departamento && (
-                        <p className="text-red-600 text-sm mt-1">{errorsDenunciante.departamento.message as string}</p>
-                      )}
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Ciudad *
-                      </label>
-                      <Controller
-                        name="ciudad"
-                        control={controlDenunciante}
-                        render={({ field }) => (
-                          <Select
-                            options={ciudadOptions}
-                            value={ciudadOptions.find((option) => option.value === field.value) || null}
-                            onChange={(option) => field.onChange(option?.value || '')}
-                            isClearable
-                            isDisabled={!departamentoSeleccionado}
-                            placeholder={departamentoSeleccionado ? 'Seleccione...' : 'Seleccione un departamento primero'}
-                            className="text-sm"
-                            styles={{
-                              control: (base, state) => ({
-                                ...base,
-                                fontFamily: 'Inter, sans-serif',
-                                fontSize: '14px',
-                                minHeight: '42px',
-                                borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
-                                boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
-                                '&:hover': {
-                                  borderColor: '#3b82f6',
-                                },
-                              }),
-                              menu: (base) => ({
-                                ...base,
-                                fontFamily: 'Inter, sans-serif',
-                                fontSize: '14px',
-                                maxHeight: '250px',
-                                zIndex: 9999,
-                              }),
-                              menuList: (base) => ({
-                                ...base,
-                                maxHeight: '250px',
-                              }),
-                              option: (base, state) => ({
-                                ...base,
-                                fontFamily: 'Inter, sans-serif',
-                                fontSize: '14px',
-                                padding: '8px 12px',
-                                backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
-                                color: state.isSelected ? 'white' : '#1f2937',
-                                cursor: 'pointer',
-                              }),
-                              input: (base) => ({
-                                ...base,
-                                fontFamily: 'Inter, sans-serif',
-                                fontSize: '14px',
-                                margin: 0,
-                                padding: 0,
-                              }),
-                              singleValue: (base) => ({
-                                ...base,
-                                fontFamily: 'Inter, sans-serif',
-                                fontSize: '14px',
-                                color: '#1f2937',
-                              }),
-                              placeholder: (base) => ({
-                                ...base,
-                                fontFamily: 'Inter, sans-serif',
-                                fontSize: '14px',
-                                color: '#9ca3af',
-                              }),
-                            }}
-                            classNamePrefix="react-select"
-                          />
-                        )}
-                      />
-                      {errorsDenunciante.ciudad && (
-                        <p className="text-red-600 text-sm mt-1">{errorsDenunciante.ciudad.message as string}</p>
-                      )}
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Barrio
-                      </label>
-                      <Controller
-                        name="barrio"
-                        control={controlDenunciante}
-                        render={({ field }) => (
-                          <Select
-                            options={barrioOptions}
-                            value={barrioOptions.find((option) => option.value === field.value) || null}
-                            onChange={(option) => field.onChange(option?.value || '')}
-                            isClearable
-                            isDisabled={!ciudadSeleccionada}
-                            placeholder={ciudadSeleccionada ? 'Seleccione...' : 'Seleccione una ciudad primero'}
-                            className="text-sm"
-                            styles={{
-                              control: (base, state) => ({
-                                ...base,
-                                fontFamily: 'Inter, sans-serif',
-                                fontSize: '14px',
-                                minHeight: '42px',
-                                borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
-                                boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
-                                '&:hover': {
-                                  borderColor: '#3b82f6',
-                                },
-                              }),
-                              menu: (base) => ({
-                                ...base,
-                                fontFamily: 'Inter, sans-serif',
-                                fontSize: '14px',
-                                maxHeight: '250px',
-                                zIndex: 9999,
-                              }),
-                              menuList: (base) => ({
-                                ...base,
-                                maxHeight: '250px',
-                              }),
-                              option: (base, state) => ({
-                                ...base,
-                                fontFamily: 'Inter, sans-serif',
-                                fontSize: '14px',
-                                padding: '8px 12px',
-                                backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
-                                color: state.isSelected ? 'white' : '#1f2937',
-                                cursor: 'pointer',
-                              }),
-                              input: (base) => ({
-                                ...base,
-                                fontFamily: 'Inter, sans-serif',
-                                fontSize: '14px',
-                                margin: 0,
-                                padding: 0,
-                              }),
-                              singleValue: (base) => ({
-                                ...base,
-                                fontFamily: 'Inter, sans-serif',
-                                fontSize: '14px',
-                                color: '#1f2937',
-                              }),
-                              placeholder: (base) => ({
-                                ...base,
-                                fontFamily: 'Inter, sans-serif',
-                                fontSize: '14px',
-                                color: '#9ca3af',
-                              }),
-                            }}
-                            classNamePrefix="react-select"
-                          />
-                        )}
-                      />
-                      {errorsDenunciante.barrio && (
-                        <p className="text-red-600 text-sm mt-1">{errorsDenunciante.barrio.message as string}</p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Calles / Referencias *
-                    </label>
-                    <input
-                      {...registerDenunciante('calles')}
-                      onChange={(e) => {
-                        convertirAMayusculas(e)
-                        registerDenunciante('calles').onChange(e)
-                      }}
-                      autoComplete="off"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
-                    />
-                    {errorsDenunciante.calles && (
-                      <p className="text-red-600 text-sm mt-1">{errorsDenunciante.calles.message as string}</p>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* 9. Profesión */}
-              {!esAbogado && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Profesión
-                  </label>
-                  <input
-                    {...registerDenunciante('profesion')}
-                    onChange={(e) => {
-                      convertirAMayusculas(e)
-                      registerDenunciante('profesion').onChange(e)
-                    }}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
-                  />
-                  {errorsDenunciante.profesion && (
-                    <p className="text-red-600 text-sm mt-1">{errorsDenunciante.profesion.message as string}</p>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div className="mt-8 space-y-6">
-              {denuncianteEnEdicionId && (
-                <div className="px-4 py-3 rounded-lg border border-blue-200 bg-blue-50 text-sm text-blue-800 font-medium">
-                  Estás editando a {registroDenuncianteEnEdicion?.nombres || 'la persona seleccionada'}.
-                </div>
-              )}
-
-              {denunciantes.length > 0 && (
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-800">Personas agregadas</h3>
-                    <p className="text-sm text-gray-500">
-                      Puedes editar o eliminar cada registro antes de continuar al siguiente paso.
-                    </p>
-                  </div>
-                  <div className="space-y-3">
-                    {denunciantesOrdenados.map((denunciante) => {
-                      const esEdicionActual = denunciante.id === denuncianteEnEdicionId
-                      const representado = obtenerDenunciantePorId(denunciante.representaA)
-                      return (
-                        <div
-                          key={denunciante.id}
-                          className={`rounded-lg border p-4 transition ${esEdicionActual ? 'border-blue-400 bg-blue-50' : 'border-gray-200 bg-white'
-                            }`}
+                        <option
+                          key={rol}
+                          value={rol}
+                          disabled={deshabilitarPrincipal || deshabilitarAbogado || deshabilitarCoDenunciante}
                         >
-                          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                            <div>
-                              <p className="text-base font-semibold text-gray-800 uppercase">
-                                {denunciante.nombres || (denunciante.rol === 'abogado' ? 'ABOGADO/A' : '')}
-                              </p>
-                              <p className="text-sm text-gray-600">
-                                Rol:{' '}
-                                {denunciante.rol === 'principal'
-                                  ? 'Denunciante principal'
-                                  : denunciante.rol === 'co-denunciante'
-                                    ? 'Co-denunciante'
-                                    : 'Abogado / representante legal'}
-                              </p>
-                              {denunciante.rol === 'abogado' && representado && (
-                                <p className="text-sm text-gray-600">
-                                  Representa a: <span className="font-medium">{representado.nombres}</span>
-                                </p>
-                              )}
-                              <p className="text-xs text-gray-500 mt-1">
-                                Documento:{' '}
-                                {[
-                                  denunciante.tipoDocumento || null,
-                                  denunciante.numeroDocumento || null,
-                                ]
-                                  .filter(Boolean)
-                                  .join(' ') || 'No especificado'}
-                              </p>
-                              {denunciante.rol === 'abogado' && (
-                                <p className="text-xs text-gray-500">
-                                  Matrícula: {denunciante.matricula || 'No especificada'}
-                                </p>
-                              )}
-                            </div>
-                            <div className="flex gap-2">
-                              <button
-                                type="button"
-                                onClick={() => manejarEditarDenunciante(denunciante.id)}
-                                className="px-4 py-2 bg-white border border-blue-500 text-blue-600 rounded-lg hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-sm font-medium"
-                              >
-                                Editar
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => manejarEliminarDenunciante(denunciante.id)}
-                                className="px-4 py-2 bg-white border border-red-500 text-red-600 rounded-lg hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 text-sm font-medium"
-                              >
-                                Eliminar
-                              </button>
-                            </div>
-                          </div>
-                        </div>
+                          {rol === 'principal' && 'Denunciante principal'}
+                          {rol === 'co-denunciante' && 'Co-denunciante'}
+                          {rol === 'abogado' && 'Abogado / representante legal'}
+                        </option>
                       )
                     })}
-                  </div>
-                </div>
-              )}
+                  </select>
+                  {errorsDenunciante.rol && (
+                    <p className="text-red-600 text-sm mt-1">{errorsDenunciante.rol.message as string}</p>
+                  )}
 
-              <div className="flex flex-wrap gap-3 justify-center">
-                <button
-                  type="button"
-                  onClick={manejarAgregarDenunciante}
-                  className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 text-sm font-medium"
-                >
-                  {denuncianteEnEdicionId ? 'Actualizar denunciante' : 'Guardar denunciante y cargar otro'}
-                </button>
-                {denuncianteEnEdicionId && (
-                  <button
-                    type="button"
-                    onClick={manejarCancelarEdicion}
-                    className="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 text-sm font-medium"
-                  >
-                    Cancelar edición
-                  </button>
-                )}
-              </div>
-            </div>
-
-            <div className="mt-8 flex justify-between">
-              <button
-                type="button"
-                onClick={guardarBorrador}
-                disabled={guardandoBorrador}
-                className="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {guardandoBorrador ? 'Guardando...' : 'Guardar Borrador'}
-              </button>
-              <button
-                type="submit"
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-              >
-                Siguiente
-              </button>
-            </div>
-          </form>
-        )}
-
-        {/* Paso 2: Supuesto Autor */}
-        {paso === 2 && (
-          <form
-            data-paso="2"
-            onSubmit={handleSubmitAutor(onAutorSubmit)}
-            autoComplete="off"
-            className="bg-white rounded-lg shadow-md p-8"
-          >
-            <h2 className="text-2xl font-bold text-gray-800 mb-6">
-              Supuesto Autor
-            </h2>
-
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                ¿El supuesto autor es conocido o desconocido? *
-              </label>
-              <div className="flex space-x-6">
-                <label className="flex items-center text-gray-800 cursor-pointer">
-                  <input
-                    type="radio"
-                    value="Conocido"
-                    checked={autorConocido === 'Conocido'}
-                    onChange={(e) => setAutorConocido(e.target.value as 'Conocido' | 'Desconocido' | 'No aplica')}
-                    className="mr-2"
-                  />
-                  <span className="text-gray-800">Conocido</span>
-                </label>
-                <label className="flex items-center text-gray-800 cursor-pointer">
-                  <input
-                    type="radio"
-                    value="Desconocido"
-                    checked={autorConocido === 'Desconocido'}
-                    onChange={(e) => setAutorConocido(e.target.value as 'Conocido' | 'Desconocido' | 'No aplica')}
-                    className="mr-2"
-                  />
-                  <span className="text-gray-800">Desconocido</span>
-                </label>
-                <label className="flex items-center text-gray-800 cursor-pointer">
-                  <input
-                    type="radio"
-                    value="No aplica"
-                    checked={autorConocido === 'No aplica'}
-                    onChange={(e) => setAutorConocido(e.target.value as 'Conocido' | 'Desconocido' | 'No aplica')}
-                    className="mr-2"
-                  />
-                  <span className="text-gray-800">No aplica</span>
-                </label>
-              </div>
-            </div>
-
-            {autorConocido === 'Conocido' && (
-              <div className="space-y-4 mb-6">
-                {/* Botón para completar automáticamente (SOLO PARA PRUEBAS) */}
-                {modoPruebas && (
-                  <div className="mb-4">
+                  {/* Botón temporal para completar automáticamente (SOLO PARA PRUEBAS) */}
+                  {modoPruebas && (
                     <button
                       type="button"
-                      onClick={completarAutorAutomatico}
-                      className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
+                      onClick={completarFormularioAutomatico}
+                      className="mt-2 px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
                     >
                       Completar automáticamente (PRUEBAS)
                     </button>
-                  </div>
-                )}
-
-                {/* Nombres y Cédula */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Nombres y Apellidos
-                    </label>
-                    <input
-                      {...registerAutor('nombre')}
-                      onChange={(e) => {
-                        convertirAMayusculas(e)
-                        registerAutor('nombre').onChange(e)
-                      }}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Cédula de Identidad
-                    </label>
-                    <input
-                      {...registerAutor('cedula')}
-                      onChange={(e) => {
-                        convertirAMayusculas(e)
-                        registerAutor('cedula').onChange(e)
-                      }}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
-                    />
-                  </div>
+                  )}
                 </div>
 
-                {/* Domicilio */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">
-                    Domicilio
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Departamento
-                      </label>
-                      <Controller
-                        name="departamento"
-                        control={controlAutor}
-                        render={({ field }) => (
-                          <Select
-                            options={departamentoAutorOptions}
-                            value={departamentoAutorOptions.find((option) => option.value === field.value) || null}
-                            onChange={(option) => field.onChange(option?.value || '')}
-                            isClearable
-                            placeholder="Seleccione..."
-                            className="text-sm"
-                            styles={{
-                              control: (base, state) => ({
-                                ...base,
-                                fontFamily: 'Inter, sans-serif',
-                                fontSize: '14px',
-                                minHeight: '42px',
-                                borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
-                                boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
-                                '&:hover': {
-                                  borderColor: '#3b82f6',
-                                },
-                              }),
-                              menu: (base) => ({
-                                ...base,
-                                fontFamily: 'Inter, sans-serif',
-                                fontSize: '14px',
-                                maxHeight: '250px',
-                                zIndex: 9999,
-                              }),
-                              menuList: (base) => ({
-                                ...base,
-                                maxHeight: '250px',
-                              }),
-                              option: (base, state) => ({
-                                ...base,
-                                fontFamily: 'Inter, sans-serif',
-                                fontSize: '14px',
-                                padding: '8px 12px',
-                                backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
-                                color: state.isSelected ? 'white' : '#1f2937',
-                                cursor: 'pointer',
-                              }),
-                              input: (base) => ({
-                                ...base,
-                                fontFamily: 'Inter, sans-serif',
-                                fontSize: '14px',
-                                margin: 0,
-                                padding: 0,
-                              }),
-                              singleValue: (base) => ({
-                                ...base,
-                                fontFamily: 'Inter, sans-serif',
-                                fontSize: '14px',
-                                color: '#1f2937',
-                              }),
-                              placeholder: (base) => ({
-                                ...base,
-                                fontFamily: 'Inter, sans-serif',
-                                fontSize: '14px',
-                                color: '#9ca3af',
-                              }),
-                            }}
-                            classNamePrefix="react-select"
-                          />
-                        )}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Ciudad
-                      </label>
-                      <Controller
-                        name="ciudad"
-                        control={controlAutor}
-                        render={({ field }) => (
-                          <Select
-                            options={ciudadAutorOptions}
-                            value={ciudadAutorOptions.find((option) => option.value === field.value) || null}
-                            onChange={(option) => field.onChange(option?.value || '')}
-                            isClearable
-                            isDisabled={!departamentoAutor}
-                            placeholder={departamentoAutor ? 'Seleccione...' : 'Seleccione un departamento primero'}
-                            className="text-sm"
-                            styles={{
-                              control: (base, state) => ({
-                                ...base,
-                                fontFamily: 'Inter, sans-serif',
-                                fontSize: '14px',
-                                minHeight: '42px',
-                                borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
-                                boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
-                                '&:hover': {
-                                  borderColor: '#3b82f6',
-                                },
-                              }),
-                              menu: (base) => ({
-                                ...base,
-                                fontFamily: 'Inter, sans-serif',
-                                fontSize: '14px',
-                                maxHeight: '250px',
-                                zIndex: 9999,
-                              }),
-                              menuList: (base) => ({
-                                ...base,
-                                maxHeight: '250px',
-                              }),
-                              option: (base, state) => ({
-                                ...base,
-                                fontFamily: 'Inter, sans-serif',
-                                fontSize: '14px',
-                                padding: '8px 12px',
-                                backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
-                                color: state.isSelected ? 'white' : '#1f2937',
-                                cursor: 'pointer',
-                              }),
-                              input: (base) => ({
-                                ...base,
-                                fontFamily: 'Inter, sans-serif',
-                                fontSize: '14px',
-                                margin: 0,
-                                padding: 0,
-                              }),
-                              singleValue: (base) => ({
-                                ...base,
-                                fontFamily: 'Inter, sans-serif',
-                                fontSize: '14px',
-                                color: '#1f2937',
-                              }),
-                              placeholder: (base) => ({
-                                ...base,
-                                fontFamily: 'Inter, sans-serif',
-                                fontSize: '14px',
-                                color: '#9ca3af',
-                              }),
-                            }}
-                            classNamePrefix="react-select"
-                          />
-                        )}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Barrio
-                      </label>
-                      <Controller
-                        name="barrio"
-                        control={controlAutor}
-                        render={({ field }) => (
-                          <Select
-                            options={barrioAutorOptions}
-                            value={barrioAutorOptions.find((option) => option.value === field.value) || null}
-                            onChange={(option) => field.onChange(option?.value || '')}
-                            isClearable
-                            isDisabled={!ciudadAutor}
-                            placeholder={ciudadAutor ? 'Seleccione...' : 'Seleccione una ciudad primero'}
-                            className="text-sm"
-                            styles={{
-                              control: (base, state) => ({
-                                ...base,
-                                fontFamily: 'Inter, sans-serif',
-                                fontSize: '14px',
-                                minHeight: '42px',
-                                borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
-                                boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
-                                '&:hover': {
-                                  borderColor: '#3b82f6',
-                                },
-                              }),
-                              menu: (base) => ({
-                                ...base,
-                                fontFamily: 'Inter, sans-serif',
-                                fontSize: '14px',
-                                maxHeight: '250px',
-                                zIndex: 9999,
-                              }),
-                              menuList: (base) => ({
-                                ...base,
-                                maxHeight: '250px',
-                              }),
-                              option: (base, state) => ({
-                                ...base,
-                                fontFamily: 'Inter, sans-serif',
-                                fontSize: '14px',
-                                padding: '8px 12px',
-                                backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
-                                color: state.isSelected ? 'white' : '#1f2937',
-                                cursor: 'pointer',
-                              }),
-                              input: (base) => ({
-                                ...base,
-                                fontFamily: 'Inter, sans-serif',
-                                fontSize: '14px',
-                                margin: 0,
-                                padding: 0,
-                              }),
-                              singleValue: (base) => ({
-                                ...base,
-                                fontFamily: 'Inter, sans-serif',
-                                fontSize: '14px',
-                                color: '#1f2937',
-                              }),
-                              placeholder: (base) => ({
-                                ...base,
-                                fontFamily: 'Inter, sans-serif',
-                                fontSize: '14px',
-                                color: '#9ca3af',
-                              }),
-                            }}
-                            classNamePrefix="react-select"
-                          />
-                        )}
-                      />
-                    </div>
-                  </div>
-                  <div className="mt-4">
+                {/* Nombres y Apellidos */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {esAbogado ? 'Nombre completo del abogado *' : 'Nombres y Apellidos *'}
+                  </label>
+                  <input
+                    {...registerDenunciante('nombres')}
+                    onChange={(e) => {
+                      convertirAMayusculas(e)
+                      registerDenunciante('nombres').onChange(e)
+                    }}
+                    autoComplete="off"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
+                  />
+                  {errorsDenunciante.nombres && (
+                    <p className="text-red-600 text-sm mt-1">{errorsDenunciante.nombres.message as string}</p>
+                  )}
+                </div>
+
+                {/* 2. Tipo de Documento y Número */}
+                <div className={`grid ${esAbogado ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-2'} gap-4`}>
+                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Calles / Referencias
+                      Documento de Identidad Tipo *
+                    </label>
+                    <select
+                      {...registerDenunciante('tipoDocumento')}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-sans text-sm"
+                      style={{ fontFamily: 'Inter, sans-serif' }}
+                    >
+                      <option value="">Seleccione...</option>
+                      <option value="Cédula de Identidad Paraguaya">Cédula de Identidad Paraguaya</option>
+                      <option value="Documento de origen">Documento de origen</option>
+                      <option value="Pasaporte">Pasaporte</option>
+                    </select>
+                    {errorsDenunciante.tipoDocumento && (
+                      <p className="text-red-600 text-sm mt-1">{errorsDenunciante.tipoDocumento.message as string}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Número de Documento {esAbogado ? '*' : '*'}
                     </label>
                     <input
-                      {...registerAutor('calles')}
+                      {...registerDenunciante('numeroDocumento')}
                       onChange={(e) => {
-                        convertirAMayusculas(e)
-                        registerAutor('calles').onChange(e)
+                        const tipoDoc = watchDenunciante('tipoDocumento')
+                        if (tipoDoc === 'Pasaporte' || tipoDoc === 'Documento de origen') {
+                          convertirAMayusculas(e)
+                        } else {
+                          e.target.value = e.target.value.replace(/[^0-9]/g, '')
+                        }
+                        registerDenunciante('numeroDocumento').onChange(e)
                       }}
                       autoComplete="off"
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
                     />
+                    {errorsDenunciante.numeroDocumento && (
+                      <p className="text-red-600 text-sm mt-1">{errorsDenunciante.numeroDocumento.message as string}</p>
+                    )}
                   </div>
+
+                  {esAbogado && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Matrícula Número *
+                      </label>
+                      <input
+                        {...registerDenunciante('matricula')}
+                        onChange={(e) => {
+                          convertirAMayusculas(e)
+                          registerDenunciante('matricula').onChange(e)
+                        }}
+                        autoComplete="off"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
+                      />
+                      {errorsDenunciante.matricula && (
+                        <p className="text-red-600 text-sm mt-1">{errorsDenunciante.matricula.message as string}</p>
+                      )}
+                    </div>
+                  )}
                 </div>
 
-                {/* Nacionalidad y Estado Civil */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* 3. Nacionalidad */}
+                {!esAbogado && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Nacionalidad
+                      Nacionalidad *
                     </label>
                     <Controller
                       name="nacionalidad"
-                      control={controlAutor}
+                      control={controlDenunciante}
                       render={({ field }) => {
-                        const currentValue = field.value || null
+                        const currentValue = field.value || 'PARAGUAYA'
                         return (
                           <Select
                             options={nacionalidades.map((nac) => ({ value: nac, label: nac }))}
-                            value={currentValue && nacionalidades.find((nac) => nac === currentValue) ? { value: currentValue, label: currentValue } : null}
+                            value={nacionalidades.find((nac) => nac === currentValue) ? { value: currentValue, label: currentValue } : { value: 'PARAGUAYA', label: 'PARAGUAYA' }}
                             onChange={(option) => {
-                              field.onChange(option?.value || null)
+                              field.onChange(option?.value || 'PARAGUAYA')
                             }}
-                            isClearable
                             isSearchable
                             placeholder="Buscar nacionalidad..."
                             className="text-sm"
@@ -3772,14 +2821,72 @@ export default function NuevaDenunciaPage() {
                         )
                       }}
                     />
+                    {errorsDenunciante.nacionalidad && (
+                      <p className="text-red-600 text-sm mt-1">{errorsDenunciante.nacionalidad.message as string}</p>
+                    )}
                   </div>
+                )}
+
+                {/* 4. Fecha de Nacimiento y Edad */}
+                {!esAbogado && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Fecha de Nacimiento *
+                      </label>
+                      <input
+                        type="date"
+                        {...registerDenunciante('fechaNacimiento')}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        max={new Date().toISOString().split('T')[0]}
+                      />
+                      {errorsDenunciante.fechaNacimiento && (
+                        <p className="text-red-600 text-sm mt-1">{errorsDenunciante.fechaNacimiento.message as string}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Edad
+                      </label>
+                      <input
+                        {...registerDenunciante('edad')}
+                        readOnly
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* 5. Lugar de Nacimiento */}
+                {!esAbogado && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Estado Civil
+                      Lugar de Nacimiento *
+                    </label>
+                    <input
+                      {...registerDenunciante('lugarNacimiento')}
+                      onChange={(e) => {
+                        convertirAMayusculas(e)
+                        registerDenunciante('lugarNacimiento').onChange(e)
+                      }}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
+                    />
+                    {errorsDenunciante.lugarNacimiento && (
+                      <p className="text-red-600 text-sm mt-1">{errorsDenunciante.lugarNacimiento.message as string}</p>
+                    )}
+                  </div>
+                )}
+
+                {/* 6. Estado Civil */}
+                {!esAbogado && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Estado Civil *
                     </label>
                     <select
-                      {...registerAutor('estadoCivil')}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      {...registerDenunciante('estadoCivil')}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-sans text-sm"
                       style={{ fontFamily: 'Inter, sans-serif' }}
                     >
                       <option value="">Seleccione...</option>
@@ -3789,298 +2896,1246 @@ export default function NuevaDenunciaPage() {
                         </option>
                       ))}
                     </select>
+                    {errorsDenunciante.estadoCivil && (
+                      <p className="text-red-600 text-sm mt-1">{errorsDenunciante.estadoCivil.message as string}</p>
+                    )}
                   </div>
-                </div>
+                )}
 
-                {/* Fecha de Nacimiento y Edad juntos */}
+                {/* 7. Contacto */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Fecha de Nacimiento
+                      Número de Teléfono *
                     </label>
                     <input
-                      type="date"
-                      {...registerAutor('fechaNacimiento')}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      max={new Date().toISOString().split('T')[0]}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Edad
-                    </label>
-                    <input
-                      {...registerAutor('edad')}
-                      type="number"
-                      readOnly={!!fechaNacimientoAutor}
-                      className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${fechaNacimientoAutor ? 'bg-gray-100 cursor-not-allowed' : ''
-                        }`}
-                    />
-                  </div>
-                </div>
-
-                {/* Lugar de Nacimiento */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Lugar de Nacimiento
-                  </label>
-                  <input
-                    {...registerAutor('lugarNacimiento')}
-                    onChange={(e) => {
-                      convertirAMayusculas(e)
-                      registerAutor('lugarNacimiento').onChange(e)
-                    }}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
-                  />
-                </div>
-
-                {/* Teléfono y Profesión */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Número de Teléfono
-                    </label>
-                    <input
-                      {...registerAutor('telefono')}
+                      {...registerDenunciante('telefono')}
                       onChange={(e) => {
                         convertirAMayusculas(e)
-                        registerAutor('telefono').onChange(e)
+                        registerDenunciante('telefono').onChange(e)
                       }}
+                      autoComplete="off"
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
                     />
+                    {errorsDenunciante.telefono && (
+                      <p className="text-red-600 text-sm mt-1">{errorsDenunciante.telefono.message as string}</p>
+                    )}
                   </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Correo Electrónico
+                    </label>
+                    <input
+                      type="email"
+                      {...registerDenunciante('correo')}
+                      onChange={(e) => {
+                        e.target.value = e.target.value.toLowerCase()
+                        registerDenunciante('correo').onChange(e)
+                      }}
+                      autoComplete="off"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    {errorsDenunciante.correo && (
+                      <p className="text-red-600 text-sm mt-1">{errorsDenunciante.correo.message as string}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Carta Poder (solo para abogados) */}
+                {esAbogado && (
+                  <div className="space-y-4">
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id="conCartaPoder"
+                        {...registerDenunciante('conCartaPoder')}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                      <label htmlFor="conCartaPoder" className="ml-2 block text-sm font-medium text-gray-700">
+                        El abogado actúa con carta poder (denunciante no presente)
+                      </label>
+                    </div>
+                    {watchDenunciante('conCartaPoder') && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-6 border-l-2 border-blue-200">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Fecha de la Carta Poder *
+                          </label>
+                          <input
+                            type="date"
+                            {...registerDenunciante('cartaPoderFecha')}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          />
+                          {errorsDenunciante.cartaPoderFecha && (
+                            <p className="text-red-600 text-sm mt-1">{errorsDenunciante.cartaPoderFecha.message as string}</p>
+                          )}
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Notario *
+                          </label>
+                          <input
+                            {...registerDenunciante('cartaPoderNotario')}
+                            onChange={(e) => {
+                              convertirAMayusculas(e)
+                              registerDenunciante('cartaPoderNotario').onChange(e)
+                            }}
+                            autoComplete="off"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
+                          />
+                          {errorsDenunciante.cartaPoderNotario && (
+                            <p className="text-red-600 text-sm mt-1">{errorsDenunciante.cartaPoderNotario.message as string}</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* 8. Domicilio */}
+                {!esAbogado && (
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">
+                      Domicilio
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Departamento *
+                        </label>
+                        <Controller
+                          name="departamento"
+                          control={controlDenunciante}
+                          render={({ field }) => (
+                            <Select
+                              options={departamentoOptions}
+                              value={departamentoOptions.find((option) => option.value === field.value) || null}
+                              onChange={(option) => field.onChange(option?.value || '')}
+                              isClearable
+                              placeholder="Seleccione..."
+                              className="text-sm"
+                              styles={{
+                                control: (base, state) => ({
+                                  ...base,
+                                  fontFamily: 'Inter, sans-serif',
+                                  fontSize: '14px',
+                                  minHeight: '42px',
+                                  borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
+                                  boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
+                                  '&:hover': {
+                                    borderColor: '#3b82f6',
+                                  },
+                                }),
+                                menu: (base) => ({
+                                  ...base,
+                                  fontFamily: 'Inter, sans-serif',
+                                  fontSize: '14px',
+                                  maxHeight: '250px',
+                                  zIndex: 9999,
+                                }),
+                                menuList: (base) => ({
+                                  ...base,
+                                  maxHeight: '250px',
+                                }),
+                                option: (base, state) => ({
+                                  ...base,
+                                  fontFamily: 'Inter, sans-serif',
+                                  fontSize: '14px',
+                                  padding: '8px 12px',
+                                  backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
+                                  color: state.isSelected ? 'white' : '#1f2937',
+                                  cursor: 'pointer',
+                                }),
+                                input: (base) => ({
+                                  ...base,
+                                  fontFamily: 'Inter, sans-serif',
+                                  fontSize: '14px',
+                                  margin: 0,
+                                  padding: 0,
+                                }),
+                                singleValue: (base) => ({
+                                  ...base,
+                                  fontFamily: 'Inter, sans-serif',
+                                  fontSize: '14px',
+                                  color: '#1f2937',
+                                }),
+                                placeholder: (base) => ({
+                                  ...base,
+                                  fontFamily: 'Inter, sans-serif',
+                                  fontSize: '14px',
+                                  color: '#9ca3af',
+                                }),
+                              }}
+                              classNamePrefix="react-select"
+                            />
+                          )}
+                        />
+                        {errorsDenunciante.departamento && (
+                          <p className="text-red-600 text-sm mt-1">{errorsDenunciante.departamento.message as string}</p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Ciudad *
+                        </label>
+                        <Controller
+                          name="ciudad"
+                          control={controlDenunciante}
+                          render={({ field }) => (
+                            <Select
+                              options={ciudadOptions}
+                              value={ciudadOptions.find((option) => option.value === field.value) || null}
+                              onChange={(option) => field.onChange(option?.value || '')}
+                              isClearable
+                              isDisabled={!departamentoSeleccionado}
+                              placeholder={departamentoSeleccionado ? 'Seleccione...' : 'Seleccione un departamento primero'}
+                              className="text-sm"
+                              styles={{
+                                control: (base, state) => ({
+                                  ...base,
+                                  fontFamily: 'Inter, sans-serif',
+                                  fontSize: '14px',
+                                  minHeight: '42px',
+                                  borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
+                                  boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
+                                  '&:hover': {
+                                    borderColor: '#3b82f6',
+                                  },
+                                }),
+                                menu: (base) => ({
+                                  ...base,
+                                  fontFamily: 'Inter, sans-serif',
+                                  fontSize: '14px',
+                                  maxHeight: '250px',
+                                  zIndex: 9999,
+                                }),
+                                menuList: (base) => ({
+                                  ...base,
+                                  maxHeight: '250px',
+                                }),
+                                option: (base, state) => ({
+                                  ...base,
+                                  fontFamily: 'Inter, sans-serif',
+                                  fontSize: '14px',
+                                  padding: '8px 12px',
+                                  backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
+                                  color: state.isSelected ? 'white' : '#1f2937',
+                                  cursor: 'pointer',
+                                }),
+                                input: (base) => ({
+                                  ...base,
+                                  fontFamily: 'Inter, sans-serif',
+                                  fontSize: '14px',
+                                  margin: 0,
+                                  padding: 0,
+                                }),
+                                singleValue: (base) => ({
+                                  ...base,
+                                  fontFamily: 'Inter, sans-serif',
+                                  fontSize: '14px',
+                                  color: '#1f2937',
+                                }),
+                                placeholder: (base) => ({
+                                  ...base,
+                                  fontFamily: 'Inter, sans-serif',
+                                  fontSize: '14px',
+                                  color: '#9ca3af',
+                                }),
+                              }}
+                              classNamePrefix="react-select"
+                            />
+                          )}
+                        />
+                        {errorsDenunciante.ciudad && (
+                          <p className="text-red-600 text-sm mt-1">{errorsDenunciante.ciudad.message as string}</p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Barrio
+                        </label>
+                        <Controller
+                          name="barrio"
+                          control={controlDenunciante}
+                          render={({ field }) => (
+                            <Select
+                              options={barrioOptions}
+                              value={barrioOptions.find((option) => option.value === field.value) || null}
+                              onChange={(option) => field.onChange(option?.value || '')}
+                              isClearable
+                              isDisabled={!ciudadSeleccionada}
+                              placeholder={ciudadSeleccionada ? 'Seleccione...' : 'Seleccione una ciudad primero'}
+                              className="text-sm"
+                              styles={{
+                                control: (base, state) => ({
+                                  ...base,
+                                  fontFamily: 'Inter, sans-serif',
+                                  fontSize: '14px',
+                                  minHeight: '42px',
+                                  borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
+                                  boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
+                                  '&:hover': {
+                                    borderColor: '#3b82f6',
+                                  },
+                                }),
+                                menu: (base) => ({
+                                  ...base,
+                                  fontFamily: 'Inter, sans-serif',
+                                  fontSize: '14px',
+                                  maxHeight: '250px',
+                                  zIndex: 9999,
+                                }),
+                                menuList: (base) => ({
+                                  ...base,
+                                  maxHeight: '250px',
+                                }),
+                                option: (base, state) => ({
+                                  ...base,
+                                  fontFamily: 'Inter, sans-serif',
+                                  fontSize: '14px',
+                                  padding: '8px 12px',
+                                  backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
+                                  color: state.isSelected ? 'white' : '#1f2937',
+                                  cursor: 'pointer',
+                                }),
+                                input: (base) => ({
+                                  ...base,
+                                  fontFamily: 'Inter, sans-serif',
+                                  fontSize: '14px',
+                                  margin: 0,
+                                  padding: 0,
+                                }),
+                                singleValue: (base) => ({
+                                  ...base,
+                                  fontFamily: 'Inter, sans-serif',
+                                  fontSize: '14px',
+                                  color: '#1f2937',
+                                }),
+                                placeholder: (base) => ({
+                                  ...base,
+                                  fontFamily: 'Inter, sans-serif',
+                                  fontSize: '14px',
+                                  color: '#9ca3af',
+                                }),
+                              }}
+                              classNamePrefix="react-select"
+                            />
+                          )}
+                        />
+                        {errorsDenunciante.barrio && (
+                          <p className="text-red-600 text-sm mt-1">{errorsDenunciante.barrio.message as string}</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="mt-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Calles / Referencias *
+                      </label>
+                      <input
+                        {...registerDenunciante('calles')}
+                        onChange={(e) => {
+                          convertirAMayusculas(e)
+                          registerDenunciante('calles').onChange(e)
+                        }}
+                        autoComplete="off"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
+                      />
+                      {errorsDenunciante.calles && (
+                        <p className="text-red-600 text-sm mt-1">{errorsDenunciante.calles.message as string}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* 9. Profesión */}
+                {!esAbogado && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Profesión
                     </label>
                     <input
-                      {...registerAutor('profesion')}
+                      {...registerDenunciante('profesion')}
                       onChange={(e) => {
                         convertirAMayusculas(e)
-                        registerAutor('profesion').onChange(e)
+                        registerDenunciante('profesion').onChange(e)
+                      }}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
+                    />
+                    {errorsDenunciante.profesion && (
+                      <p className="text-red-600 text-sm mt-1">{errorsDenunciante.profesion.message as string}</p>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-8 space-y-6">
+                {denuncianteEnEdicionId && (
+                  <div className="px-4 py-3 rounded-lg border border-blue-200 bg-blue-50 text-sm text-blue-800 font-medium">
+                    Estás editando a {registroDenuncianteEnEdicion?.nombres || 'la persona seleccionada'}.
+                  </div>
+                )}
+
+                {denunciantes.length > 0 && (
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-800">Personas agregadas</h3>
+                      <p className="text-sm text-gray-500">
+                        Puedes editar o eliminar cada registro antes de continuar al siguiente paso.
+                      </p>
+                    </div>
+                    <div className="space-y-3">
+                      {denunciantesOrdenados.map((denunciante) => {
+                        const esEdicionActual = denunciante.id === denuncianteEnEdicionId
+                        const representado = obtenerDenunciantePorId(denunciante.representaA)
+                        return (
+                          <div
+                            key={denunciante.id}
+                            className={`rounded-lg border p-4 transition ${esEdicionActual ? 'border-blue-400 bg-blue-50' : 'border-gray-200 bg-white'
+                              }`}
+                          >
+                            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                              <div>
+                                <p className="text-base font-semibold text-gray-800 uppercase">
+                                  {denunciante.nombres || (denunciante.rol === 'abogado' ? 'ABOGADO/A' : '')}
+                                </p>
+                                <p className="text-sm text-gray-600">
+                                  Rol:{' '}
+                                  {denunciante.rol === 'principal'
+                                    ? 'Denunciante principal'
+                                    : denunciante.rol === 'co-denunciante'
+                                      ? 'Co-denunciante'
+                                      : 'Abogado / representante legal'}
+                                </p>
+                                {denunciante.rol === 'abogado' && representado && (
+                                  <p className="text-sm text-gray-600">
+                                    Representa a: <span className="font-medium">{representado.nombres}</span>
+                                  </p>
+                                )}
+                                <p className="text-xs text-gray-500 mt-1">
+                                  Documento:{' '}
+                                  {[
+                                    denunciante.tipoDocumento || null,
+                                    denunciante.numeroDocumento || null,
+                                  ]
+                                    .filter(Boolean)
+                                    .join(' ') || 'No especificado'}
+                                </p>
+                                {denunciante.rol === 'abogado' && (
+                                  <p className="text-xs text-gray-500">
+                                    Matrícula: {denunciante.matricula || 'No especificada'}
+                                  </p>
+                                )}
+                              </div>
+                              <div className="flex gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => manejarEditarDenunciante(denunciante.id)}
+                                  className="px-4 py-2 bg-white border border-blue-500 text-blue-600 rounded-lg hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-sm font-medium"
+                                >
+                                  Editar
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => manejarEliminarDenunciante(denunciante.id)}
+                                  className="px-4 py-2 bg-white border border-red-500 text-red-600 rounded-lg hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 text-sm font-medium"
+                                >
+                                  Eliminar
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex flex-wrap gap-3 justify-center">
+                  <button
+                    type="button"
+                    onClick={manejarAgregarDenunciante}
+                    className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 text-sm font-medium"
+                  >
+                    {denuncianteEnEdicionId ? 'Actualizar denunciante' : 'Guardar denunciante y cargar otro'}
+                  </button>
+                  {denuncianteEnEdicionId && (
+                    <button
+                      type="button"
+                      onClick={manejarCancelarEdicion}
+                      className="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 text-sm font-medium"
+                    >
+                      Cancelar edición
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="mt-12 flex items-center justify-between border-t border-slate-100 pt-8">
+                <button
+                  type="button"
+                  onClick={guardarBorrador}
+                  disabled={guardandoBorrador}
+                  className="flex items-center space-x-2 px-6 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all font-bold text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                  </svg>
+                  <span>{guardandoBorrador ? 'Guardando...' : 'Guardar Borrador'}</span>
+                </button>
+                <button
+                  type="submit"
+                  className="flex items-center space-x-2 px-8 py-3 bg-[#002147] text-white rounded-xl hover:bg-[#003366] transition-all font-bold text-sm shadow-lg shadow-blue-900/20"
+                >
+                  <span>Siguiente paso</span>
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* Paso 2: Supuesto Autor */}
+          {paso === 2 && (
+            <form
+              data-paso="2"
+              onSubmit={handleSubmitAutor(onAutorSubmit)}
+              autoComplete="off"
+              className="bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-100 p-8 sm:p-10 transition-all duration-300 hover:shadow-slate-200/80"
+            >
+              <h2 className="text-3xl font-black text-[#002147] mb-8 border-b border-slate-100 pb-4">
+                Supuesto Autor
+              </h2>
+
+              <div className="mb-10 bg-slate-50 p-6 rounded-xl border border-slate-100">
+                <label className="block text-xs font-black text-[#002147] uppercase tracking-wider mb-4">
+                  ¿El supuesto autor es conocido o desconocido? *
+                </label>
+                <div className="flex flex-wrap gap-8">
+                  {[
+                    { id: 'conocido', value: 'Conocido', label: 'Conocido' },
+                    { id: 'desconocido', value: 'Desconocido', label: 'Desconocido' },
+                    { id: 'no-aplica', value: 'No aplica', label: 'No aplica' }
+                  ].map((option) => (
+                    <label key={option.id} className="group flex items-center cursor-pointer">
+                      <div className="relative flex items-center justify-center">
+                        <input
+                          type="radio"
+                          value={option.value}
+                          checked={autorConocido === option.value}
+                          onChange={(e) => setAutorConocido(e.target.value as any)}
+                          className="peer sr-only"
+                        />
+                        <div className="w-5 h-5 border-2 border-slate-300 rounded-full transition-all peer-checked:border-[#002147] peer-checked:border-[6px]" />
+                      </div>
+                      <span className="ml-3 text-sm font-bold text-slate-600 group-hover:text-[#002147] transition-colors">
+                        {option.label}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {autorConocido === 'Conocido' && (
+                <div className="space-y-4 mb-6">
+                  {/* Botón para completar automáticamente (SOLO PARA PRUEBAS) */}
+                  {modoPruebas && (
+                    <div className="mb-4">
+                      <button
+                        type="button"
+                        onClick={completarAutorAutomatico}
+                        className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
+                      >
+                        Completar automáticamente (PRUEBAS)
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Nombres y Cédula */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Nombres y Apellidos
+                      </label>
+                      <input
+                        {...registerAutor('nombre')}
+                        onChange={(e) => {
+                          convertirAMayusculas(e)
+                          registerAutor('nombre').onChange(e)
+                        }}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Cédula de Identidad
+                      </label>
+                      <input
+                        {...registerAutor('cedula')}
+                        onChange={(e) => {
+                          convertirAMayusculas(e)
+                          registerAutor('cedula').onChange(e)
+                        }}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Domicilio */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">
+                      Domicilio
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Departamento
+                        </label>
+                        <Controller
+                          name="departamento"
+                          control={controlAutor}
+                          render={({ field }) => (
+                            <Select
+                              options={departamentoAutorOptions}
+                              value={departamentoAutorOptions.find((option) => option.value === field.value) || null}
+                              onChange={(option) => field.onChange(option?.value || '')}
+                              isClearable
+                              placeholder="Seleccione..."
+                              className="text-sm"
+                              styles={{
+                                control: (base, state) => ({
+                                  ...base,
+                                  fontFamily: 'Inter, sans-serif',
+                                  fontSize: '14px',
+                                  minHeight: '42px',
+                                  borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
+                                  boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
+                                  '&:hover': {
+                                    borderColor: '#3b82f6',
+                                  },
+                                }),
+                                menu: (base) => ({
+                                  ...base,
+                                  fontFamily: 'Inter, sans-serif',
+                                  fontSize: '14px',
+                                  maxHeight: '250px',
+                                  zIndex: 9999,
+                                }),
+                                menuList: (base) => ({
+                                  ...base,
+                                  maxHeight: '250px',
+                                }),
+                                option: (base, state) => ({
+                                  ...base,
+                                  fontFamily: 'Inter, sans-serif',
+                                  fontSize: '14px',
+                                  padding: '8px 12px',
+                                  backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
+                                  color: state.isSelected ? 'white' : '#1f2937',
+                                  cursor: 'pointer',
+                                }),
+                                input: (base) => ({
+                                  ...base,
+                                  fontFamily: 'Inter, sans-serif',
+                                  fontSize: '14px',
+                                  margin: 0,
+                                  padding: 0,
+                                }),
+                                singleValue: (base) => ({
+                                  ...base,
+                                  fontFamily: 'Inter, sans-serif',
+                                  fontSize: '14px',
+                                  color: '#1f2937',
+                                }),
+                                placeholder: (base) => ({
+                                  ...base,
+                                  fontFamily: 'Inter, sans-serif',
+                                  fontSize: '14px',
+                                  color: '#9ca3af',
+                                }),
+                              }}
+                              classNamePrefix="react-select"
+                            />
+                          )}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Ciudad
+                        </label>
+                        <Controller
+                          name="ciudad"
+                          control={controlAutor}
+                          render={({ field }) => (
+                            <Select
+                              options={ciudadAutorOptions}
+                              value={ciudadAutorOptions.find((option) => option.value === field.value) || null}
+                              onChange={(option) => field.onChange(option?.value || '')}
+                              isClearable
+                              isDisabled={!departamentoAutor}
+                              placeholder={departamentoAutor ? 'Seleccione...' : 'Seleccione un departamento primero'}
+                              className="text-sm"
+                              styles={{
+                                control: (base, state) => ({
+                                  ...base,
+                                  fontFamily: 'Inter, sans-serif',
+                                  fontSize: '14px',
+                                  minHeight: '42px',
+                                  borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
+                                  boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
+                                  '&:hover': {
+                                    borderColor: '#3b82f6',
+                                  },
+                                }),
+                                menu: (base) => ({
+                                  ...base,
+                                  fontFamily: 'Inter, sans-serif',
+                                  fontSize: '14px',
+                                  maxHeight: '250px',
+                                  zIndex: 9999,
+                                }),
+                                menuList: (base) => ({
+                                  ...base,
+                                  maxHeight: '250px',
+                                }),
+                                option: (base, state) => ({
+                                  ...base,
+                                  fontFamily: 'Inter, sans-serif',
+                                  fontSize: '14px',
+                                  padding: '8px 12px',
+                                  backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
+                                  color: state.isSelected ? 'white' : '#1f2937',
+                                  cursor: 'pointer',
+                                }),
+                                input: (base) => ({
+                                  ...base,
+                                  fontFamily: 'Inter, sans-serif',
+                                  fontSize: '14px',
+                                  margin: 0,
+                                  padding: 0,
+                                }),
+                                singleValue: (base) => ({
+                                  ...base,
+                                  fontFamily: 'Inter, sans-serif',
+                                  fontSize: '14px',
+                                  color: '#1f2937',
+                                }),
+                                placeholder: (base) => ({
+                                  ...base,
+                                  fontFamily: 'Inter, sans-serif',
+                                  fontSize: '14px',
+                                  color: '#9ca3af',
+                                }),
+                              }}
+                              classNamePrefix="react-select"
+                            />
+                          )}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Barrio
+                        </label>
+                        <Controller
+                          name="barrio"
+                          control={controlAutor}
+                          render={({ field }) => (
+                            <Select
+                              options={barrioAutorOptions}
+                              value={barrioAutorOptions.find((option) => option.value === field.value) || null}
+                              onChange={(option) => field.onChange(option?.value || '')}
+                              isClearable
+                              isDisabled={!ciudadAutor}
+                              placeholder={ciudadAutor ? 'Seleccione...' : 'Seleccione una ciudad primero'}
+                              className="text-sm"
+                              styles={{
+                                control: (base, state) => ({
+                                  ...base,
+                                  fontFamily: 'Inter, sans-serif',
+                                  fontSize: '14px',
+                                  minHeight: '42px',
+                                  borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
+                                  boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
+                                  '&:hover': {
+                                    borderColor: '#3b82f6',
+                                  },
+                                }),
+                                menu: (base) => ({
+                                  ...base,
+                                  fontFamily: 'Inter, sans-serif',
+                                  fontSize: '14px',
+                                  maxHeight: '250px',
+                                  zIndex: 9999,
+                                }),
+                                menuList: (base) => ({
+                                  ...base,
+                                  maxHeight: '250px',
+                                }),
+                                option: (base, state) => ({
+                                  ...base,
+                                  fontFamily: 'Inter, sans-serif',
+                                  fontSize: '14px',
+                                  padding: '8px 12px',
+                                  backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
+                                  color: state.isSelected ? 'white' : '#1f2937',
+                                  cursor: 'pointer',
+                                }),
+                                input: (base) => ({
+                                  ...base,
+                                  fontFamily: 'Inter, sans-serif',
+                                  fontSize: '14px',
+                                  margin: 0,
+                                  padding: 0,
+                                }),
+                                singleValue: (base) => ({
+                                  ...base,
+                                  fontFamily: 'Inter, sans-serif',
+                                  fontSize: '14px',
+                                  color: '#1f2937',
+                                }),
+                                placeholder: (base) => ({
+                                  ...base,
+                                  fontFamily: 'Inter, sans-serif',
+                                  fontSize: '14px',
+                                  color: '#9ca3af',
+                                }),
+                              }}
+                              classNamePrefix="react-select"
+                            />
+                          )}
+                        />
+                      </div>
+                    </div>
+                    <div className="mt-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Calles / Referencias
+                      </label>
+                      <input
+                        {...registerAutor('calles')}
+                        onChange={(e) => {
+                          convertirAMayusculas(e)
+                          registerAutor('calles').onChange(e)
+                        }}
+                        autoComplete="off"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Nacionalidad y Estado Civil */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Nacionalidad
+                      </label>
+                      <Controller
+                        name="nacionalidad"
+                        control={controlAutor}
+                        render={({ field }) => {
+                          const currentValue = field.value || null
+                          return (
+                            <Select
+                              options={nacionalidades.map((nac) => ({ value: nac, label: nac }))}
+                              value={currentValue && nacionalidades.find((nac) => nac === currentValue) ? { value: currentValue, label: currentValue } : null}
+                              onChange={(option) => {
+                                field.onChange(option?.value || null)
+                              }}
+                              isClearable
+                              isSearchable
+                              placeholder="Buscar nacionalidad..."
+                              className="text-sm"
+                              styles={{
+                                control: (base, state) => ({
+                                  ...base,
+                                  fontFamily: 'Inter, sans-serif',
+                                  fontSize: '14px',
+                                  minHeight: '42px',
+                                  borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
+                                  boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
+                                  '&:hover': {
+                                    borderColor: '#3b82f6',
+                                  },
+                                }),
+                                menu: (base) => ({
+                                  ...base,
+                                  fontFamily: 'Inter, sans-serif',
+                                  fontSize: '14px',
+                                  maxHeight: '250px',
+                                  zIndex: 9999,
+                                }),
+                                menuList: (base) => ({
+                                  ...base,
+                                  maxHeight: '250px',
+                                }),
+                                option: (base, state) => ({
+                                  ...base,
+                                  fontFamily: 'Inter, sans-serif',
+                                  fontSize: '14px',
+                                  padding: '8px 12px',
+                                  backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
+                                  color: state.isSelected ? 'white' : '#1f2937',
+                                  cursor: 'pointer',
+                                }),
+                                input: (base) => ({
+                                  ...base,
+                                  fontFamily: 'Inter, sans-serif',
+                                  fontSize: '14px',
+                                  margin: 0,
+                                  padding: 0,
+                                }),
+                                singleValue: (base) => ({
+                                  ...base,
+                                  fontFamily: 'Inter, sans-serif',
+                                  fontSize: '14px',
+                                  color: '#1f2937',
+                                }),
+                                placeholder: (base) => ({
+                                  ...base,
+                                  fontFamily: 'Inter, sans-serif',
+                                  fontSize: '14px',
+                                  color: '#9ca3af',
+                                }),
+                              }}
+                              classNamePrefix="react-select"
+                            />
+                          )
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Estado Civil
+                      </label>
+                      <select
+                        {...registerAutor('estadoCivil')}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        style={{ fontFamily: 'Inter, sans-serif' }}
+                      >
+                        <option value="">Seleccione...</option>
+                        {estadosCiviles.map((ec) => (
+                          <option key={ec} value={ec}>
+                            {ec}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Fecha de Nacimiento y Edad juntos */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Fecha de Nacimiento
+                      </label>
+                      <input
+                        type="date"
+                        {...registerAutor('fechaNacimiento')}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        max={new Date().toISOString().split('T')[0]}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Edad
+                      </label>
+                      <input
+                        {...registerAutor('edad')}
+                        type="number"
+                        readOnly={!!fechaNacimientoAutor}
+                        className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${fechaNacimientoAutor ? 'bg-gray-100 cursor-not-allowed' : ''
+                          }`}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Lugar de Nacimiento */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Lugar de Nacimiento
+                    </label>
+                    <input
+                      {...registerAutor('lugarNacimiento')}
+                      onChange={(e) => {
+                        convertirAMayusculas(e)
+                        registerAutor('lugarNacimiento').onChange(e)
                       }}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
                     />
                   </div>
+
+                  {/* Teléfono y Profesión */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Número de Teléfono
+                      </label>
+                      <input
+                        {...registerAutor('telefono')}
+                        onChange={(e) => {
+                          convertirAMayusculas(e)
+                          registerAutor('telefono').onChange(e)
+                        }}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Profesión
+                      </label>
+                      <input
+                        {...registerAutor('profesion')}
+                        onChange={(e) => {
+                          convertirAMayusculas(e)
+                          registerAutor('profesion').onChange(e)
+                        }}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
+                      />
+                    </div>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {autorConocido === 'Desconocido' && (
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">Descripción Física</h3>
-                <p className="text-sm text-gray-600 mb-4">
-                  Complete los campos que sean relevantes para describir físicamente al supuesto autor desconocido.
-                </p>
+              {autorConocido === 'Desconocido' && (
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">Descripción Física</h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Complete los campos que sean relevantes para describir físicamente al supuesto autor desconocido.
+                  </p>
 
-                <div className="space-y-6">
-                  {/* 1. Constitución física */}
-                  <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                    <h4 className="font-semibold text-gray-800 mb-3">1. Constitución física</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Altura</label>
-                        <select
-                          value={descripcionFisica.altura || ''}
-                          onChange={(e) => setDescripcionFisica({ ...descripcionFisica, altura: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                        >
-                          <option value="">Seleccione...</option>
-                          {opcionesAltura.map((opcion) => (
-                            <option key={opcion} value={opcion}>{opcion}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Complexión</label>
-                        <select
-                          value={descripcionFisica.complexion || ''}
-                          onChange={(e) => setDescripcionFisica({ ...descripcionFisica, complexion: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                        >
-                          <option value="">Seleccione...</option>
-                          {opcionesComplexion.map((opcion) => (
-                            <option key={opcion} value={opcion}>{opcion}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Postura</label>
-                        <select
-                          value={descripcionFisica.postura || ''}
-                          onChange={(e) => setDescripcionFisica({ ...descripcionFisica, postura: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                        >
-                          <option value="">Seleccione...</option>
-                          {opcionesPostura.map((opcion) => (
-                            <option key={opcion} value={opcion}>{opcion}</option>
-                          ))}
-                        </select>
+                  <div className="space-y-6">
+                    {/* 1. Constitución física */}
+                    <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                      <h4 className="font-semibold text-gray-800 mb-3">1. Constitución física</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Altura</label>
+                          <select
+                            value={descripcionFisica.altura || ''}
+                            onChange={(e) => setDescripcionFisica({ ...descripcionFisica, altura: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                          >
+                            <option value="">Seleccione...</option>
+                            {opcionesAltura.map((opcion) => (
+                              <option key={opcion} value={opcion}>{opcion}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Complexión</label>
+                          <select
+                            value={descripcionFisica.complexion || ''}
+                            onChange={(e) => setDescripcionFisica({ ...descripcionFisica, complexion: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                          >
+                            <option value="">Seleccione...</option>
+                            {opcionesComplexion.map((opcion) => (
+                              <option key={opcion} value={opcion}>{opcion}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Postura</label>
+                          <select
+                            value={descripcionFisica.postura || ''}
+                            onChange={(e) => setDescripcionFisica({ ...descripcionFisica, postura: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                          >
+                            <option value="">Seleccione...</option>
+                            {opcionesPostura.map((opcion) => (
+                              <option key={opcion} value={opcion}>{opcion}</option>
+                            ))}
+                          </select>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* 2. Forma del rostro */}
-                  <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                    <h4 className="font-semibold text-gray-800 mb-3">2. Forma del rostro</h4>
-                    <select
-                      value={descripcionFisica.formaRostro || ''}
-                      onChange={(e) => setDescripcionFisica({ ...descripcionFisica, formaRostro: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                    >
-                      <option value="">Seleccione...</option>
-                      {opcionesFormaRostro.map((opcion) => (
-                        <option key={opcion} value={opcion}>{opcion}</option>
-                      ))}
-                    </select>
-                  </div>
+                    {/* 2. Forma del rostro */}
+                    <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                      <h4 className="font-semibold text-gray-800 mb-3">2. Forma del rostro</h4>
+                      <select
+                        value={descripcionFisica.formaRostro || ''}
+                        onChange={(e) => setDescripcionFisica({ ...descripcionFisica, formaRostro: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                      >
+                        <option value="">Seleccione...</option>
+                        {opcionesFormaRostro.map((opcion) => (
+                          <option key={opcion} value={opcion}>{opcion}</option>
+                        ))}
+                      </select>
+                    </div>
 
-                  {/* 3. Piel */}
-                  <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                    <h4 className="font-semibold text-gray-800 mb-3">3. Piel</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Tono</label>
-                        <select
-                          value={descripcionFisica.tonoPiel || ''}
-                          onChange={(e) => setDescripcionFisica({ ...descripcionFisica, tonoPiel: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                        >
-                          <option value="">Seleccione...</option>
-                          {opcionesTonoPiel.map((opcion) => (
-                            <option key={opcion} value={opcion}>{opcion}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Textura</label>
-                        <select
-                          value={descripcionFisica.texturaPiel || ''}
-                          onChange={(e) => setDescripcionFisica({ ...descripcionFisica, texturaPiel: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                        >
-                          <option value="">Seleccione...</option>
-                          {opcionesTexturaPiel.map((opcion) => (
-                            <option key={opcion} value={opcion}>{opcion}</option>
-                          ))}
-                        </select>
+                    {/* 3. Piel */}
+                    <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                      <h4 className="font-semibold text-gray-800 mb-3">3. Piel</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Tono</label>
+                          <select
+                            value={descripcionFisica.tonoPiel || ''}
+                            onChange={(e) => setDescripcionFisica({ ...descripcionFisica, tonoPiel: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                          >
+                            <option value="">Seleccione...</option>
+                            {opcionesTonoPiel.map((opcion) => (
+                              <option key={opcion} value={opcion}>{opcion}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Textura</label>
+                          <select
+                            value={descripcionFisica.texturaPiel || ''}
+                            onChange={(e) => setDescripcionFisica({ ...descripcionFisica, texturaPiel: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                          >
+                            <option value="">Seleccione...</option>
+                            {opcionesTexturaPiel.map((opcion) => (
+                              <option key={opcion} value={opcion}>{opcion}</option>
+                            ))}
+                          </select>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* 4. Cabello */}
-                  <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                    <h4 className="font-semibold text-gray-800 mb-3">4. Cabello</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Color</label>
-                        <select
-                          value={descripcionFisica.colorCabello || ''}
-                          onChange={(e) => setDescripcionFisica({ ...descripcionFisica, colorCabello: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                        >
-                          <option value="">Seleccione...</option>
-                          {opcionesColorCabello.map((opcion) => (
-                            <option key={opcion} value={opcion}>{opcion}</option>
-                          ))}
-                        </select>
-                        {descripcionFisica.colorCabello === 'Teñido' && (
-                          <input
-                            type="text"
-                            value={descripcionFisica.cabelloTeñido || ''}
-                            onChange={(e) => setDescripcionFisica({ ...descripcionFisica, cabelloTeñido: e.target.value.toUpperCase() })}
-                            placeholder="Especificar color..."
-                            className="w-full mt-2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase text-sm"
-                          />
-                        )}
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Longitud</label>
-                        <select
-                          value={descripcionFisica.longitudCabello || ''}
-                          onChange={(e) => setDescripcionFisica({ ...descripcionFisica, longitudCabello: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                        >
-                          <option value="">Seleccione...</option>
-                          {opcionesLongitudCabello.map((opcion) => (
-                            <option key={opcion} value={opcion}>{opcion}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Textura</label>
-                        <select
-                          value={descripcionFisica.texturaCabello || ''}
-                          onChange={(e) => setDescripcionFisica({ ...descripcionFisica, texturaCabello: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                        >
-                          <option value="">Seleccione...</option>
-                          {opcionesTexturaCabello.map((opcion) => (
-                            <option key={opcion} value={opcion}>{opcion}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Peinado</label>
-                        <select
-                          value={descripcionFisica.peinado || ''}
-                          onChange={(e) => setDescripcionFisica({ ...descripcionFisica, peinado: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                        >
-                          <option value="">Seleccione...</option>
-                          {opcionesPeinado.map((opcion) => (
-                            <option key={opcion} value={opcion}>{opcion}</option>
-                          ))}
-                        </select>
+                    {/* 4. Cabello */}
+                    <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                      <h4 className="font-semibold text-gray-800 mb-3">4. Cabello</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Color</label>
+                          <select
+                            value={descripcionFisica.colorCabello || ''}
+                            onChange={(e) => setDescripcionFisica({ ...descripcionFisica, colorCabello: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                          >
+                            <option value="">Seleccione...</option>
+                            {opcionesColorCabello.map((opcion) => (
+                              <option key={opcion} value={opcion}>{opcion}</option>
+                            ))}
+                          </select>
+                          {descripcionFisica.colorCabello === 'Teñido' && (
+                            <input
+                              type="text"
+                              value={descripcionFisica.cabelloTeñido || ''}
+                              onChange={(e) => setDescripcionFisica({ ...descripcionFisica, cabelloTeñido: e.target.value.toUpperCase() })}
+                              placeholder="Especificar color..."
+                              className="w-full mt-2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase text-sm"
+                            />
+                          )}
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Longitud</label>
+                          <select
+                            value={descripcionFisica.longitudCabello || ''}
+                            onChange={(e) => setDescripcionFisica({ ...descripcionFisica, longitudCabello: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                          >
+                            <option value="">Seleccione...</option>
+                            {opcionesLongitudCabello.map((opcion) => (
+                              <option key={opcion} value={opcion}>{opcion}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Textura</label>
+                          <select
+                            value={descripcionFisica.texturaCabello || ''}
+                            onChange={(e) => setDescripcionFisica({ ...descripcionFisica, texturaCabello: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                          >
+                            <option value="">Seleccione...</option>
+                            {opcionesTexturaCabello.map((opcion) => (
+                              <option key={opcion} value={opcion}>{opcion}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Peinado</label>
+                          <select
+                            value={descripcionFisica.peinado || ''}
+                            onChange={(e) => setDescripcionFisica({ ...descripcionFisica, peinado: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                          >
+                            <option value="">Seleccione...</option>
+                            {opcionesPeinado.map((opcion) => (
+                              <option key={opcion} value={opcion}>{opcion}</option>
+                            ))}
+                          </select>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* 5. Ojos */}
-                  <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                    <h4 className="font-semibold text-gray-800 mb-3">5. Ojos</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Forma</label>
-                        <select
-                          value={descripcionFisica.formaOjos || ''}
-                          onChange={(e) => setDescripcionFisica({ ...descripcionFisica, formaOjos: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                        >
-                          <option value="">Seleccione...</option>
-                          {opcionesFormaOjos.map((opcion) => (
-                            <option key={opcion} value={opcion}>{opcion}</option>
-                          ))}
-                        </select>
+                    {/* 5. Ojos */}
+                    <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                      <h4 className="font-semibold text-gray-800 mb-3">5. Ojos</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Forma</label>
+                          <select
+                            value={descripcionFisica.formaOjos || ''}
+                            onChange={(e) => setDescripcionFisica({ ...descripcionFisica, formaOjos: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                          >
+                            <option value="">Seleccione...</option>
+                            {opcionesFormaOjos.map((opcion) => (
+                              <option key={opcion} value={opcion}>{opcion}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Color</label>
+                          <select
+                            value={descripcionFisica.colorOjos || ''}
+                            onChange={(e) => setDescripcionFisica({ ...descripcionFisica, colorOjos: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                          >
+                            <option value="">Seleccione...</option>
+                            {opcionesColorOjos.map((opcion) => (
+                              <option key={opcion} value={opcion}>{opcion}</option>
+                            ))}
+                          </select>
+                        </div>
                       </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Color</label>
-                        <select
-                          value={descripcionFisica.colorOjos || ''}
-                          onChange={(e) => setDescripcionFisica({ ...descripcionFisica, colorOjos: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                        >
-                          <option value="">Seleccione...</option>
-                          {opcionesColorOjos.map((opcion) => (
-                            <option key={opcion} value={opcion}>{opcion}</option>
+                      <div className="mt-3">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Características</label>
+                        <div className="flex flex-wrap gap-3">
+                          {opcionesCaracteristicasOjos.map((opcion) => (
+                            <label key={opcion} className="flex items-center text-sm text-gray-800 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={descripcionFisica.caracteristicasOjos?.includes(opcion) || false}
+                                onChange={(e) => {
+                                  const actuales = descripcionFisica.caracteristicasOjos || []
+                                  if (e.target.checked) {
+                                    setDescripcionFisica({ ...descripcionFisica, caracteristicasOjos: [...actuales, opcion] })
+                                  } else {
+                                    setDescripcionFisica({ ...descripcionFisica, caracteristicasOjos: actuales.filter((c) => c !== opcion) })
+                                  }
+                                }}
+                                className="mr-2"
+                              />
+                              <span className="text-gray-800">{opcion}</span>
+                            </label>
                           ))}
-                        </select>
+                        </div>
                       </div>
                     </div>
-                    <div className="mt-3">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Características</label>
+
+                    {/* 6. Otros rasgos distintivos */}
+                    <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                      <h4 className="font-semibold text-gray-800 mb-3">6. Otros rasgos distintivos</h4>
                       <div className="flex flex-wrap gap-3">
-                        {opcionesCaracteristicasOjos.map((opcion) => (
+                        {opcionesOtrosRasgos.map((opcion) => (
                           <label key={opcion} className="flex items-center text-sm text-gray-800 cursor-pointer">
                             <input
                               type="checkbox"
-                              checked={descripcionFisica.caracteristicasOjos?.includes(opcion) || false}
+                              checked={descripcionFisica.otrosRasgos?.includes(opcion) || false}
                               onChange={(e) => {
-                                const actuales = descripcionFisica.caracteristicasOjos || []
+                                const actuales = descripcionFisica.otrosRasgos || []
                                 if (e.target.checked) {
-                                  setDescripcionFisica({ ...descripcionFisica, caracteristicasOjos: [...actuales, opcion] })
+                                  setDescripcionFisica({ ...descripcionFisica, otrosRasgos: [...actuales, opcion] })
                                 } else {
-                                  setDescripcionFisica({ ...descripcionFisica, caracteristicasOjos: actuales.filter((c) => c !== opcion) })
+                                  setDescripcionFisica({ ...descripcionFisica, otrosRasgos: actuales.filter((r) => r !== opcion) })
                                 }
                               }}
                               className="mr-2"
@@ -4090,1128 +4145,1210 @@ export default function NuevaDenunciaPage() {
                         ))}
                       </div>
                     </div>
-                  </div>
 
-                  {/* 6. Otros rasgos distintivos */}
-                  <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                    <h4 className="font-semibold text-gray-800 mb-3">6. Otros rasgos distintivos</h4>
-                    <div className="flex flex-wrap gap-3">
-                      {opcionesOtrosRasgos.map((opcion) => (
-                        <label key={opcion} className="flex items-center text-sm text-gray-800 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={descripcionFisica.otrosRasgos?.includes(opcion) || false}
-                            onChange={(e) => {
-                              const actuales = descripcionFisica.otrosRasgos || []
-                              if (e.target.checked) {
-                                setDescripcionFisica({ ...descripcionFisica, otrosRasgos: [...actuales, opcion] })
-                              } else {
-                                setDescripcionFisica({ ...descripcionFisica, otrosRasgos: actuales.filter((r) => r !== opcion) })
-                              }
-                            }}
-                            className="mr-2"
-                          />
-                          <span className="text-gray-800">{opcion}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* 7. Detalles adicionales */}
-                  <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                    <h4 className="font-semibold text-gray-800 mb-3">7. Detalles adicionales</h4>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Agregar detalles adicionales no mencionados anteriormente
-                      </label>
-                      <textarea
-                        value={descripcionFisica.detallesAdicionales || ''}
-                        onChange={(e) => setDescripcionFisica({ ...descripcionFisica, detallesAdicionales: e.target.value.toUpperCase() })}
-                        placeholder="Ingrese cualquier detalle físico adicional que considere relevante..."
-                        rows={4}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 uppercase transition-colors resize-vertical"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        Este campo permite agregar información adicional que no esté contemplada en las opciones anteriores.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div className="mt-8 flex justify-between">
-              <div className="flex gap-4">
-                <button
-                  type="button"
-                  onClick={guardarBorrador}
-                  disabled={guardandoBorrador}
-                  className="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {guardandoBorrador ? 'Guardando...' : 'Guardar Borrador'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPaso(1)}
-                  className="px-6 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
-                >
-                  Anterior
-                </button>
-              </div>
-              <button
-                type="submit"
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-              >
-                Siguiente
-              </button>
-            </div>
-          </form>
-        )}
-
-        {/* Paso 3: Detalles y Relato */}
-        {paso === 3 && (
-          <form
-            onSubmit={handleSubmitDenuncia(onDenunciaSubmit)}
-            autoComplete="off"
-            className="bg-white rounded-lg shadow-md p-8"
-          >
-            <h2 className="text-2xl font-bold text-gray-800 mb-6">
-              Detalles y Relato
-            </h2>
-
-            <div className="space-y-4">
-              <div className="flex items-center mb-4">
-                <input
-                  type="checkbox"
-                  id="usarRango"
-                  {...registerDenuncia('usarRango')}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                />
-                <label htmlFor="usarRango" className="ml-2 block text-sm font-medium text-gray-700">
-                  El hecho ocurrió en un rango de fechas/horas (fecha/hora desconocida)
-                </label>
-              </div>
-
-              {!usarRango ? (
-                // Fecha y hora única
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Fecha del Hecho *
-                    </label>
-                    <input
-                      type="date"
-                      {...registerDenuncia('fechaHecho')}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                    {errorsDenuncia.fechaHecho && (
-                      <p className="text-red-600 text-sm mt-1">{errorsDenuncia.fechaHecho.message as string}</p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Hora del Hecho (HH:MM) *
-                    </label>
-                    <input
-                      type="time"
-                      {...registerDenuncia('horaHecho')}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                    {errorsDenuncia.horaHecho && (
-                      <p className="text-red-600 text-sm mt-1">{errorsDenuncia.horaHecho.message as string}</p>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                // Rango de fechas/horas
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="text-sm font-semibold text-gray-700 mb-3">Fecha y Hora de Inicio</h4>
-                    <div className="grid grid-cols-2 gap-4">
+                    {/* 7. Detalles adicionales */}
+                    <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                      <h4 className="font-semibold text-gray-800 mb-3">7. Detalles adicionales</h4>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Fecha de Inicio *
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Agregar detalles adicionales no mencionados anteriormente
                         </label>
-                        <input
-                          type="date"
-                          {...registerDenuncia('fechaHecho')}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        <textarea
+                          value={descripcionFisica.detallesAdicionales || ''}
+                          onChange={(e) => setDescripcionFisica({ ...descripcionFisica, detallesAdicionales: e.target.value.toUpperCase() })}
+                          placeholder="Ingrese cualquier detalle físico adicional que considere relevante..."
+                          rows={4}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 uppercase transition-colors resize-vertical"
                         />
-                        {errorsDenuncia.fechaHecho && (
-                          <p className="text-red-600 text-sm mt-1">{errorsDenuncia.fechaHecho.message as string}</p>
-                        )}
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Hora de Inicio (HH:MM) *
-                        </label>
-                        <input
-                          type="time"
-                          {...registerDenuncia('horaHecho')}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                        {errorsDenuncia.horaHecho && (
-                          <p className="text-red-600 text-sm mt-1">{errorsDenuncia.horaHecho.message as string}</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-semibold text-gray-700 mb-3">Fecha y Hora de Fin</h4>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Fecha de Fin *
-                        </label>
-                        <input
-                          type="date"
-                          {...registerDenuncia('fechaHechoFin')}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                        {errorsDenuncia.fechaHechoFin && (
-                          <p className="text-red-600 text-sm mt-1">{errorsDenuncia.fechaHechoFin.message as string}</p>
-                        )}
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Hora de Fin (HH:MM) *
-                        </label>
-                        <input
-                          type="time"
-                          {...registerDenuncia('horaHechoFin')}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                        {errorsDenuncia.horaHechoFin && (
-                          <p className="text-red-600 text-sm mt-1">{errorsDenuncia.horaHechoFin.message as string}</p>
-                        )}
+                        <p className="text-xs text-gray-500 mt-1">
+                          Este campo permite agregar información adicional que no esté contemplada en las opciones anteriores.
+                        </p>
                       </div>
                     </div>
                   </div>
                 </div>
               )}
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Tipo de Denuncia *
-                </label>
-                <Controller
-                  name="tipoDenuncia"
-                  control={controlDenuncia}
-                  render={({ field }) => (
-                    <Select
-                      options={tiposDenunciaOptions}
-                      value={tiposDenunciaOptions.find((option) => option.value === field.value) || null}
-                      onChange={(option) => field.onChange(option?.value || '')}
-                      placeholder="Seleccione o busque..."
-                      isSearchable
-                      className="text-sm"
-                      styles={{
-                        control: (base, state) => ({
-                          ...base,
-                          fontFamily: 'Inter, sans-serif',
-                          fontSize: '14px',
-                          minHeight: '42px',
-                          borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
-                          boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
-                          '&:hover': {
-                            borderColor: '#3b82f6',
-                          },
-                        }),
-                        menu: (base) => ({
-                          ...base,
-                          fontFamily: 'Inter, sans-serif',
-                          fontSize: '14px',
-                          maxHeight: '300px',
-                          zIndex: 9999,
-                        }),
-                        menuList: (base) => ({
-                          ...base,
-                          maxHeight: '300px',
-                        }),
-                        option: (base, state) => ({
-                          ...base,
-                          fontFamily: 'Inter, sans-serif',
-                          fontSize: '14px',
-                          padding: '8px 12px',
-                          backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
-                          color: state.isSelected ? 'white' : '#1f2937',
-                          cursor: 'pointer',
-                        }),
-                        input: (base) => ({
-                          ...base,
-                          fontFamily: 'Inter, sans-serif',
-                          fontSize: '14px',
-                          margin: 0,
-                          padding: 0,
-                        }),
-                        singleValue: (base) => ({
-                          ...base,
-                          fontFamily: 'Inter, sans-serif',
-                          fontSize: '14px',
-                          color: '#1f2937',
-                        }),
-                        placeholder: (base) => ({
-                          ...base,
-                          fontFamily: 'Inter, sans-serif',
-                          fontSize: '14px',
-                          color: '#9ca3af',
-                        }),
-                      }}
-                      classNamePrefix="react-select"
-                    />
-                  )}
-                />
-                {errorsDenuncia.tipoDenuncia && (
-                  <p className="text-red-600 text-sm mt-1">{errorsDenuncia.tipoDenuncia.message as string}</p>
-                )}
-              </div>
-
-              {tipoDenuncia === 'Otro (Especificar)' && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Especifique aquí *
-                  </label>
-                  <input
-                    {...registerDenuncia('otroTipo')}
-                    onChange={(e) => {
-                      convertirAMayusculas(e)
-                      registerDenuncia('otroTipo').onChange(e)
-                    }}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
-                  />
-                  {errorsDenuncia.otroTipo && (
-                    <p className="text-red-600 text-sm mt-1">{errorsDenuncia.otroTipo.message as string}</p>
-                  )}
+              <div className="mt-12 flex items-center justify-between border-t border-slate-100 pt-8">
+                <div className="flex gap-4">
+                  <button
+                    type="button"
+                    onClick={guardarBorrador}
+                    disabled={guardandoBorrador}
+                    className="flex items-center space-x-2 px-6 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all font-bold text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                    </svg>
+                    <span>{guardandoBorrador ? 'Guardando...' : 'Guardar Borrador'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPaso(1)}
+                    className="flex items-center space-x-2 px-6 py-3 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 transition-all font-bold text-sm"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                    <span>Anterior</span>
+                  </button>
                 </div>
-              )}
+                <button
+                  type="submit"
+                  className="flex items-center space-x-2 px-8 py-3 bg-[#002147] text-white rounded-xl hover:bg-[#003366] transition-all font-bold text-sm shadow-lg shadow-blue-900/20"
+                >
+                  <span>Siguiente paso</span>
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* Paso 3: Detalles y Relato */}
+          {paso === 3 && (
+            <form
+              onSubmit={handleSubmitDenuncia(onDenunciaSubmit)}
+              autoComplete="off"
+              className="bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-100 p-8 sm:p-10 transition-all duration-300 hover:shadow-slate-200/80"
+            >
+              <h2 className="text-3xl font-black text-[#002147] mb-8 border-b border-slate-100 pb-4">
+                Detalles y Relato
+              </h2>
 
               <div className="space-y-4">
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-gray-800 border-b pb-2 flex-1">
-                      Lugar del Hecho
-                    </h3>
-                    <label className="flex items-center ml-4 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        {...registerDenuncia('lugarHechoNoAplica')}
-                        checked={lugarHechoNoAplica}
-                        onChange={(e) => {
-                          registerDenuncia('lugarHechoNoAplica').onChange(e)
-                          setLugarHechoNoAplica(e.target.checked)
-                          // value is updated by register, but we also want custom logic
-                          setValueDenuncia('lugarHechoNoAplica', e.target.checked)
-
-                          if (e.target.checked) {
-                            setValueDenuncia('lugarHechoDepartamento', '')
-                            setValueDenuncia('lugarHechoCiudad', '')
-                            setValueDenuncia('lugarHechoBarrio', '')
-                            setValueDenuncia('lugarHechoCalles', '')
-                            setValueDenuncia('lugarHecho', '')
-                            setCoordenadas(null)
-                          }
-                        }}
-                        className="mr-2"
-                      />
-                      <span className="text-sm text-gray-700">No aplica</span>
-                    </label>
-                  </div>
-                  {!lugarHechoNoAplica && (
-                    <>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Departamento *
-                          </label>
-                          <Controller
-                            name="lugarHechoDepartamento"
-                            control={controlDenuncia}
-                            render={({ field }) => (
-                              <Select
-                                options={lugarHechoDepartamentoOptions}
-                                value={lugarHechoDepartamentoOptions.find((option) => option.value === field.value) || null}
-                                onChange={(option) => field.onChange(option?.value || '')}
-                                isClearable
-                                placeholder="Seleccione..."
-                                className="text-sm"
-                                styles={{
-                                  control: (base, state) => ({
-                                    ...base,
-                                    fontFamily: 'Inter, sans-serif',
-                                    fontSize: '14px',
-                                    minHeight: '42px',
-                                    borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
-                                    boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
-                                    '&:hover': {
-                                      borderColor: '#3b82f6',
-                                    },
-                                  }),
-                                  menu: (base) => ({
-                                    ...base,
-                                    fontFamily: 'Inter, sans-serif',
-                                    fontSize: '14px',
-                                    maxHeight: '250px',
-                                    zIndex: 9999,
-                                  }),
-                                  menuList: (base) => ({
-                                    ...base,
-                                    maxHeight: '250px',
-                                  }),
-                                  option: (base, state) => ({
-                                    ...base,
-                                    fontFamily: 'Inter, sans-serif',
-                                    fontSize: '14px',
-                                    padding: '8px 12px',
-                                    backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
-                                    color: state.isSelected ? 'white' : '#1f2937',
-                                    cursor: 'pointer',
-                                  }),
-                                  input: (base) => ({
-                                    ...base,
-                                    fontFamily: 'Inter, sans-serif',
-                                    fontSize: '14px',
-                                    margin: 0,
-                                    padding: 0,
-                                  }),
-                                  singleValue: (base) => ({
-                                    ...base,
-                                    fontFamily: 'Inter, sans-serif',
-                                    fontSize: '14px',
-                                    color: '#1f2937',
-                                  }),
-                                  placeholder: (base) => ({
-                                    ...base,
-                                    fontFamily: 'Inter, sans-serif',
-                                    fontSize: '14px',
-                                    color: '#9ca3af',
-                                  }),
-                                }}
-                                classNamePrefix="react-select"
-                              />
-                            )}
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Ciudad *
-                          </label>
-                          <Controller
-                            name="lugarHechoCiudad"
-                            control={controlDenuncia}
-                            render={({ field }) => (
-                              <Select
-                                options={lugarHechoCiudadOptions}
-                                value={lugarHechoCiudadOptions.find((option) => option.value === field.value) || null}
-                                onChange={(option) => field.onChange(option?.value || '')}
-                                isClearable
-                                isDisabled={!lugarHechoDepartamento}
-                                placeholder={lugarHechoDepartamento ? 'Seleccione...' : 'Seleccione un departamento primero'}
-                                className="text-sm"
-                                styles={{
-                                  control: (base, state) => ({
-                                    ...base,
-                                    fontFamily: 'Inter, sans-serif',
-                                    fontSize: '14px',
-                                    minHeight: '42px',
-                                    borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
-                                    boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
-                                    '&:hover': {
-                                      borderColor: '#3b82f6',
-                                    },
-                                  }),
-                                  menu: (base) => ({
-                                    ...base,
-                                    fontFamily: 'Inter, sans-serif',
-                                    fontSize: '14px',
-                                    maxHeight: '250px',
-                                    zIndex: 9999,
-                                  }),
-                                  menuList: (base) => ({
-                                    ...base,
-                                    maxHeight: '250px',
-                                  }),
-                                  option: (base, state) => ({
-                                    ...base,
-                                    fontFamily: 'Inter, sans-serif',
-                                    fontSize: '14px',
-                                    padding: '8px 12px',
-                                    backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
-                                    color: state.isSelected ? 'white' : '#1f2937',
-                                    cursor: 'pointer',
-                                  }),
-                                  input: (base) => ({
-                                    ...base,
-                                    fontFamily: 'Inter, sans-serif',
-                                    fontSize: '14px',
-                                    margin: 0,
-                                    padding: 0,
-                                  }),
-                                  singleValue: (base) => ({
-                                    ...base,
-                                    fontFamily: 'Inter, sans-serif',
-                                    fontSize: '14px',
-                                    color: '#1f2937',
-                                  }),
-                                  placeholder: (base) => ({
-                                    ...base,
-                                    fontFamily: 'Inter, sans-serif',
-                                    fontSize: '14px',
-                                    color: '#9ca3af',
-                                  }),
-                                }}
-                                classNamePrefix="react-select"
-                              />
-                            )}
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Barrio
-                          </label>
-                          <Controller
-                            name="lugarHechoBarrio"
-                            control={controlDenuncia}
-                            render={({ field }) => (
-                              <Select
-                                options={lugarHechoBarrioOptions}
-                                value={lugarHechoBarrioOptions.find((option) => option.value === field.value) || null}
-                                onChange={(option) => field.onChange(option?.value || '')}
-                                isClearable
-                                isDisabled={!lugarHechoCiudad}
-                                placeholder={lugarHechoCiudad ? 'Seleccione...' : 'Seleccione una ciudad primero'}
-                                className="text-sm"
-                                styles={{
-                                  control: (base, state) => ({
-                                    ...base,
-                                    fontFamily: 'Inter, sans-serif',
-                                    fontSize: '14px',
-                                    minHeight: '42px',
-                                    borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
-                                    boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
-                                    '&:hover': {
-                                      borderColor: '#3b82f6',
-                                    },
-                                  }),
-                                  menu: (base) => ({
-                                    ...base,
-                                    fontFamily: 'Inter, sans-serif',
-                                    fontSize: '14px',
-                                    maxHeight: '250px',
-                                    zIndex: 9999,
-                                  }),
-                                  menuList: (base) => ({
-                                    ...base,
-                                    maxHeight: '250px',
-                                  }),
-                                  option: (base, state) => ({
-                                    ...base,
-                                    fontFamily: 'Inter, sans-serif',
-                                    fontSize: '14px',
-                                    padding: '8px 12px',
-                                    backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
-                                    color: state.isSelected ? 'white' : '#1f2937',
-                                    cursor: 'pointer',
-                                  }),
-                                  input: (base) => ({
-                                    ...base,
-                                    fontFamily: 'Inter, sans-serif',
-                                    fontSize: '14px',
-                                    margin: 0,
-                                    padding: 0,
-                                  }),
-                                  singleValue: (base) => ({
-                                    ...base,
-                                    fontFamily: 'Inter, sans-serif',
-                                    fontSize: '14px',
-                                    color: '#1f2937',
-                                  }),
-                                  placeholder: (base) => ({
-                                    ...base,
-                                    fontFamily: 'Inter, sans-serif',
-                                    fontSize: '14px',
-                                    color: '#9ca3af',
-                                  }),
-                                }}
-                                classNamePrefix="react-select"
-                              />
-                            )}
-                          />
-                        </div>
-                      </div>
-                      <div className="mt-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Calles / Referencias *
-                        </label>
-                        <input
-                          {...registerDenuncia('lugarHechoCalles')}
-                          onChange={(e) => {
-                            convertirAMayusculas(e)
-                            registerDenuncia('lugarHechoCalles').onChange(e)
-                          }}
-                          autoComplete="off"
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
-                        />
-                      </div>
-                    </>
-                  )}
-                  <div className="flex gap-2 mt-4">
-                    <input
-                      {...registerDenuncia('lugarHecho')}
-                      type="hidden"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setMostrarMapa(true)}
-                      disabled={lugarHechoNoAplica}
-                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Abrir Mapa
-                    </button>
-                  </div>
-                  {!lugarHechoNoAplica && coordenadas && (
-                    <p className="text-sm text-gray-600 mt-1">
-                      Coordenadas: {coordenadas.lat.toFixed(6)}, {coordenadas.lng.toFixed(6)}
-                    </p>
-                  )}
-                  {errorsDenuncia.lugarHecho && (
-                    <p className="text-red-600 text-sm mt-1">{errorsDenuncia.lugarHecho.message as string}</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Campos Estadísticos (Opcional) */}
-              <div className="bg-blue-50/50 p-6 rounded-xl border border-blue-100 mb-6 font-sans">
-                <div className="flex items-center gap-2 mb-4 text-blue-800">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
-                  <h3 className="font-bold text-sm uppercase tracking-wider">Información Estadística (Opcional)</h3>
+                <div className="flex items-center mb-4">
+                  <input
+                    type="checkbox"
+                    id="usarRango"
+                    {...registerDenuncia('usarRango')}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="usarRango" className="ml-2 block text-sm font-medium text-gray-700">
+                    El hecho ocurrió en un rango de fechas/horas (fecha/hora desconocida)
+                  </label>
                 </div>
 
-                <p className="text-xs text-blue-600 mb-4 bg-white/60 p-3 rounded-lg border border-blue-100/50 leading-relaxed shadow-sm">
-                  El siguiente campo se solicita <strong>únicamente con fines estadísticos</strong> para ayudar a cuantificar el impacto de los hechos punibles denunciados en esta Dirección. Esta información <strong>no se incluirá en el acta formal de la denuncia</strong>.
-                </p>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div className="space-y-1.5">
-                    <label className="block text-sm font-semibold text-gray-700">
-                      Monto de daño patrimonial
-                    </label>
-                    <div className="relative group">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 group-focus-within:text-blue-500 transition-colors">
-                        <span className="text-sm font-medium">₲/$</span>
-                      </div>
+                {!usarRango ? (
+                  // Fecha y hora única
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Fecha del Hecho *
+                      </label>
                       <input
-                        {...registerDenuncia('montoDano')}
-                        placeholder="0"
-                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white hover:border-gray-400"
-                        onChange={(e) => {
-                          const value = e.target.value.replace(/\./g, '')
-                          if (/^\d*$/.test(value)) {
-                            e.target.value = value ? parseInt(value).toLocaleString('es-PY').replace(/,/g, '.') : ''
-                          }
-                        }}
+                        type="date"
+                        {...registerDenuncia('fechaHecho')}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
+                      {errorsDenuncia.fechaHecho && (
+                        <p className="text-red-600 text-sm mt-1">{errorsDenuncia.fechaHecho.message as string}</p>
+                      )}
                     </div>
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="block text-sm font-semibold text-gray-700">
-                      Moneda
-                    </label>
-                    <select
-                      {...registerDenuncia('moneda')}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white hover:border-gray-400 cursor-pointer appearance-none"
-                      style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center', backgroundSize: '1.25rem' }}
-                    >
-                      <option value="">Seleccione moneda...</option>
-                      <option value="Guaraníes (PYG)">Guaraníes (PYG)</option>
-                      <option value="Dólares (USD)">Dólares (USD)</option>
-                      <option value="Euros (EUR)">Euros (EUR)</option>
-                      <option value="Pesos Argentinos (ARS)">Pesos Argentinos (ARS)</option>
-                      <option value="Reales (BRL)">Reales (BRL)</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-4 border-t pt-4 mt-4">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-800">Relato de los Hechos</h3>
-                  <div className="flex items-center bg-gray-100 p-1 rounded-lg">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setValueDenuncia('esDenunciaEscrita', false)
-                        setValueDenuncia('archivoDenunciaUrl', '') // Limpiar al cambiar
-                      }}
-                      className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${!watchDenuncia('esDenunciaEscrita') ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-800'}`}
-                    >
-                      Relato Verbal
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setValueDenuncia('esDenunciaEscrita', true)
-                        setValueDenuncia('relato', '') // Limpiar al cambiar
-                      }}
-                      className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${watchDenuncia('esDenunciaEscrita') ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-800'}`}
-                    >
-                      Denuncia Escrita
-                    </button>
-                  </div>
-                </div>
-
-                {!watchDenuncia('esDenunciaEscrita') ? (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Relato del Hecho *
-                    </label>
-                    <textarea
-                      {...registerDenuncia('relato')}
-                      rows={10}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Escriba el relato del hecho..."
-                    />
-                    {errorsDenuncia.relato && (
-                      <p className="text-red-600 text-sm mt-1">{errorsDenuncia.relato.message as string}</p>
-                    )}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Hora del Hecho (HH:MM) *
+                      </label>
+                      <input
+                        type="time"
+                        {...registerDenuncia('horaHecho')}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                      {errorsDenuncia.horaHecho && (
+                        <p className="text-red-600 text-sm mt-1">{errorsDenuncia.horaHecho.message as string}</p>
+                      )}
+                    </div>
                   </div>
                 ) : (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-                    <div className="mb-4">
-                      <h4 className="text-base font-semibold text-blue-900 mb-1">Adjuntar Denuncia Escrita</h4>
-                      <p className="text-sm text-blue-700">
-                        Suba el documento escaneado de la denuncia escrita. El formato debe ser PDF y no superar los 25MB.
-                      </p>
-                    </div>
-
-                    <div className="mt-2">
-                      {watchDenuncia('archivoDenunciaUrl') ? (
-                        <div className="flex items-center justify-between bg-white p-3 rounded-lg border border-blue-200">
-                          <div className="flex items-center overflow-hidden">
-                            <svg className="w-8 h-8 text-red-500 mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                            </svg>
-                            <div className="min-w-0">
-                              <p className="text-sm font-medium text-gray-900 truncate">Documento Adjunto</p>
-                              <a href={watchDenuncia('archivoDenunciaUrl') || '#'} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline truncate block">
-                                Ver documento
-                              </a>
-                            </div>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => setValueDenuncia('archivoDenunciaUrl', '')}
-                            className="ml-4 text-gray-400 hover:text-red-500"
-                          >
-                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex justify-center px-6 pt-5 pb-6 border-2 border-blue-300 border-dashed rounded-md bg-white hover:bg-blue-50 transition-colors relative">
-                          <div className="space-y-1 text-center">
-                            <svg
-                              className="mx-auto h-12 w-12 text-blue-400"
-                              stroke="currentColor"
-                              fill="none"
-                              viewBox="0 0 48 48"
-                              aria-hidden="true"
-                            >
-                              <path
-                                d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                                strokeWidth={2}
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                            </svg>
-                            <div className="flex text-sm text-gray-600 justify-center">
-                              <label
-                                htmlFor="file-upload"
-                                className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"
-                              >
-                                <span>Subir un archivo</span>
-                                <input
-                                  id="file-upload"
-                                  name="file-upload"
-                                  type="file"
-                                  accept="application/pdf"
-                                  className="sr-only"
-                                  disabled={subiendoArchivo}
-                                  onChange={async (e) => {
-                                    const file = e.target.files?.[0]
-                                    if (!file) return
-
-                                    if (file.type !== 'application/pdf') {
-                                      setMensajeErrorTitulo('Formato incorrecto')
-                                      setMensajeError('Solo se permiten archivos PDF.')
-                                      setMostrarModalError(true)
-                                      return
-                                    }
-
-                                    if (file.size > 25 * 1024 * 1024) {
-                                      setMensajeErrorTitulo('Archivo demasiado grande')
-                                      setMensajeError('El archivo no debe superar los 25MB.')
-                                      setMostrarModalError(true)
-                                      return
-                                    }
-
-                                    setSubiendoArchivo(true)
-                                    try {
-                                      const response = await fetch(`/api/upload/denuncia-escrita?filename=${encodeURIComponent(file.name)}`, {
-                                        method: 'POST',
-                                        body: file,
-                                      })
-
-                                      if (!response.ok) throw new Error('Error al subir archivo')
-
-                                      const blob = await response.json()
-                                      setValueDenuncia('archivoDenunciaUrl', blob.url)
-                                    } catch (error) {
-                                      console.error('Error uploading file:', error)
-                                      setMensajeErrorTitulo('Error de subida')
-                                      setMensajeError('Hubo un error al subir el archivo. Intente nuevamente.')
-                                      setMostrarModalError(true)
-                                    } finally {
-                                      setSubiendoArchivo(false)
-                                    }
-                                  }}
-                                />
-                              </label>
-                              <p className="pl-1">o arrastrar y soltar</p>
-                            </div>
-                            <p className="text-xs text-gray-500">
-                              PDF hasta 25MB
-                            </p>
-                          </div>
-                          {subiendoArchivo && (
-                            <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
-                              <div className="flex items-center">
-                                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                <span className="text-sm font-medium text-blue-600">Subiendo...</span>
-                              </div>
-                            </div>
+                  // Rango de fechas/horas
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="text-sm font-semibold text-gray-700 mb-3">Fecha y Hora de Inicio</h4>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Fecha de Inicio *
+                          </label>
+                          <input
+                            type="date"
+                            {...registerDenuncia('fechaHecho')}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          />
+                          {errorsDenuncia.fechaHecho && (
+                            <p className="text-red-600 text-sm mt-1">{errorsDenuncia.fechaHecho.message as string}</p>
                           )}
                         </div>
-                      )}
-                      {errorsDenuncia.archivoDenunciaUrl && (
-                        <p className="text-red-600 text-sm mt-1">{errorsDenuncia.archivoDenunciaUrl.message as string}</p>
-                      )}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Hora de Inicio (HH:MM) *
+                          </label>
+                          <input
+                            type="time"
+                            {...registerDenuncia('horaHecho')}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          />
+                          {errorsDenuncia.horaHecho && (
+                            <p className="text-red-600 text-sm mt-1">{errorsDenuncia.horaHecho.message as string}</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-semibold text-gray-700 mb-3">Fecha y Hora de Fin</h4>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Fecha de Fin *
+                          </label>
+                          <input
+                            type="date"
+                            {...registerDenuncia('fechaHechoFin')}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          />
+                          {errorsDenuncia.fechaHechoFin && (
+                            <p className="text-red-600 text-sm mt-1">{errorsDenuncia.fechaHechoFin.message as string}</p>
+                          )}
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Hora de Fin (HH:MM) *
+                          </label>
+                          <input
+                            type="time"
+                            {...registerDenuncia('horaHechoFin')}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          />
+                          {errorsDenuncia.horaHechoFin && (
+                            <p className="text-red-600 text-sm mt-1">{errorsDenuncia.horaHechoFin.message as string}</p>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}
-              </div>
 
-              {/* Sección de Adjuntos Opcionales (Imágenes/PDFs) */}
-              <div className="mt-6 border-t pt-6">
-                <div className="mb-4">
-                  <h4 className="text-base font-semibold text-gray-800 mb-1">Adjuntos Opcionales</h4>
-                  <p className="text-sm text-gray-600">
-                    Puede adjuntar imágenes (JPG, PNG) o archivos PDF adicionales que desee incluir en la denuncia.
-                  </p>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Tipo de Denuncia *
+                  </label>
+                  <Controller
+                    name="tipoDenuncia"
+                    control={controlDenuncia}
+                    render={({ field }) => (
+                      <Select
+                        options={tiposDenunciaOptions}
+                        value={tiposDenunciaOptions.find((option) => option.value === field.value) || null}
+                        onChange={(option) => field.onChange(option?.value || '')}
+                        placeholder="Seleccione o busque..."
+                        isSearchable
+                        className="text-sm"
+                        styles={{
+                          control: (base, state) => ({
+                            ...base,
+                            fontFamily: 'Inter, sans-serif',
+                            fontSize: '14px',
+                            minHeight: '42px',
+                            borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
+                            boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
+                            '&:hover': {
+                              borderColor: '#3b82f6',
+                            },
+                          }),
+                          menu: (base) => ({
+                            ...base,
+                            fontFamily: 'Inter, sans-serif',
+                            fontSize: '14px',
+                            maxHeight: '300px',
+                            zIndex: 9999,
+                          }),
+                          menuList: (base) => ({
+                            ...base,
+                            maxHeight: '300px',
+                          }),
+                          option: (base, state) => ({
+                            ...base,
+                            fontFamily: 'Inter, sans-serif',
+                            fontSize: '14px',
+                            padding: '8px 12px',
+                            backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
+                            color: state.isSelected ? 'white' : '#1f2937',
+                            cursor: 'pointer',
+                          }),
+                          input: (base) => ({
+                            ...base,
+                            fontFamily: 'Inter, sans-serif',
+                            fontSize: '14px',
+                            margin: 0,
+                            padding: 0,
+                          }),
+                          singleValue: (base) => ({
+                            ...base,
+                            fontFamily: 'Inter, sans-serif',
+                            fontSize: '14px',
+                            color: '#1f2937',
+                          }),
+                          placeholder: (base) => ({
+                            ...base,
+                            fontFamily: 'Inter, sans-serif',
+                            fontSize: '14px',
+                            color: '#9ca3af',
+                          }),
+                        }}
+                        classNamePrefix="react-select"
+                      />
+                    )}
+                  />
+                  {errorsDenuncia.tipoDenuncia && (
+                    <p className="text-red-600 text-sm mt-1">{errorsDenuncia.tipoDenuncia.message as string}</p>
+                  )}
                 </div>
 
+                {tipoDenuncia === 'Otro (Especificar)' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Especifique aquí *
+                    </label>
+                    <input
+                      {...registerDenuncia('otroTipo')}
+                      onChange={(e) => {
+                        convertirAMayusculas(e)
+                        registerDenuncia('otroTipo').onChange(e)
+                      }}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
+                    />
+                    {errorsDenuncia.otroTipo && (
+                      <p className="text-red-600 text-sm mt-1">{errorsDenuncia.otroTipo.message as string}</p>
+                    )}
+                  </div>
+                )}
+
                 <div className="space-y-4">
-                  {/* Lista de adjuntos subidos */}
-                  {adjuntosUrls.length > 0 && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-                      {adjuntosUrls.map((url, index) => (
-                        <div key={index} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border border-gray-200">
-                          <div className="flex items-center overflow-hidden">
-                            {url.match(/\.(jpg|jpeg|png|webp|gif)$/i) ? (
-                              <svg className="w-8 h-8 text-blue-500 mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                              </svg>
-                            ) : (
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold text-gray-800 border-b pb-2 flex-1">
+                        Lugar del Hecho
+                      </h3>
+                      <label className="flex items-center ml-4 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          {...registerDenuncia('lugarHechoNoAplica')}
+                          checked={lugarHechoNoAplica}
+                          onChange={(e) => {
+                            registerDenuncia('lugarHechoNoAplica').onChange(e)
+                            setLugarHechoNoAplica(e.target.checked)
+                            // value is updated by register, but we also want custom logic
+                            setValueDenuncia('lugarHechoNoAplica', e.target.checked)
+
+                            if (e.target.checked) {
+                              setValueDenuncia('lugarHechoDepartamento', '')
+                              setValueDenuncia('lugarHechoCiudad', '')
+                              setValueDenuncia('lugarHechoBarrio', '')
+                              setValueDenuncia('lugarHechoCalles', '')
+                              setValueDenuncia('lugarHecho', '')
+                              setCoordenadas(null)
+                            }
+                          }}
+                          className="mr-2"
+                        />
+                        <span className="text-sm text-gray-700">No aplica</span>
+                      </label>
+                    </div>
+                    {!lugarHechoNoAplica && (
+                      <>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Departamento *
+                            </label>
+                            <Controller
+                              name="lugarHechoDepartamento"
+                              control={controlDenuncia}
+                              render={({ field }) => (
+                                <Select
+                                  options={lugarHechoDepartamentoOptions}
+                                  value={lugarHechoDepartamentoOptions.find((option) => option.value === field.value) || null}
+                                  onChange={(option) => field.onChange(option?.value || '')}
+                                  isClearable
+                                  placeholder="Seleccione..."
+                                  className="text-sm"
+                                  styles={{
+                                    control: (base, state) => ({
+                                      ...base,
+                                      fontFamily: 'Inter, sans-serif',
+                                      fontSize: '14px',
+                                      minHeight: '42px',
+                                      borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
+                                      boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
+                                      '&:hover': {
+                                        borderColor: '#3b82f6',
+                                      },
+                                    }),
+                                    menu: (base) => ({
+                                      ...base,
+                                      fontFamily: 'Inter, sans-serif',
+                                      fontSize: '14px',
+                                      maxHeight: '250px',
+                                      zIndex: 9999,
+                                    }),
+                                    menuList: (base) => ({
+                                      ...base,
+                                      maxHeight: '250px',
+                                    }),
+                                    option: (base, state) => ({
+                                      ...base,
+                                      fontFamily: 'Inter, sans-serif',
+                                      fontSize: '14px',
+                                      padding: '8px 12px',
+                                      backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
+                                      color: state.isSelected ? 'white' : '#1f2937',
+                                      cursor: 'pointer',
+                                    }),
+                                    input: (base) => ({
+                                      ...base,
+                                      fontFamily: 'Inter, sans-serif',
+                                      fontSize: '14px',
+                                      margin: 0,
+                                      padding: 0,
+                                    }),
+                                    singleValue: (base) => ({
+                                      ...base,
+                                      fontFamily: 'Inter, sans-serif',
+                                      fontSize: '14px',
+                                      color: '#1f2937',
+                                    }),
+                                    placeholder: (base) => ({
+                                      ...base,
+                                      fontFamily: 'Inter, sans-serif',
+                                      fontSize: '14px',
+                                      color: '#9ca3af',
+                                    }),
+                                  }}
+                                  classNamePrefix="react-select"
+                                />
+                              )}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Ciudad *
+                            </label>
+                            <Controller
+                              name="lugarHechoCiudad"
+                              control={controlDenuncia}
+                              render={({ field }) => (
+                                <Select
+                                  options={lugarHechoCiudadOptions}
+                                  value={lugarHechoCiudadOptions.find((option) => option.value === field.value) || null}
+                                  onChange={(option) => field.onChange(option?.value || '')}
+                                  isClearable
+                                  isDisabled={!lugarHechoDepartamento}
+                                  placeholder={lugarHechoDepartamento ? 'Seleccione...' : 'Seleccione un departamento primero'}
+                                  className="text-sm"
+                                  styles={{
+                                    control: (base, state) => ({
+                                      ...base,
+                                      fontFamily: 'Inter, sans-serif',
+                                      fontSize: '14px',
+                                      minHeight: '42px',
+                                      borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
+                                      boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
+                                      '&:hover': {
+                                        borderColor: '#3b82f6',
+                                      },
+                                    }),
+                                    menu: (base) => ({
+                                      ...base,
+                                      fontFamily: 'Inter, sans-serif',
+                                      fontSize: '14px',
+                                      maxHeight: '250px',
+                                      zIndex: 9999,
+                                    }),
+                                    menuList: (base) => ({
+                                      ...base,
+                                      maxHeight: '250px',
+                                    }),
+                                    option: (base, state) => ({
+                                      ...base,
+                                      fontFamily: 'Inter, sans-serif',
+                                      fontSize: '14px',
+                                      padding: '8px 12px',
+                                      backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
+                                      color: state.isSelected ? 'white' : '#1f2937',
+                                      cursor: 'pointer',
+                                    }),
+                                    input: (base) => ({
+                                      ...base,
+                                      fontFamily: 'Inter, sans-serif',
+                                      fontSize: '14px',
+                                      margin: 0,
+                                      padding: 0,
+                                    }),
+                                    singleValue: (base) => ({
+                                      ...base,
+                                      fontFamily: 'Inter, sans-serif',
+                                      fontSize: '14px',
+                                      color: '#1f2937',
+                                    }),
+                                    placeholder: (base) => ({
+                                      ...base,
+                                      fontFamily: 'Inter, sans-serif',
+                                      fontSize: '14px',
+                                      color: '#9ca3af',
+                                    }),
+                                  }}
+                                  classNamePrefix="react-select"
+                                />
+                              )}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Barrio
+                            </label>
+                            <Controller
+                              name="lugarHechoBarrio"
+                              control={controlDenuncia}
+                              render={({ field }) => (
+                                <Select
+                                  options={lugarHechoBarrioOptions}
+                                  value={lugarHechoBarrioOptions.find((option) => option.value === field.value) || null}
+                                  onChange={(option) => field.onChange(option?.value || '')}
+                                  isClearable
+                                  isDisabled={!lugarHechoCiudad}
+                                  placeholder={lugarHechoCiudad ? 'Seleccione...' : 'Seleccione una ciudad primero'}
+                                  className="text-sm"
+                                  styles={{
+                                    control: (base, state) => ({
+                                      ...base,
+                                      fontFamily: 'Inter, sans-serif',
+                                      fontSize: '14px',
+                                      minHeight: '42px',
+                                      borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
+                                      boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
+                                      '&:hover': {
+                                        borderColor: '#3b82f6',
+                                      },
+                                    }),
+                                    menu: (base) => ({
+                                      ...base,
+                                      fontFamily: 'Inter, sans-serif',
+                                      fontSize: '14px',
+                                      maxHeight: '250px',
+                                      zIndex: 9999,
+                                    }),
+                                    menuList: (base) => ({
+                                      ...base,
+                                      maxHeight: '250px',
+                                    }),
+                                    option: (base, state) => ({
+                                      ...base,
+                                      fontFamily: 'Inter, sans-serif',
+                                      fontSize: '14px',
+                                      padding: '8px 12px',
+                                      backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
+                                      color: state.isSelected ? 'white' : '#1f2937',
+                                      cursor: 'pointer',
+                                    }),
+                                    input: (base) => ({
+                                      ...base,
+                                      fontFamily: 'Inter, sans-serif',
+                                      fontSize: '14px',
+                                      margin: 0,
+                                      padding: 0,
+                                    }),
+                                    singleValue: (base) => ({
+                                      ...base,
+                                      fontFamily: 'Inter, sans-serif',
+                                      fontSize: '14px',
+                                      color: '#1f2937',
+                                    }),
+                                    placeholder: (base) => ({
+                                      ...base,
+                                      fontFamily: 'Inter, sans-serif',
+                                      fontSize: '14px',
+                                      color: '#9ca3af',
+                                    }),
+                                  }}
+                                  classNamePrefix="react-select"
+                                />
+                              )}
+                            />
+                          </div>
+                        </div>
+                        <div className="mt-4">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Calles / Referencias *
+                          </label>
+                          <input
+                            {...registerDenuncia('lugarHechoCalles')}
+                            onChange={(e) => {
+                              convertirAMayusculas(e)
+                              registerDenuncia('lugarHechoCalles').onChange(e)
+                            }}
+                            autoComplete="off"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
+                          />
+                        </div>
+                      </>
+                    )}
+                    <div className="flex gap-2 mt-4">
+                      <input
+                        {...registerDenuncia('lugarHecho')}
+                        type="hidden"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setMostrarMapa(true)}
+                        disabled={lugarHechoNoAplica}
+                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Abrir Mapa
+                      </button>
+                    </div>
+                    {!lugarHechoNoAplica && coordenadas && (
+                      <p className="text-sm text-gray-600 mt-1">
+                        Coordenadas: {coordenadas.lat.toFixed(6)}, {coordenadas.lng.toFixed(6)}
+                      </p>
+                    )}
+                    {errorsDenuncia.lugarHecho && (
+                      <p className="text-red-600 text-sm mt-1">{errorsDenuncia.lugarHecho.message as string}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Campos Estadísticos (Opcional) */}
+                <div className="bg-blue-50/50 p-6 rounded-xl border border-blue-100 mb-6 font-sans">
+                  <div className="flex items-center gap-2 mb-4 text-blue-800">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                    <h3 className="font-bold text-sm uppercase tracking-wider">Información Estadística (Opcional)</h3>
+                  </div>
+
+                  <p className="text-xs text-blue-600 mb-4 bg-white/60 p-3 rounded-lg border border-blue-100/50 leading-relaxed shadow-sm">
+                    Los siguientes campos se solicitan <strong>únicamente con fines estadísticos</strong> para ayudar a cuantificar el impacto de los hechos punibles denunciados en esta Dirección. Esta información <strong>no se incluirá en el acta formal de la denuncia</strong>.
+                  </p>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div className="space-y-1.5">
+                      <label className="block text-sm font-semibold text-gray-700">
+                        Monto de daño patrimonial
+                      </label>
+                      <div className="relative group">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 group-focus-within:text-blue-500 transition-colors">
+                          <span className="text-sm font-medium">₲/$</span>
+                        </div>
+                        <input
+                          {...registerDenuncia('montoDano')}
+                          placeholder="0"
+                          className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white hover:border-gray-400"
+                          onChange={(e) => {
+                            const value = e.target.value.replace(/\./g, '')
+                            if (/^\d*$/.test(value)) {
+                              e.target.value = value ? parseInt(value).toLocaleString('es-PY').replace(/,/g, '.') : ''
+                            }
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="block text-sm font-semibold text-gray-700">
+                        Moneda
+                      </label>
+                      <select
+                        {...registerDenuncia('moneda')}
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white hover:border-gray-400 cursor-pointer appearance-none"
+                        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center', backgroundSize: '1.25rem' }}
+                      >
+                        <option value="">Seleccione moneda...</option>
+                        <option value="Guaraníes (PYG)">Guaraníes (PYG)</option>
+                        <option value="Dólares (USD)">Dólares (USD)</option>
+                        <option value="Euros (EUR)">Euros (EUR)</option>
+                        <option value="Pesos Argentinos (ARS)">Pesos Argentinos (ARS)</option>
+                        <option value="Reales (BRL)">Reales (BRL)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div className="space-y-1.5">
+                      <label className="block text-sm font-semibold text-gray-700">
+                        Entidad bancaria vulnerada
+                      </label>
+                      <Controller
+                        name="entidadBancariaVulnerada"
+                        control={controlDenuncia}
+                        render={({ field }) => (
+                          <Select
+                            {...field}
+                            options={bancos.map(b => ({ value: b, label: b }))}
+                            placeholder="Seleccione entidad..."
+                            isClearable
+                            onChange={(option) => field.onChange((option as any)?.value || '')}
+                            value={bancos.find(b => b === field.value) ? { value: field.value, label: field.value } : null}
+                            styles={{
+                              control: (base, state) => ({
+                                ...base,
+                                borderRadius: '0.75rem',
+                                padding: '2px',
+                                borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
+                                boxShadow: state.isFocused ? '0 0 0 4px rgba(59, 130, 246, 0.1)' : 'none',
+                                '&:hover': {
+                                  borderColor: '#9ca3af',
+                                },
+                              }),
+                              option: (base, state) => ({
+                                ...base,
+                                backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
+                                color: state.isSelected ? 'white' : '#1f2937',
+                                cursor: 'pointer',
+                              }),
+                            }}
+                            classNamePrefix="react-select"
+                          />
+                        )}
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="block text-sm font-semibold text-gray-700">
+                        Entidad(es) bancaria(s) relacionada(s)
+                      </label>
+                      <Controller
+                        name="bancosRelacionados"
+                        control={controlDenuncia}
+                        render={({ field }) => (
+                          <Select
+                            {...field}
+                            isMulti
+                            options={bancos.map(b => ({ value: b, label: b }))}
+                            placeholder="Seleccione entidad(es)..."
+                            onChange={(selected) => field.onChange(selected ? (selected as any).map((option: any) => option.value) : [])}
+                            value={field.value ? field.value.map(v => ({ value: v, label: v })) : []}
+                            styles={{
+                              control: (base, state) => ({
+                                ...base,
+                                borderRadius: '0.75rem',
+                                padding: '2px',
+                                borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
+                                boxShadow: state.isFocused ? '0 0 0 4px rgba(59, 130, 246, 0.1)' : 'none',
+                                '&:hover': {
+                                  borderColor: '#9ca3af',
+                                },
+                              }),
+                              multiValue: (base) => ({
+                                ...base,
+                                backgroundColor: '#eff6ff',
+                                borderRadius: '0.375rem',
+                                color: '#1e40af',
+                              }),
+                              multiValueLabel: (base) => ({
+                                ...base,
+                                color: '#1e40af',
+                                fontWeight: '500',
+                              }),
+                              option: (base, state) => ({
+                                ...base,
+                                backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
+                                color: state.isSelected ? 'white' : '#1f2937',
+                                cursor: 'pointer',
+                              }),
+                            }}
+                            classNamePrefix="react-select"
+                          />
+                        )}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4 border-t pt-4 mt-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-800">Relato de los Hechos</h3>
+                    <div className="flex items-center bg-gray-100 p-1 rounded-lg">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setValueDenuncia('esDenunciaEscrita', false)
+                          setValueDenuncia('archivoDenunciaUrl', '') // Limpiar al cambiar
+                        }}
+                        className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${!watchDenuncia('esDenunciaEscrita') ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-800'}`}
+                      >
+                        Relato Verbal
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setValueDenuncia('esDenunciaEscrita', true)
+                          setValueDenuncia('relato', '') // Limpiar al cambiar
+                        }}
+                        className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${watchDenuncia('esDenunciaEscrita') ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-800'}`}
+                      >
+                        Denuncia Escrita
+                      </button>
+                    </div>
+                  </div>
+
+                  {!watchDenuncia('esDenunciaEscrita') ? (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Relato del Hecho *
+                      </label>
+                      <textarea
+                        {...registerDenuncia('relato')}
+                        rows={10}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Escriba el relato del hecho..."
+                      />
+                      {errorsDenuncia.relato && (
+                        <p className="text-red-600 text-sm mt-1">{errorsDenuncia.relato.message as string}</p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                      <div className="mb-4">
+                        <h4 className="text-base font-semibold text-blue-900 mb-1">Adjuntar Denuncia Escrita</h4>
+                        <p className="text-sm text-blue-700">
+                          Suba el documento escaneado de la denuncia escrita. El formato debe ser PDF y no superar los 25MB.
+                        </p>
+                      </div>
+
+                      <div className="mt-2">
+                        {watchDenuncia('archivoDenunciaUrl') ? (
+                          <div className="flex items-center justify-between bg-white p-3 rounded-lg border border-blue-200">
+                            <div className="flex items-center overflow-hidden">
                               <svg className="w-8 h-8 text-red-500 mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                               </svg>
-                            )}
-                            <div className="min-w-0">
-                              <p className="text-xs font-medium text-gray-900 truncate">Adjunto {index + 1}</p>
-                              <a href={url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline truncate block">
-                                Ver archivo
-                              </a>
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium text-gray-900 truncate">Documento Adjunto</p>
+                                <a href={watchDenuncia('archivoDenunciaUrl') || '#'} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline truncate block">
+                                  Ver documento
+                                </a>
+                              </div>
                             </div>
+                            <button
+                              type="button"
+                              onClick={() => setValueDenuncia('archivoDenunciaUrl', '')}
+                              className="ml-4 text-gray-400 hover:text-red-500"
+                            >
+                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => setAdjuntosUrls(adjuntosUrls.filter((_, i) => i !== index))}
-                            className="ml-4 text-gray-400 hover:text-red-500"
-                          >
-                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
-                        </div>
-                      ))}
+                        ) : (
+                          <div className="flex justify-center px-6 pt-5 pb-6 border-2 border-blue-300 border-dashed rounded-md bg-white hover:bg-blue-50 transition-colors relative">
+                            <div className="space-y-1 text-center">
+                              <svg
+                                className="mx-auto h-12 w-12 text-blue-400"
+                                stroke="currentColor"
+                                fill="none"
+                                viewBox="0 0 48 48"
+                                aria-hidden="true"
+                              >
+                                <path
+                                  d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                                  strokeWidth={2}
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                              </svg>
+                              <div className="flex text-sm text-gray-600 justify-center">
+                                <label
+                                  htmlFor="file-upload"
+                                  className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"
+                                >
+                                  <span>Subir un archivo</span>
+                                  <input
+                                    id="file-upload"
+                                    name="file-upload"
+                                    type="file"
+                                    accept="application/pdf"
+                                    className="sr-only"
+                                    disabled={subiendoArchivo}
+                                    onChange={async (e) => {
+                                      const file = e.target.files?.[0]
+                                      if (!file) return
+
+                                      if (file.type !== 'application/pdf') {
+                                        setMensajeErrorTitulo('Formato incorrecto')
+                                        setMensajeError('Solo se permiten archivos PDF.')
+                                        setMostrarModalError(true)
+                                        return
+                                      }
+
+                                      if (file.size > 25 * 1024 * 1024) {
+                                        setMensajeErrorTitulo('Archivo demasiado grande')
+                                        setMensajeError('El archivo no debe superar los 25MB.')
+                                        setMostrarModalError(true)
+                                        return
+                                      }
+
+                                      setSubiendoArchivo(true)
+                                      try {
+                                        const response = await fetch(`/api/upload/denuncia-escrita?filename=${encodeURIComponent(file.name)}`, {
+                                          method: 'POST',
+                                          body: file,
+                                        })
+
+                                        if (!response.ok) throw new Error('Error al subir archivo')
+
+                                        const blob = await response.json()
+                                        setValueDenuncia('archivoDenunciaUrl', blob.url)
+                                      } catch (error) {
+                                        console.error('Error uploading file:', error)
+                                        setMensajeErrorTitulo('Error de subida')
+                                        setMensajeError('Hubo un error al subir el archivo. Intente nuevamente.')
+                                        setMostrarModalError(true)
+                                      } finally {
+                                        setSubiendoArchivo(false)
+                                      }
+                                    }}
+                                  />
+                                </label>
+                                <p className="pl-1">o arrastrar y soltar</p>
+                              </div>
+                              <p className="text-xs text-gray-500">
+                                PDF hasta 25MB
+                              </p>
+                            </div>
+                            {subiendoArchivo && (
+                              <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
+                                <div className="flex items-center">
+                                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                  </svg>
+                                  <span className="text-sm font-medium text-blue-600">Subiendo...</span>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        {errorsDenuncia.archivoDenunciaUrl && (
+                          <p className="text-red-600 text-sm mt-1">{errorsDenuncia.archivoDenunciaUrl.message as string}</p>
+                        )}
+                      </div>
                     </div>
                   )}
+                </div>
 
-                  {/* Botón de subida */}
-                  <div className="flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md bg-white hover:bg-gray-50 transition-colors relative">
-                    <div className="space-y-1 text-center">
-                      <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                        <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                      <div className="flex text-sm text-gray-600 justify-center">
-                        <label className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
-                          <span>Subir archivos adicionales</span>
-                          <input
-                            type="file"
-                            multiple
-                            accept="image/*,application/pdf"
-                            className="sr-only"
-                            disabled={subiendoAdjunto}
-                            onChange={async (e) => {
-                              const files = e.target.files
-                              if (!files || files.length === 0) return
+                {/* Sección de Adjuntos Opcionales (Imágenes/PDFs) */}
+                <div className="mt-6 border-t pt-6">
+                  <div className="mb-4">
+                    <h4 className="text-base font-semibold text-gray-800 mb-1">Adjuntos Opcionales</h4>
+                    <p className="text-sm text-gray-600">
+                      Puede adjuntar imágenes (JPG, PNG) o archivos PDF adicionales que desee incluir en la denuncia.
+                    </p>
+                  </div>
 
-                              setSubiendoAdjunto(true)
-                              try {
-                                const nuevasUrls = [...adjuntosUrls]
-                                for (let i = 0; i < files.length; i++) {
-                                  const file = files[i]
-                                  const response = await fetch(`/api/upload/adjuntos?filename=${encodeURIComponent(file.name)}`, {
-                                    method: 'POST',
-                                    body: file,
-                                  })
-                                  if (response.ok) {
-                                    const blob = await response.json()
-                                    nuevasUrls.push(blob.url)
-                                  }
-                                }
-                                setAdjuntosUrls(nuevasUrls)
-                              } catch (error) {
-                                console.error('Error uploading files:', error)
-                                alert('Hubo un error al subir uno o más archivos.')
-                              } finally {
-                                setSubiendoAdjunto(false)
-                                // Reset input
-                                e.target.value = ''
-                              }
-                            }}
-                          />
-                        </label>
-                      </div>
-                      <p className="text-xs text-gray-500">Imágenes o PDF hasta 25MB cada uno</p>
-                    </div>
-                    {subiendoAdjunto && (
-                      <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
-                        <div className="flex items-center">
-                          <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                          <span className="text-sm font-medium text-blue-600">Subiendo...</span>
-                        </div>
+                  <div className="space-y-4">
+                    {/* Lista de adjuntos subidos */}
+                    {adjuntosUrls.length > 0 && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                        {adjuntosUrls.map((url, index) => (
+                          <div key={index} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border border-gray-200">
+                            <div className="flex items-center overflow-hidden">
+                              {url.match(/\.(jpg|jpeg|png|webp|gif)$/i) ? (
+                                <svg className="w-8 h-8 text-blue-500 mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                              ) : (
+                                <svg className="w-8 h-8 text-red-500 mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                </svg>
+                              )}
+                              <div className="min-w-0">
+                                <p className="text-xs font-medium text-gray-900 truncate">Adjunto {index + 1}</p>
+                                <a href={url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline truncate block">
+                                  Ver archivo
+                                </a>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setAdjuntosUrls(adjuntosUrls.filter((_, i) => i !== index))}
+                              className="ml-4 text-gray-400 hover:text-red-500"
+                            >
+                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </div>
+                        ))}
                       </div>
                     )}
+
+                    {/* Botón de subida */}
+                    <div className="flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md bg-white hover:bg-gray-50 transition-colors relative">
+                      <div className="space-y-1 text-center">
+                        <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                          <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        <div className="flex text-sm text-gray-600 justify-center">
+                          <label className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                            <span>Subir archivos adicionales</span>
+                            <input
+                              type="file"
+                              multiple
+                              accept="image/*,application/pdf"
+                              className="sr-only"
+                              disabled={subiendoAdjunto}
+                              onChange={async (e) => {
+                                const files = e.target.files
+                                if (!files || files.length === 0) return
+
+                                setSubiendoAdjunto(true)
+                                try {
+                                  const nuevasUrls = [...adjuntosUrls]
+                                  for (let i = 0; i < files.length; i++) {
+                                    const file = files[i]
+                                    const response = await fetch(`/api/upload/adjuntos?filename=${encodeURIComponent(file.name)}`, {
+                                      method: 'POST',
+                                      body: file,
+                                    })
+                                    if (response.ok) {
+                                      const blob = await response.json()
+                                      nuevasUrls.push(blob.url)
+                                    }
+                                  }
+                                  setAdjuntosUrls(nuevasUrls)
+                                } catch (error) {
+                                  console.error('Error uploading files:', error)
+                                  alert('Hubo un error al subir uno o más archivos.')
+                                } finally {
+                                  setSubiendoAdjunto(false)
+                                  // Reset input
+                                  e.target.value = ''
+                                }
+                              }}
+                            />
+                          </label>
+                        </div>
+                        <p className="text-xs text-gray-500">Imágenes o PDF hasta 25MB cada uno</p>
+                      </div>
+                      {subiendoAdjunto && (
+                        <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
+                          <div className="flex items-center">
+                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span className="text-sm font-medium text-blue-600">Subiendo...</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
 
 
 
 
-              <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <p className="text-sm text-yellow-800 font-medium">
-                  LA PERSONA RECURRENTE DEBE SER INFORMADA SOBRE:
-                </p>
-                <p className="text-sm text-yellow-700 mt-2">
-                  ARTÍCULO 289.- "DENUNCIA FALSA"; ARTÍCULO 242.- "TESTIMONIO FALSO"; ARTÍCULO 243.- "DECLARACIÓN FALSA", DEL CODIGO PROCESAL PENAL
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-8 flex justify-between">
-              <div className="flex gap-4">
-                <button
-                  type="button"
-                  onClick={guardarBorrador}
-                  disabled={guardandoBorrador || loading}
-                  className="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {guardandoBorrador ? 'Guardando...' : 'Guardar Borrador'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPaso(2)}
-                  className="px-6 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
-                >
-                  Anterior
-                </button>
-              </div>
-              <div className="flex gap-4">
-                {/* <button
-                  type="button"
-                  onClick={onVistaPrevia}
-                  disabled={loading}
-                  className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {loading ? 'Generando...' : 'Vista Previa'}
-                </button> */}
-                <button
-                  type="button"
-                  onClick={generarVistaPrevia}
-                  disabled={generandoVistaPrevia || guardandoBorrador || loading}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {loading ? 'Generando...' : (generandoVistaPrevia ? 'Generando vista previa...' : 'Finalizar')}
-                </button>
-              </div>
-            </div>
-          </form>
-        )}
-      </main>
-
-      {mostrarMapa && (
-        <MapSelector
-          onSelect={(lat, lng) => {
-            setCoordenadas({ lat, lng })
-            setMostrarMapa(false)
-          }}
-          onClose={() => setMostrarMapa(false)}
-        />
-      )}
-
-      {/* Modal de confirmación después de guardar borrador */}
-      {mostrarModalBorrador && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full mx-4">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">Borrador Guardado</h3>
-            <p className="text-gray-600 mb-6">
-              El borrador ha sido guardado exitosamente.
-            </p>
-
-            <div className="flex gap-4">
-              <button
-                onClick={permanecerEnPagina}
-                className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 font-medium"
-              >
-                Continuar Editando
-              </button>
-              <button
-                onClick={irAlInicio}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-medium"
-              >
-                Ir al Inicio
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal de Error (No Bloqueante) */}
-      {mostrarModalError && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 animate-fadeIn p-4">
-          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4 border-l-4 border-red-500 transform transition-all scale-100">
-            <div className="flex items-start mb-4">
-              <div className="flex-shrink-0">
-                <svg className="h-6 w-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-              </div>
-              <div className="ml-3 w-full">
-                <h3 className="text-lg font-medium text-gray-900 leading-6">
-                  {mensajeErrorTitulo}
-                </h3>
-                <div className="mt-2 text-sm text-gray-600 whitespace-pre-wrap">
-                  {mensajeError}
+                <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-sm text-yellow-800 font-medium">
+                    LA PERSONA RECURRENTE DEBE SER INFORMADA SOBRE:
+                  </p>
+                  <p className="text-sm text-yellow-700 mt-2">
+                    ARTÍCULO 289.- "DENUNCIA FALSA"; ARTÍCULO 242.- "TESTIMONIO FALSO"; ARTÍCULO 243.- "DECLARACIÓN FALSA", DEL CODIGO PROCESAL PENAL
+                  </p>
                 </div>
               </div>
-            </div>
-            <div className="flex justify-end pt-3">
-              <button
-                onClick={() => setMostrarModalError(false)}
-                className="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 shadow-sm transition-colors duration-200"
-              >
-                Entendido
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* Modal de vista previa antes de finalizar */}
-      {mostrarModalVistaPrevia && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[95vh] flex flex-col overflow-hidden border border-gray-200">
-            {/* Header con gradiente */}
-            <div className="flex justify-between items-center px-8 py-6 bg-gradient-to-r from-blue-600 to-indigo-700 border-b border-blue-500">
-              <div>
-                <h3 className="text-2xl font-bold text-white mb-1">Vista Previa de la Denuncia</h3>
-                <p className="text-sm text-blue-100">Revise el contenido antes de finalizar</p>
-              </div>
-              <button
-                onClick={() => setMostrarModalVistaPrevia(false)}
-                className="text-white hover:bg-white/20 rounded-full p-2 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-200"
-                aria-label="Cerrar"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            {/* Contenido con scroll */}
-            <div className="flex-1 overflow-y-auto bg-gradient-to-br from-gray-50 to-gray-100">
-              <div className="p-8">
-                <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-10 max-w-4xl mx-auto">
-                  <div className="prose prose-lg max-w-none font-lato" style={{ fontFamily: 'var(--font-lato), Lato, sans-serif' }}>
-                    <div
-                      className="text-[15px] text-gray-900 leading-[1.8] tracking-wide antialiased font-lato"
-                      style={{ fontFamily: 'var(--font-lato), Lato, sans-serif' }}
-                      dangerouslySetInnerHTML={{ __html: textoVistaPrevia.replace(/\n/g, '<br />') }}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Footer con botones */}
-            <div className="flex gap-4 px-8 py-6 bg-white border-t border-gray-200 rounded-b-2xl">
-              <button
-                onClick={() => setMostrarModalVistaPrevia(false)}
-                className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 font-semibold transition-all duration-200 shadow-sm hover:shadow"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={async () => {
-                  // Prevenir clics múltiples
-                  if (isSubmittingRef.current || loading) {
-                    return
-                  }
-                  setMostrarModalVistaPrevia(false)
-                  const denunciaData = watchDenuncia()
-                  // Llamar directamente a onDenunciaSubmit
-                  await onDenunciaSubmit(denunciaData)
-                }}
-                disabled={isSubmittingRef.current || loading}
-                className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:transform-none"
-              >
-                {loading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              <div className="mt-12 flex items-center justify-between border-t border-slate-100 pt-8">
+                <div className="flex gap-4">
+                  <button
+                    type="button"
+                    onClick={guardarBorrador}
+                    disabled={guardandoBorrador || loading}
+                    className="flex items-center space-x-2 px-6 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all font-bold text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
                     </svg>
-                    Guardando...
-                  </span>
-                ) : (
-                  'Confirmar y Finalizar'
-                )}
-              </button>
+                    <span>{guardandoBorrador ? 'Guardando...' : 'Guardar Borrador'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPaso(2)}
+                    className="flex items-center space-x-2 px-6 py-3 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 transition-all font-bold text-sm"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                    <span>Anterior</span>
+                  </button>
+                </div>
+                <div className="flex gap-4">
+                  <button
+                    type="button"
+                    onClick={generarVistaPrevia}
+                    disabled={generandoVistaPrevia || guardandoBorrador || loading}
+                    className="flex items-center space-x-2 px-8 py-3 bg-[#002147] text-white rounded-xl hover:bg-[#003366] transition-all font-bold text-sm shadow-lg shadow-blue-900/20 disabled:opacity-50"
+                  >
+                    <span>{loading ? 'Generando...' : (generandoVistaPrevia ? 'Generando...' : 'Finalizar y Revisar')}</span>
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </form>
+          )}
+
+          {mostrarMapa && (
+            <MapSelector
+              onSelect={(lat, lng) => {
+                setCoordenadas({ lat, lng })
+                setMostrarMapa(false)
+              }}
+              onClose={() => setMostrarMapa(false)}
+            />
+          )}
+
+          {/* Modal de confirmación después de guardar borrador */}
+          {mostrarModalBorrador && (
+            <div className="fixed inset-0 bg-[#002147]/40 backdrop-blur-sm flex items-center justify-center z-[100] p-4 animate-in fade-in duration-300">
+              <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full border border-slate-100 overflow-hidden relative">
+                <div className="absolute top-0 left-0 right-0 h-2 bg-green-500" />
+                <div className="flex items-center justify-center w-16 h-16 bg-green-50 rounded-full mx-auto mb-6 text-green-600">
+                  <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <h3 className="text-2xl font-black text-[#002147] text-center mb-2 uppercase tracking-tight">Borrador Guardado</h3>
+                <p className="text-slate-500 text-center mb-8 font-medium">
+                  El progreso ha sido almacenado de forma segura en el sistema.
+                </p>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <button
+                    onClick={permanecerEnPagina}
+                    className="px-4 py-3 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 transition-all font-bold text-sm"
+                  >
+                    Seguir Editando
+                  </button>
+                  <button
+                    onClick={irAlInicio}
+                    className="px-4 py-3 bg-[#002147] text-white rounded-xl hover:bg-[#003366] transition-all font-bold text-sm shadow-lg shadow-blue-900/20"
+                  >
+                    Ir al Inicio
+                  </button>
+                </div>
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* Modal de Error (No Bloqueante) */}
+          {mostrarModalError && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 animate-fadeIn p-4">
+              <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4 border-l-4 border-red-500 transform transition-all scale-100">
+                <div className="flex items-start mb-4">
+                  <div className="flex-shrink-0">
+                    <svg className="h-6 w-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                  </div>
+                  <div className="ml-3 w-full">
+                    <h3 className="text-lg font-medium text-gray-900 leading-6">
+                      {mensajeErrorTitulo}
+                    </h3>
+                    <div className="mt-2 text-sm text-gray-600 whitespace-pre-wrap">
+                      {mensajeError}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex justify-end pt-3">
+                  <button
+                    onClick={() => setMostrarModalError(false)}
+                    className="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 shadow-sm transition-colors duration-200"
+                  >
+                    Entendido
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Modal de vista previa antes de finalizar */}
+          {mostrarModalVistaPrevia && (
+            <div className="fixed inset-0 bg-[#002147]/60 backdrop-blur-md flex items-center justify-center z-[200] p-4 sm:p-6 lg:p-8 animate-in fade-in zoom-in duration-300">
+              <div className="bg-white rounded-3xl shadow-2xl max-w-5xl w-full max-h-[90vh] flex flex-col overflow-hidden border border-white/20">
+                {/* Header con estilo premium navy */}
+                <div className="flex justify-between items-center px-10 py-8 bg-[#002147] text-white border-b border-white/10">
+                  <div>
+                    <h3 className="text-2xl font-black uppercase tracking-tight mb-1">Vista Previa de Acta</h3>
+                    <p className="text-blue-200/80 text-sm font-medium">Revisión final de rigurosidad legal y coherencia del relato</p>
+                  </div>
+                  <button
+                    onClick={() => setMostrarModalVistaPrevia(false)}
+                    className="bg-white/10 hover:bg-white/20 text-white rounded-2xl p-3 transition-all duration-200 backdrop-blur-md border border-white/10"
+                    aria-label="Cerrar"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+
+                {/* Contenido con fondo suave */}
+                <div className="flex-1 overflow-y-auto bg-slate-50 scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
+                  <div className="p-10">
+                    <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 p-12 max-w-4xl mx-auto ring-1 ring-slate-200/20">
+                      <div className="prose prose-slate max-w-none">
+                        <div
+                          className="text-[17px] text-slate-800 leading-[1.8] font-serif tracking-normal antialiased"
+                          style={{ fontFamily: '"Libre Baskerville", Georgia, serif' }}
+                          dangerouslySetInnerHTML={{ __html: textoVistaPrevia.replace(/\n/g, '<br />') }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer con botones */}
+                <div className="flex gap-4 px-8 py-6 bg-white border-t border-gray-200 rounded-b-2xl">
+                  <button
+                    onClick={() => setMostrarModalVistaPrevia(false)}
+                    className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 font-semibold transition-all duration-200 shadow-sm hover:shadow"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={async () => {
+                      // Prevenir clics múltiples
+                      if (isSubmittingRef.current || loading) {
+                        return
+                      }
+                      setMostrarModalVistaPrevia(false)
+                      const denunciaData = watchDenuncia()
+                      // Llamar directamente a onDenunciaSubmit
+                      await onDenunciaSubmit(denunciaData)
+                    }}
+                    disabled={isSubmittingRef.current || loading}
+                    className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:transform-none"
+                  >
+                    {loading ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Guardando...
+                      </span>
+                    ) : (
+                      'Confirmar y Finalizar'
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
-      )}
-    </div>
+      </div>
+    </MainLayout>
   )
 }
 

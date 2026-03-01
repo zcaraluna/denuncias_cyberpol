@@ -1,0 +1,17 @@
+[
+  {
+    "id": 417,
+    "denunciante_id": 343,
+    "numero_orden": 229,
+    "fecha_denuncia": "2026-01-23T00:00:00.000Z",
+    "hora_denuncia": "12:18",
+    "tipo_hecho": "Acceso indebido a sistemas informáticos",
+    "hash_denuncia": "C4DD44A26",
+    "estado": "completada",
+    "relato": "Manifiesta que en la fecha ya mencionada anteriormente en horas de la madrugada  mientras se encontraba en su lugar de trabajo recibiò correos de parte del BANCO INTERFISA lo cual diò caso omiso en el momento, posterior ya en fecha 04/10/2025 mientras se encontraba en su domicilio procede a verificar bien los mensasjes del correo, se percata de que a travès de la aplicaciòn ECLUB se habìa solicitado un prèstamo por el valor de 100.000 (cien mil guaranìes) alegando que la misma no habìa solicitado dicho prèstamo pero que la misma sì contaba con la aplicaciòn de ECLUB lo cual no estaba utilizando, percatandose ademàs de que el prèstamo solicitado habìa sido desembolsado y que habìa sido extraìdo en fecha 05/10/2025 desde un cajero de SUDAMERIS CENTRO,  por lo que procede a comunicarse con atenciòn al cliente del BANCO INTERFISA para el reclamo correspondiente ademàs de que la factura digital figuraba que la solicitud de prèstamo fue realizado desde la oficina del BANCO INTERFISA de la Ciudad de Carapeguà con nùmero de solicitud 1377931, alegando que hasta hoy dìa no recibe respuesta favorable del banco y solo insisten en el pago correspondiente del prèstamo màs los intereses, agrega por ùltimo que la misma solicita el esclarecimiento del hecho ya que no solicitò ningun prèstamo y que tampoco le habìan notificado antes de la acreditaciòn sobre la solicitud del prèstamo  realizado. ",
+    "nombre_denunciante": "VIVIAN LUCIANA LEON OCAMPO",
+    "cedula_denunciante": "2339796",
+    "monto_dano": null,
+    "moneda": null
+  }
+]

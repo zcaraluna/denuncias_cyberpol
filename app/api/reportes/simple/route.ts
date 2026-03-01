@@ -6,33 +6,42 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const fecha = searchParams.get('fecha')
+    const fechaFin = searchParams.get('fechaFin')
+    const horaInicio = searchParams.get('horaInicio') || '07:00'
+    const horaFin = searchParams.get('horaFin') || '07:00'
     const tipoDenuncia = searchParams.get('tipoDenuncia')
 
     if (!fecha) {
       return NextResponse.json(
-        { error: 'La fecha es requerida' },
+        { error: 'La fecha de inicio es requerida' },
         { status: 400 }
       )
     }
 
     // Validar formato de fecha (YYYY-MM-DD)
     const fechaRegex = /^\d{4}-\d{2}-\d{2}$/
-    if (!fechaRegex.test(fecha)) {
+    if (!fechaRegex.test(fecha) || (fechaFin && !fechaRegex.test(fechaFin))) {
       return NextResponse.json(
         { error: 'Formato de fecha inválido. Use YYYY-MM-DD' },
         { status: 400 }
       )
     }
 
-    console.log('Buscando denuncias para fecha:', fecha, 'tipo:', tipoDenuncia)
+    console.log('Buscando denuncias para guardia:', fecha, horaInicio, 'al', fechaFin || fecha, horaFin, 'tipo:', tipoDenuncia)
 
-    // Construir condiciones WHERE
+    // Si no hay fechaFin, la guardia termina el día siguiente a la hora especificada
+    const fechaHastaCalculada = fechaFin || fecha;
+    const intervalFin = fechaFin ? "0 days" : "1 day";
+
+    // Construir condiciones WHERE usando timestamps para respetar el rango manual
     const condiciones: string[] = [
-      "d.fecha_denuncia = $1::DATE",
+      "(d.fecha_denuncia + d.hora_denuncia::TIME) >= $1::TIMESTAMP",
+      `(d.fecha_denuncia + d.hora_denuncia::TIME) < ($2::DATE + INTERVAL '${intervalFin}' + $3::TIME)`,
       "d.estado = 'completada'"
     ]
-    const valores: any[] = [fecha]
-    let paramIndex = 2
+    const valores: any[] = [`${fecha} ${horaInicio}:00`, fechaHastaCalculada, `${horaFin}:00`]
+
+    let paramIndex = 4
 
     if (tipoDenuncia) {
       condiciones.push(`d.tipo_denuncia = $${paramIndex}`)
@@ -42,29 +51,60 @@ export async function GET(request: NextRequest) {
 
     const whereClause = condiciones.join(' AND ')
 
-    // Obtener denuncias del día con denunciante e interviniente (personal policial)
-    // Usar comparación directa de DATE en lugar de convertir a texto
-    const result = await pool.query(
-      `SELECT 
-        d.orden as numero_denuncia,
-        EXTRACT(YEAR FROM d.fecha_denuncia)::integer as año,
-        d.hora_denuncia,
-        d.tipo_denuncia as shp,
-        den.nombres as denunciante,
-        TRIM(
-          COALESCE(d.operador_grado, '') || ' ' || 
-          COALESCE(d.operador_nombre, '') || ' ' || 
-          COALESCE(d.operador_apellido, '')
-        ) as interviniente,
-        d.oficina,
-        d.monto_dano,
-        d.moneda
-      FROM denuncias d
-      LEFT JOIN denunciantes den ON d.denunciante_id = den.id
-      WHERE ${whereClause}
-      ORDER BY d.hora_denuncia ASC`,
-      valores
-    )
+    // Obtener denuncias y ampliaciones en una sola consulta cronológica
+    const query = `
+      WITH denuncias_query AS (
+        SELECT 
+          d.orden::text as numero_denuncia,
+          EXTRACT(YEAR FROM d.fecha_denuncia)::integer as año,
+          d.fecha_denuncia,
+          d.hora_denuncia,
+          d.tipo_denuncia as shp,
+          den.nombres as denunciante,
+          TRIM(
+            COALESCE(d.operador_grado, '') || ' ' || 
+            COALESCE(SPLIT_PART(TRIM(d.operador_nombre), ' ', 1), '') || ' ' || 
+            COALESCE(SPLIT_PART(TRIM(d.operador_apellido), ' ', 1), '')
+          ) as interviniente,
+          d.oficina,
+          d.monto_dano,
+          d.moneda,
+          d.entidad_bancaria_vulnerada as entidad_reportada
+        FROM denuncias d
+        LEFT JOIN denunciantes den ON d.denunciante_id = den.id
+        WHERE ${whereClause}
+      ),
+      ampliaciones_query AS (
+        SELECT 
+          'AMP-' || a.numero_ampliacion || '-' || d.orden as numero_denuncia,
+          EXTRACT(YEAR FROM a.fecha_ampliacion)::integer as año,
+          a.fecha_ampliacion as fecha_denuncia,
+          a.hora_ampliacion as hora_denuncia,
+          d.tipo_denuncia as shp,
+          den.nombres as denunciante,
+          TRIM(
+            COALESCE(a.operador_grado, '') || ' ' || 
+            COALESCE(SPLIT_PART(TRIM(a.operador_nombre), ' ', 1), '') || ' ' || 
+            COALESCE(SPLIT_PART(TRIM(a.operador_apellido), ' ', 1), '')
+          ) as interviniente,
+          d.oficina,
+          0 as monto_dano,
+          d.moneda,
+          d.entidad_bancaria_vulnerada as entidad_reportada
+        FROM ampliaciones_denuncia a
+        JOIN denuncias d ON a.denuncia_id = d.id
+        LEFT JOIN denunciantes den ON d.denunciante_id = den.id
+        WHERE (a.fecha_ampliacion + a.hora_ampliacion::TIME) >= $1::TIMESTAMP
+          AND (a.fecha_ampliacion + a.hora_ampliacion::TIME) < ($2::DATE + INTERVAL '${intervalFin}' + $3::TIME)
+          ${tipoDenuncia ? "AND d.tipo_denuncia = $4" : ""}
+      )
+      SELECT * FROM denuncias_query
+      UNION ALL
+      SELECT * FROM ampliaciones_query
+      ORDER BY fecha_denuncia ASC, hora_denuncia ASC
+    `;
+
+    const result = await pool.query(query, valores)
 
     console.log(`Encontradas ${result.rows.length} denuncias para la fecha ${fecha}`)
     if (result.rows.length > 0) {

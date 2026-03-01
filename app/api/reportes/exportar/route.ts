@@ -60,7 +60,8 @@ export async function GET(request: NextRequest) {
         den.estado_civil as estado_civil_denunciante,
         den.nacionalidad as nacionalidad_denunciante,
         den.domicilio as domicilio_denunciante,
-        den.correo as correo_denunciante
+        den.correo as correo_denunciante,
+        d.entidad_bancaria_vulnerada as entidad_reportada
       FROM denuncias d
       LEFT JOIN denunciantes den ON d.denunciante_id = den.id
       ${whereClause}
@@ -90,13 +91,14 @@ export async function GET(request: NextRequest) {
       'Estado Civil': row.estado_civil_denunciante,
       'Nacionalidad': row.nacionalidad_denunciante,
       'Domicilio Denunciante': row.domicilio_denunciante,
-      'Correo Denunciante': row.correo_denunciante
+      'Correo Denunciante': row.correo_denunciante,
+      'Entidad Reportada': row.entidad_reportada
     }))
 
     if (tipo === 'csv') {
       // Generar CSV
       const headers = Object.keys(datos[0] || {}).join(',')
-      const rows = datos.map(row => Object.values(row).map(val => 
+      const rows = datos.map(row => Object.values(row).map(val =>
         val === null || val === undefined ? '' : String(val).replace(/,/g, ';')
       ).join(','))
       const csv = [headers, ...rows].join('\n')
@@ -112,7 +114,7 @@ export async function GET(request: NextRequest) {
       const ExcelJS = await import('exceljs')
       const workbook = new ExcelJS.Workbook()
       const worksheet = workbook.addWorksheet('Denuncias')
-      
+
       // Agregar encabezados
       if (datos.length > 0) {
         worksheet.columns = Object.keys(datos[0]).map(key => ({
@@ -120,16 +122,16 @@ export async function GET(request: NextRequest) {
           key: key,
           width: 15
         }))
-        
+
         // Agregar datos
         datos.forEach(row => {
           worksheet.addRow(row)
         })
       }
-      
+
       // Generar buffer
       const excelBuffer = await workbook.xlsx.writeBuffer()
-      
+
       return new NextResponse(excelBuffer, {
         headers: {
           'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

@@ -163,10 +163,14 @@ export function generarPrimerParrafo(
 ): React.ReactElement {
     const analisis = analizarParticipantes(denuncia);
 
+    const primerNombre = (denuncia.operador_nombre || '').trim().split(' ')[0];
+    const primerApellido = (denuncia.operador_apellido || '').trim().split(' ')[0];
+    const grado = toSafeString(denuncia.operador_grado);
+
     const operadorNombreCompleto = [
-        toSafeString(denuncia.operador_grado),
-        toSafeString(denuncia.operador_nombre),
-        toSafeString(denuncia.operador_apellido)
+        grado,
+        primerNombre,
+        primerApellido
     ].filter(Boolean).join(' ').toUpperCase();
 
     if (analisis.abogadoConCartaPoder && analisis.coDenunciantes.length === 0 && !analisis.abogado) {

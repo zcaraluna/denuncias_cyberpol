@@ -1,0 +1,17 @@
+[
+  {
+    "id": 235,
+    "denunciante_id": 211,
+    "numero_orden": 135,
+    "fecha_denuncia": "2026-01-15T00:00:00.000Z",
+    "hora_denuncia": "12:08",
+    "tipo_hecho": "Acceso indebido a sistemas informáticos",
+    "hash_denuncia": "B5234FA26",
+    "estado": "completada",
+    "relato": "Que, se presenta ante esta Dependencia Especializada a fin de formular denuncia por un supuesto hecho de acceso indebido a sistemas informáticos, ocurrido en la fecha y hora indicada, La denunciante manifiesta que se encontraba en su domicilio cuando procedió a ingresar a su cuenta bancaria perteneciente a la entidad Banco Nacional de Fomento, cuenta N.° 000 09 4738158, a nombre de LETIZIA BEATRIZ FERREIRA BENÍTEZ, ocasión en la que se percató de la existencia de varias transacciones no reconocidas, específicamente ocho (8), las cuales se detallan a continuación:\n1- Transferencia al alias 0993073348, con documento N.° 4.626.751, a nombre de Daniel Andrés Romero Vera, de la entidad bancaria Bancop, por la suma de Gs. 1.833.022 (un millón ochocientos treinta y tres mil veintidós guaraníes).\n2- Transferencia al alias 0993073348, con documento N.° 4.626.751, a nombre de Daniel Andrés Romero Vera, de la entidad bancaria Bancop, por la suma de Gs. 2.203.381 (dos millones doscientos tres mil trescientos ochenta y un guaraníes).\n3_ Transferencia al alias 0993073348, con documento N.° 4.626.751, a nombre de Daniel Andrés Romero Vera, de la entidad bancaria Bancop, por la suma de Gs. 999.666 (novecientos noventa y nueve mil seiscientos sesenta y seis guaraníes).\n4_ Transferencia al alias 0993073348, con documento N.° 4.626.751, a nombre de Daniel Andrés Romero Vera, de la entidad bancaria Bancop, por la suma de Gs. 754.121 (setecientos cincuenta y cuatro mil ciento veintiún guaraníes).\n5_ Transferencia al alias 0993073348, con documento N.° 4.626.751, a nombre de Daniel Andrés Romero Vera, de la entidad bancaria Bancop, por la suma de Gs. 755.121 (setecientos cincuenta y cinco mil ciento veintiún guaraníes).\n6_ Transferencia al alias 0993073348, con documento N.° 4.626.751, a nombre de Daniel Andrés Romero Vera, de la entidad bancaria Bancop, por la suma de Gs. 755.731 (setecientos cincuenta y cinco mil setecientos treinta y un guaraníes).\n7_ Transferencia al alias 0993073348, con documento N.° 4.626.751, a nombre de Daniel Andrés Romero Vera, de la entidad bancaria Bancop, por la suma de Gs. 750.000 (setecientos cincuenta mil guaraníes).\n8- Transferencia al alias 0993073348, con documento N.° 4.626.751, a nombre de Daniel Andrés Romero Vera, de la entidad bancaria Bancop, por la suma de Gs. 653.000 (seiscientos cincuenta y tres mil guaraníes).\nLa denunciante manifiesta que desconoce la forma en que se realizaron dichas operaciones, afirmando que en ningún momento efectuó dichas transacciones ni compartió claves, contraseñas o información confidencial con terceras personas.",
+    "nombre_denunciante": "LETIZIA BEATRIZ FERREIRA BENITEZ",
+    "cedula_denunciante": "2636656",
+    "monto_dano": null,
+    "moneda": null
+  }
+]

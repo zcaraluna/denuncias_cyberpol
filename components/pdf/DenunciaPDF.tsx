@@ -1,5 +1,5 @@
 import React from 'react';
-import { Document, Page, StyleSheet, Text, View, Image } from '@react-pdf/renderer';
+import { Document, Page, StyleSheet, Text, View, Image, Font } from '@react-pdf/renderer';
 import ParaguayHeader from './ParaguayHeader';
 import { generarPrimerParrafo, analizarParticipantes } from './PrimerParrafo';
 import { generarSegundoParrafo } from './SegundoParrafo';
@@ -7,13 +7,25 @@ import { TercerParrafo } from './TercerParrafo';
 import { CierreDenuncia } from './CierreDenuncia';
 import { SeccionFirmas } from './SeccionFirmas';
 
+// Registrar fuente Roboto
+Font.register({
+    family: 'Roboto',
+    fonts: [
+        { src: 'https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-light-webfont.ttf', fontWeight: 300 },
+        { src: 'https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-regular-webfont.ttf', fontWeight: 400 },
+        { src: 'https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-italic-webfont.ttf', fontWeight: 400, fontStyle: 'italic' },
+        { src: 'https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-medium-webfont.ttf', fontWeight: 500 },
+        { src: 'https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-bold-webfont.ttf', fontWeight: 700 },
+    ],
+});
+
 const styles = StyleSheet.create({
     page: {
         paddingTop: 15,  // Margen superior mínimo
         paddingBottom: 72,  // 2.54cm
         paddingHorizontal: 72,  // 2.54cm laterales
         fontSize: 10,
-        fontFamily: 'Helvetica',
+        fontFamily: 'Roboto',
     },
     headerFixed: {
         position: 'relative',
@@ -119,6 +131,13 @@ const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 
     const año = getYear(denuncia.fecha_denuncia);
     const analisis = analizarParticipantes(denuncia as any);
 
+    // Formatear nombre del operador para las firmas
+    const operadorFirmante = {
+        nombre: (denuncia.operador_nombre || '').trim().split(' ')[0],
+        apellido: (denuncia.operador_apellido || '').trim().split(' ')[0],
+        grado: denuncia.operador_grado || '',
+    };
+
     return (
         <Document>
             <Page size={[612, 936]} style={styles.page}>
@@ -163,11 +182,7 @@ const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 
 
                 {/* Sección de Firmas */}
                 <SeccionFirmas
-                    operador={{
-                        nombre: denuncia.operador_nombre || '',
-                        apellido: denuncia.operador_apellido || '',
-                        grado: denuncia.operador_grado || '',
-                    }}
+                    operador={operadorFirmante}
                     denunciante={{
                         nombres: denuncia.nombres_denunciante,
                         cedula: denuncia.cedula,

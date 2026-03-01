@@ -137,7 +137,8 @@ export async function GET(request: NextRequest) {
                 ) as interviniente,
                 d.oficina,
                 d.monto_dano,
-                d.moneda
+                d.moneda,
+                d.entidad_bancaria_vulnerada as entidad_reportada
             FROM denuncias d
             LEFT JOIN denunciantes den ON d.denunciante_id = den.id
             WHERE d.fecha_denuncia BETWEEN $1::DATE AND $2::DATE

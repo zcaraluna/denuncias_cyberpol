@@ -1,0 +1,47 @@
+[
+  {
+    "id": 779,
+    "denunciante_id": 725,
+    "numero_orden": 532,
+    "fecha_denuncia": "2026-02-18T00:00:00.000Z",
+    "hora_denuncia": "11:38",
+    "tipo_hecho": "Acceso indebido a sistemas informáticos",
+    "hash_denuncia": "B08233A26",
+    "estado": "completada",
+    "relato": "La recurrente manifiesta que, en la fecha y hora mencionadas, se percató de la realización de transacciones que desconoce y que no reconoce como propias, efectuadas desde su cuenta N.º 619328166 del Ueno Bank.\nAsimismo, señala que dichas operaciones también se habrían realizado con su tarjeta de crédito digital Duo Card Plan U, con terminación 6516, emitida por la misma entidad bancaria que se detallan:\n1.FACEBK *AYACQCR522, por un monto de Gs. 11.704.\n2.IVA Ley N.º 6380 – SER DIG., por un monto de Gs. 1.170.\nPor otro lado, señala que al revisar su banca web del Banco Continental, correspondiente a la cuenta N.º 0180470604, constató que también se habrían efectuado transacciones desde su tarjeta de crédito virtual con terminación 3722, las cuales desconoce y no reconoce como propias, siendo estas:\n1. POS Virtual CM-PY, por un monto de Gs. 50.000.\n2. POS Virtual CM-PY, por un monto de Gs. 200.000.\n3. POS Virtual CM-PY, por un monto de Gs. 350.000.\n4. POS Virtual CM-PY, por un monto de Gs. 140.000.\nLa recurrente deja constancia de que dichas transacciones no brindan mayor detalle respecto al concepto o destino de los pagos, y que no fueron autorizadas por la misma.\nAsimismo, la recurrente manifiesta que un hecho similar  ya habría ocurrido con anterioridad respecto de su cuenta de la Banca Wed Mango N°20265372 a cargo del banco TU FINANCIERA , desde la cual se habría efectuado una transferencia no autorizada a una cuenta a nombre de Blanca Susana Maidana Formosso, con C.I. N.º 7.593.732, cuenta N.º 155928936 y número telefónico 0981-117-543.\nRefiere además que se habría utilizado indebidamente su nombre y apellido para la apertura de una cuenta en el Banco Basa, sin que coincidan el número de cédula de identidad ni el número telefónico consignados con sus datos personales reales, lo que evidenciaría una posible suplantación de identidad.\nEn virtud de lo expuesto, comparece ante esta unidad a efectos de dejar constancia formal de los hechos relatados y ponerlos en conocimiento de la autoridad competente, a fin de que se inicien las investigaciones correspondientes.",
+    "nombre_denunciante": "BLANCA SUSANA MAIDANA FORMOSSO",
+    "cedula_denunciante": "931859",
+    "monto_dano": null,
+    "moneda": null
+  },
+  {
+    "id": 677,
+    "denunciante_id": 612,
+    "numero_orden": 430,
+    "fecha_denuncia": "2026-02-07T00:00:00.000Z",
+    "hora_denuncia": "16:52",
+    "tipo_hecho": "Acceso indebido a sistemas informáticos",
+    "hash_denuncia": "E384A2A26",
+    "estado": "completada",
+    "relato": "Manifiesta el recurrente que, en fecha 28 de diciembre de 2025, se percató de la existencia de un faltante de dinero en su cuenta bancaria  Nº 5237300506 ,cargo  CONTINENTAL, motivo por el cual se apersonó a la citada institución bancaria a fin de solicitar mayor información respecto a los movimientos realizados en su cuenta. En dicha oportunidad, funcionarios del banco le informaron que en fecha 20 de noviembre de 2025 se habría realizado un préstamo a través de su tarjeta de crédito Nº 5429 2700 0099 2819, (que actualmente se encuentra bloqueado) por el monto de Gs. 9.700.000 (nueve millones setecientos mil guaraníes), suma que inmediatamente fue transferida a una cuenta de la entidad UENO Bank, identificada con el número 6192070801, a nombre de la titular LEIDY DIANA PORTILLO LÓPEZ, con Cédula de Identidad N.º 5.332.327, El denunciante manifiesta que no reconoce ni autorizó la realización del referido préstamo ni la posterior transferencia bancaria, desconociendo totalmente dichas operaciones. motivo por el cual se presenta ante esta dependencia policial a poner a conocimiento de la autoridad competente para los fines que hubiere lugar.",
+    "nombre_denunciante": "GIUSEPPE FORCELLA",
+    "cedula_denunciante": "8014020",
+    "monto_dano": 9700000,
+    "moneda": "Guaraníes (PYG)"
+  },
+  {
+    "id": 559,
+    "denunciante_id": 487,
+    "numero_orden": 352,
+    "fecha_denuncia": "2026-02-02T00:00:00.000Z",
+    "hora_denuncia": "15:16",
+    "tipo_hecho": "Acceso indebido a sistemas informáticos",
+    "hash_denuncia": "193C2CA26",
+    "estado": "completada",
+    "relato": "Que se presenta ante esta dependencia especializada a modo realizar una denuncia sobre un supuesto hecho ocurrido en la fecha ya mencionada mas arriba, el mismo manifiesta que había ingresado a su cuenta, cargo banco Continental con N° 14250024342008, momento en que se percata que había múltiples  de transferencias que el mismo desconocía, que se detallan a continuación;\n1. Monto Gs. 35.270.650 ( treinta y cinco millones doscientos setenta mil seiscientos cincuenta guaraníes ) N° de comprobante 957296 a nombre de Despensa y Carnicería Isabela, N° de cuenta 383719549, cargo Sudameris Bank S.A.E.C.A, fecha 26/02/2025, hora 17:00 hs.\n2. Monto Gs. 30.000.000 ( treinta millones de guaraníes ) N° de comprobante 935708 a nombre de Diego Carrapateira, N° de cuenta 12000037, cargo Banco Continental, fecha 24/02/2025, hora 15:37 hs.\n3. Monto Gs. 30.000.000 ( treinta millones de guaraníes ) N° de comprobante 912658 a nombre de Inquality SA, N° de cuenta 701796394, cargo Banco Itaú, fecha 21/02/2025, hora 13:44 hs.\n4. Monto Gs. 14.491.902 ( catorce millones cuatrocientos noventa y dos mil novecientos dos guaraníes ) N° de comprobante 230684 a nombre de Redcourt SRL, N° de cuenta 900440816, cargo Vision Banco, fecha 25/03/2025, hora 14:04 hs.\n5. Monto Gs, 6.200.000 ( seis millones doscientos mil guaranies ) N° de comprobante 108211 a nombre de Oscar Ferreira Riquelme, N° de cuenta 43438664, cargo Banco Familiar, fecha 12/03/2025, hora 14:00 hs.\n6. Monto Gs. 30.000.000 ( treinta millones de guaranies ) N° de comprobante 444485 a nombre de Supermas, N° de cuenta 00442680, cargo Banco Itau, fecha 14/04/2025, hora 14:35 hs.\n7. Monto Gs. 50.000.000 ( cincuenta millones de guaraníes ) N° de comprobante 403506 a nombre de Gladys Marlene Sapper, N° de cuenta 0031250004466607, cargo Banco Rio, fecha 10/04/2025, hora 10:11 hs.\n8. Monto Gs. 30.000.000 ( treinta millones de guaraníes ) N° de comprobante 67206 a nombre de Gandara SRL, N° de cuenta 701703819, cargo Banco Itaú, fecha 20/06/2025, hora 11:23 hs.\n9. Monto Gs. 30.000.000 ( treinta millones de guaraníes ) N° de comprobante 275823 a nombre de Laboratorio Dr. Sixto Villalba, N° de cuenta 700702671,  cargo Banco Itau, fecha 11/07/2025, hora 09:11 hs.\n10. Monto Gs. 7.071.728 ( siete millones setenta y un mil setecientos veinte y ocho guaraníes )N° de comprobante 738383 a nombre de Biggie Express Rodríguez de Francia, N° de cuenta 721268073, cargo Banco Itaú, fecha 03/02/2025, hora 14:20 hs.\n11. Monto Gs. 4.162.535 ( cuatro millones siento sesenta y dos mil quinientos treinta y cinco guaraníes ) SPI-TIB.WEB-3124982, fecha 17/05/2025, hora 09:02 hs.\n12. Monto Gs. 5.000.000 ( cinco millones de guaraníes ) SPI-TIB.WEB-3124906, fecha 17/05/2025, hora 08:38 hs.\n13.  Monto Gs. 5.000.000 ( cinco millones de guaraníes ) SPI-TIB.WEB-3124906, fecha 13/05/2025, hora 20:55 hs.\nEl recurrente menciona que cuenta con mas transferencias con montos elevados de los cuales no puede ver los detalles, sigue manifestando el denunciante que el día de la fecha se apersono hasta la sucursal del Banco Continental, sito sobre las calles Mcal. López c/ Ulrico Schmidel para formular su denuncia correspondiente donde le hizo firmar su Oficial de cuenta, Alexis Daniel Bareiro Vallejos una Nota de Contracargo para iniciar con la investigación. Por lo que el mismo se acerca hasta esta dependencia para poner a conocimiento de las autoridades competentes para los fines correspondientes. ",
+    "nombre_denunciante": "ALBERTO BERGANZA BRUSQUETTI",
+    "cedula_denunciante": "1430140",
+    "monto_dano": null,
+    "moneda": null
+  }
+]

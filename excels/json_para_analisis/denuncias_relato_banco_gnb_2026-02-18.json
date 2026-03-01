@@ -1,0 +1,17 @@
+[
+  {
+    "id": 302,
+    "denunciante_id": 237,
+    "numero_orden": 153,
+    "fecha_denuncia": "2026-01-16T00:00:00.000Z",
+    "hora_denuncia": "16:53",
+    "tipo_hecho": "Acceso indebido a sistemas informáticos",
+    "hash_denuncia": "9A4398A26",
+    "estado": "completada",
+    "relato": "Que viene a formular una denuncia sobre uso de su tarjeta de credito no autorizado ocurrido en fecha 30/07/2024 en horas de la mañana, desde su tarjeta de credito cargo Banco GNB Master Card Oro, con Numero 5454890000146294 con una linea de credito de 10.200.000 guaranies, del cual se realizo un pago de 7.588.567 guaranies en concepto de pago por GOOGLE ADS. sigue manifestando el recurrente que ese mismo dia verifica en su aplicacion del Banco GNB, en donde pudo constatar lo ocurrido y  se apersona hasta el banco para realizar la denuncia correspondiente y que se haga el bloqueo definitivo de dicha tarjeta. Sigue manifestando el denunciante que se habilito si su consentimiento otra tarjeta de credito Master Card Oro, con numero 5454890000146290, en donde le generan la misma deuda para seguir cobrando. Cabe mencionar que el Banco ya habia vendido a la empresa nexo la cuenta y que se fueron a consultar nuevamente ahi y que en ningun momento les dieron una respuesta. Por utimo manifiesta el recurrente que a partir de todo lo ocurrido sus familiares y el mismo no atienden llamadas de numeros desconocidos. Por lo que viene a poner a conocimiento de la autoridad Policial para los fines que hubiere lugar. No habiendo mas nada que agregar se por terminada el presente acta firmando al pie el personal interviniente y el denunciante.",
+    "nombre_denunciante": "LUIS ARMANDO ANTONELLI ALVAREZ",
+    "cedula_denunciante": "1837523",
+    "monto_dano": null,
+    "moneda": null
+  }
+]

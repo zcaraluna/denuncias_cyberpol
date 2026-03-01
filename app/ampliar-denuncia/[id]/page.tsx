@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/lib/hooks/useAuth'
+import { MainLayout } from '@/components/MainLayout'
 
 interface Usuario {
   id: number
@@ -47,13 +48,13 @@ export default function AmpliarDenunciaPage({ params }: { params: Promise<{ id: 
 
   const cargarDenuncia = async () => {
     if (!denunciaId || !usuario) return
-    
+
     try {
       const response = await fetch(`/api/denuncias/ver/${denunciaId}`, { cache: 'no-store' })
       if (!response.ok) throw new Error('Error al cargar denuncia')
-      
+
       const data = await response.json()
-      
+
       // Verificar que la denuncia esté completada
       if (data.estado !== 'completada') {
         alert('Solo se pueden crear ampliaciones para denuncias completadas')
@@ -144,34 +145,26 @@ export default function AmpliarDenunciaPage({ params }: { params: Promise<{ id: 
   const año = denuncia.fecha_denuncia.split('-')[0]
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link href={`/ver-denuncia/${denunciaId}`} className="text-gray-600 hover:text-gray-900">
-              ← Volver a Ver Denuncia
-            </Link>
-            <h1 className="text-xl font-bold text-gray-800">Ampliación de Denuncia</h1>
-            <button
-              onClick={handleLogout}
-              className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition"
-            >
-              Cerrar Sesión
-            </button>
-          </div>
+    <MainLayout>
+      <div className="p-8">
+        <div className="mb-8">
+          <Link href={`/ver-denuncia/${denunciaId}`} className="text-sm font-medium text-primary hover:underline mb-4 inline-block">
+            ← Volver a Ver Denuncia
+          </Link>
+          <h1 className="text-3xl font-bold text-foreground">Ampliación de Denuncia</h1>
+          <p className="text-muted-foreground mt-2">Agregue información relevante o nuevos detalles al expediente existente.</p>
         </div>
-      </nav>
-
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
           <div className="p-8">
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold text-gray-800 mb-2">
-                Nueva Ampliación
-              </h2>
-              <p className="text-gray-600">
-                Denuncia Nº {denuncia.orden}/{año} - {denuncia.tipo_denuncia === 'OTRO' && denuncia.otro_tipo ? denuncia.otro_tipo : denuncia.tipo_denuncia}
-              </p>
+            <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6 border border-border/40">
+              <div className="bg-muted/50 px-8 py-4 border-b border-border/40">
+                <p className="text-sm font-medium text-muted-foreground">
+                  Expediente de Referencia
+                </p>
+                <p className="text-lg font-bold text-foreground">
+                  Denuncia Nº {denuncia.orden}/{año} — {denuncia.tipo_denuncia === 'OTRO' && denuncia.otro_tipo ? denuncia.otro_tipo : denuncia.tipo_denuncia}
+                </p>
+              </div>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -211,8 +204,8 @@ export default function AmpliarDenunciaPage({ params }: { params: Promise<{ id: 
             </form>
           </div>
         </div>
-      </main>
-    </div>
+      </div>
+    </MainLayout>
   )
 }
 

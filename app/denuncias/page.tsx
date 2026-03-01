@@ -1,12 +1,29 @@
 'use client'
 
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState, useMemo } from 'react'
 import Link from 'next/link'
 import Select from 'react-select'
 import DateRangePicker from '@/components/DateRangePicker'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { formatearFechaSinTimezone } from '@/lib/utils/fecha'
+import { MainLayout } from '@/components/MainLayout'
+import {
+  Search,
+  FileText,
+  Filter,
+  Calendar,
+  Clock,
+  Hash,
+  User,
+  ChevronRight,
+  Eye,
+  Trash2,
+  AlertCircle,
+  FileSearch,
+  ArrowLeft,
+  ArrowRight
+} from 'lucide-react'
 
 interface Denuncia {
   id: number
@@ -31,31 +48,33 @@ export default function DenunciasPage() {
   const [error, setError] = useState<string | null>(null)
   const [denunciasPorCedula, setDenunciasPorCedula] = useState<Denuncia[]>([])
   const [mostrarResultadosCedula, setMostrarResultadosCedula] = useState(false)
-  
-  // Estados temporales para filtros (valores que el usuario está escribiendo)
+
+  // Estados temporales para filtros
   const [filtroNombreTemp, setFiltroNombreTemp] = useState('')
   const [filtroCedulaTemp, setFiltroCedulaTemp] = useState('')
+  const [filtroHashTemp, setFiltroHashTemp] = useState('')
   const [filtroTipoTemp, setFiltroTipoTemp] = useState('')
   const [filtroFechaDesdeTemp, setFiltroFechaDesdeTemp] = useState('')
   const [filtroFechaHastaTemp, setFiltroFechaHastaTemp] = useState('')
-  
-  // Estados aplicados para filtros (valores que realmente se usan para filtrar)
+
+  // Estados aplicados para filtros
   const [filtroNombre, setFiltroNombre] = useState('')
   const [filtroCedula, setFiltroCedula] = useState('')
+  const [filtroHash, setFiltroHash] = useState('')
   const [filtroTipo, setFiltroTipo] = useState('')
   const [filtroFechaDesde, setFiltroFechaDesde] = useState('')
   const [filtroFechaHasta, setFiltroFechaHasta] = useState('')
-  
+
   const [paginaActual, setPaginaActual] = useState(1)
   const itemsPorPagina = 10
 
   const cargarDenuncias = async () => {
     if (!usuario) return
-    
+
     try {
       const response = await fetch('/api/denuncias/todas')
       if (!response.ok) throw new Error('Error al cargar denuncias')
-      
+
       const data = await response.json()
       setDenuncias(data)
     } catch (error) {
@@ -67,7 +86,6 @@ export default function DenunciasPage() {
 
   useEffect(() => {
     if (usuario) {
-      // Si es admin o superadmin, cargar todas las denuncias
       if (usuario.rol === 'admin' || usuario.rol === 'superadmin') {
         cargarDenuncias()
       } else {
@@ -76,16 +94,14 @@ export default function DenunciasPage() {
     }
   }, [usuario])
 
-  // Sincronizar estados temporales con aplicados al cargar
   useEffect(() => {
     setFiltroNombreTemp(filtroNombre)
     setFiltroCedulaTemp(filtroCedula)
+    setFiltroHashTemp(filtroHash)
     setFiltroTipoTemp(filtroTipo)
     setFiltroFechaDesdeTemp(filtroFechaDesde)
     setFiltroFechaHastaTemp(filtroFechaHasta)
-  }, []) // Solo al montar el componente
-
-
+  }, [])
 
   const buscarPorHash = async () => {
     if (!hashBusqueda.trim()) {
@@ -100,7 +116,7 @@ export default function DenunciasPage() {
     try {
       const response = await fetch(`/api/denuncias/buscar/${hashBusqueda.trim()}`, { cache: 'no-store' })
       if (!response.ok) throw new Error('Denuncia no encontrada')
-      
+
       const data = await response.json()
       router.push(`/ver-denuncia/${data.id}`)
     } catch (error) {
@@ -122,7 +138,7 @@ export default function DenunciasPage() {
     try {
       const response = await fetch(`/api/denuncias/buscar-cedula/${cedulaBusqueda.trim()}`, { cache: 'no-store' })
       if (!response.ok) throw new Error('No se encontraron denuncias')
-      
+
       const data = await response.json()
       setDenunciasPorCedula(data)
       setMostrarResultadosCedula(true)
@@ -137,13 +153,11 @@ export default function DenunciasPage() {
     router.push(`/ver-denuncia/${id}`)
   }
 
-  // Obtener tipos únicos para el filtro (en mayúsculas)
   const tiposDisponibles = useMemo(() => {
     const tipos = new Set(denuncias.map(d => d.tipo_hecho?.toUpperCase() || '').filter(Boolean))
     return Array.from(tipos).sort()
   }, [denuncias])
 
-  // Opciones para react-select
   const opcionesTipos = useMemo(() => {
     return [
       { value: '', label: 'TODOS LOS TIPOS' },
@@ -151,16 +165,17 @@ export default function DenunciasPage() {
     ]
   }, [tiposDisponibles])
 
-  // Filtrar denuncias
   const denunciasFiltradas = useMemo(() => {
     return denuncias.filter(denuncia => {
-      const nombreMatch = !filtroNombre || 
+      const nombreMatch = !filtroNombre ||
         denuncia.nombre_denunciante.toLowerCase().includes(filtroNombre.toLowerCase())
-      const cedulaMatch = !filtroCedula || 
+      const cedulaMatch = !filtroCedula ||
         denuncia.cedula_denunciante.includes(filtroCedula)
-      const tipoMatch = !filtroTipo || 
+      const hashMatch = !filtroHash ||
+        denuncia.hash_denuncia?.toLowerCase().includes(filtroHash.toLowerCase())
+      const tipoMatch = !filtroTipo ||
         denuncia.tipo_hecho?.toUpperCase() === filtroTipo
-      
+
       let fechaMatch = true
       if (filtroFechaDesde || filtroFechaHasta) {
         const fechaDenuncia = new Date(denuncia.fecha_denuncia)
@@ -175,18 +190,16 @@ export default function DenunciasPage() {
           if (fechaDenuncia > fechaHasta) fechaMatch = false
         }
       }
-      
+
       return nombreMatch && cedulaMatch && tipoMatch && fechaMatch
     })
   }, [denuncias, filtroNombre, filtroCedula, filtroTipo, filtroFechaDesde, filtroFechaHasta])
 
-  // Calcular paginación
   const totalPaginas = Math.ceil(denunciasFiltradas.length / itemsPorPagina)
   const indiceInicio = (paginaActual - 1) * itemsPorPagina
   const indiceFin = indiceInicio + itemsPorPagina
   const denunciasPaginaActual = denunciasFiltradas.slice(indiceInicio, indiceFin)
 
-  // Resetear página cuando cambian los filtros aplicados
   useEffect(() => {
     setPaginaActual(1)
   }, [filtroNombre, filtroCedula, filtroTipo, filtroFechaDesde, filtroFechaHasta])
@@ -194,6 +207,7 @@ export default function DenunciasPage() {
   const aplicarFiltros = () => {
     setFiltroNombre(filtroNombreTemp)
     setFiltroCedula(filtroCedulaTemp)
+    setFiltroHash(filtroHashTemp)
     setFiltroTipo(filtroTipoTemp)
     setFiltroFechaDesde(filtroFechaDesdeTemp)
     setFiltroFechaHasta(filtroFechaHastaTemp)
@@ -203,257 +217,436 @@ export default function DenunciasPage() {
   const limpiarFiltros = () => {
     setFiltroNombreTemp('')
     setFiltroCedulaTemp('')
+    setFiltroHashTemp('')
     setFiltroTipoTemp('')
     setFiltroFechaDesdeTemp('')
     setFiltroFechaHastaTemp('')
     setFiltroNombre('')
     setFiltroCedula('')
+    setFiltroHash('')
     setFiltroTipo('')
     setFiltroFechaDesde('')
     setFiltroFechaHasta('')
     setPaginaActual(1)
   }
 
-  const handleFechaApply = () => {
-    // Los valores ya se actualizan en el componente DateRangePicker
-  }
-
+  const handleFechaApply = () => { }
   const handleFechaCancel = () => {
-    // Restaurar valores temporales a los aplicados
     setFiltroFechaDesdeTemp(filtroFechaDesde)
     setFiltroFechaHastaTemp(filtroFechaHasta)
   }
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl">Cargando...</div>
+      <div className="min-h-screen flex items-center justify-center bg-[#f8fafc]">
+        <div className="flex flex-col items-center">
+          <div className="w-10 h-10 border-3 border-[#002147]/10 border-t-[#002147] rounded-full animate-spin mb-4" />
+          <div className="text-[#002147] font-bold animate-pulse text-sm uppercase tracking-widest">Cargando sistema...</div>
+        </div>
       </div>
     )
   }
 
-  if (!usuario) {
-    return null
-  }
+  if (!usuario) return null
 
   const isAdmin = usuario.rol === 'admin' || usuario.rol === 'superadmin'
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link href="/dashboard" className="text-gray-600 hover:text-gray-900">
-              ← Volver al Inicio
-            </Link>
-            <h1 className="text-xl font-bold text-gray-800">Denuncias</h1>
-            <button
-              onClick={logout}
-              className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition"
-            >
-              Cerrar Sesión
-            </button>
-          </div>
-        </div>
-      </nav>
+    <MainLayout>
+      <div className="min-h-screen bg-[#f8fafc] p-4 sm:p-6 font-sans">
+        <div className="max-w-7xl mx-auto">
+          {isAdmin ? (
+            /* ==========================================================================
+               VISTA ADMINISTRADOR / SUPERADMIN
+               ========================================================================== */
+            <>
+              {/* Header Section */}
+              <div className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-3 mb-1">
+                    <div className="p-1.5 bg-[#002147] rounded-lg shadow-lg shadow-blue-900/10">
+                      <FileSearch className="w-4 h-4 text-white" />
+                    </div>
+                    <h1 className="text-xl font-black text-[#002147] uppercase tracking-tight">Administración de Denuncias</h1>
+                  </div>
+                  <p className="text-slate-500 font-medium text-xs">Gestiona y supervisa todas las actas registradas.</p>
+                </div>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {isAdmin ? (
-          // Vista para admin/superadmin: mostrar todas las denuncias
-          <>
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">Todas las Denuncias</h2>
-              <p className="text-gray-600">Lista completa de denuncias del sistema</p>
-            </div>
+                <Link
+                  href="/denuncias/buscador-relato"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-white border-2 border-[#002147] text-[#002147] font-black text-[10px] uppercase tracking-widest rounded-xl hover:bg-[#002147] hover:text-white transition-all duration-300 shadow-sm hover:shadow-lg group"
+                >
+                  <Search className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+                  Buscador por Relato
+                </Link>
+              </div>
 
-            {/* Filtros */}
-            {denuncias.length > 0 && (
-              <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Nombre
+              {/* Filters Card - COMPACTED */}
+              <div className="bg-white rounded-xl shadow-lg shadow-slate-200/50 border border-slate-100 p-4 mb-6">
+                <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-50">
+                  <Filter className="w-3.5 h-3.5 text-[#002147]" />
+                  <h2 className="text-[10px] font-black text-[#002147] uppercase tracking-widest">Filtros de Búsqueda</h2>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                  {/* Filtro Nombre */}
+                  <div className="space-y-1.5 flex flex-col justify-end">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-1">
+                      <User className="w-2.5 h-2.5" /> Denunciante
                     </label>
                     <input
                       type="text"
                       value={filtroNombreTemp}
                       onChange={(e) => setFiltroNombreTemp(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && aplicarFiltros()}
-                      placeholder="Buscar por nombre..."
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Nombre..."
+                      className="w-full h-[34px] px-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#002147]/10 focus:border-[#002147] text-xs font-bold uppercase transition-all outline-none placeholder:normal-case placeholder:font-medium"
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Cédula
+
+                  {/* Filtro Cédula */}
+                  <div className="space-y-1.5 flex flex-col justify-end">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-1">
+                      <Hash className="w-2.5 h-2.5" /> N.º Cédula
                     </label>
                     <input
                       type="text"
                       value={filtroCedulaTemp}
                       onChange={(e) => setFiltroCedulaTemp(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && aplicarFiltros()}
-                      placeholder="Buscar por cédula..."
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Documento..."
+                      className="w-full h-[34px] px-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#002147]/10 focus:border-[#002147] text-xs font-bold transition-all outline-none placeholder:font-medium"
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Tipo
+
+                  {/* Filtro Hash (NUEVO PARA ADMIN) */}
+                  <div className="space-y-1.5 flex flex-col justify-end">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-1">
+                      <Hash className="w-2.5 h-2.5" /> Hash de Denuncia
                     </label>
-                    <Select
-                      options={opcionesTipos}
-                      value={opcionesTipos.find(opcion => opcion.value === filtroTipoTemp) || opcionesTipos[0]}
-                      onChange={(option) => setFiltroTipoTemp(option?.value || '')}
-                      isSearchable
-                      placeholder="Buscar tipo..."
-                      className="text-sm"
-                      classNamePrefix="react-select"
-                      styles={{
-                        control: (base, state) => ({
-                          ...base,
-                          fontFamily: 'Inter, sans-serif',
-                          fontSize: '14px',
-                          minHeight: '42px',
-                          borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
-                          boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
-                          '&:hover': {
-                            borderColor: '#3b82f6',
-                          },
-                        }),
-                        menu: (base) => ({
-                          ...base,
-                          fontFamily: 'Inter, sans-serif',
-                          fontSize: '14px',
-                          maxHeight: '250px',
-                          zIndex: 9999,
-                        }),
-                        menuList: (base) => ({
-                          ...base,
-                          maxHeight: '250px',
-                        }),
-                        option: (base, state) => ({
-                          ...base,
-                          fontFamily: 'Inter, sans-serif',
-                          fontSize: '14px',
-                          padding: '8px 12px',
-                          backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
-                          color: state.isSelected ? 'white' : '#1f2937',
-                          cursor: 'pointer',
-                          textTransform: 'uppercase',
-                        }),
-                        input: (base) => ({
-                          ...base,
-                          fontFamily: 'Inter, sans-serif',
-                          fontSize: '14px',
-                          margin: 0,
-                          padding: 0,
-                        }),
-                        singleValue: (base) => ({
-                          ...base,
-                          fontFamily: 'Inter, sans-serif',
-                          fontSize: '14px',
-                          color: '#1f2937',
-                          textTransform: 'uppercase',
-                        }),
-                        placeholder: (base) => ({
-                          ...base,
-                          fontFamily: 'Inter, sans-serif',
-                          fontSize: '14px',
-                          color: '#9ca3af',
-                        }),
-                      }}
+                    <input
+                      type="text"
+                      value={filtroHashTemp}
+                      onChange={(e) => setFiltroHashTemp(e.target.value.toUpperCase())}
+                      onKeyPress={(e) => e.key === 'Enter' && aplicarFiltros()}
+                      placeholder="Ej: ABC12..."
+                      className="w-full h-[34px] px-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#002147]/10 focus:border-[#002147] text-xs font-bold uppercase transition-all outline-none placeholder:normal-case placeholder:font-medium"
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Rango de Fechas
+
+                  {/* Filtro Tipo (react-select) */}
+                  <div className="space-y-1.5 flex flex-col justify-end">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-1">
+                      <AlertCircle className="w-2.5 h-2.5" /> Hecho Punible
                     </label>
-                    <DateRangePicker
-                      startDate={filtroFechaDesdeTemp}
-                      endDate={filtroFechaHastaTemp}
-                      onStartDateChange={setFiltroFechaDesdeTemp}
-                      onEndDateChange={setFiltroFechaHastaTemp}
-                      onApply={handleFechaApply}
-                      onCancel={handleFechaCancel}
-                    />
+                    <div className="h-[34px]">
+                      <Select
+                        options={opcionesTipos}
+                        value={opcionesTipos.find(opcion => opcion.value === filtroTipoTemp)}
+                        onChange={(option) => setFiltroTipoTemp(option?.value || '')}
+                        isSearchable
+                        placeholder="Seleccionar..."
+                        className="text-xs font-bold"
+                        classNamePrefix="react-select"
+                        styles={{
+                          control: (base, state) => ({
+                            ...base,
+                            background: '#f8fafc',
+                            borderRadius: '0.5rem',
+                            minHeight: '34px',
+                            height: '34px',
+                            borderColor: state.isFocused ? '#002147' : '#e2e8f0',
+                            boxShadow: state.isFocused ? '0 0 0 2px rgba(0, 33, 71, 0.1)' : 'none',
+                            '&:hover': { borderColor: '#002147' }
+                          }),
+                          valueContainer: (base) => ({ ...base, padding: '0 8px', height: '34px', display: 'flex', alignItems: 'center' }),
+                          indicatorsContainer: (base) => ({ ...base, height: '32px' }),
+                          menu: (base) => ({
+                            ...base,
+                            borderRadius: '0.5rem',
+                            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                            zIndex: 50
+                          }),
+                          option: (base, state) => ({
+                            ...base,
+                            fontSize: '10px',
+                            fontWeight: '700',
+                            padding: '8px 12px',
+                            textTransform: 'uppercase',
+                            backgroundColor: state.isSelected ? '#002147' : state.isFocused ? '#f1f5f9' : 'white',
+                            color: state.isSelected ? 'white' : '#002147'
+                          }),
+                          singleValue: (base) => ({
+                            ...base,
+                            textTransform: 'uppercase',
+                            color: '#002147'
+                          }),
+                          placeholder: (base) => ({
+                            ...base,
+                            textTransform: 'none',
+                            fontWeight: '500'
+                          })
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Filtro Fecha */}
+                  <div className="space-y-1.5 flex flex-col justify-end">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-1">
+                      <Calendar className="w-2.5 h-2.5" /> Rango Fechas
+                    </label>
+                    <div className="h-[34px] flex items-center">
+                      <DateRangePicker
+                        startDate={filtroFechaDesdeTemp}
+                        endDate={filtroFechaHastaTemp}
+                        onStartDateChange={setFiltroFechaDesdeTemp}
+                        onEndDateChange={setFiltroFechaHastaTemp}
+                        onApply={handleFechaApply}
+                        onCancel={handleFechaCancel}
+                        align="right"
+                      />
+                    </div>
                   </div>
                 </div>
-                <div className="mt-4 flex justify-end gap-2">
+
+                <div className="mt-4 flex justify-end gap-2 pt-3 border-t border-slate-50">
                   <button
                     onClick={limpiarFiltros}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition"
+                    className="px-4 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest border border-slate-200 rounded-lg hover:bg-slate-50 transition-all"
                   >
-                    Limpiar Filtros
+                    Limpiar
                   </button>
                   <button
                     onClick={aplicarFiltros}
-                    className="px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition"
+                    className="px-6 py-2 text-[9px] font-black text-white bg-[#002147] uppercase tracking-widest rounded-lg hover:bg-[#003366] shadow-md transition-all"
                   >
-                    Buscar
+                    Aplicar filtros
                   </button>
                 </div>
               </div>
-            )}
 
-            {denuncias.length === 0 ? (
-              <div className="bg-white rounded-lg shadow-md p-8 text-center">
-                <p className="text-gray-600">No hay denuncias registradas</p>
-              </div>
-            ) : denunciasFiltradas.length === 0 ? (
-              <div className="bg-white rounded-lg shadow-md p-8 text-center">
-                <p className="text-gray-600">No se encontraron denuncias con los filtros aplicados</p>
-              </div>
-            ) : (
-              <>
-                <div className="bg-white rounded-lg shadow-md overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
+              {/* Table Section */}
+              <div className="bg-white rounded-xl shadow-lg border border-slate-100 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full border-separate border-spacing-0">
+                    <thead>
+                      <tr className="bg-slate-50/50">
+                        <th className="px-4 py-3 text-left text-[9px] font-black text-[#002147]/50 uppercase tracking-widest border-b border-slate-100">Nº Acta</th>
+                        <th className="px-4 py-3 text-left text-[9px] font-black text-[#002147]/50 uppercase tracking-widest border-b border-slate-100">Denunciante / C.I.</th>
+                        <th className="px-4 py-3 text-left text-[9px] font-black text-[#002147]/50 uppercase tracking-widest border-b border-slate-100">Supuesto Hecho</th>
+                        <th className="px-4 py-3 text-left text-[9px] font-black text-[#002147]/50 uppercase tracking-widest border-b border-slate-100">Fecha y Hora</th>
+                        <th className="px-4 py-3 text-right text-[9px] font-black text-[#002147]/50 uppercase tracking-widest border-b border-slate-100">Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50">
+                      {denunciasFiltradas.length === 0 ? (
                         <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            #
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            DENUNCIANTE
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            CÉDULA
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            TIPO
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            FECHA Y HORA
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            ACCIONES
-                          </th>
+                          <td colSpan={5} className="px-4 py-16 text-center">
+                            <div className="flex flex-col items-center">
+                              <Search className="w-6 h-6 text-slate-200 mb-2" />
+                              <p className="text-slate-400 font-bold uppercase text-[9px] tracking-widest">Sin resultados</p>
+                            </div>
+                          </td>
                         </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {denunciasPaginaActual.map((denuncia) => (
-                          <tr key={denuncia.id} className="hover:bg-gray-50">
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {denuncia.numero_orden}
+                      ) : (
+                        denunciasPaginaActual.map((denuncia) => (
+                          <tr key={denuncia.id} className="group hover:bg-blue-50/30 transition-all duration-200">
+                            <td className="px-4 py-3.5 whitespace-nowrap">
+                              <span className="text-xs font-black text-[#002147]">#{denuncia.numero_orden}</span>
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {denuncia.nombre_denunciante}
+                            <td className="px-4 py-3.5">
+                              <div className="flex flex-col">
+                                <span className="text-[11px] font-bold text-[#002147] uppercase leading-tight">{denuncia.nombre_denunciante}</span>
+                                <span className="text-[9px] font-medium text-slate-400">CI: {denuncia.cedula_denunciante}</span>
+                              </div>
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {denuncia.cedula_denunciante}
+                            <td className="px-4 py-3.5">
+                              <span className="text-[10px] font-bold text-slate-600 uppercase tracking-tight">{denuncia.tipo_hecho}</span>
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 uppercase">
-                              {denuncia.tipo_hecho?.toUpperCase() || ''}
+                            <td className="px-4 py-3.5 whitespace-nowrap">
+                              <div className="flex flex-col text-[9px] font-bold text-slate-500">
+                                <span>{formatearFechaSinTimezone(denuncia.fecha_denuncia)}</span>
+                                <span className="text-slate-300">{denuncia.hora_denuncia} hs</span>
+                              </div>
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {formatearFechaSinTimezone(denuncia.fecha_denuncia)} {denuncia.hora_denuncia}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <td className="px-4 py-3.5 whitespace-nowrap text-right">
                               <button
                                 onClick={() => verDenuncia(denuncia.id)}
-                                className="text-blue-600 hover:text-blue-900"
+                                className="inline-flex items-center gap-1.5 px-3 py-1 bg-white border border-slate-200 rounded-lg text-[9px] font-black text-[#002147] uppercase tracking-wider shadow-sm hover:bg-[#002147] hover:text-white transition-all duration-200"
                               >
-                                Ver Denuncia
+                                <Eye className="w-3 h-3" />
+                                Detalles
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Pagination */}
+                {totalPaginas > 1 && (
+                  <div className="bg-slate-50/50 px-4 py-3 border-t border-slate-100 flex justify-between items-center">
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                      Total <span className="text-[#002147]">{denunciasFiltradas.length}</span> registros
+                    </p>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => setPaginaActual(prev => Math.max(1, prev - 1))}
+                        disabled={paginaActual === 1}
+                        className="p-1.5 border border-slate-200 rounded-lg disabled:opacity-30 bg-white hover:border-[#002147] hover:text-[#002147] transition-all"
+                      >
+                        <ArrowLeft className="w-3.5 h-3.5" />
+                      </button>
+                      <div className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[9px] font-black text-[#002147] uppercase">
+                        {paginaActual} / {totalPaginas}
+                      </div>
+                      <button
+                        onClick={() => setPaginaActual(prev => Math.min(totalPaginas, prev + 1))}
+                        disabled={paginaActual === totalPaginas}
+                        className="p-1.5 border border-slate-200 rounded-lg disabled:opacity-30 bg-white hover:border-[#002147] hover:text-[#002147] transition-all"
+                      >
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            /* ==========================================================================
+               VISTA OPERADOR - REFINED & COMPACT
+               ========================================================================== */
+            <div className="max-w-4xl mx-auto space-y-8">
+              <div className="text-center">
+                <div className="inline-flex p-2 bg-white rounded-xl shadow-lg shadow-blue-900/5 border border-slate-100 mb-3">
+                  <FileSearch className="w-6 h-6 text-[#002147]" />
+                </div>
+                <h1 className="text-2xl font-black text-[#002147] uppercase tracking-tight mb-1">Buscador de Denuncias</h1>
+                <p className="text-slate-500 font-medium text-xs">Ingrese datos para localizar un acta policial.</p>
+              </div>
+
+              {/* Botón Buscador Especial Compacto */}
+              <div className="flex justify-center">
+                <Link
+                  href="/denuncias/buscador-relato"
+                  className="inline-flex items-center gap-2 px-6 py-2.5 bg-[#002147] text-white font-black text-[10px] uppercase tracking-widest rounded-xl hover:bg-[#003366] transition-all shadow-lg group"
+                >
+                  <Search className="w-3.5 h-3.5" />
+                  Buscador por Relato
+                </Link>
+              </div>
+
+              {/* Single Multi-Search Card */}
+              <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 p-6 sm:p-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start relative">
+                  {/* Hash Segment */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-blue-50 rounded-lg">
+                        <Hash className="w-4 h-4 text-[#002147]" />
+                      </div>
+                      <h2 className="text-xs font-black text-[#002147] uppercase tracking-widest">Hash de Denuncia</h2>
+                    </div>
+                    <div className="space-y-2">
+                      <input
+                        type="text"
+                        value={hashBusqueda}
+                        onChange={(e) => setHashBusqueda(e.target.value.toUpperCase())}
+                        onKeyPress={(e) => e.key === 'Enter' && buscarPorHash()}
+                        placeholder="Ej: ABC123A25"
+                        className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-xl focus:border-[#002147] focus:bg-white text-xs font-black uppercase tracking-widest transition-all outline-none"
+                      />
+                      <button
+                        onClick={buscarPorHash}
+                        disabled={buscando || !hashBusqueda.trim()}
+                        className="w-full py-3 bg-[#002147] text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-[#003366] disabled:opacity-30 transition-all flex items-center justify-center gap-2"
+                      >
+                        {buscando ? <div className="w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : "Validar Hash"}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Vertical Divider for MD+ screens */}
+                  <div className="hidden md:block absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-2/3 w-px bg-slate-100" />
+
+                  {/* Cedula Segment */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-green-50 rounded-lg">
+                        <User className="w-4 h-4 text-green-600" />
+                      </div>
+                      <h2 className="text-xs font-black text-[#002147] uppercase tracking-widest">Cédula de Identidad</h2>
+                    </div>
+                    <div className="space-y-2">
+                      <input
+                        type="text"
+                        value={cedulaBusqueda}
+                        onChange={(e) => setCedulaBusqueda(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && buscarPorCedula()}
+                        placeholder="Documento n.º"
+                        className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-xl focus:border-green-600 focus:bg-white text-xs font-black tracking-widest transition-all outline-none"
+                      />
+                      <button
+                        onClick={buscarPorCedula}
+                        disabled={buscando || !cedulaBusqueda.trim()}
+                        className="w-full py-3 bg-green-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-green-700 disabled:opacity-30 transition-all flex items-center justify-center gap-2"
+                      >
+                        {buscando ? <div className="w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : "Buscar por C.I."}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {error && (
+                  <div className="mt-6 bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-xl flex items-center gap-3 animate-shake">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                    <p className="text-[10px] font-bold uppercase tracking-tight">{error}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Operator Results Table */}
+              {mostrarResultadosCedula && (
+                <div className="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden animate-fade-in-up">
+                  <div className="p-4 border-b border-slate-50 flex items-center gap-2">
+                    <div className="w-1 h-3 bg-green-600 rounded-full" />
+                    <h3 className="text-[10px] font-black text-[#002147] uppercase tracking-widest">Denuncias encontradas</h3>
+                    <span className="ml-auto text-[9px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded uppercase">{denunciasPorCedula.length} registros</span>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full border-separate border-spacing-0">
+                      <thead>
+                        <tr className="bg-slate-50/30">
+                          <th className="px-4 py-3 text-left text-[9px] font-black text-[#002147]/50 uppercase tracking-widest">Nº Acta</th>
+                          <th className="px-4 py-3 text-left text-[9px] font-black text-[#002147]/50 uppercase tracking-widest">Supuesto Hecho</th>
+                          <th className="px-4 py-3 text-left text-[9px] font-black text-[#002147]/50 uppercase tracking-widest">Fecha / Hora</th>
+                          <th className="px-4 py-3 text-right text-[9px] font-black text-[#002147]/50 uppercase tracking-widest">Acción</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-50">
+                        {denunciasPorCedula.map((denuncia) => (
+                          <tr key={denuncia.id} className="group hover:bg-green-50/30 transition-all duration-200">
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              <span className="text-xs font-black text-[#002147]">#{denuncia.numero_orden}</span>
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className="text-[10px] font-bold text-[#002147] uppercase leading-tight">{denuncia.tipo_hecho}</span>
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              <div className="flex flex-col text-[9px] font-bold text-slate-400">
+                                <span>{formatearFechaSinTimezone(denuncia.fecha_denuncia)}</span>
+                                <span className="text-slate-300">{denuncia.hora_denuncia} hs</span>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap text-right">
+                              <button
+                                onClick={() => verDenuncia(denuncia.id)}
+                                className="px-3 py-1 bg-white border border-slate-200 rounded-lg text-[9px] font-black text-[#002147] uppercase tracking-wider hover:bg-[#002147] hover:text-white transition-all shadow-sm"
+                              >
+                                Ver
                               </button>
                             </td>
                           </tr>
@@ -462,168 +655,11 @@ export default function DenunciasPage() {
                     </table>
                   </div>
                 </div>
-
-                {/* Paginación */}
-                {totalPaginas > 1 && (
-                  <div className="mt-6 flex items-center justify-between bg-white rounded-lg shadow-md p-4">
-                    <div className="text-sm text-gray-700">
-                      Mostrando {indiceInicio + 1} a {Math.min(indiceFin, denunciasFiltradas.length)} de {denunciasFiltradas.length} denuncias
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setPaginaActual(prev => Math.max(1, prev - 1))}
-                        disabled={paginaActual === 1}
-                        className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition flex items-center gap-2 font-medium text-gray-700 bg-white"
-                        aria-label="Página anterior"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                        </svg>
-                        <span>Anterior</span>
-                      </button>
-                      <div className="px-4 py-2 text-gray-700 font-medium">
-                        Página {paginaActual} de {totalPaginas}
-                      </div>
-                      <button
-                        onClick={() => setPaginaActual(prev => Math.min(totalPaginas, prev + 1))}
-                        disabled={paginaActual === totalPaginas}
-                        className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition flex items-center gap-2 font-medium text-gray-700 bg-white"
-                        aria-label="Página siguiente"
-                      >
-                        <span>Siguiente</span>
-                        <svg className="w-5 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-          </>
-        ) : (
-          // Vista para operadores: buscar por hash o cédula
-          <>
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">Buscar Denuncia</h2>
-              <p className="text-gray-600">Busque por hash de denuncia o por cédula del denunciante</p>
-            </div>
-
-            <div className="bg-white rounded-lg shadow-md p-8 mb-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Hash de Denuncia
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={hashBusqueda}
-                      onChange={(e) => setHashBusqueda(e.target.value.toUpperCase())}
-                      onKeyPress={(e) => e.key === 'Enter' && buscarPorHash()}
-                      placeholder="Ejemplo: ABC123A25"
-                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
-                      autoComplete="off"
-                    />
-                    <button
-                      onClick={buscarPorHash}
-                      disabled={buscando || !hashBusqueda.trim()}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-                    >
-                      Buscar
-                    </button>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Cédula del Denunciante
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={cedulaBusqueda}
-                      onChange={(e) => setCedulaBusqueda(e.target.value.toUpperCase())}
-                      onKeyPress={(e) => e.key === 'Enter' && buscarPorCedula()}
-                      placeholder="Ejemplo: 1234567"
-                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
-                      autoComplete="off"
-                    />
-                    <button
-                      onClick={buscarPorCedula}
-                      disabled={buscando || !cedulaBusqueda.trim()}
-                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-                    >
-                      Buscar
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mt-4">
-                  {error}
-                </div>
               )}
             </div>
-
-            {mostrarResultadosCedula && (
-              <div className="bg-white rounded-lg shadow-md overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          #
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          DENUNCIANTE
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          TIPO
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          FECHA Y HORA
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          ACCIONES
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {denunciasPorCedula.map((denuncia) => (
-                        <tr key={denuncia.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {denuncia.numero_orden}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {denuncia.nombre_denunciante}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 uppercase">
-                            {denuncia.tipo_hecho?.toUpperCase() || ''}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {formatearFechaSinTimezone(denuncia.fecha_denuncia)} {denuncia.hora_denuncia}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <button
-                              onClick={() => verDenuncia(denuncia.id)}
-                              className="text-blue-600 hover:text-blue-900"
-                            >
-                              Ver Denuncia
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-          </>
-        )}
-      </main>
-    </div>
+          )}
+        </div>
+      </div>
+    </MainLayout>
   )
 }
-

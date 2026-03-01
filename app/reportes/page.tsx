@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState, useMemo } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/lib/hooks/useAuth'
+import { MainLayout } from '@/components/MainLayout'
 import {
   BarChart,
   Bar,
@@ -14,6 +15,34 @@ import {
   ResponsiveContainer,
   Cell
 } from 'recharts'
+import {
+  Search,
+  FileText,
+  Filter,
+  Calendar,
+  Clock,
+  Hash,
+  User,
+  ChevronRight,
+  Eye,
+  Trash2,
+  AlertCircle,
+  FileSearch,
+  ArrowLeft,
+  ArrowRight,
+  Download,
+  Database,
+  BarChart3,
+  TrendingUp,
+  Users,
+  AlertTriangle,
+  DollarSign,
+  Briefcase,
+  LayoutDashboard,
+  CalendarDays,
+  RefreshCcw,
+  FilePieChart
+} from 'lucide-react'
 import { exportToExcel } from '@/lib/utils/export-excel'
 import { exportToDocx } from '@/lib/utils/export-docx'
 import { exportComponentToImage } from '@/lib/utils/export-image'
@@ -22,14 +51,18 @@ interface ReporteRow {
   numero_denuncia: number
   año: number
   hora_denuncia: string
-  shp: string // Para compatibilidad
+  shp: string
   tipo_especifico?: string
   tipo_general?: string
   denunciante: string
   interviniente: string
+  operador_grado?: string
+  operador_nombre?: string
+  operador_apellido?: string
   oficina?: string
   monto_dano?: number
   moneda?: string
+  entidad_reportada?: string
 }
 
 interface ResumenTipo {
@@ -57,7 +90,7 @@ interface DatosMensuales {
   denuncias_danos?: ReporteRow[]
 }
 
-type SortField = 'numero_denuncia' | 'hora_denuncia' | 'shp' | 'monto_dano' | 'moneda'
+type SortField = 'numero_denuncia' | 'hora_denuncia' | 'shp' | 'monto_dano' | 'moneda' | 'entidad_reportada'
 type SortDirection = 'asc' | 'desc'
 type Tab = 'diario' | 'mensual' | 'danos'
 
@@ -86,18 +119,30 @@ export default function ReportesPage() {
   const [mostrarGeneral, setMostrarGeneral] = useState(true)
 
   // Estado para reporte diario
-  const [fecha, setFecha] = useState('')
+  const [fecha, setFecha] = useState(() => {
+    return new Intl.DateTimeFormat('sv-SE', {
+      timeZone: 'America/Asuncion',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).format(new Date())
+  })
+  const [fechaFin, setFechaFin] = useState('')
+  const [horaInicio, setHoraInicio] = useState('07:00')
+  const [horaFin, setHoraFin] = useState('07:00')
   const [tipoDenuncia, setTipoDenuncia] = useState('')
-  const [datos, setDatos] = useState<ReporteRow[]>([])
+  const [datosDiario, setDatosDiario] = useState<ReporteRow[]>([])
   const [tiposDisponibles, setTiposDisponibles] = useState<string[]>([])
-  const [filtrosTipos, setFiltrosTipos] = useState<string[]>([]) // Filtros seleccionados
+  const [filtrosTiposDiario, setFiltrosTiposDiario] = useState<string[]>([])
   const [sortField, setSortField] = useState<SortField>('hora_denuncia')
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
 
-  // Estado para reporte mensual
+  // Estado para reporte mensual y daños
   const [mes, setMes] = useState(new Date().getMonth() + 1 + '')
   const [año, setAño] = useState(new Date().getFullYear() + '')
   const [datosMensuales, setDatosMensuales] = useState<DatosMensuales | null>(null)
+  const [datosDanos, setDatosDanos] = useState<ReporteRow[]>([])
+  const [filtrosTiposDanos, setFiltrosTiposDanos] = useState<string[]>([])
 
   const [cargando, setCargando] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -143,11 +188,14 @@ export default function ReportesPage() {
 
     setError(null)
     setCargando(true)
-    setDatos([])
+    setDatosDiario([])
 
     try {
       const params = new URLSearchParams()
       params.append('fecha', fecha)
+      if (fechaFin) params.append('fechaFin', fechaFin)
+      params.append('horaInicio', horaInicio)
+      params.append('horaFin', horaFin)
       if (tipoDenuncia) params.append('tipoDenuncia', tipoDenuncia)
 
       const response = await fetch(`/api/reportes/simple?${params.toString()}`)
@@ -157,10 +205,10 @@ export default function ReportesPage() {
         throw new Error(data.error || 'Error al obtener reporte')
       }
 
-      setDatos(data)
+      setDatosDiario(data)
       const tiposUnicos: string[] = Array.from(new Set(data.map((row: ReporteRow) => row.shp).filter((tipo: string | undefined): tipo is string => Boolean(tipo))))
       setTiposDisponibles(tiposUnicos.sort())
-      setFiltrosTipos(tiposUnicos) // Select all by default
+      setFiltrosTiposDiario(tiposUnicos) // Select all by default
 
       if (data.length === 0 && fecha) {
         setError(`No se encontraron denuncias para la fecha ${fecha}${tipoDenuncia ? ` y tipo "${tipoDenuncia}"` : ''}`)
@@ -171,7 +219,7 @@ export default function ReportesPage() {
       console.error('Error:', error)
       const errorMessage = error instanceof Error ? error.message : 'Error al cargar el reporte'
       setError(errorMessage)
-      setDatos([])
+      setDatosDiario([])
     } finally {
       setCargando(false)
     }
@@ -197,12 +245,9 @@ export default function ReportesPage() {
       setDatosMensuales(data)
       if (activeTab === 'danos') {
         const rows: ReporteRow[] = data.denuncias_danos || []
-        setDatos(rows)
+        setDatosDanos(rows)
         const tiposUnicos: string[] = Array.from(new Set(rows.map(d => d.shp).filter((shp): shp is string => Boolean(shp))))
-        setFiltrosTipos(tiposUnicos) // Select all by default
-      } else {
-        setDatos([])
-        setFiltrosTipos([])
+        setFiltrosTiposDanos(tiposUnicos) // Select all by default
       }
 
       if (data.resumen_especifico.length === 0 && data.resumen_general.length === 0 && (!data.denuncias_danos || data.denuncias_danos.length === 0)) {
@@ -226,35 +271,51 @@ export default function ReportesPage() {
     }
   }
 
-  const datosOrdenados = useMemo(() => {
-    // Si no se ha buscado nada yet (datos vacíos), no filtramos estrictamente para evitar mostrar nada
-    // Pero si hay datos, filtramos por los seleccionados
-    const sorted = datos.length > 0
-      ? datos.filter(d => filtrosTipos.includes(d.tipo_especifico || d.shp || ''))
+  const datosDiarioOrdenados = useMemo(() => {
+    const sorted = datosDiario.length > 0
+      ? datosDiario.filter(d => filtrosTiposDiario.includes(rowKey(d)))
       : []
 
     sorted.sort((a, b) => {
       let comparison = 0
-
       if (sortField === 'numero_denuncia') {
         comparison = a.numero_denuncia - b.numero_denuncia
       } else if (sortField === 'hora_denuncia') {
-        const horaA = a.hora_denuncia || '00:00'
-        const horaB = b.hora_denuncia || '00:00'
-        comparison = horaA.localeCompare(horaB)
+        comparison = (a.hora_denuncia || '00:00').localeCompare(b.hora_denuncia || '00:00')
       } else if (sortField === 'shp') {
         comparison = (a.tipo_especifico || a.shp || '').localeCompare(b.tipo_especifico || b.shp || '')
       } else if (sortField === 'monto_dano') {
         comparison = (a.monto_dano || 0) - (b.monto_dano || 0)
-      } else if (sortField === 'moneda') {
-        comparison = (a.moneda || '').localeCompare(b.moneda || '')
+      } else if (sortField === 'entidad_reportada') {
+        comparison = (a.entidad_reportada || '').localeCompare(b.entidad_reportada || '')
       }
-
       return sortDirection === 'asc' ? comparison : -comparison
     })
-
     return sorted
-  }, [datos, sortField, sortDirection, filtrosTipos])
+  }, [datosDiario, sortField, sortDirection, filtrosTiposDiario])
+
+  const datosDanosOrdenados = useMemo(() => {
+    const sorted = datosDanos.length > 0
+      ? datosDanos.filter(d => filtrosTiposDanos.includes(rowKey(d)))
+      : []
+
+    sorted.sort((a, b) => {
+      let comparison = 0
+      if (sortField === 'numero_denuncia') {
+        comparison = a.numero_denuncia - b.numero_denuncia
+      } else if (sortField === 'monto_dano') {
+        comparison = (a.monto_dano || 0) - (b.monto_dano || 0)
+      } else if (sortField === 'entidad_reportada') {
+        comparison = (a.entidad_reportada || '').localeCompare(b.entidad_reportada || '')
+      }
+      return sortDirection === 'asc' ? comparison : -comparison
+    })
+    return sorted
+  }, [datosDanos, sortField, sortDirection, filtrosTiposDanos])
+
+  function rowKey(row: ReporteRow) {
+    return row.tipo_especifico || row.shp || ''
+  }
 
   const handleLogout = () => {
     logout()
@@ -263,22 +324,25 @@ export default function ReportesPage() {
   const handleLimpiarFiltros = () => {
     if (activeTab === 'diario') {
       setFecha('')
+      setFechaFin('')
+      setHoraInicio('07:00')
+      setHoraFin('07:00')
       setTipoDenuncia('')
-      setDatos([])
+      setDatosDiario([])
       setTiposDisponibles([])
-      setFiltrosTipos([])
+      setFiltrosTiposDiario([])
     } else {
       setMes(new Date().getMonth() + 1 + '')
       setAño(new Date().getFullYear() + '')
       setDatosMensuales(null)
-      setDatos([])
-      setFiltrosTipos([])
+      setDatosDanos([])
+      setFiltrosTiposDanos([])
     }
     setError(null)
   }
 
   const handleExportDailyExcel = () => {
-    const data = datosOrdenados.map(d => ({
+    const data = datosDiarioOrdenados.map(d => ({
       ...d,
       denuncia: `${d.numero_denuncia}/${d.año}`,
       tipo_hecho: d.tipo_especifico || d.shp
@@ -296,25 +360,114 @@ export default function ReportesPage() {
     exportToExcel(data, `Reporte_Denuncias_${fecha || activeTab}`, columns);
   };
 
-  const handleExportDailyDocx = () => {
-    const data = datosOrdenados.map(d => ({
-      ...d,
-      denuncia: `${d.numero_denuncia}/${d.año}`,
-      tipo_hecho: d.tipo_especifico || d.shp
-    }));
+  // Estado para Modal de Exportación DOCX (Nota de Elevación)
+  const [showDocxModal, setShowDocxModal] = useState(false);
+  const [docxMeta, setDocxMeta] = useState({
+    numeroNota: '',
+    destinatarioGrado: '',
+    destinatarioNombre: '',
+    destinatarioCargo: 'Jefe de Servicio',
+    remitenteGrado: '',
+    remitenteNombre: '',
+    remitenteCargo: 'Jefe de Cuartel'
+  });
+
+  const handleExportDailyDocx = async () => {
+    setShowDocxModal(true);
+  };
+
+  const confirmExportDocx = async () => {
+    setShowDocxModal(false);
+    setCargando(true);
+
+    // Obtener cotizaciones para conversión
+    let cotizaciones: Record<string, { compra: number; venta: number }> = {};
+    try {
+      const resp = await fetch('/api/cotizaciones');
+      const json = await resp.json();
+      cotizaciones = json.rates || {};
+    } catch (e) {
+      console.error('Error al obtener cotizaciones para exportación:', e);
+    }
+
+    const data = datosDiarioOrdenados.map(d => {
+      let montoGs = d.monto_dano || 0;
+
+      // Conversión automática si no es Guaraníes
+      if (d.moneda && d.moneda !== 'Guaraníes' && montoGs > 0) {
+        let tasa = 1;
+        if (d.moneda === 'Dólares') tasa = cotizaciones['USD']?.venta || 1;
+        else if (d.moneda === 'Euros') tasa = cotizaciones['EUR']?.venta || 1;
+        else if (d.moneda === 'Reales') tasa = cotizaciones['BRL']?.venta || 1;
+        else if (d.moneda === 'Pesos Argentinos') tasa = cotizaciones['ARS']?.venta || 1;
+
+        montoGs = Math.round(montoGs * tasa);
+      }
+
+      // Formato interviniente (GRADO PRIMERNOMBRE PRIMERAPELLIDO)
+      let intervinienteAbrev = d.interviniente || '-------';
+      if (d.operador_grado || d.operador_nombre || d.operador_apellido) {
+        const grado = d.operador_grado || '';
+        const pNombre = (d.operador_nombre || '').split(' ')[0] || '';
+        const pApellido = (d.operador_apellido || '').split(' ')[0] || '';
+        // Combinamos y quitamos espacios extra si alguna parte está vacía
+        intervinienteAbrev = `${grado} ${pNombre} ${pApellido}`.replace(/\s+/g, ' ').trim();
+      }
+
+      return {
+        ...d,
+        num: d.numero_denuncia,
+        tipo_hecho: (d.tipo_especifico || d.shp || '').toUpperCase(),
+        interviniente: intervinienteAbrev,
+        oficina_vacia: '',
+        perdida: montoGs > 0 ? `${montoGs.toLocaleString('es-PY')} Gs.` : '-------'
+      };
+    });
 
     const columns = [
-      { header: 'Denuncia', key: 'denuncia' },
-      { header: 'Denunciante', key: 'denunciante' },
-      { header: 'Hecho Punible', key: 'tipo_hecho' },
-      { header: 'Hora', key: 'hora_denuncia' },
-      { header: 'Interviniente', key: 'interviniente' }
+      { header: 'NUM.', key: 'num', width: 6 },
+      { header: 'HORA', key: 'hora_denuncia', width: 8 },
+      { header: 'S.H.P.', key: 'tipo_hecho', width: 16 },
+      { header: 'DENUNCIANTE', key: 'denunciante', width: 18 },
+      { header: 'INTERVINIENTE', key: 'interviniente', width: 16 },
+      { header: 'DPTO. A CARGO', key: 'oficina_vacia', width: 12 },
+      { header: 'PÉRDIDA (Gs.)', key: 'perdida', width: 12 },
+      { header: 'ENTIDAD REPORTADA', key: 'entidad_reportada', width: 12 }
     ];
-    exportToDocx(data, 'Reporte de Denuncias', columns);
+
+    // Lógica para determinar el rango de fecha (guardia de 07:00 a 07:00 por defecto)
+    const fInicio = new Date(fecha + 'T12:00:00');
+    let fFin: Date;
+    if (fechaFin) {
+      fFin = new Date(fechaFin + 'T12:00:00');
+    } else {
+      fFin = new Date(fInicio);
+      fFin.setDate(fFin.getDate() + 1);
+    }
+
+    // Formatear fechas para el párrafo: DD/MM/AAAA
+    const fmt = (d: Date) => d.toLocaleDateString('es-PY', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const fmtDia = (d: Date) => d.toLocaleDateString('es-PY', { weekday: 'long' }).toUpperCase();
+
+    // Usar horas de la UI
+    const hIn = `${horaInicio} horas`;
+    const hFi = `${horaFin} horas`;
+
+    const metadataFormateada = {
+      ...docxMeta,
+      fechaDesde: `${fmtDia(fInicio)} ${fmt(fInicio)}`,
+      fechaHasta: `${fmtDia(fFin)} ${fmt(fFin)}`,
+      horaDesde: hIn,
+      horaHasta: hFi,
+      oficina: datosDiarioOrdenados[0]?.oficina || 'Asunción'
+    };
+
+    await exportToDocx(data, 'Reporte Diario de Denuncias', columns, metadataFormateada);
+    setCargando(false);
   };
 
   const handleExportDanosExcel = () => {
-    const data = (activeTab === 'danos' || activeTab === 'diario' ? datosOrdenados : [])
+    const data = datosDanosOrdenados
       .filter(d => (d.monto_dano || 0) > 0)
       .map(d => ({
         ...d,
@@ -452,763 +605,795 @@ export default function ReportesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <nav className="bg-white shadow-lg border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link href="/dashboard" className="text-gray-600 hover:text-gray-900 transition flex items-center gap-2">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-              Volver al Inicio
-            </Link>
-            <h1 className="text-2xl font-bold text-gray-800">Reportes de Denuncias</h1>
-            <button
-              onClick={handleLogout}
-              className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition"
-            >
-              Cerrar Sesión
-            </button>
-          </div>
-        </div>
-      </nav>
+    <MainLayout>
+      <div className="min-h-screen bg-[#f8fafc] p-4 sm:p-6 lg:p-8 font-sans">
+        <div className="max-w-7xl mx-auto">
+          {/* Header Section */}
+          <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-[#002147] rounded-xl shadow-lg shadow-blue-900/20">
+                  <BarChart3 className="w-6 h-6 text-white" />
+                </div>
+                <h1 className="text-2xl font-black text-[#002147] uppercase tracking-tight">Reportes Estadísticos</h1>
+              </div>
+              <p className="text-slate-500 font-medium text-sm ml-1">Analice el comportamiento de las denuncias y el desempeño institucional.</p>
+            </div>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
-          {/* Pestañas */}
-          <div className="flex space-x-1 bg-white p-1 rounded-xl shadow-sm border border-gray-200 w-full md:max-w-md">
-            <button
-              onClick={() => setActiveTab('diario')}
-              className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all ${activeTab === 'diario'
-                ? 'bg-blue-600 text-white shadow-md'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                }`}
-            >
-              Búsqueda Diaria
-            </button>
-            <button
-              onClick={() => setActiveTab('mensual')}
-              className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all ${activeTab === 'mensual'
-                ? 'bg-blue-600 text-white shadow-md'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                }`}
-            >
-              Resumen Mensual
-            </button>
-            <button
-              onClick={() => setActiveTab('danos')}
-              className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all ${activeTab === 'danos'
-                ? 'bg-blue-600 text-white shadow-md'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                }`}
-            >
-              Daños Patrimoniales
-            </button>
-          </div>
-        </div>
-
-        {/* Panel de Filtros */}
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-6 border border-gray-200">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-              <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-              </svg>
-              Filtros de {activeTab === 'diario' ? 'Búsqueda' : activeTab === 'mensual' ? 'Resumen' : 'Daños'}
-            </h2>
-            <button
-              onClick={handleLimpiarFiltros}
-              className="text-sm text-gray-600 hover:text-gray-900 flex items-center gap-1"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-              Limpiar filtros
-            </button>
+            <div className="flex bg-white p-1 rounded-2xl shadow-sm border border-slate-200 w-full md:w-auto overflow-x-auto no-scrollbar">
+              {[
+                { id: 'diario', label: 'Diario', icon: CalendarDays },
+                { id: 'mensual', label: 'Mensual', icon: TrendingUp },
+                { id: 'danos', label: 'Daños', icon: DollarSign }
+              ].map((tab) => {
+                const Icon = tab.icon
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id as Tab)}
+                    className={`flex-1 md:flex-none px-6 py-2.5 text-xs font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2 whitespace-nowrap ${activeTab === tab.id
+                      ? 'bg-[#002147] text-white shadow-lg shadow-blue-900/20'
+                      : 'text-slate-400 hover:text-[#002147] hover:bg-slate-50'
+                      }`}
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                    {tab.label}
+                  </button>
+                )
+              })}
+            </div>
           </div>
 
-          {activeTab === 'diario' ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <div>
-                <label htmlFor="fecha" className="block text-sm font-medium text-gray-700 mb-2">
-                  Fecha <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="date"
-                  id="fecha"
-                  value={fecha}
-                  onChange={(e) => {
-                    setFecha(e.target.value)
-                    setTipoDenuncia('')
-                    setError(null)
-                  }}
-                  onKeyPress={(e) => e.key === 'Enter' && handleBuscarDiario()}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="tipoDenuncia" className="block text-sm font-medium text-gray-700 mb-2">
-                  Tipo de Denuncia
-                  {!fecha && <span className="text-xs text-gray-500 ml-2">(Seleccione una fecha primero)</span>}
-                </label>
-                <select
-                  id="tipoDenuncia"
-                  value={tipoDenuncia}
-                  onChange={(e) => setTipoDenuncia(e.target.value)}
-                  disabled={!fecha}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition disabled:bg-gray-100 disabled:cursor-not-allowed"
-                >
-                  <option value="">Todos los tipos</option>
-                  {tiposDisponibles.map((tipo) => (
-                    <option key={tipo} value={tipo}>{tipo}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <div>
-                <label htmlFor="mes" className="block text-sm font-medium text-gray-700 mb-2">Mes</label>
-                <select
-                  id="mes"
-                  value={mes}
-                  onChange={(e) => setMes(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                >
-                  {meses.map((m) => (
-                    <option key={m.value} value={m.value}>{m.label}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label htmlFor="año" className="block text-sm font-medium text-gray-700 mb-2">Año</label>
-                <select
-                  id="año"
-                  value={año}
-                  onChange={(e) => setAño(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                >
-                  {años.map((a) => (
-                    <option key={a} value={a}>{a}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          )}
-
-          <div className="flex justify-end">
-            <button
-              onClick={activeTab === 'diario' ? handleBuscarDiario : handleBuscarMensual}
-              disabled={cargando || (activeTab === 'diario' && !fecha)}
-              className="px-8 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition shadow-md hover:shadow-lg flex items-center gap-2 font-medium"
-            >
-              {cargando ? (
-                <>
-                  <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  {activeTab === 'diario' ? 'Buscando...' : 'Generando...'}
-                </>
-              ) : (
-                <>
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                  {activeTab === 'diario' || activeTab === 'danos' ? 'Buscar' : 'Generar Resumen'}
-                </>
-              )}
-            </button>
-          </div>
-
-          {error && (
-            <div className="mt-4 p-4 bg-red-50 border-l-4 border-red-400 rounded-lg flex items-center">
-              <svg className="w-5 h-5 text-red-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <p className="text-sm text-red-800">{error}</p>
-            </div>
-          )}
-        </div>
-
-        {/* Filtro por Hecho Punible (Multiselección) */}
-        {datos.length > 0 && (
-          <div className="bg-white rounded-xl shadow-lg p-6 mb-6 border border-gray-200 animate-in fade-in slide-in-from-top-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wider flex items-center gap-2">
-                <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
-                </svg>
-                Filtrar por Hecho Punible
-              </h3>
-              <div className="flex gap-4">
-                <button
-                  onClick={() => setFiltrosTipos(Array.from(new Set(datos.map(d => d.tipo_especifico || d.shp || '').filter(Boolean))))}
-                  className="text-xs text-blue-600 hover:text-blue-800 font-semibold"
-                >
-                  Seleccionar Todos
-                </button>
-                <button
-                  onClick={() => setFiltrosTipos([])}
-                  className="text-xs text-gray-500 hover:text-gray-700 font-semibold"
-                >
-                  Limpiar Selección
-                </button>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-2">
-              {Array.from(new Set(datos.map(d => d.tipo_especifico || d.shp || '').filter(Boolean))).sort().map((tipo) => (
-                <label key={tipo} className="flex items-center gap-3 group cursor-pointer">
-                  <div className="relative flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={filtrosTipos.includes(tipo)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setFiltrosTipos([...filtrosTipos, tipo])
-                        } else {
-                          setFiltrosTipos(filtrosTipos.filter(t => t !== tipo))
-                        }
-                      }}
-                      className="peer h-5 w-5 cursor-pointer appearance-none rounded border border-gray-300 checked:bg-blue-600 checked:border-blue-600 transition-all focus:ring-2 focus:ring-blue-100"
-                    />
-                    <svg className="absolute w-3.5 h-3.5 text-white pointer-events-none opacity-0 peer-checked:opacity-100 left-1/2 -translate-x-1/2 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                    </svg>
+          {/* Panel de Búsqueda Principal */}
+          <div className="bg-white rounded-2xl shadow-xl shadow-blue-900/5 border border-slate-100 p-6 mb-8 animate-in fade-in slide-in-from-bottom-4 relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-1 h-full bg-[#002147]"></div>
+            <div className="flex flex-col lg:flex-row items-end gap-6">
+              {activeTab === 'diario' ? (
+                <div className="flex-1 w-full lg:w-auto grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Bloque Desde */}
+                  <div className="flex flex-col gap-3">
+                    <div className="flex-1">
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Fecha Desde</label>
+                      <div className="relative group">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <Calendar className="h-3.5 w-3.5 text-slate-400 group-hover:text-[#002147] transition-colors" />
+                        </div>
+                        <input
+                          type="date"
+                          value={fecha}
+                          onChange={(e) => setFecha(e.target.value)}
+                          className="block w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 text-[#002147] text-xs font-bold rounded-xl focus:ring-4 focus:ring-blue-50 focus:border-blue-200 transition-all outline-none"
+                        />
+                      </div>
+                    </div>
+                    <div className="w-full sm:w-32">
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Hora Inicio</label>
+                      <div className="relative">
+                        <input
+                          type="time"
+                          value={horaInicio}
+                          onChange={(e) => setHoraInicio(e.target.value)}
+                          className="block w-full px-3 py-2.5 bg-slate-50 border border-slate-200 text-[#002147] text-xs font-bold rounded-xl focus:ring-4 focus:ring-blue-50 focus:border-blue-200 transition-all outline-none"
+                        />
+                      </div>
+                    </div>
                   </div>
-                  <span className="text-sm text-gray-600 group-hover:text-gray-900 transition-colors truncate" title={tipo}>
-                    {tipo}
-                  </span>
-                </label>
-              ))}
+
+                  {/* Bloque Hasta */}
+                  <div className="flex flex-col gap-3">
+                    <div className="flex-1">
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Fecha Hasta</label>
+                      <div className="relative group">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <Calendar className="h-3.5 w-3.5 text-slate-400 group-hover:text-[#002147] transition-colors" />
+                        </div>
+                        <input
+                          type="date"
+                          value={fechaFin}
+                          onChange={(e) => setFechaFin(e.target.value)}
+                          className="block w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 text-[#002147] text-xs font-bold rounded-xl focus:ring-4 focus:ring-blue-50 focus:border-blue-200 transition-all outline-none"
+                        />
+                      </div>
+                    </div>
+                    <div className="w-full sm:w-32">
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Hora Fin</label>
+                      <div className="relative">
+                        <input
+                          type="time"
+                          value={horaFin}
+                          onChange={(e) => setHoraFin(e.target.value)}
+                          className="block w-full px-3 py-2.5 bg-slate-50 border border-slate-200 text-[#002147] text-xs font-bold rounded-xl focus:ring-4 focus:ring-blue-50 focus:border-blue-200 transition-all outline-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-1 w-full gap-4">
+                  <div className="flex-1">
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Mes</label>
+                    <select
+                      value={mes}
+                      onChange={(e) => setMes(e.target.value)}
+                      className="block w-full px-4 py-3 bg-slate-50 border border-slate-200 text-[#002147] text-sm font-bold rounded-xl focus:ring-4 focus:ring-blue-50 focus:border-blue-200 transition-all outline-none appearance-none"
+                    >
+                      {meses.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+                    </select>
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Año</label>
+                    <select
+                      value={año}
+                      onChange={(e) => setAño(e.target.value)}
+                      className="block w-full px-4 py-3 bg-slate-50 border border-slate-200 text-[#002147] text-sm font-bold rounded-xl focus:ring-4 focus:ring-blue-50 focus:border-blue-200 transition-all outline-none appearance-none"
+                    >
+                      {años.map(a => <option key={a} value={a}>{a}</option>)}
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center gap-3 w-full lg:w-auto">
+                <button
+                  onClick={activeTab === 'diario' ? handleBuscarDiario : handleBuscarMensual}
+                  disabled={cargando}
+                  className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-8 py-3 bg-[#002147] text-white text-[11px] font-black uppercase tracking-widest rounded-xl hover:bg-[#003366] transition-all shadow-lg shadow-blue-900/20 active:scale-95 disabled:opacity-50"
+                >
+                  {cargando ? <RefreshCcw className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                  {cargando ? 'Buscando...' : 'Consultar'}
+                </button>
+                <button
+                  onClick={handleLimpiarFiltros}
+                  className="p-3 bg-white border border-slate-200 text-slate-400 rounded-xl hover:text-red-500 hover:border-red-100 hover:bg-red-50 transition-all shadow-sm"
+                  title="Limpiar Búsqueda"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           </div>
-        )}
 
-        {/* Resultados Diario */}
-        {activeTab === 'diario' && datosOrdenados.length > 0 && (
-          <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
-            <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                Resultados
-              </h2>
-              <div className="flex items-center gap-4">
-                <div className="flex gap-2 mr-2 border-r border-gray-200 pr-4">
+          {/* Filtro por Hecho Punible (Multiselección) - SOLO EN DAÑOS */}
+          {activeTab === 'danos' && datosDanos.length > 0 && (
+            <div className="bg-white rounded-2xl shadow-xl shadow-blue-900/5 border border-slate-100 p-6 mb-8 animate-in fade-in slide-in-from-top-4 relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 bg-blue-50 rounded-lg">
+                    <Filter className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <h3 className="text-[11px] font-black text-[#002147] uppercase tracking-widest flex items-center gap-2">
+                    Filtrar por Hecho Punible
+                  </h3>
+                </div>
+                <div className="flex gap-4 w-full sm:w-auto">
+                  <button
+                    onClick={() => setFiltrosTiposDanos(Array.from(new Set(datosDanos.map(d => rowKey(d)).filter(Boolean))))}
+                    className="flex-1 sm:flex-none text-[9px] font-black text-blue-600 hover:text-blue-800 uppercase tracking-widest bg-blue-50 px-3 py-1.5 rounded-lg transition-all"
+                  >
+                    Marcar Todos
+                  </button>
+                  <button
+                    onClick={() => setFiltrosTiposDanos([])}
+                    className="flex-1 sm:flex-none text-[9px] font-black text-slate-400 hover:text-slate-600 uppercase tracking-widest px-3 py-1.5 rounded-lg transition-all border border-slate-100"
+                  >
+                    Desmarcar
+                  </button>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-3 p-1">
+                {Array.from(new Set(datosDanos.map(d => rowKey(d)).filter(Boolean))).sort().map((tipo) => (
+                  <label key={tipo} className="flex items-center gap-3 group cursor-pointer">
+                    <div className="relative flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={filtrosTiposDanos.includes(tipo)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setFiltrosTiposDanos([...filtrosTiposDanos, tipo])
+                          } else {
+                            setFiltrosTiposDanos(filtrosTiposDanos.filter(t => t !== tipo))
+                          }
+                        }}
+                        className="peer h-4 w-4 cursor-pointer appearance-none rounded border-2 border-slate-200 checked:bg-[#002147] checked:border-[#002147] transition-all focus:ring-4 focus:ring-blue-100"
+                      />
+                      <svg className="absolute w-2.5 h-2.5 text-white pointer-events-none opacity-0 peer-checked:opacity-100 left-1/2 -translate-x-1/2 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <span className="text-[10px] font-bold text-slate-500 group-hover:text-[#002147] transition-colors truncate uppercase tracking-tight" title={tipo}>
+                      {tipo}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+          {/* Resultados Diario */}
+          {activeTab === 'diario' && datosDiarioOrdenados.length > 0 && (
+            <div className="bg-white rounded-2xl shadow-xl shadow-blue-900/5 overflow-hidden border border-slate-100 animate-in fade-in slide-in-from-bottom-4">
+              <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-[#002147] rounded-xl shadow-lg shadow-blue-900/10">
+                    <FileText className="w-4 h-4 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-[11px] font-black text-[#002147] uppercase tracking-widest">Registros Encontrados</h2>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">{datosDiarioOrdenados.length} denuncias procesadas</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 w-full sm:w-auto overflow-x-auto pb-2 sm:pb-0">
                   <button
                     onClick={handleExportDailyExcel}
                     title="Exportar a Excel"
-                    className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition"
+                    className="p-2 bg-white border border-slate-200 rounded-xl text-green-600 hover:bg-green-50 shadow-sm transition-all"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
+                    <Download className="w-4 h-4" />
                   </button>
                   <button
                     onClick={handleExportDailyDocx}
                     title="Exportar a Word"
-                    className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                    className="p-2 bg-white border border-slate-200 rounded-xl text-blue-600 hover:bg-blue-50 shadow-sm transition-all"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                  </button>
-                </div>
-                {/* Toggle en tabla */}
-                <div className="flex bg-white p-0.5 rounded-lg shadow-sm border border-gray-200">
-                  <button
-                    onClick={() => setMostrarGeneral(false)}
-                    className={`px-2 py-1 text-[10px] font-bold rounded-md transition-all uppercase ${!mostrarGeneral
-                      ? 'bg-indigo-100 text-indigo-700'
-                      : 'text-gray-500 hover:bg-gray-50'
-                      }`}
-                  >
-                    Espec.
-                  </button>
-                  <button
-                    onClick={() => setMostrarGeneral(true)}
-                    className={`px-2 py-1 text-[10px] font-bold rounded-md transition-all uppercase ${mostrarGeneral
-                      ? 'bg-indigo-100 text-indigo-700'
-                      : 'text-gray-500 hover:bg-gray-50'
-                      }`}
-                  >
-                    Gral.
-                  </button>
-                </div>
-                <span className="px-3 py-1 bg-blue-600 text-white text-sm font-medium rounded-full">
-                  {datosOrdenados.length} denuncia{datosOrdenados.length !== 1 ? 's' : ''}
-                </span>
-              </div>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition" onClick={() => handleSort('numero_denuncia')}>
-                      <div className="flex items-center gap-2">Num. de Denuncia <SortIcon field="numero_denuncia" currentField={sortField} direction={sortDirection} /></div>
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition" onClick={() => handleSort('hora_denuncia')}>
-                      <div className="flex items-center gap-2">Hora <SortIcon field="hora_denuncia" currentField={sortField} direction={sortDirection} /></div>
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">S.H.P.</th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Denunciante</th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Interviniente</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {datosOrdenados.map((row, index) => (
-                    <tr key={index} className="hover:bg-blue-50 transition">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{row.numero_denuncia}/{row.año}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{row.hora_denuncia || '-'}</td>
-                      <td className="px-6 py-4 text-sm text-gray-900">
-                        <span className={`inline-block px-2 py-1 rounded-md text-xs font-medium ${mostrarGeneral ? 'bg-indigo-50 text-indigo-700 border border-indigo-100' : 'bg-blue-50 text-blue-700 border border-blue-100'}`}>
-                          {mostrarGeneral ? (row.tipo_general || row.tipo_especifico || row.shp) : (row.tipo_especifico || row.shp || '-')}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-900">{row.denunciante || '-'}</td>
-                      <td className="px-6 py-4 text-sm text-gray-900">{row.interviniente || '-'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* Resultados Mensual */}
-        {activeTab === 'mensual' && datosMensuales && (
-          <div className="space-y-6">
-            {/* Resumen por Tipos y Ranking de Operadores */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-                <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 flex justify-between items-center">
-                  <div className="flex items-center gap-4">
-                    <h3 className="text-lg font-semibold text-gray-800">
-                      Desglose por Tipos
-                    </h3>
-                    <button
-                      onClick={handleExportMonthlyTypesExcel}
-                      title="Exportar a Excel"
-                      className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={handleExportMonthlyTypesDocx}
-                      title="Exportar a Word"
-                      className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                    </button>
-                  </div>
-                  {/* Toggle en tabla */}
-                  <div className="flex bg-white p-0.5 rounded-lg shadow-sm border border-gray-200">
-                    <button
-                      onClick={() => setMostrarGeneral(false)}
-                      className={`px-3 py-1 text-xs font-bold rounded-md transition-all uppercase ${!mostrarGeneral
-                        ? 'bg-indigo-100 text-indigo-700'
-                        : 'text-gray-500 hover:bg-gray-50'
-                        }`}
-                    >
-                      Específico
-                    </button>
-                    <button
-                      onClick={() => setMostrarGeneral(true)}
-                      className={`px-3 py-1 text-xs font-bold rounded-md transition-all uppercase ${mostrarGeneral
-                        ? 'bg-indigo-100 text-indigo-700'
-                        : 'text-gray-500 hover:bg-gray-50'
-                        }`}
-                    >
-                      General
-                    </button>
-                  </div>
-                </div>
-                <div className="p-0">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Tipo</th>
-                        <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Total</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {(mostrarGeneral ? datosMensuales.resumen_general : datosMensuales.resumen_especifico).map((tipo: ResumenTipo, idx: number) => (
-                        <tr key={idx} className="hover:bg-gray-50 transition border-l-4 border-l-transparent hover:border-l-blue-500">
-                          <td className="px-6 py-3 text-sm text-gray-700">{tipo.tipo}</td>
-                          <td className="px-6 py-3 text-sm text-gray-900 text-right font-bold">{tipo.total}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {/* Top 5 Intervinientes */}
-              <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-                <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-green-50 to-emerald-50 flex justify-between items-center">
-                  <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                    <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                    </svg>
-                    Top 5 Intervinientes
-                  </h3>
-                  <div className="flex gap-1">
-                    <button
-                      onClick={handleExportMonthlyOperatorsExcel}
-                      title="Exportar a Excel"
-                      className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={handleExportMonthlyOperatorsDocx}
-                      title="Exportar a Word"
-                      className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-                <div className="p-0">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Personal</th>
-                        <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Denuncias</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {datosMensuales.top_operadores?.map((op, idx) => (
-                        <tr key={idx} className="hover:bg-gray-50 transition border-l-4 border-l-transparent hover:border-l-green-500">
-                          <td className="px-6 py-3 text-sm text-gray-700 flex items-center gap-2">
-                            <span className="flex items-center justify-center w-5 h-5 rounded-full bg-green-100 text-green-700 font-bold text-[10px]">
-                              {idx + 1}
-                            </span>
-                            {op.operador || 'Desconocido'}
-                          </td>
-                          <td className="px-6 py-3 text-sm text-gray-900 text-right font-bold">{op.total}</td>
-                        </tr>
-                      ))}
-                      {(!datosMensuales.top_operadores || datosMensuales.top_operadores.length === 0) && (
-                        <tr>
-                          <td colSpan={2} className="px-6 py-8 text-center text-gray-500 italic text-sm">
-                            Sin datos registrados.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-
-            {/* Denunciantes Recurrentes */}
-            <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-orange-50 to-red-50">
-                <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                  <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.268 17c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
-                  Denunciantes Recurrentes
-                </h3>
-              </div>
-              <div className="p-6">
-                {datosMensuales.denunciantes_recurrentes.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {datosMensuales.denunciantes_recurrentes.map((rec, idx) => (
-                      <div key={idx} className="bg-gray-50 rounded-lg p-4 border border-gray-200 border-l-4 border-l-red-500 shadow-sm hover:shadow-md transition">
-                        <div className="flex justify-between items-start mb-2">
-                          <div>
-                            <h4 className="font-bold text-gray-900">{rec.denunciante}</h4>
-                            <p className="text-[10px] text-gray-500 font-mono tracking-wider">CI: {rec.cedula}</p>
-                          </div>
-                          <div className="flex flex-col items-end gap-2">
-                            <span className="px-2 py-1 bg-red-100 text-red-700 text-[10px] font-bold rounded uppercase">
-                              {rec.cantidad} denuncias
-                            </span>
-                            <div className="flex gap-1">
-                              <button
-                                onClick={() => handleExportRecurrenteExcel(rec)}
-                                title="Exportar a Excel"
-                                className="p-1 rounded bg-green-50 text-green-600 hover:bg-green-100 transition shadow-sm"
-                              >
-                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                </svg>
-                              </button>
-                              <button
-                                onClick={() => handleExportRecurrenteDocx(rec)}
-                                title="Exportar a Word"
-                                className="p-1 rounded bg-blue-50 text-blue-600 hover:bg-blue-100 transition shadow-sm"
-                              >
-                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                </svg>
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="mt-3 space-y-2">
-                          {rec.numeros_denuncia.map((num, i) => (
-                            <div key={i} className="flex flex-col gap-1 text-xs text-gray-600 bg-white p-2 rounded border border-gray-100">
-                              <div className="flex items-center gap-2">
-                                <span className="font-mono font-bold text-blue-600 text-[10px]">{num}</span>
-                                <span className="text-gray-200">|</span>
-                                <span className="truncate flex-1 font-medium">{rec.tipos[i]}</span>
-                              </div>
-                              <div className="flex items-center justify-between mt-1 pt-1 border-t border-gray-50">
-                                <span className="text-[9px] text-gray-400">{formatearFecha(rec.fechas[i])}</span>
-                                {rec.oficiales && rec.oficiales[i] && (
-                                  <span className="text-[9px] text-gray-400 italic">Por: {rec.oficiales[i]}</span>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-gray-500 italic text-sm bg-gray-50 rounded-lg border border-dashed border-gray-300">
-                    No se detectaron denuncias recurrentes en este periodo.
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Evolución Diaria (Al final) */}
-            <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-blue-50 flex justify-between items-center">
-                <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
-                  </svg>
-                  Evolución Diaria de Denuncias
-                </h3>
-                <button
-                  onClick={handleExportChartImage}
-                  className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition flex items-center gap-2 text-xs font-bold uppercase"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  Exportar Imagen
-                </button>
-              </div>
-              <div className="p-6" id="chart-evolution">
-                <div className="h-[250px] w-full mt-4">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={datosMensuales.evolucion_diaria}
-                      margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-                      <XAxis
-                        dataKey="dia"
-                        fontSize={10}
-                        tickLine={false}
-                        axisLine={false}
-                        tick={{ fill: '#9ca3af' }}
-                      />
-                      <YAxis
-                        fontSize={10}
-                        tickLine={false}
-                        axisLine={false}
-                        tick={{ fill: '#9ca3af' }}
-                        allowDecimals={false}
-                      />
-                      <Tooltip
-                        cursor={{ fill: '#f8fafc' }}
-                        content={({ active, payload }) => {
-                          if (active && payload && payload.length) {
-                            return (
-                              <div className="bg-white p-2 border border-blue-100 shadow-xl rounded-lg">
-                                <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Día {payload[0].payload.dia}</p>
-                                <p className="text-sm font-black text-blue-600">{payload[0].value} <span className="text-[10px] font-normal text-gray-600">denuncia(s)</span></p>
-                              </div>
-                            );
-                          }
-                          return null;
-                        }}
-                      />
-                      <Bar
-                        dataKey="total"
-                        radius={[2, 2, 0, 0]}
-                      >
-                        {datosMensuales.evolucion_diaria.map((entry, index) => (
-                          <Cell
-                            key={`cell-${index}`}
-                            fill={entry.total > 0 ? '#3b82f6' : '#f1f5f9'}
-                            className="transition-colors duration-200"
-                          />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Resultados Daños */}
-        {activeTab === 'danos' && (
-          <div className="space-y-6">
-            {/* Resumen de Daños (Tarjetas) */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {(() => {
-                const stats: Record<string, number> = {}
-                datosOrdenados.forEach(d => {
-                  if (d.monto_dano && d.moneda) {
-                    stats[d.moneda] = (stats[d.moneda] || 0) + (typeof d.monto_dano === 'string' ? parseInt(d.monto_dano, 10) : d.monto_dano)
-                  }
-                })
-                const entries = Object.entries(stats)
-                if (entries.length === 0) {
-                  return (
-                    <div className="md:col-span-3 bg-blue-50 border border-blue-100 rounded-xl p-6 text-center text-blue-800 italic">
-                      No hay datos de perjuicio patrimonial para el periodo seleccionado.
-                    </div>
-                  )
-                }
-                return entries.map(([moneda, total], idx) => (
-                  <div key={idx} className="bg-white p-6 rounded-xl shadow-md border border-gray-200 border-l-4 border-l-blue-600 transition hover:shadow-lg">
-                    <p className="text-xs font-bold text-gray-500 uppercase mb-1">Total {moneda}</p>
-                    <p className="text-2xl font-black text-blue-600">
-                      {total.toLocaleString('es-PY')}
-                      <span className="text-xs ml-1 font-normal text-gray-400">{moneda.split(' ')[0]}</span>
-                    </p>
-                  </div>
-                ))
-              })()}
-            </div>
-
-            {/* Tabla Detallada de Daños */}
-            <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
-              <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m.599-1c.51-.598 1.11-1 2.401-1m-4 4c-1.303 0-2.403-.402-2.599-1M12 16v-1m0 1v1m0-1c-1.303 0-2.402-.402-2.599-1" />
-                  </svg>
-                  Detalle de Denuncias con Perjuicio
-                </h2>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={handleExportDanosExcel}
-                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition shadow-sm flex items-center gap-2 text-sm font-medium"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    Exportar
+                    <FileText className="w-4 h-4" />
                   </button>
                 </div>
               </div>
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase cursor-pointer hover:bg-gray-100 transition" onClick={() => handleSort('numero_denuncia')}>
-                        <div className="flex items-center gap-2">Denuncia <SortIcon field="numero_denuncia" currentField={sortField} direction={sortDirection} /></div>
+                <table className="min-w-full border-separate border-spacing-0">
+                  <thead>
+                    <tr className="bg-slate-50/20">
+                      <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 cursor-pointer hover:text-[#002147] transition" onClick={() => handleSort('numero_denuncia')}>
+                        <div className="flex items-center gap-2">NUM. <SortIcon field="numero_denuncia" currentField={sortField} direction={sortDirection} /></div>
                       </th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase">Denunciante</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase cursor-pointer hover:bg-gray-100 transition" onClick={() => handleSort('shp')}>
-                        <div className="flex items-center gap-2">Hecho Punible <SortIcon field="shp" currentField={sortField} direction={sortDirection} /></div>
+                      <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 cursor-pointer hover:text-[#002147] transition" onClick={() => handleSort('hora_denuncia')}>
+                        <div className="flex items-center gap-2">HORA <SortIcon field="hora_denuncia" currentField={sortField} direction={sortDirection} /></div>
                       </th>
-                      <th className="px-6 py-4 text-right text-xs font-semibold text-gray-700 uppercase cursor-pointer hover:bg-gray-100 transition" onClick={() => handleSort('monto_dano')}>
-                        <div className="flex items-center gap-2 justify-end">Monto Daño <SortIcon field="monto_dano" currentField={sortField} direction={sortDirection} /></div>
-                      </th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase cursor-pointer hover:bg-gray-100 transition" onClick={() => handleSort('moneda')}>
-                        <div className="flex items-center gap-2">Moneda <SortIcon field="moneda" currentField={sortField} direction={sortDirection} /></div>
+                      <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">S.H.P.</th>
+                      <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">DENUNCIANTE</th>
+                      <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">INTERVINIENTE</th>
+                      <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">PÉRDIDA (Gs.)</th>
+                      <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 cursor-pointer hover:text-[#002147] transition" onClick={() => handleSort('entidad_reportada')}>
+                        <div className="flex items-center gap-2">ENTIDAD REPORTADA <SortIcon field="entidad_reportada" currentField={sortField} direction={sortDirection} /></div>
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {datosOrdenados.filter(d => (d.monto_dano || 0) > 0).map((row, index) => (
-                      <tr key={index} className="hover:bg-blue-50 transition border-l-4 border-l-transparent hover:border-l-blue-600">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-mono">{row.numero_denuncia}/{row.año}</td>
-                        <td className="px-6 py-4 text-sm text-gray-900">{row.denunciante}</td>
-                        <td className="px-6 py-4 text-sm text-gray-900">
-                          <span className="px-2 py-1 bg-gray-100 rounded text-[10px] font-bold text-gray-600 uppercase">
-                            {row.shp}
+                  <tbody className="divide-y divide-slate-50">
+                    {datosDiarioOrdenados.map((row, index) => (
+                      <tr key={index} className="group hover:bg-slate-50/80 transition-all">
+                        <td className="px-6 py-4 whitespace-nowrap text-[10px] font-black text-[#002147]/70 font-mono italic">{row.numero_denuncia}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-[10px] font-bold text-[#002147]/60">
+                          <div className="flex items-center gap-2 uppercase tracking-tighter">
+                            <Clock className="w-3 h-3 text-slate-300" />
+                            {row.hora_denuncia || '--:--'}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="text-[10px] font-black uppercase tracking-tight text-blue-600">
+                            {row.tipo_especifico || row.shp || '-'}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-black">
-                          {row.monto_dano?.toLocaleString('es-PY')}
+                        <td className="px-6 py-4 text-[10px] font-bold text-slate-600 uppercase tracking-tight">{row.denunciante || '-'}</td>
+                        <td className="px-6 py-4 text-[10px] font-bold text-[#002147]/80 uppercase tracking-tight italic">{row.interviniente || '-'}</td>
+                        <td className="px-6 py-4 text-[10px] font-black text-[#002147] tabular-nums">
+                          {row.monto_dano ? row.monto_dano.toLocaleString('es-PY') : '0'}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 italic">
-                          {row.moneda}
-                        </td>
+                        <td className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-tight">{row.entidad_reportada || '-'}</td>
                       </tr>
                     ))}
-                    {datosOrdenados.filter(d => (d.monto_dano || 0) > 0).length === 0 && (
-                      <tr>
-                        <td colSpan={5} className="px-6 py-12 text-center text-gray-500 italic bg-gray-50">
-                          No se encontraron denuncias con montos de daño registrados para este criterio de búsqueda.
-                        </td>
-                      </tr>
-                    )}
                   </tbody>
                 </table>
               </div>
             </div>
-          </div>
-        )}
-        {/* Sección de Administración - Solo para garv */}
-        {usuario?.usuario === 'garv' && (
-          <div className="mt-12 pt-8 border-t border-gray-200">
-            <h2 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
-              <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37a1.724 1.724 0 002.572-1.065z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              Administración del Sistema
-            </h2>
-            <div className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden group hover:shadow-lg transition-all duration-300">
-              <div className="bg-gradient-to-r from-indigo-600 to-blue-600 px-6 py-4 flex items-center gap-3">
-                <div className="p-2 bg-white/20 rounded-lg">
-                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
-                  </svg>
+          )}
+
+          {/* Resultados Mensual */}
+          {activeTab === 'mensual' && datosMensuales && (
+            <div className="space-y-8 animate-in fade-in slide-in-from-right-4">
+              {/* Resumen por Tipos y Ranking de Operadores */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Desglose por Tipos */}
+                <div className="bg-white rounded-2xl shadow-xl shadow-blue-900/5 border border-slate-100 overflow-hidden relative">
+                  <div className="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
+                  <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-[#002147] rounded-xl shadow-lg shadow-blue-900/10">
+                        <Users className="w-4 h-4 text-white" />
+                      </div>
+                      <h3 className="text-[11px] font-black text-[#002147] uppercase tracking-widest">Resumen por Tipo</h3>
+                    </div>
+                    <div className="flex bg-white p-1 rounded-xl shadow-sm border border-slate-200">
+                      <button
+                        onClick={() => setMostrarGeneral(false)}
+                        className={`px-3 py-1.5 text-[9px] font-black rounded-lg transition-all uppercase tracking-widest ${!mostrarGeneral
+                          ? 'bg-blue-50 text-blue-700'
+                          : 'text-slate-400 hover:text-slate-600'
+                          }`}
+                      >
+                        Específico
+                      </button>
+                      <button
+                        onClick={() => setMostrarGeneral(true)}
+                        className={`px-3 py-1.5 text-[9px] font-black rounded-lg transition-all uppercase tracking-widest ${mostrarGeneral
+                          ? 'bg-blue-50 text-blue-700'
+                          : 'text-slate-400 hover:text-slate-600'
+                          }`}
+                      >
+                        General
+                      </button>
+                    </div>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full border-separate border-spacing-0">
+                      <thead>
+                        <tr className="bg-slate-50/20">
+                          <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Categoría</th>
+                          <th className="px-6 py-4 text-right text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Total</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-50 font-medium">
+                        {(mostrarGeneral ? datosMensuales.resumen_general : datosMensuales.resumen_especifico).map((tipo: ResumenTipo, idx: number) => (
+                          <tr key={idx} className="group hover:bg-slate-50 transition-all">
+                            <td className="px-6 py-4 text-[10px] font-bold text-slate-600 uppercase tracking-tight">{tipo.tipo}</td>
+                            <td className="px-6 py-4 text-[10px] font-black text-[#002147] text-right bg-slate-50/30">{tipo.total}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-white font-bold">Respaldo Integral</h3>
-                  <p className="text-blue-100 text-xs">Copia de seguridad completa de la base de datos</p>
+
+                {/* Top 5 Intervinientes */}
+                <div className="bg-white rounded-2xl shadow-xl shadow-blue-900/5 border border-slate-100 overflow-hidden relative">
+                  <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500"></div>
+                  <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-emerald-600 rounded-xl shadow-lg shadow-emerald-900/10">
+                        <Users className="w-4 h-4 text-white" />
+                      </div>
+                      <h3 className="text-[11px] font-black text-[#002147] uppercase tracking-widest">Top 5 Intervinientes</h3>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleExportMonthlyOperatorsExcel}
+                        title="Exportar a Excel"
+                        className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition"
+                      >
+                        <Download className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full border-separate border-spacing-0">
+                      <thead>
+                        <tr className="bg-slate-50/20">
+                          <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Personal</th>
+                          <th className="px-6 py-4 text-right text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Denuncias</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-50">
+                        {datosMensuales.top_operadores?.map((op, idx) => (
+                          <tr key={idx} className="group hover:bg-emerald-50/30 transition-all">
+                            <td className="px-6 py-4 text-[10px] text-slate-600 uppercase tracking-tight flex items-center gap-3">
+                              <span className="flex items-center justify-center w-5 h-5 rounded-lg bg-emerald-100 text-emerald-700 font-black text-[10px] shadow-sm">
+                                {idx + 1}
+                              </span>
+                              <span className="font-bold">{op.operador || 'Desconocido'}</span>
+                            </td>
+                            <td className="px-6 py-4 text-[10px] font-black text-[#002147] text-right bg-slate-50/30">{op.total}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
-              <div className="p-6 flex flex-col md:flex-row items-center justify-between gap-6">
-                <div className="flex-1">
-                  <p className="text-gray-600 text-sm leading-relaxed">
-                    Esta herramienta genera un archivo <code className="bg-gray-100 px-1.5 py-0.5 rounded text-indigo-700 font-mono text-xs">.sql</code> que contiene toda la estructura y datos actuales. Es recomendable realizar esta acción antes de cualquier migración o actualización importante.
-                  </p>
+
+              {/* Denunciantes Recurrentes */}
+              <div className="bg-white rounded-2xl shadow-xl shadow-blue-900/5 border border-slate-100 overflow-hidden relative">
+                <div className="absolute top-0 left-0 w-1 h-full bg-red-500"></div>
+                <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-red-600 rounded-xl shadow-lg shadow-red-900/10">
+                      <AlertCircle className="w-4 h-4 text-white" />
+                    </div>
+                    <h3 className="text-[11px] font-black text-[#002147] uppercase tracking-widest">Denunciantes Recurrentes</h3>
+                  </div>
                 </div>
-                <div className="shrink-0">
-                  <a
-                    href="/api/admin/backup"
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-md active:scale-95 group"
+                <div className="p-6">
+                  {datosMensuales.denunciantes_recurrentes.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {datosMensuales.denunciantes_recurrentes.map((rec, idx) => (
+                        <div key={idx} className="bg-slate-50/50 rounded-2xl p-5 border border-slate-100 shadow-sm hover:shadow-md transition-all group">
+                          <div className="flex justify-between items-start mb-4">
+                            <div>
+                              <h4 className="font-black text-[#002147] text-xs uppercase tracking-tight group-hover:text-blue-600 transition-colors">{rec.denunciante}</h4>
+                              <div className="flex items-center gap-1.5 mt-1">
+                                <Hash className="w-3 h-3 text-slate-300" />
+                                <p className="text-[9px] text-slate-400 font-black font-mono tracking-widest">DOC: {rec.cedula}</p>
+                              </div>
+                            </div>
+                            <div className="flex flex-col items-end gap-2">
+                              <span className="px-2 py-1 bg-red-50 text-red-600 text-[10px] font-black rounded-lg uppercase tracking-widest shadow-sm">
+                                {rec.cantidad} denuncias
+                              </span>
+                            </div>
+                          </div>
+                          <div className="space-y-2 pr-1">
+                            {rec.numeros_denuncia.map((num, i) => (
+                              <div key={i} className="flex flex-col gap-1 text-[10px] text-slate-600 bg-white p-3 rounded-xl border border-slate-100 shadow-sm group/item">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-black text-blue-600 text-[9px] font-mono whitespace-nowrap">{num}</span>
+                                  <span className="text-slate-100">—</span>
+                                  <span className="truncate flex-1 font-bold text-slate-500 uppercase tracking-tighter">{rec.tipos[i]}</span>
+                                </div>
+                                <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-50 text-[9px] text-slate-400 font-bold">
+                                  <div className="flex items-center gap-1.5">
+                                    <Calendar className="w-2.5 h-2.5 text-slate-300" />
+                                    <span>{formatearFecha(rec.fechas[i])}</span>
+                                  </div>
+                                  {rec.oficiales && rec.oficiales[i] && (
+                                    <>
+                                      <span className="text-slate-200">|</span>
+                                      <div className="flex items-center gap-1.5 min-w-0">
+                                        <User className="w-2.5 h-2.5 text-slate-300 shrink-0" />
+                                        <span className="italic truncate">{rec.oficiales[i].split(',')[0]}</span>
+                                      </div>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12 text-slate-400 font-bold uppercase tracking-widest text-[10px] bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+                      Sin anomalías de recurrencia en este periodo.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Evolución Diaria */}
+              <div className="bg-white rounded-2xl shadow-xl shadow-blue-900/5 border border-slate-100 overflow-hidden relative">
+                <div className="absolute top-0 left-0 w-1 h-full bg-[#002147]"></div>
+                <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-[#002147] rounded-xl shadow-lg shadow-blue-900/10">
+                      <TrendingUp className="w-4 h-4 text-white" />
+                    </div>
+                    <h3 className="text-[11px] font-black text-[#002147] uppercase tracking-widest">Evolución Diaria</h3>
+                  </div>
+                  <button
+                    onClick={handleExportChartImage}
+                    className="px-4 py-2 bg-white border border-slate-200 text-[#002147] rounded-xl hover:bg-slate-50 shadow-sm transition-all flex items-center gap-2 text-[10px] font-black uppercase tracking-widest"
                   >
-                    <svg className="w-5 h-5 group-hover:animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    </svg>
-                    Descargar Backup
-                  </a>
+                    <Eye className="w-3.5 h-3.5" />
+                    Capturar Gráfico
+                  </button>
+                </div>
+                <div className="p-6 md:p-8" id="chart-evolution">
+                  <div className="h-[300px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={datosMensuales.evolucion_diaria}
+                        margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                        <XAxis
+                          dataKey="dia"
+                          fontSize={9}
+                          tickLine={false}
+                          axisLine={false}
+                          tick={{ fill: '#64748b', fontWeight: 700 }}
+                          dy={10}
+                        />
+                        <YAxis
+                          fontSize={9}
+                          tickLine={false}
+                          axisLine={false}
+                          tick={{ fill: '#64748b', fontWeight: 700 }}
+                          allowDecimals={false}
+                        />
+                        <Tooltip
+                          cursor={{ fill: '#f8fafc' }}
+                          content={({ active, payload }) => {
+                            if (active && payload && payload.length) {
+                              return (
+                                <div className="bg-[#002147] p-3 shadow-2xl rounded-xl border border-white/10">
+                                  <p className="text-[9px] text-blue-200 font-black uppercase tracking-widest mb-1.5 border-b border-white/10 pb-1.5 flex items-center gap-2">
+                                    <Calendar className="w-3 h-3" /> Día {payload[0].payload.dia}
+                                  </p>
+                                  <p className="text-xl font-black text-white">{payload[0].value} <span className="text-[10px] font-bold text-blue-300 uppercase tracking-widest ml-1">Denuncias</span></p>
+                                </div>
+                              );
+                            }
+                            return null;
+                          }}
+                        />
+                        <Bar
+                          dataKey="total"
+                          radius={[6, 6, 0, 0]}
+                        >
+                          {datosMensuales.evolucion_diaria.map((entry, index) => (
+                            <Cell
+                              key={`cell-${index}`}
+                              fill={entry.total > 0 ? '#002147' : '#f1f5f9'}
+                              fillOpacity={entry.total > 0 ? 0.9 : 1}
+                              className="transition-all duration-300 hover:fill-blue-600"
+                            />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
                 </div>
               </div>
             </div>
+          )}
+
+          {/* Resultados Daños */}
+          {activeTab === 'danos' && (
+            <div className="space-y-8 animate-in fade-in slide-in-from-right-4">
+              {/* Resumen de Daños (Tarjetas) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {(() => {
+                  const stats: Record<string, number> = {}
+                  datosDanosOrdenados.forEach(d => {
+                    if (d.monto_dano && d.moneda) {
+                      stats[d.moneda] = (stats[d.moneda] || 0) + (typeof d.monto_dano === 'string' ? parseInt(d.monto_dano, 10) : d.monto_dano)
+                    }
+                  })
+                  const entries = Object.entries(stats)
+                  if (entries.length === 0) {
+                    return (
+                      <div className="md:col-span-4 bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl p-12 text-center flex flex-col items-center gap-4">
+                        <div className="p-4 bg-white rounded-full shadow-sm">
+                          <DollarSign className="w-8 h-8 text-slate-300" />
+                        </div>
+                        <p className="text-slate-400 font-black uppercase tracking-widest text-xs">Sin registros de perjuicio patrimonial</p>
+                      </div>
+                    )
+                  }
+                  return entries.map(([moneda, total], idx) => (
+                    <div key={idx} className="bg-white p-6 rounded-2xl shadow-xl shadow-blue-900/5 border border-slate-100 group hover:-translate-y-1 transition-all duration-300 relative">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div> Total Perjuicio {moneda}
+                      </p>
+                      <p className="text-2xl font-black text-[#002147] tracking-tighter">
+                        {total.toLocaleString('es-PY')}
+                        <span className="text-[11px] ml-1.5 font-black text-blue-500 uppercase tracking-widest">{moneda}</span>
+                      </p>
+                    </div>
+                  ))
+                })()}
+              </div>
+
+              {/* Tabla Detallada de Daños */}
+              <div className="bg-white rounded-2xl shadow-xl shadow-blue-900/5 overflow-hidden border border-slate-100 relative">
+                <div className="absolute top-0 left-0 w-1 h-full bg-[#002147]"></div>
+                <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-[#002147] rounded-xl shadow-lg shadow-blue-900/10">
+                      <Briefcase className="w-4 h-4 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-[11px] font-black text-[#002147] uppercase tracking-widest">Detalle de Perjuicios</h3>
+                      <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Desglose individual por denuncia</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleExportDanosExcel}
+                    className="flex items-center gap-2 px-5 py-2 bg-[#002147] text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-[#003366] transition-all shadow-lg shadow-blue-900/20"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    Exportar Datos
+                  </button>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full border-separate border-spacing-0">
+                    <thead>
+                      <tr className="bg-slate-50/20">
+                        <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 cursor-pointer hover:text-[#002147] transition" onClick={() => handleSort('numero_denuncia')}>
+                          <div className="flex items-center gap-2">NUM. <SortIcon field="numero_denuncia" currentField={sortField} direction={sortDirection} /></div>
+                        </th>
+                        <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Denunciante</th>
+                        <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Hecho Punible</th>
+                        <th className="px-6 py-4 text-right text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 cursor-pointer hover:text-[#002147] transition" onClick={() => handleSort('monto_dano')}>
+                          <div className="flex items-center gap-2 justify-end">Monto <SortIcon field="monto_dano" currentField={sortField} direction={sortDirection} /></div>
+                        </th>
+                        <th className="px-6 py-4 text-center text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Moneda</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50 font-medium">
+                      {datosDanosOrdenados.filter(d => (d.monto_dano || 0) > 0).map((row, index) => (
+                        <tr key={index} className="group hover:bg-slate-50 transition-all">
+                          <td className="px-6 py-4 whitespace-nowrap text-[10px] font-black text-[#002147]/70 font-mono italic">{row.numero_denuncia}/{row.año}</td>
+                          <td className="px-6 py-4 text-[10px] font-bold text-slate-600 uppercase tracking-tight">{row.denunciante}</td>
+                          <td className="px-6 py-4">
+                            <span className="inline-block px-2 py-0.5 bg-slate-100 border border-slate-200 rounded text-[8px] font-black text-slate-500 uppercase tracking-wider">
+                              {row.shp}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-[11px] font-black text-[#002147] text-right bg-slate-50/30">
+                            {row.monto_dano?.toLocaleString('es-PY')}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-[9px] font-black text-blue-500 text-center uppercase tracking-widest italic">
+                            {row.moneda}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Sección de Administración - Solo para garv */}
+          {usuario?.usuario === 'garv' && (
+            <div className="mt-16 pt-8 border-t border-slate-200 max-w-3xl">
+              <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-6 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:opacity-10 transition-opacity">
+                  <Database className="w-16 h-16 text-[#002147]" />
+                </div>
+                <div className="flex items-start gap-4 relative z-10">
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                    <Database className="w-5 h-5 text-[#002147]" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-[#002147] uppercase tracking-wider mb-1">Copia de Seguridad</h3>
+                    <p className="text-[10px] text-slate-500 font-medium leading-relaxed max-w-sm">
+                      Genere un respaldo integral en formato <code className="bg-slate-100 px-1 rounded text-blue-600 font-mono italic">.sql</code> de la base de datos institucional.
+                    </p>
+                  </div>
+                </div>
+                <a
+                  href="/api/admin/backup"
+                  className="shrink-0 flex items-center gap-2.5 px-6 py-3 bg-[#002147] text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-[#003366] transition-all shadow-lg shadow-blue-900/20 active:scale-95 relative z-10"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  Descargar SQL
+                </a>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Modal para Metadatos de Nota de Elevación (DOCX) */}
+      {showDocxModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#002147]/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 animate-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-[#002147] rounded-xl">
+                  <FileText className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-[#002147] uppercase tracking-wider">Metadatos de la Nota</h3>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Complete remitente y destinatario</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowDocxModal(false)}
+                className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 transition-colors"
+              >
+                <RefreshCcw className="w-4 h-4 rotate-45" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Nº de Nota (###)</label>
+                <input
+                  type="text"
+                  placeholder="Ej: 125"
+                  value={docxMeta.numeroNota}
+                  onChange={(e) => setDocxMeta({ ...docxMeta, numeroNota: e.target.value })}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-[#002147] focus:ring-4 focus:ring-blue-50 outline-none transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Grado del Destinatario</label>
+                <input
+                  type="text"
+                  placeholder="Ej: Comisario MGAP"
+                  value={docxMeta.destinatarioGrado}
+                  onChange={(e) => setDocxMeta({ ...docxMeta, destinatarioGrado: e.target.value })}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-[#002147] focus:ring-4 focus:ring-blue-50 outline-none transition-all"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-1">
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Nombre y Apellido</label>
+                  <input
+                    type="text"
+                    placeholder="Ej: JUAN PÉREZ"
+                    value={docxMeta.destinatarioNombre}
+                    onChange={(e) => setDocxMeta({ ...docxMeta, destinatarioNombre: e.target.value.toUpperCase() })}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-[#002147] uppercase focus:ring-4 focus:ring-blue-50 outline-none transition-all"
+                  />
+                </div>
+                <div className="col-span-1">
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Cargo</label>
+                  <select
+                    value={docxMeta.destinatarioCargo}
+                    onChange={(e) => setDocxMeta({ ...docxMeta, destinatarioCargo: e.target.value })}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-[#002147] focus:ring-4 focus:ring-blue-50 outline-none transition-all appearance-none"
+                  >
+                    <option value="Jefe de Servicio">Jefe de Servicio</option>
+                    <option value="Jefe de Cuartel">Jefe de Cuartel</option>
+                    <option value="Oficial de Guardia">Oficial de Guardia</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="border-t border-slate-100 pt-4 mt-2">
+                <h4 className="text-[11px] font-black text-[#002147] uppercase tracking-widest mb-3">Datos del Remitente (Firma)</h4>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Grado del Remitente</label>
+                    <input
+                      type="text"
+                      placeholder="Ej: Oficial Inspector P.S."
+                      value={docxMeta.remitenteGrado}
+                      onChange={(e) => setDocxMeta({ ...docxMeta, remitenteGrado: e.target.value })}
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-[#002147] focus:ring-4 focus:ring-blue-50 outline-none transition-all"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="col-span-1">
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Nombre y Apellido</label>
+                      <input
+                        type="text"
+                        placeholder="Ej: PEDRO GÓMEZ"
+                        value={docxMeta.remitenteNombre}
+                        onChange={(e) => setDocxMeta({ ...docxMeta, remitenteNombre: e.target.value.toUpperCase() })}
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-[#002147] uppercase focus:ring-4 focus:ring-blue-50 outline-none transition-all"
+                      />
+                    </div>
+                    <div className="col-span-1">
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Cargo</label>
+                      <select
+                        value={docxMeta.remitenteCargo}
+                        onChange={(e) => setDocxMeta({ ...docxMeta, remitenteCargo: e.target.value })}
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-[#002147] focus:ring-4 focus:ring-blue-50 outline-none transition-all appearance-none"
+                      >
+                        <option value="Jefe de Cuartel">Jefe de Cuartel</option>
+                        <option value="Oficial de Guardia">Oficial de Guardia</option>
+                        <option value="Jefe de Servicio">Jefe de Servicio</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-4 flex gap-3">
+                <button
+                  onClick={() => setShowDocxModal(false)}
+                  className="flex-1 px-4 py-3 bg-slate-100 text-slate-500 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-slate-200 transition-all"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={confirmExportDocx}
+                  disabled={!docxMeta.numeroNota || !docxMeta.destinatarioNombre}
+                  className="flex-1 px-4 py-3 bg-[#002147] text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-[#003366] transition-all shadow-lg shadow-blue-900/10 disabled:opacity-50"
+                >
+                  Exportar Nota
+                </button>
+              </div>
+            </div>
           </div>
-        )}
-      </main>
-    </div>
+        </div>
+      )}
+    </MainLayout>
   )
 }
