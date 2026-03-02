@@ -10,6 +10,10 @@ export async function GET(
         const { id } = await params;
         const denunciaId = parseInt(id);
 
+        // Diagnóstico temporal
+        const diag = await pool.query('SELECT current_database(), current_user');
+        console.log('DEBUG: Conectado a:', diag.rows[0]);
+
         const result = await pool.query(
             'SELECT rol, usado, fecha_uso FROM denuncia_firmas WHERE denuncia_id = $1',
             [denunciaId]

@@ -108,6 +108,9 @@ export async function GET(
             [id]
         );
 
+        const diag = await pool.query('SELECT current_database(), current_user');
+        console.log('DEBUG PDF: Conectado a:', diag.rows[0]);
+
         // Obtener firmas digitales
         const firmasResult = await pool.query(
             'SELECT rol, firma_base64 FROM denuncia_firmas WHERE denuncia_id = $1 AND usado = TRUE',
