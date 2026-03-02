@@ -220,24 +220,6 @@ function ConfirmacionPage() {
                   Descargar PDF
                 </button>
                 <button
-                  onClick={() => router.push('/nueva-denuncia')}
-                  className="w-full py-2.5 bg-[#002147] hover:bg-[#002147]/90 text-white rounded-lg font-bold uppercase tracking-widest text-[10px] shadow-sm transition-all transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center"
-                >
-                  <svg className="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                  Nueva Denuncia
-                </button>
-                <button
-                  onClick={() => router.push('/nueva-denuncia')}
-                  className="w-full py-2.5 bg-[#002147] hover:bg-[#002147]/90 text-white rounded-lg font-bold uppercase tracking-widest text-[10px] shadow-sm transition-all transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center"
-                >
-                  <svg className="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                  Nueva Denuncia
-                </button>
-                <button
                   onClick={() => router.push('/dashboard')}
                   className="w-full sm:col-span-2 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg font-bold uppercase tracking-widest text-[9px] transition-all flex items-center justify-center border border-slate-200"
                 >
