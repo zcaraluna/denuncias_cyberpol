@@ -125,7 +125,7 @@ export default function GestionUsuariosPage() {
 
   const cargarUsuarios = async () => {
     try {
-      const response = await fetch('/api/auditoria')
+      const response = await fetch('/api/usuarios')
       if (!response.ok) throw new Error('Error al cargar usuarios')
 
       const data = await response.json()
@@ -319,7 +319,7 @@ export default function GestionUsuariosPage() {
                         <td className="px-8 py-4 whitespace-nowrap">
                           <div className="flex items-center gap-3">
                             <div className="h-10 w-10 bg-slate-100 rounded-xl flex items-center justify-center text-[#002147] font-black text-xs border border-slate-200">
-                              {user.nombre[0]}{user.apellido[0]}
+                              {user.nombre?.[0] || '?'}{user.apellido?.[0] || ''}
                             </div>
                             <div>
                               <p className="text-sm font-black text-[#002147]">{user.nombre} {user.apellido}</p>

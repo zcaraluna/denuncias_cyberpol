@@ -58,7 +58,7 @@ export default function LogVisitasPage() {
 
   const cargarVisitas = async () => {
     try {
-      const response = await fetch('/api/auditoria')
+      const response = await fetch('/api/registro-actividad')
       if (!response.ok) throw new Error('Error al cargar visitas')
 
       const data = await response.json()

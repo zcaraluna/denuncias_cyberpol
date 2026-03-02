@@ -8,7 +8,7 @@ import type { NextRequest } from 'next/server';
  * La validación real contra la base de datos se hace en las rutas API protegidas.
  * 
  * Nota: Este middleware corre en Edge Runtime, por lo que no puede acceder directamente
- * a la base de datos. La validación completa se hace en las rutas API.
+ * a la base de datos. La validación completaaaaaaaaaa se hace en las rutas API.
  */
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;

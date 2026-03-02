@@ -102,7 +102,7 @@ export default function PerfilUsuarioPage({ params }: { params: Promise<{ id: st
             try {
                 const [usuarioResponse, visitasResponse, denunciasTomadasResponse] = await Promise.all([
                     fetch(`/api/usuarios/${usuarioId}`, { cache: 'no-store' }),
-                    fetch(`/api/auditoria/consultas/${usuarioId}`, { cache: 'no-store' }),
+                    fetch(`/api/registro-actividad/consultas/${usuarioId}`, { cache: 'no-store' }),
                     fetch(`/api/denuncias/usuario/${usuarioId}`, { cache: 'no-store' })
                 ])
 
@@ -181,8 +181,8 @@ export default function PerfilUsuarioPage({ params }: { params: Promise<{ id: st
                                     <div>
                                         <div className="flex items-center gap-3 mb-1">
                                             <span className={`px-2.5 py-1 text-[10px] font-black uppercase tracking-widest rounded-lg border ${usuario.rol === 'superadmin' ? 'bg-red-50 text-red-600 border-red-100' :
-                                                    usuario.rol === 'admin' ? 'bg-orange-50 text-orange-600 border-orange-100' :
-                                                        'bg-blue-50 text-blue-600 border-blue-100'
+                                                usuario.rol === 'admin' ? 'bg-orange-50 text-orange-600 border-orange-100' :
+                                                    'bg-blue-50 text-blue-600 border-blue-100'
                                                 }`}>
                                                 {usuario.rol}
                                             </span>
