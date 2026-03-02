@@ -8,18 +8,6 @@ export async function GET(
     try {
         const { token } = await params;
 
-        const result = await pool.query(
-            `export const q = \`
-            SELECT df.rol, df.usado, d.orden, d.fecha_denuncia, den.nombres as denunciante
-            FROM denuncia_firmas df
-            JOIN denuncias d ON df.denuncia_id = d.id
-            JOIN denunciantes den ON d.denunciante_id = den.id
-            WHERE df.token = $1
-            \``,
-            [token]
-        );
-
-        // Corregir la consulta arriba, parece que me equivoqué de sintaxis
         const query = `
             SELECT df.rol, df.usado, d.orden, d.fecha_denuncia, den.nombres as denunciante
             FROM denuncia_firmas df
@@ -27,13 +15,13 @@ export async function GET(
             JOIN denunciantes den ON d.denunciante_id = den.id
             WHERE df.token = $1
         `;
-        const actualResult = await pool.query(query, [token]);
+        const result = await pool.query(query, [token]);
 
-        if (actualResult.rows.length === 0) {
+        if (result.rows.length === 0) {
             return NextResponse.json({ error: 'Token inválido' }, { status: 404 });
         }
 
-        return NextResponse.json(actualResult.rows[0]);
+        return NextResponse.json(result.rows[0]);
     } catch (error) {
         console.error('Error al validar token de firma:', error);
         return NextResponse.json({ error: 'Error interno' }, { status: 500 });
