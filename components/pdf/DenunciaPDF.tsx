@@ -196,6 +196,7 @@ const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 
                     isDuplicate={denuncia.is_duplicate}
                     operadorActual={denuncia.operador_actual}
                     operadorOriginalId={denuncia.usuario_id}
+                    firmas={denuncia.firmas}
                 />
             </Page >
             {/* Páginas adicionales para adjuntos (Solo imágenes) */}

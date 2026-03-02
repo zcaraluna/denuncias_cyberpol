@@ -73,6 +73,10 @@ interface SeccionFirmasProps {
         grado: string;
     };
     operadorOriginalId?: number;
+    firmas?: {
+        operador?: string;
+        denunciante?: string;
+    };
 }
 
 export const SeccionFirmas: React.FC<SeccionFirmasProps> = ({
@@ -83,7 +87,8 @@ export const SeccionFirmas: React.FC<SeccionFirmasProps> = ({
     qrCodeUrl,
     isDuplicate,
     operadorActual,
-    operadorOriginalId
+    operadorOriginalId,
+    firmas
 }) => {
     // Es el mismo operador que hizo la denuncia original?
     const esMismoOperador = isDuplicate && operadorActual && operadorActual.id === operadorOriginalId;
@@ -100,6 +105,9 @@ export const SeccionFirmas: React.FC<SeccionFirmasProps> = ({
         <View style={styles.signatureContainer} wrap={false}>
             {/* Columna Izquierda (Observador): Personal Interviniente o Autorizado */}
             <View style={styles.column}>
+                {firmas?.operador && (
+                    <Image src={firmas.operador} style={{ width: 100, height: 50, marginBottom: -10 }} />
+                )}
                 <View style={styles.line} />
                 <Text style={styles.nameText}>
                     {personal.nombre.toUpperCase()} {personal.apellido.toUpperCase()}
@@ -116,6 +124,9 @@ export const SeccionFirmas: React.FC<SeccionFirmasProps> = ({
 
             {/* Columna Derecha (Observador): Denunciante o Representante Legal */}
             <View style={styles.column}>
+                {firmas?.denunciante && (
+                    <Image src={firmas.denunciante} style={{ width: 100, height: 50, marginBottom: -10 }} />
+                )}
                 <View style={styles.line} />
                 {abogadoRep ? (
                     <>

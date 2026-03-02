@@ -108,6 +108,16 @@ export async function GET(
             [id]
         );
 
+        // Obtener firmas digitales
+        const firmasResult = await pool.query(
+            'SELECT rol, firma_base64 FROM denuncia_firmas WHERE denuncia_id = $1 AND usado = TRUE',
+            [id]
+        );
+        const firmas = firmasResult.rows.reduce((acc: any, row) => {
+            acc[row.rol] = row.firma_base64;
+            return acc;
+        }, {});
+
         // Preparar datos serializados para el PDF (react-pdf no acepta Dates ni nulls)
         const denunciaData = {
             orden: denuncia.orden,
@@ -201,7 +211,8 @@ export async function GET(
             usuario_id: denuncia.usuario_id,
             es_denuncia_escrita: Boolean(denuncia.es_denuncia_escrita),
             archivo_denuncia_url: denuncia.archivo_denuncia_url,
-            adjuntos_urls: denuncia.adjuntos_urls || []
+            adjuntos_urls: denuncia.adjuntos_urls || [],
+            firmas: firmas
         };
 
         // Determinar el tamaño de página

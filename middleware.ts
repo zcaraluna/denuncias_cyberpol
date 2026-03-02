@@ -24,10 +24,12 @@ export async function middleware(request: NextRequest) {
     '/cambiar-password', // Página de cambio de contraseña
     '/verificar', // Página pública para verificar denuncias
     '/api/verificar', // API pública para verificar denuncias
+    '/firmar', // Página pública para firmar denuncias
+    '/api/firmas', // API pública para firmar denuncias
   ];
 
   // Verificar si es una ruta pública
-  const esRutaPublica = rutasPublicas.some(ruta => 
+  const esRutaPublica = rutasPublicas.some(ruta =>
     pathname === ruta || pathname.startsWith(ruta)
   );
 
