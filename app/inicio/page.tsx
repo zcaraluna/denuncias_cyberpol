@@ -148,8 +148,15 @@ export default function InicioPage() {
 
         {/* Widgets Row: Currency & Manuals */}
         <div className="flex flex-col lg:flex-row gap-10 items-start">
-          {/* Optimized Ultra-Compact Single Frame Currency List */}
+          {/* Currency Section */}
           <div className="w-fit min-w-[320px]">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-1.5 h-6 bg-[#002147] rounded-full" />
+              <div>
+                <h2 className="text-lg font-black text-[#002147] tracking-tight uppercase">Cotizaciones</h2>
+                <p className="text-[8px] font-bold text-slate-400 uppercase tracking-[0.2em]">Mercado Cambiario</p>
+              </div>
+            </div>
             <div className="bg-white/70 backdrop-blur-md rounded-[1.8rem] border border-slate-100 p-1 shadow-sm hover:shadow-lg transition-all duration-500 overflow-hidden">
               <div className="flex flex-col">
                 {currencies.map((currency, index) => (
