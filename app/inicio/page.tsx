@@ -49,24 +49,6 @@ const MANUALS_DATA: Manual[] = [
 6. Presione el botón azul con el **Icono de Word** (Descargar).
 7. Complete los datos solicitados (Nro. de Nota, Destinatario y Remitente).
 8. Presione **Generar Reporte** para descargar el archivo.`
-  },
-  {
-    id: 'registro-denuncia',
-    title: 'Registro de Denuncia',
-    description: 'Guía paso a paso para completar el formulario de denuncia correctamente.',
-    category: 'OPERATIVO',
-    icon: Book,
-    color: 'bg-blue-50 text-blue-600',
-    content: 'Para registrar una denuncia, debe ir a la sección "Nueva Denuncia" y completar los datos del denunciante, el hecho y los intervinientes. Al finalizar, podrá descargar el acta en PDF.'
-  },
-  {
-    id: 'firma-digital',
-    title: 'Uso de Firma Digital',
-    description: 'Cómo capturar firmas desde dispositivos móviles mediante códigos QR.',
-    category: 'NUEVO',
-    icon: Smartphone,
-    color: 'bg-emerald-50 text-emerald-600',
-    content: 'Al finalizar una denuncia, se mostrarán códigos QR. El interviniente y el denunciante deben escanearlos con sus teléfonos para abrir el canvas de firma.'
   }
 ]
 
@@ -164,32 +146,58 @@ export default function InicioPage() {
           </div>
         </div>
 
-        {/* Optimized Ultra-Compact Single Frame Currency List */}
-        <div className="mb-10 w-fit min-w-[320px]">
-          <div className="bg-white/70 backdrop-blur-md rounded-[1.8rem] border border-slate-100 p-1 shadow-sm hover:shadow-lg transition-all duration-500 overflow-hidden">
-            <div className="flex flex-col">
-              {currencies.map((currency, index) => (
-                <div key={currency.code}>
-                  <CurrencyListItem
-                    currency={currency}
-                    loading={loading}
-                    buyingValue={rates[currency.code]?.compra || 0}
-                    onOpenConverter={() => {
-                      setSelectedCurrency(currency)
-                      setIsModalOpen(true)
-                    }}
-                  />
-                  {index < currencies.length - 1 && (
-                    <div className="mx-4 h-px bg-slate-50/50" />
-                  )}
-                </div>
-              ))}
+        {/* Widgets Row: Currency & Manuals */}
+        <div className="flex flex-col lg:flex-row gap-10 items-start">
+          {/* Optimized Ultra-Compact Single Frame Currency List */}
+          <div className="w-fit min-w-[320px]">
+            <div className="bg-white/70 backdrop-blur-md rounded-[1.8rem] border border-slate-100 p-1 shadow-sm hover:shadow-lg transition-all duration-500 overflow-hidden">
+              <div className="flex flex-col">
+                {currencies.map((currency, index) => (
+                  <div key={currency.code}>
+                    <CurrencyListItem
+                      currency={currency}
+                      loading={loading}
+                      buyingValue={rates[currency.code]?.compra || 0}
+                      onOpenConverter={() => {
+                        setSelectedCurrency(currency)
+                        setIsModalOpen(true)
+                      }}
+                    />
+                    {index < currencies.length - 1 && (
+                      <div className="mx-4 h-px bg-slate-50/50" />
+                    )}
+                  </div>
+                ))}
+              </div>
+              {/* Internal Disclaimer */}
+              <div className="px-4 py-2 bg-slate-50/50 border-t border-slate-100/50">
+                <p className="text-[7px] font-bold text-slate-400 uppercase tracking-widest text-center">
+                  Fuente: <a href="https://www.cambioschaco.com.py/" target="_blank" rel="noopener noreferrer" className="hover:text-[#002147] transition-colors underline decoration-slate-200 underline-offset-2">Cambios Chaco</a>
+                </p>
+              </div>
             </div>
-            {/* Internal Disclaimer */}
-            <div className="px-4 py-2 bg-slate-50/50 border-t border-slate-100/50">
-              <p className="text-[7px] font-bold text-slate-400 uppercase tracking-widest text-center">
-                Fuente: <a href="https://www.cambioschaco.com.py/" target="_blank" rel="noopener noreferrer" className="hover:text-[#002147] transition-colors underline decoration-slate-200 underline-offset-2">Cambios Chaco</a>
-              </p>
+          </div>
+
+          {/* Manuals Section */}
+          <div className="flex-1 w-full max-w-md">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-1.5 h-6 bg-[#002147] rounded-full" />
+              <div>
+                <h2 className="text-lg font-black text-[#002147] tracking-tight uppercase">Guías Rápidas</h2>
+                <p className="text-[8px] font-bold text-slate-400 uppercase tracking-[0.2em]">Instrucciones de uso</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 gap-4">
+              {MANUALS_DATA.map((manual) => (
+                <ManualCard
+                  key={manual.id}
+                  manual={manual}
+                  onClick={() => {
+                    setSelectedManual(manual)
+                    setIsManualModalOpen(true)
+                  }}
+                />
+              ))}
             </div>
           </div>
         </div>
@@ -202,29 +210,6 @@ export default function InicioPage() {
             onClose={() => setIsModalOpen(false)}
           />
         )}
-
-        {/* Manuals Section */}
-        <div className="mt-16">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="w-2 h-8 bg-[#002147] rounded-full" />
-            <div>
-              <h2 className="text-xl md:text-2xl font-black text-[#002147] tracking-tight uppercase">Manuales e Instrucciones</h2>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Recursos de ayuda para el personal</p>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {MANUALS_DATA.map((manual) => (
-              <ManualCard
-                key={manual.id}
-                manual={manual}
-                onClick={() => {
-                  setSelectedManual(manual)
-                  setIsManualModalOpen(true)
-                }}
-              />
-            ))}
-          </div>
-        </div>
       </div>
 
       {/* Manual Modal */}
