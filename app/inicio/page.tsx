@@ -330,7 +330,9 @@ function ManualModal({ manual, onClose }: { manual: Manual, onClose: () => void 
           </div>
           <div className="prose prose-slate max-w-none">
             <div className="text-slate-600 text-sm leading-relaxed whitespace-pre-line font-medium bg-slate-50 p-6 rounded-[2rem] border border-slate-100">
-              {manual.content}
+              {manual.content.split('**').map((part, i) => (
+                i % 2 === 1 ? <b key={i} className="font-black text-[#002147]">{part}</b> : part
+              ))}
             </div>
           </div>
           <div className="mt-8 flex justify-end">
