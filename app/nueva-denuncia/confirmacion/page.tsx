@@ -24,6 +24,7 @@ function ConfirmacionPage() {
   const [denuncia, setDenuncia] = useState<DenunciaInfo | null>(null)
   const [loading, setLoading] = useState(true)
   const isSimulacion = searchParams.get('simulacion') === 'true'
+  const SHOW_DIGITAL_SIGNATURE = usuario?.usuario === 'User1' || usuario?.usuario === 'User2'
 
   // Estados para la firma digital
   const [tokens, setTokens] = useState<{ operador: string | null, denunciante: string | null }>({ operador: null, denunciante: null })
@@ -120,7 +121,9 @@ function ConfirmacionPage() {
           denunciante: data.denunciante_nombres,
           tipoHecho: data.tipo_denuncia,
         })
-        initFirmas(data.id)
+        if (SHOW_DIGITAL_SIGNATURE) {
+          initFirmas(data.id)
+        }
       } catch (error) {
         console.error('Error:', error)
         router.push('/dashboard')
@@ -228,7 +231,7 @@ function ConfirmacionPage() {
               </div>
 
               {/* SECCIÓN DE FIRMA DIGITAL */}
-              {!isSimulacion && (
+              {SHOW_DIGITAL_SIGNATURE && !isSimulacion && (
                 <div className="mt-8 border-t border-slate-100 pt-6">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-xs font-black text-[#002147] uppercase tracking-wider flex items-center">

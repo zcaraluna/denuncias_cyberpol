@@ -134,7 +134,7 @@ export default function ReportesPage() {
   const [datosDiario, setDatosDiario] = useState<ReporteRow[]>([])
   const [tiposDisponibles, setTiposDisponibles] = useState<string[]>([])
   const [filtrosTiposDiario, setFiltrosTiposDiario] = useState<string[]>([])
-  const [sortField, setSortField] = useState<SortField>('hora_denuncia')
+  const [sortField, setSortField] = useState<SortField>('numero_denuncia')
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
 
   // Estado para reporte mensual y daños
@@ -279,7 +279,9 @@ export default function ReportesPage() {
     sorted.sort((a, b) => {
       let comparison = 0
       if (sortField === 'numero_denuncia') {
-        comparison = a.numero_denuncia - b.numero_denuncia
+        const valA = String(a.numero_denuncia).includes('-') ? parseInt(String(a.numero_denuncia).split('-').pop() || '0') : Number(a.numero_denuncia);
+        const valB = String(b.numero_denuncia).includes('-') ? parseInt(String(b.numero_denuncia).split('-').pop() || '0') : Number(b.numero_denuncia);
+        comparison = valA - valB
       } else if (sortField === 'hora_denuncia') {
         comparison = (a.hora_denuncia || '00:00').localeCompare(b.hora_denuncia || '00:00')
       } else if (sortField === 'shp') {

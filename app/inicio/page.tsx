@@ -10,10 +10,65 @@ import {
   Clock,
   ArrowRight,
   Calculator,
-  X
+  X,
+  BookOpen,
+  FileText,
+  Smartphone,
+  ShieldCheck,
+  Search,
+  Book
 } from 'lucide-react'
 
 const API_KEY = 'c26434662f9a1a4869628002'
+
+interface Manual {
+  id: string
+  title: string
+  description: string
+  content: string
+  icon: any
+  category: string
+  color: string
+}
+
+const MANUALS_DATA: Manual[] = [
+  {
+    id: 'exportar-word',
+    title: 'Exportar a Word (Reporte Diario)',
+    description: 'Instrucciones para generar la Nota de Elevación y el reporte diario en formato .docx.',
+    category: 'REPORTE',
+    icon: FileText,
+    color: 'bg-indigo-50 text-indigo-600',
+    content: `Para exportar el reporte diario a Word:
+    
+1. Ingrese a la sección **Reportes**.
+2. Seleccione la pestaña **Diario**.
+3. Elija la **Fecha** del reporte y las horas de inicio/fin (de 07:00 a 07:00 suele ser lo habitual).
+4. Haga clic en el botón de **Buscar**.
+5. Verifique que el orden de las denuncias sea el correcto (Ascendente por Nro. de Orden).
+6. Presione el botón azul con el **Icono de Word** (Descargar).
+7. Complete los datos solicitados (Nro. de Nota, Destinatario y Remitente).
+8. Presione **Generar Reporte** para descargar el archivo.`
+  },
+  {
+    id: 'registro-denuncia',
+    title: 'Registro de Denuncia',
+    description: 'Guía paso a paso para completar el formulario de denuncia correctamente.',
+    category: 'OPERATIVO',
+    icon: Book,
+    color: 'bg-blue-50 text-blue-600',
+    content: 'Para registrar una denuncia, debe ir a la sección "Nueva Denuncia" y completar los datos del denunciante, el hecho y los intervinientes. Al finalizar, podrá descargar el acta en PDF.'
+  },
+  {
+    id: 'firma-digital',
+    title: 'Uso de Firma Digital',
+    description: 'Cómo capturar firmas desde dispositivos móviles mediante códigos QR.',
+    category: 'NUEVO',
+    icon: Smartphone,
+    color: 'bg-emerald-50 text-emerald-600',
+    content: 'Al finalizar una denuncia, se mostrarán códigos QR. El interviniente y el denunciante deben escanearlos con sus teléfonos para abrir el canvas de firma.'
+  }
+]
 
 interface CurrencyData {
   code: string
@@ -30,6 +85,8 @@ export default function InicioPage() {
   const [loading, setLoading] = useState(true)
   const [selectedCurrency, setSelectedCurrency] = useState<CurrencyData | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [selectedManual, setSelectedManual] = useState<Manual | null>(null)
+  const [isManualModalOpen, setIsManualModalOpen] = useState(false)
 
   const fetchRates = async () => {
     setLoading(true)
@@ -145,7 +202,38 @@ export default function InicioPage() {
             onClose={() => setIsModalOpen(false)}
           />
         )}
+
+        {/* Manuals Section */}
+        <div className="mt-16">
+          <div className="flex items-center gap-3 mb-8">
+            <div className="w-2 h-8 bg-[#002147] rounded-full" />
+            <div>
+              <h2 className="text-xl md:text-2xl font-black text-[#002147] tracking-tight uppercase">Manuales e Instrucciones</h2>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Recursos de ayuda para el personal</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {MANUALS_DATA.map((manual) => (
+              <ManualCard
+                key={manual.id}
+                manual={manual}
+                onClick={() => {
+                  setSelectedManual(manual)
+                  setIsManualModalOpen(true)
+                }}
+              />
+            ))}
+          </div>
+        </div>
       </div>
+
+      {/* Manual Modal */}
+      {isManualModalOpen && selectedManual && (
+        <ManualModal
+          manual={selectedManual}
+          onClose={() => setIsManualModalOpen(false)}
+        />
+      )}
     </MainLayout>
   )
 }
@@ -205,6 +293,70 @@ function CurrencyListItem({
         >
           <Calculator className="w-4 h-4" />
         </button>
+      </div>
+    </div>
+  )
+}
+
+function ManualCard({ manual, onClick }: { manual: Manual, onClick: () => void }) {
+  const Icon = manual.icon
+
+  return (
+    <button
+      onClick={onClick}
+      className="group bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col gap-4 text-left relative overflow-hidden"
+    >
+      <div className={`w-12 h-12 rounded-2xl ${manual.color} flex items-center justify-center transition-transform group-hover:scale-110 duration-500`}>
+        <Icon className="w-6 h-6" />
+      </div>
+      <div>
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-[8px] font-black uppercase tracking-[0.2em] opacity-40">{manual.category}</span>
+        </div>
+        <h3 className="text-sm font-black text-[#002147] leading-tight mb-2 group-hover:text-blue-600 transition-colors">{manual.title}</h3>
+        <p className="text-[11px] font-medium text-slate-400 leading-relaxed line-clamp-2">{manual.description}</p>
+      </div>
+      <div className="mt-auto pt-2 flex items-center gap-1.5 text-[10px] font-bold text-blue-600 uppercase tracking-widest opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all duration-300">
+        Ver Manual <ArrowRight className="w-3 h-3" />
+      </div>
+    </button>
+  )
+}
+
+function ManualModal({ manual, onClose }: { manual: Manual, onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-[#002147]/40 backdrop-blur-md transition-opacity" onClick={onClose} />
+      <div className="relative bg-white rounded-[3rem] shadow-2xl border border-white/20 w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-500">
+        <div className="p-8 md:p-10">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-4">
+              <div className={`p-4 rounded-3xl ${manual.color} shadow-sm`}>
+                <manual.icon className="w-8 h-8" />
+              </div>
+              <div>
+                <span className="text-[9px] font-black uppercase tracking-[0.3em] opacity-30 block mb-1">{manual.category}</span>
+                <h2 className="text-2xl font-black text-[#002147] tracking-tight">{manual.title}</h2>
+              </div>
+            </div>
+            <button onClick={onClose} className="p-2 hover:bg-slate-50 rounded-full transition-colors text-slate-300 hover:text-[#002147]">
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+          <div className="prose prose-slate max-w-none">
+            <div className="text-slate-600 text-sm leading-relaxed whitespace-pre-line font-medium bg-slate-50 p-6 rounded-[2rem] border border-slate-100">
+              {manual.content}
+            </div>
+          </div>
+          <div className="mt-8 flex justify-end">
+            <button
+              onClick={onClose}
+              className="px-8 py-3 bg-[#002147] text-white text-xs font-black uppercase tracking-widest rounded-2xl hover:bg-blue-900 transition-all shadow-lg active:scale-95"
+            >
+              Comprendido
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   )
