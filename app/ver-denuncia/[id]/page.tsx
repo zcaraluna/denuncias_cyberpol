@@ -260,6 +260,11 @@ export default function VerDenunciaPage({ params }: { params: Promise<{ id: stri
     window.open(`/api/denuncias/pdf/${denunciaId}?tipo=oficio&usuario_id=${usuario.id}&es_copia=true`, '_blank')
   }
 
+  const descargarActaOriginal = () => {
+    if (!usuario || usuario.usuario !== 'garv') return
+    window.open(`/api/denuncias/pdf/${denunciaId}?tipo=oficio&usuario_id=${usuario.id}&forzar_original=true`, '_blank')
+  }
+
   const continuarBorrador = () => {
     sessionStorage.setItem('borradorId', denunciaId)
     router.push('/nueva-denuncia')
@@ -374,6 +379,15 @@ export default function VerDenunciaPage({ params }: { params: Promise<{ id: stri
                       <Download className="h-4 w-4" />
                       VER PDF
                     </button>
+                    {usuario.usuario === 'garv' && (
+                      <button
+                        onClick={descargarActaOriginal}
+                        className="group flex items-center gap-2 px-6 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-all shadow-md shadow-red-900/10 font-bold text-sm"
+                      >
+                        <Shield className="h-4 w-4" />
+                        DESCARGAR ACTA ORIGINAL
+                      </button>
+                    )}
                   </>
                 )}
               </div>

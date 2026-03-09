@@ -20,6 +20,7 @@ export async function GET(
         const { searchParams } = new URL(request.url);
         const tipo = searchParams.get('tipo') || 'oficio';
         const esCopiaManual = searchParams.get('es_copia') === 'true';
+        const forzarOriginal = searchParams.get('forzar_original') === 'true';
 
         // 1. Obtener el usuario actual de la cookie de sesión
         const usuarioSesionCookie = request.cookies.get('usuario_sesion')?.value;
@@ -42,7 +43,12 @@ export async function GET(
         );
 
         const impresionesTotal = updateResult.rows[0]?.cantidad_impresiones || 1;
-        const isDuplicate = impresionesTotal > 1 || esCopiaManual;
+        let isDuplicate = impresionesTotal > 1 || esCopiaManual;
+
+        // Si se fuerza el original (para garv), ignoramos la bandera de duplicado
+        if (forzarOriginal) {
+            isDuplicate = false;
+        }
 
         console.log(`[PDF] DB Update impresiones completado en ${Date.now() - startTime}ms`);
 
