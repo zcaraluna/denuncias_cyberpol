@@ -206,7 +206,8 @@ const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 
                     firmas={denuncia.firmas}
                 />
             </Page >
-            {/* Páginas adicionales para adjuntos (Solo imágenes) */}
+            {/* Páginas adicionales para adjuntos (Omitido temporalmente por solicitud) */}
+            {/* 
             {denuncia.adjuntos_urls && denuncia.adjuntos_urls.length > 0 && denuncia.adjuntos_urls.map((url: string, index: number) => {
                 const isImage = /\.(jpg|jpeg|png|webp|gif)$/i.test(url);
                 if (!isImage) return null;
@@ -237,6 +238,7 @@ const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 
                     </Page>
                 );
             })}
+            */}
         </Document >
     );
 };

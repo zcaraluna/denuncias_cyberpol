@@ -158,59 +158,21 @@ export async function GET(
         const logosData = await loadLogos();
         console.log(`[PDF] Logos cargados en ${Date.now() - logosStartTime}ms`);
 
-        // 6. Pre-descargar TODOS los adjuntos (PDFs e Imágenes) en paralelo
+        // 6. Omitir pre-descarga de adjuntos por solicitud del usuario para evitar timeouts
+        /*
         const allUrls = [...(denuncia.adjuntos_urls || [])];
         if (denuncia.es_denuncia_escrita && denuncia.archivo_denuncia_url) {
             allUrls.unshift(denuncia.archivo_denuncia_url);
         }
+        ... logic omitted ...
+        */
 
         const imagenes_adjuntas: Record<string, string> = {};
-        const pdf_adjuntos_buffers: ArrayBuffer[] = [];
-
-        if (allUrls.length > 0) {
-            const downloadsStartTime = Date.now();
-            console.log(`[PDF] Iniciando pre-descarga de ${allUrls.length} recursos en paralelo...`);
-
-            const downloadPromises = allUrls.map(async (url) => {
-                try {
-                    const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 45000); // 45s timeout
-
-                    const response = await fetch(url, { signal: controller.signal });
-                    clearTimeout(timeoutId);
-
-                    if (!response.ok) return { url, data: null };
-
-                    const buffer = await response.arrayBuffer();
-                    return { url, data: buffer };
-                } catch (e) {
-                    console.error(`[PDF] Error descargando ${url}:`, e);
-                    return { url, data: null };
-                }
-            });
-
-            const results = await Promise.all(downloadPromises);
-
-            results.forEach(res => {
-                if (!res.data) return;
-
-                const isPdf = res.url.toLowerCase().endsWith('.pdf');
-                if (isPdf) {
-                    pdf_adjuntos_buffers.push(res.data);
-                } else {
-                    // Es imagen
-                    const extension = res.url.split('.').pop()?.toLowerCase() || 'png';
-                    const base64 = Buffer.from(res.data).toString('base64');
-                    imagenes_adjuntas[res.url] = `data:image/${extension === 'jpg' ? 'jpeg' : extension};base64,${base64}`;
-                }
-            });
-
-            console.log(`[PDF] Pre-descarga completada en ${Date.now() - downloadsStartTime}ms. PDFs: ${pdf_adjuntos_buffers.length}, Imágenes: ${Object.keys(imagenes_adjuntas).length}`);
-        }
+        // const pdf_adjuntos_buffers: ArrayBuffer[] = [];
 
         // Preparar datos para el PDF
         const denunciaData = {
-            ...denuncia, // Atajo para no re-mapear todo si ya viene bien de la DB
+            ...denuncia,
             orden: denuncia.orden,
             hash: String(denuncia.hash),
             fecha_denuncia: denuncia.fecha_denuncia instanceof Date
@@ -302,7 +264,7 @@ export async function GET(
             usuario_id: denuncia.usuario_id,
             es_denuncia_escrita: Boolean(denuncia.es_denuncia_escrita),
             archivo_denuncia_url: denuncia.archivo_denuncia_url,
-            adjuntos_urls: denuncia.adjuntos_urls || [],
+            adjuntos_urls: [], // Omitir adjuntos
             firmas: firmas,
             logos: logosData,
             imagenes_adjuntas: imagenes_adjuntas
@@ -313,7 +275,7 @@ export async function GET(
 
         // Generar el PDF usando renderToBuffer con JSX
         const renderStartTime = Date.now();
-        console.log(`[PDF] Iniciando renderToBuffer...`);
+        console.log(`[PDF] Iniciando renderToBuffer (Solo Acta)...`);
         const pdfBuffer = await renderToBuffer(
             <DenunciaPDFDocument
                 denuncia={denunciaData}
@@ -322,45 +284,12 @@ export async function GET(
         );
         console.log(`[PDF] renderToBuffer completado en ${Date.now() - renderStartTime}ms`);
 
-        // 7. Fusionar PDFs si existen (ya pre-cargados en pdf_adjuntos_buffers)
+        // 7. Fusión omitida por solicitud para evitar timeouts
+        /*
         if (pdf_adjuntos_buffers.length > 0) {
-            try {
-                const mergeStartTime = Date.now();
-                console.log(`[PDF] Iniciando fusión de ${pdf_adjuntos_buffers.length} PDFs...`);
-                const mergedPdf = await PDFDocument.create();
-
-                // Cargar el documento original (Carátula + Imágenes)
-                const mainPdf = await PDFDocument.load(pdfBuffer);
-                const mainPages = await mergedPdf.copyPages(mainPdf, mainPdf.getPageIndices());
-                mainPages.forEach((page) => mergedPdf.addPage(page));
-
-                // Copiar páginas de cada adjunto pre-descargado
-                for (const buffer of pdf_adjuntos_buffers) {
-                    try {
-                        const adjuntoPdf = await PDFDocument.load(buffer);
-                        const pages = await mergedPdf.copyPages(adjuntoPdf, adjuntoPdf.getPageIndices());
-                        pages.forEach((page) => mergedPdf.addPage(page));
-                    } catch (err) {
-                        console.error(`[PDF] Error cargando/fusionando adjunto PDF:`, err);
-                    }
-                }
-
-                console.log(`[PDF] Fusión de PDFs completada en ${Date.now() - mergeStartTime}ms`);
-
-                const mergedPdfBytes = await mergedPdf.save();
-                console.log(`[PDF] Proceso total finalizado exitosamente en ${Date.now() - startTime}ms`);
-
-                return new NextResponse(Buffer.from(mergedPdfBytes), {
-                    headers: {
-                        'Content-Type': 'application/pdf',
-                        'Content-Disposition': `attachment; filename="denuncia_${denuncia.orden}_${new Date().toISOString().split('T')[0]}.pdf"`,
-                    },
-                });
-
-            } catch (mergeError) {
-                console.error('[PDF] Error general fusionando PDFs:', mergeError);
-            }
+            ...
         }
+        */
 
         console.log(`[PDF] Generación carátula simple completada en ${Date.now() - startTime}ms`);
 
