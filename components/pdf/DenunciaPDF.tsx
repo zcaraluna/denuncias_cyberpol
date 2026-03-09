@@ -100,6 +100,12 @@ interface DenunciaData {
     numero_ampliacion?: number;
     fecha_original?: string;
     hora_original?: string;
+    logos?: {
+        policia?: string;
+        dchef?: string;
+        gobierno?: string;
+    };
+    imagenes_adjuntas?: Record<string, string>; // Mapa de URL -> Base64/Uint8Array
     [key: string]: any;
 }
 
@@ -148,6 +154,7 @@ const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 
                         año={año}
                         esAmpliacion={denuncia.es_ampliacion}
                         numeroAmpliacion={denuncia.numero_ampliacion}
+                        logos={denuncia.logos}
                     />
                 </View>
 
@@ -211,6 +218,7 @@ const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 
                                 año={año}
                                 esAmpliacion={denuncia.es_ampliacion}
                                 numeroAmpliacion={denuncia.numero_ampliacion}
+                                logos={denuncia.logos}
                             />
                         </View>
                         <View style={{ marginTop: 20, alignItems: 'center' }}>
@@ -218,7 +226,7 @@ const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 
                                 ADJUNTO {index + 1}
                             </Text>
                             <Image
-                                src={url}
+                                src={denuncia.imagenes_adjuntas && denuncia.imagenes_adjuntas[url] ? denuncia.imagenes_adjuntas[url] : url}
                                 style={{
                                     maxWidth: '100%',
                                     maxHeight: 700,
