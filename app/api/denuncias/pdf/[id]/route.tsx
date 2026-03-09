@@ -11,8 +11,10 @@ export async function GET(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const { id: idStr } = await params;
-        const id = parseInt(idStr);
+        const startTime = Date.now();
+        const { id: idStr_resolved } = await params;
+        console.log(`[PDF] Iniciando generación para denuncia ${idStr_resolved} - ${new Date().toISOString()}`);
+        const id = parseInt(idStr_resolved);
         const { searchParams } = new URL(request.url);
         const tipo = searchParams.get('tipo') || 'oficio';
         const esCopiaManual = searchParams.get('es_copia') === 'true';
@@ -24,7 +26,7 @@ export async function GET(
             try {
                 operadorActual = JSON.parse(decodeURIComponent(usuarioSesionCookie));
             } catch (e) {
-                console.error('Error parseando sesión:', e);
+                console.error('[PDF] Error parseando sesión:', e);
             }
         }
 
@@ -40,7 +42,10 @@ export async function GET(
         const impresionesTotal = updateResult.rows[0]?.cantidad_impresiones || 1;
         const isDuplicate = impresionesTotal > 1 || esCopiaManual;
 
+        console.log(`[PDF] DB Update impresiones completado en ${Date.now() - startTime}ms`);
+
         // Obtener datos de la base de datos (Unificado y robusto)
+        const dbQueryStartTime = Date.now();
         const denunciaResult = await pool.query(
             `SELECT 
                 d.*,
@@ -117,6 +122,8 @@ export async function GET(
             acc[row.rol] = row.firma_base64;
             return acc;
         }, {});
+
+        console.log(`[PDF] Consultas DB completadas en ${Date.now() - dbQueryStartTime}ms`);
 
         // Preparar datos serializados para el PDF (react-pdf no acepta Dates ni nulls)
         const denunciaData = {
@@ -219,12 +226,15 @@ export async function GET(
         const pageSize = tipo === 'a4' ? 'A4' : 'LETTER';
 
         // Generar el PDF usando renderToBuffer con JSX
+        const renderStartTime = Date.now();
+        console.log(`[PDF] Iniciando renderToBuffer...`);
         const pdfBuffer = await renderToBuffer(
             <DenunciaPDFDocument
                 denuncia={denunciaData}
                 pageSize={pageSize as 'A4' | 'LETTER'}
             />
         );
+        console.log(`[PDF] renderToBuffer completado en ${Date.now() - renderStartTime}ms`);
 
         // 5. Fusionar PDFs si existen (archivo_denuncia_url o adjuntos_urls que sean PDF)
         const pdfAdjuntosUrls = (denuncia.adjuntos_urls || []).filter((url: string) => url.toLowerCase().endsWith('.pdf'));
@@ -234,30 +244,61 @@ export async function GET(
 
         if (pdfAdjuntosUrls.length > 0) {
             try {
-                // 1. Cargar el documento original (Carátula + Imágenes)
-                const mainPdf = await PDFDocument.load(pdfBuffer);
+                const fusionStartTime = Date.now();
+                console.log(`[PDF] Iniciando descarga de ${pdfAdjuntosUrls.length} adjuntos PDF en paralelo...`);
+
+                // 1. Descargar todos los adjuntos en paralelo con timeout
+                const downloadPromises = pdfAdjuntosUrls.map(async (url: string) => {
+                    try {
+                        const controller = new AbortController();
+                        const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 segundos por archivo
+
+                        const response = await fetch(url, { signal: controller.signal });
+                        clearTimeout(timeoutId);
+
+                        if (!response.ok) {
+                            console.error(`[PDF] Error al descargar adjunto (${response.status}): ${url}`);
+                            return null;
+                        }
+                        return await response.arrayBuffer();
+                    } catch (err: any) {
+                        console.error(`[PDF] Excepción descargando adjunto ${url}:`, err.message);
+                        return null;
+                    }
+                });
+
+                const downloadedBuffers = await Promise.all(downloadPromises);
+                console.log(`[PDF] Descargas completadas en ${Date.now() - fusionStartTime}ms`);
+
+                // 2. Fusionar documentos
+                const mergeStartTime = Date.now();
                 const mergedPdf = await PDFDocument.create();
 
-                // 2. Copiar páginas de la carátula
+                // Cargar el documento original (Carátula + Imágenes)
+                const mainPdf = await PDFDocument.load(pdfBuffer);
                 const mainPages = await mergedPdf.copyPages(mainPdf, mainPdf.getPageIndices());
                 mainPages.forEach((page) => mergedPdf.addPage(page));
 
-                // 3. Descargar y fusionar cada PDF adjunto
-                for (const url of pdfAdjuntosUrls) {
+                // Copiar páginas de cada adjunto descargado con éxito
+                for (let i = 0; i < downloadedBuffers.length; i++) {
+                    const buffer = downloadedBuffers[i];
+                    if (!buffer) continue;
+
                     try {
-                        const response = await fetch(url);
-                        if (!response.ok) continue;
-                        const arrayBuffer = await response.arrayBuffer();
-                        const adjuntoPdf = await PDFDocument.load(arrayBuffer);
+                        const adjuntoPdf = await PDFDocument.load(buffer);
                         const pages = await mergedPdf.copyPages(adjuntoPdf, adjuntoPdf.getPageIndices());
                         pages.forEach((page) => mergedPdf.addPage(page));
                     } catch (err) {
-                        console.error(`Error fusionando PDF desde ${url}:`, err);
+                        console.error(`[PDF] Error cargando/fusionando adjunto PDF index ${i}:`, err);
                     }
                 }
 
+                console.log(`[PDF] Fusión de PDFs completada en ${Date.now() - mergeStartTime}ms`);
+
                 // 4. Guardar como Uint8Array
                 const mergedPdfBytes = await mergedPdf.save();
+                console.log(`[PDF] Proceso total finalizado exitosamente en ${Date.now() - startTime}ms`);
+
                 return new NextResponse(Buffer.from(mergedPdfBytes), {
                     headers: {
                         'Content-Type': 'application/pdf',
@@ -266,10 +307,12 @@ export async function GET(
                 });
 
             } catch (mergeError) {
-                console.error('Error general fusionando PDFs:', mergeError);
+                console.error('[PDF] Error general fusionando PDFs:', mergeError);
                 // Si falla la fusión, devolver solo la carátula
             }
         }
+
+        console.log(`[PDF] Generación carátula simple completada en ${Date.now() - startTime}ms`);
 
         // Convertir Buffer a Uint8Array para NextResponse
         const uint8Array = new Uint8Array(pdfBuffer);
