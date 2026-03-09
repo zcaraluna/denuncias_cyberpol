@@ -25,7 +25,11 @@ import {
   Mail,
   Briefcase,
   Map,
-  BadgeAlert
+  BadgeAlert,
+  Paperclip,
+  File,
+  Image as ImageIcon,
+  ExternalLink
 } from 'lucide-react'
 
 interface Ampliacion {
@@ -89,6 +93,8 @@ interface DenunciaCompleta {
     entidad_bancaria: string | null
     descripcion_fisica: string | null
   }>
+  archivo_denuncia_url: string | null
+  adjuntos_urls: string[] | null
 }
 
 interface Usuario {
@@ -484,6 +490,73 @@ export default function VerDenunciaPage({ params }: { params: Promise<{ id: stri
                   </div>
                 </div>
               </div>
+
+              {/* Archivos Adjuntos */}
+              {(denuncia.archivo_denuncia_url || (denuncia.adjuntos_urls && denuncia.adjuntos_urls.length > 0)) && (
+                <div className="bg-white rounded-3xl border border-slate-200/60 shadow-sm overflow-hidden">
+                  <div className="h-2 bg-emerald-500"></div>
+                  <div className="p-6 md:p-8">
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="p-2.5 bg-emerald-50 rounded-xl text-emerald-600">
+                        <Paperclip className="h-5 w-5" />
+                      </div>
+                      <h2 className="text-sm font-black text-[#002147] uppercase tracking-widest">
+                        Documentos y Archivos Adjuntos
+                      </h2>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Acta Escrita / Documento Principal */}
+                      {denuncia.archivo_denuncia_url && (
+                        <a
+                          href={denuncia.archivo_denuncia_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-4 p-4 bg-slate-50 border border-slate-100 rounded-2xl hover:bg-emerald-50 hover:border-emerald-100 transition-all group"
+                        >
+                          <div className="p-3 bg-white rounded-xl border border-slate-200 text-emerald-600 group-hover:border-emerald-200">
+                            <FileText className="h-6 w-6" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-black text-[#002147] uppercase tracking-tight truncate">Documento de Denuncia</p>
+                            <p className="text-[10px] font-bold text-slate-400 mt-0.5">ARCHIVO PRINCIPAL</p>
+                          </div>
+                          <ExternalLink className="h-4 w-4 text-slate-300 group-hover:text-emerald-500" />
+                        </a>
+                      )}
+
+                      {/* Otros Adjuntos */}
+                      {denuncia.adjuntos_urls?.map((url, index) => {
+                        const esImagen = /\.(jpg|jpeg|png|webp|gif)$/i.test(url);
+                        const esPDF = url.toLowerCase().endsWith('.pdf');
+
+                        return (
+                          <a
+                            key={index}
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-4 p-4 bg-slate-50 border border-slate-100 rounded-2xl hover:bg-blue-50 hover:border-blue-100 transition-all group"
+                          >
+                            <div className="p-3 bg-white rounded-xl border border-slate-200 text-blue-600 group-hover:border-blue-200">
+                              {esImagen ? <ImageIcon className="h-6 w-6" /> : esPDF ? <FileText className="h-6 w-6" /> : <File className="h-6 w-6" />}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-black text-[#002147] uppercase tracking-tight truncate">
+                                Adjunto {index + 1}
+                              </p>
+                              <p className="text-[10px] font-bold text-slate-400 mt-0.5 uppercase">
+                                {esImagen ? 'IMAGEN' : esPDF ? 'PDF' : 'ARCHIVO'}
+                              </p>
+                            </div>
+                            <ExternalLink className="h-4 w-4 text-slate-300 group-hover:text-blue-500" />
+                          </a>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Supuestos Autores */}
               {denuncia.supuestos_autores && denuncia.supuestos_autores.length > 0 && (
