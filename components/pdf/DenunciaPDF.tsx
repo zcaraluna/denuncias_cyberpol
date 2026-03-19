@@ -24,7 +24,7 @@ const styles = StyleSheet.create({
         paddingTop: 15,  // Margen superior mínimo
         paddingBottom: 72,  // 2.54cm
         paddingHorizontal: 72,  // 2.54cm laterales
-        fontSize: 12,
+        fontSize: 11.5,
         fontFamily: 'Roboto',
     },
     headerFixed: {
@@ -42,7 +42,7 @@ const styles = StyleSheet.create({
         lineHeight: 1.3,
     },
     paragraph: {
-        fontSize: 12,
+        fontSize: 11.5,
         textAlign: 'justify',
         lineHeight: 1.4,
         marginBottom: 8,
