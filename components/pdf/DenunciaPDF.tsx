@@ -100,6 +100,12 @@ interface DenunciaData {
     numero_ampliacion?: number;
     fecha_original?: string;
     hora_original?: string;
+    logos?: {
+        policia?: string;
+        dchef?: string;
+        gobierno?: string;
+    };
+    imagenes_adjuntas?: Record<string, string>; // Mapa de URL -> Base64/Uint8Array
     [key: string]: any;
 }
 
@@ -148,6 +154,7 @@ const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 
                         año={año}
                         esAmpliacion={denuncia.es_ampliacion}
                         numeroAmpliacion={denuncia.numero_ampliacion}
+                        logos={denuncia.logos}
                     />
                 </View>
 
@@ -196,9 +203,11 @@ const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 
                     isDuplicate={denuncia.is_duplicate}
                     operadorActual={denuncia.operador_actual}
                     operadorOriginalId={denuncia.usuario_id}
+                    firmas={denuncia.firmas}
                 />
             </Page >
-            {/* Páginas adicionales para adjuntos (Solo imágenes) */}
+            {/* Páginas adicionales para adjuntos (Omitido temporalmente por solicitud) */}
+            {/* 
             {denuncia.adjuntos_urls && denuncia.adjuntos_urls.length > 0 && denuncia.adjuntos_urls.map((url: string, index: number) => {
                 const isImage = /\.(jpg|jpeg|png|webp|gif)$/i.test(url);
                 if (!isImage) return null;
@@ -210,6 +219,7 @@ const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 
                                 año={año}
                                 esAmpliacion={denuncia.es_ampliacion}
                                 numeroAmpliacion={denuncia.numero_ampliacion}
+                                logos={denuncia.logos}
                             />
                         </View>
                         <View style={{ marginTop: 20, alignItems: 'center' }}>
@@ -217,7 +227,7 @@ const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 
                                 ADJUNTO {index + 1}
                             </Text>
                             <Image
-                                src={url}
+                                src={denuncia.imagenes_adjuntas && denuncia.imagenes_adjuntas[url] ? denuncia.imagenes_adjuntas[url] : url}
                                 style={{
                                     maxWidth: '100%',
                                     maxHeight: 700,
@@ -228,6 +238,7 @@ const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 
                     </Page>
                 );
             })}
+            */}
         </Document >
     );
 };

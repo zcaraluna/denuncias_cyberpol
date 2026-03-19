@@ -73,19 +73,21 @@ interface ParaguayHeaderProps {
     año: number;
     esAmpliacion?: boolean;
     numeroAmpliacion?: number;
+    logos?: {
+        policia?: string;
+        dchef?: string;
+        gobierno?: string;
+    };
 }
 
-const ParaguayHeader: React.FC<ParaguayHeaderProps> = ({ numeroActa, año, esAmpliacion, numeroAmpliacion }) => {
-    // Usar URLs absolutas para que funcionen en VEEERCEEEEEL
-    const baseUrl = 'https://denuncias-cyberpol.vercel.app';
-
+const ParaguayHeader: React.FC<ParaguayHeaderProps> = ({ numeroActa, año, esAmpliacion, numeroAmpliacion, logos }) => {
     return (
         <View style={styles.headerContainer}>
             {/* Fila de Logos: Izquierda (Policía), Centro (DCHEF), Derecha (Gobierno) */}
             <View style={styles.topRow}>
-                <Image style={styles.logoIzquierda} src={`${baseUrl}/policianacional.png`} />
-                <Image style={styles.logoCentral} src={`${baseUrl}/dchef.png`} />
-                <Image style={styles.logoDerecha} src={`${baseUrl}/gobiernonacional.jpg`} />
+                {logos?.policia && <Image style={styles.logoIzquierda} src={logos.policia} />}
+                {logos?.dchef && <Image style={styles.logoCentral} src={logos.dchef} />}
+                {logos?.gobierno && <Image style={styles.logoDerecha} src={logos.gobierno} />}
             </View>
 
             {/* Bloque de Texto Informativo */}

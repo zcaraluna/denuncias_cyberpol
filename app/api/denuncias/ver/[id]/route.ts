@@ -118,6 +118,8 @@ export async function GET(
       moneda: denuncia.moneda,
       hash: denuncia.hash,
       estado: denuncia.estado,
+      archivo_denuncia_url: denuncia.archivo_denuncia_url,
+      adjuntos_urls: denuncia.adjuntos_urls,
       supuestos_autores: autoresResult.rows,
       denunciantes_involucrados: involucradosResult.rows
     }

@@ -5,17 +5,22 @@ import { renderToBuffer } from '@react-pdf/renderer';
 import DenunciaPDFDocument from '@/components/pdf/DenunciaPDF';
 import QRCode from 'qrcode';
 import { PDFDocument } from 'pdf-lib';
+import fs from 'fs';
+import path from 'path';
 
 export async function GET(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const { id: idStr } = await params;
-        const id = parseInt(idStr);
+        const startTime = Date.now();
+        const { id: idStr_resolved } = await params;
+        console.log(`[PDF] Iniciando generación para denuncia ${idStr_resolved} - ${new Date().toISOString()}`);
+        const id = parseInt(idStr_resolved);
         const { searchParams } = new URL(request.url);
         const tipo = searchParams.get('tipo') || 'oficio';
         const esCopiaManual = searchParams.get('es_copia') === 'true';
+        const forzarOriginal = searchParams.get('forzar_original') === 'true';
 
         // 1. Obtener el usuario actual de la cookie de sesión
         const usuarioSesionCookie = request.cookies.get('usuario_sesion')?.value;
@@ -24,7 +29,7 @@ export async function GET(
             try {
                 operadorActual = JSON.parse(decodeURIComponent(usuarioSesionCookie));
             } catch (e) {
-                console.error('Error parseando sesión:', e);
+                console.error('[PDF] Error parseando sesión:', e);
             }
         }
 
@@ -38,9 +43,17 @@ export async function GET(
         );
 
         const impresionesTotal = updateResult.rows[0]?.cantidad_impresiones || 1;
-        const isDuplicate = impresionesTotal > 1 || esCopiaManual;
+        let isDuplicate = impresionesTotal > 1 || esCopiaManual;
+
+        // Si se fuerza el original (para garv), ignoramos la bandera de duplicado
+        if (forzarOriginal) {
+            isDuplicate = false;
+        }
+
+        console.log(`[PDF] DB Update impresiones completado en ${Date.now() - startTime}ms`);
 
         // Obtener datos de la base de datos (Unificado y robusto)
+        const dbQueryStartTime = Date.now();
         const denunciaResult = await pool.query(
             `SELECT 
                 d.*,
@@ -108,8 +121,64 @@ export async function GET(
             [id]
         );
 
-        // Preparar datos serializados para el PDF (react-pdf no acepta Dates ni nulls)
+        // Obtener firmas digitales
+        const firmasResult = await pool.query(
+            'SELECT rol, firma_base64 FROM denuncia_firmas WHERE denuncia_id = $1 AND usado = TRUE',
+            [id]
+        );
+        const firmas = firmasResult.rows.reduce((acc: any, row) => {
+            acc[row.rol] = row.firma_base64;
+            return acc;
+        }, {});
+
+        console.log(`[PDF] Consultas DB completadas en ${Date.now() - dbQueryStartTime}ms`);
+
+        // 5. Pre-cargar logos institucionales (Optimización crítica para Vercel)
+        const loadLogos = async () => {
+            const logoFiles = {
+                policia: 'policianacional.png',
+                dchef: 'dchef.png',
+                gobierno: 'gobiernonacional.jpg'
+            };
+            const loadedLogos: Record<string, string> = {};
+
+            for (const [key, filename] of Object.entries(logoFiles)) {
+                try {
+                    const filePath = path.join(process.cwd(), 'public', filename);
+                    if (fs.existsSync(filePath)) {
+                        const buffer = fs.readFileSync(filePath);
+                        const extension = filename.split('.').pop();
+                        loadedLogos[key] = `data:image/${extension === 'jpg' ? 'jpeg' : extension};base64,${buffer.toString('base64')}`;
+                    } else {
+                        // Fallback a URL si no existe localmente (raro)
+                        loadedLogos[key] = `${request.headers.get('x-forwarded-proto') || 'https'}://${request.headers.get('host')}/${filename}`;
+                    }
+                } catch (e) {
+                    console.error(`[PDF] Error cargando logo ${filename}:`, e);
+                }
+            }
+            return loadedLogos;
+        };
+
+        const logosStartTime = Date.now();
+        const logosData = await loadLogos();
+        console.log(`[PDF] Logos cargados en ${Date.now() - logosStartTime}ms`);
+
+        // 6. Omitir pre-descarga de adjuntos por solicitud del usuario para evitar timeouts
+        /*
+        const allUrls = [...(denuncia.adjuntos_urls || [])];
+        if (denuncia.es_denuncia_escrita && denuncia.archivo_denuncia_url) {
+            allUrls.unshift(denuncia.archivo_denuncia_url);
+        }
+        ... logic omitted ...
+        */
+
+        const imagenes_adjuntas: Record<string, string> = {};
+        // const pdf_adjuntos_buffers: ArrayBuffer[] = [];
+
+        // Preparar datos para el PDF
         const denunciaData = {
+            ...denuncia,
             orden: denuncia.orden,
             hash: String(denuncia.hash),
             fecha_denuncia: denuncia.fecha_denuncia instanceof Date
@@ -201,64 +270,34 @@ export async function GET(
             usuario_id: denuncia.usuario_id,
             es_denuncia_escrita: Boolean(denuncia.es_denuncia_escrita),
             archivo_denuncia_url: denuncia.archivo_denuncia_url,
-            adjuntos_urls: denuncia.adjuntos_urls || []
+            adjuntos_urls: [], // Omitir adjuntos
+            firmas: firmas,
+            logos: logosData,
+            imagenes_adjuntas: imagenes_adjuntas
         };
 
         // Determinar el tamaño de página
         const pageSize = tipo === 'a4' ? 'A4' : 'LETTER';
 
         // Generar el PDF usando renderToBuffer con JSX
+        const renderStartTime = Date.now();
+        console.log(`[PDF] Iniciando renderToBuffer (Solo Acta)...`);
         const pdfBuffer = await renderToBuffer(
             <DenunciaPDFDocument
                 denuncia={denunciaData}
                 pageSize={pageSize as 'A4' | 'LETTER'}
             />
         );
+        console.log(`[PDF] renderToBuffer completado en ${Date.now() - renderStartTime}ms`);
 
-        // 5. Fusionar PDFs si existen (archivo_denuncia_url o adjuntos_urls que sean PDF)
-        const pdfAdjuntosUrls = (denuncia.adjuntos_urls || []).filter((url: string) => url.toLowerCase().endsWith('.pdf'));
-        if (denuncia.es_denuncia_escrita && denuncia.archivo_denuncia_url) {
-            pdfAdjuntosUrls.unshift(denuncia.archivo_denuncia_url);
+        // 7. Fusión omitida por solicitud para evitar timeouts
+        /*
+        if (pdf_adjuntos_buffers.length > 0) {
+            ...
         }
+        */
 
-        if (pdfAdjuntosUrls.length > 0) {
-            try {
-                // 1. Cargar el documento original (Carátula + Imágenes)
-                const mainPdf = await PDFDocument.load(pdfBuffer);
-                const mergedPdf = await PDFDocument.create();
-
-                // 2. Copiar páginas de la carátula
-                const mainPages = await mergedPdf.copyPages(mainPdf, mainPdf.getPageIndices());
-                mainPages.forEach((page) => mergedPdf.addPage(page));
-
-                // 3. Descargar y fusionar cada PDF adjunto
-                for (const url of pdfAdjuntosUrls) {
-                    try {
-                        const response = await fetch(url);
-                        if (!response.ok) continue;
-                        const arrayBuffer = await response.arrayBuffer();
-                        const adjuntoPdf = await PDFDocument.load(arrayBuffer);
-                        const pages = await mergedPdf.copyPages(adjuntoPdf, adjuntoPdf.getPageIndices());
-                        pages.forEach((page) => mergedPdf.addPage(page));
-                    } catch (err) {
-                        console.error(`Error fusionando PDF desde ${url}:`, err);
-                    }
-                }
-
-                // 4. Guardar como Uint8Array
-                const mergedPdfBytes = await mergedPdf.save();
-                return new NextResponse(Buffer.from(mergedPdfBytes), {
-                    headers: {
-                        'Content-Type': 'application/pdf',
-                        'Content-Disposition': `attachment; filename="denuncia_${denuncia.orden}_${new Date().toISOString().split('T')[0]}.pdf"`,
-                    },
-                });
-
-            } catch (mergeError) {
-                console.error('Error general fusionando PDFs:', mergeError);
-                // Si falla la fusión, devolver solo la carátula
-            }
-        }
+        console.log(`[PDF] Generación carátula simple completada en ${Date.now() - startTime}ms`);
 
         // Convertir Buffer a Uint8Array para NextResponse
         const uint8Array = new Uint8Array(pdfBuffer);
