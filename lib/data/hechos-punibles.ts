@@ -99,7 +99,6 @@ export const hechosPunibles: HechoPunible[] = [
   { nombre: 'De la violación de los derechos de marca', capitulo: 'Hecho punible contra los derechos de la propiedad marcaria e industrial' },
   { nombre: 'De la violación de los derechos sobre dibujos y modelos industriales', capitulo: 'Hecho punible contra los derechos de la propiedad marcaria e industrial' },
   { nombre: 'Extorsión', capitulo: 'Hecho punible contra el patrimonio' },
-  { nombre: 'Extorsión grave y chantaje', capitulo: 'Hecho punible contra el patrimonio' },
   { nombre: 'Extorsión agravada', capitulo: 'Hecho punible contra el patrimonio' },
   { nombre: 'Estafa', capitulo: 'Hecho punible contra el patrimonio' },
   { nombre: 'Estafa mediante sistemas informáticos', capitulo: 'Hecho punible contra el patrimonio' },
