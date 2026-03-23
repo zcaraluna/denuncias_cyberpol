@@ -153,10 +153,10 @@ const denunciaSchema = z.object({
   lugarHechoCalles: z.string().optional(),
   lugarHechoNoAplica: z.boolean().optional(),
   relato: z.string().optional(),
-  montoDano: z.string().optional(),
-  moneda: z.string().optional(),
-  bancosRelacionados: z.array(z.string()).optional(),
-  entidadBancariaVulnerada: z.string().optional(),
+  montoDano: z.string().min(1, 'El monto es obligatorio. Ingrese 0 si no hubo daño.'),
+  moneda: z.string().min(1, 'La moneda es obligatoria'),
+  bancosRelacionados: z.array(z.string()).min(1, 'Seleccione al menos una entidad o "NO APLICA"'),
+  entidadBancariaVulnerada: z.string().min(1, 'Seleccione una entidad o "NO APLICA"'),
   esDenunciaEscrita: z.boolean().optional(),
   archivoDenunciaUrl: z.string().optional(),
 }).superRefine((data, ctx) => {
@@ -462,6 +462,7 @@ export default function NuevaDenunciaPage() {
   ]
 
   const bancos = [
+    'NO APLICA',
     'Banco Atlas',
     'Banco Continental',
     'Banco Familiar',
@@ -2341,7 +2342,7 @@ export default function NuevaDenunciaPage() {
           otroTipo: denunciaData.tipoDenuncia === 'Otro (Especificar)' ? denunciaData.otroTipo?.toUpperCase() : null,
           lugarHecho: lugarHechoNoAplica ? '' : (construirDomicilio(denunciaData.lugarHechoDepartamento, denunciaData.lugarHechoCiudad, denunciaData.lugarHechoBarrio, denunciaData.lugarHechoCalles)?.toUpperCase() || denunciaData.lugarHecho?.toUpperCase() || ''),
           relato: denunciaData.relato || '',
-          montoDano: denunciaData.montoDano ? parseInt(denunciaData.montoDano.replace(/\./g, '')) : null,
+          montoDano: (denunciaData.montoDano !== undefined && denunciaData.montoDano !== "") ? parseInt(denunciaData.montoDano.replace(/\./g, '')) : null,
           moneda: denunciaData.moneda || null,
           latitud: coordenadas?.lat || null,
           longitud: coordenadas?.lng || null,
@@ -2472,7 +2473,7 @@ export default function NuevaDenunciaPage() {
           otroTipo: denunciaData.tipoDenuncia === 'Otro (Especificar)' ? denunciaData.otroTipo?.toUpperCase() : null,
           lugarHecho: lugarHechoNoAplica ? '' : (construirDomicilio(denunciaData.lugarHechoDepartamento, denunciaData.lugarHechoCiudad, denunciaData.lugarHechoBarrio, denunciaData.lugarHechoCalles)?.toUpperCase() || denunciaData.lugarHecho?.toUpperCase() || ''),
           relato: denunciaData.relato || '',
-          montoDano: denunciaData.montoDano ? parseInt(denunciaData.montoDano.replace(/\./g, '')) : null,
+          montoDano: (denunciaData.montoDano !== undefined && denunciaData.montoDano !== "") ? parseInt(denunciaData.montoDano.replace(/\./g, '')) : null,
           moneda: denunciaData.moneda || null,
           latitud: coordenadas?.lat || null,
               longitud: coordenadas?.lng || null,
@@ -4731,34 +4732,43 @@ export default function NuevaDenunciaPage() {
                   </p>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <div className="space-y-1.5">
+                    <div className="space-y-1.5 min-w-[120px]">
                       <label className="block text-sm font-semibold text-gray-700">
-                        Monto de daño patrimonial
+                        Monto de daño patrimonial *
                       </label>
-                      <div className="relative group">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 group-focus-within:text-blue-500 transition-colors">
-                          <span className="text-sm font-medium">₲/$</span>
-                        </div>
+                      <div className="relative">
                         <input
                           {...registerDenuncia('montoDano')}
-                          placeholder="0"
-                          className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white hover:border-gray-400"
+                          type="text"
                           onChange={(e) => {
-                            const value = e.target.value.replace(/\./g, '')
-                            if (/^\d*$/.test(value)) {
-                              e.target.value = value ? parseInt(value).toLocaleString('es-PY').replace(/,/g, '.') : ''
+                            let value = e.target.value.replace(/\D/g, '')
+                            if (value) {
+                              value = new Intl.NumberFormat('de-DE').format(parseInt(value))
                             }
+                            e.target.value = value
+                            registerDenuncia('montoDano').onChange(e)
                           }}
+                          className={cn(
+                            "w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-medium",
+                            errorsDenuncia.montoDano ? "border-red-500 bg-red-50" : "border-gray-300"
+                          )}
+                          placeholder="0"
                         />
                       </div>
+                      {errorsDenuncia.montoDano && (
+                        <p className="text-red-600 text-xs mt-1">{errorsDenuncia.montoDano.message as string}</p>
+                      )}
                     </div>
-                    <div className="space-y-1.5">
+                    <div className="space-y-1.5 min-w-[120px]">
                       <label className="block text-sm font-semibold text-gray-700">
-                        Moneda
+                        Moneda *
                       </label>
                       <select
                         {...registerDenuncia('moneda')}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white hover:border-gray-400 cursor-pointer appearance-none"
+                        className={cn(
+                          "w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-medium",
+                          errorsDenuncia.moneda ? "border-red-500 bg-red-50" : "border-gray-300"
+                        )}
                         style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center', backgroundSize: '1.25rem' }}
                       >
                         <option value="">Seleccione moneda...</option>
@@ -4768,13 +4778,16 @@ export default function NuevaDenunciaPage() {
                         <option value="Pesos Argentinos (ARS)">Pesos Argentinos (ARS)</option>
                         <option value="Reales (BRL)">Reales (BRL)</option>
                       </select>
+                      {errorsDenuncia.moneda && (
+                        <p className="text-red-600 text-xs mt-1">{errorsDenuncia.moneda.message as string}</p>
+                      )}
                     </div>
                   </div>
 
                   <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div className="space-y-1.5">
                       <label className="block text-sm font-semibold text-gray-700">
-                        Entidad bancaria vulnerada
+                        Entidad bancaria vulnerada *
                       </label>
                       <Controller
                         name="entidadBancariaVulnerada"
@@ -4809,11 +4822,14 @@ export default function NuevaDenunciaPage() {
                           />
                         )}
                       />
+                      {errorsDenuncia.entidadBancariaVulnerada && (
+                        <p className="text-red-600 text-xs mt-1">{errorsDenuncia.entidadBancariaVulnerada.message as string}</p>
+                      )}
                     </div>
 
                     <div className="space-y-1.5">
                       <label className="block text-sm font-semibold text-gray-700">
-                        Entidad(es) bancaria(s) relacionada(s)
+                        Entidad(es) bancaria(s) relacionada(s) *
                       </label>
                       <Controller
                         name="bancosRelacionados"
@@ -4859,6 +4875,9 @@ export default function NuevaDenunciaPage() {
                           />
                         )}
                       />
+                      {errorsDenuncia.bancosRelacionados && (
+                        <p className="text-red-600 text-xs mt-1">{errorsDenuncia.bancosRelacionados.message as string}</p>
+                      )}
                     </div>
                   </div>
                 </div>
