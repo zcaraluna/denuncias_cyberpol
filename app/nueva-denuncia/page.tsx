@@ -2135,15 +2135,20 @@ export default function NuevaDenunciaPage() {
           relato: 'Relato del Hecho',
           otroTipo: 'Especificar Otro Tipo',
           fechaHechoFin: 'Fecha de Fin',
-          horaHechoFin: 'Hora de Fin'
+          horaHechoFin: 'Hora de Fin',
+          montoDano: 'Monto de daño patrimonial',
+          moneda: 'Moneda',
+          bancosRelacionados: 'Entidad(es) bancaria(s) relacionada(s)',
+          entidadBancariaVulnerada: 'Entidad bancaria vulnerada'
         }
 
-        const camposFaltantes = Object.keys(errors)
+        const camposFaltantesArr = Object.keys(errors)
           .map(key => etiquetasCampos[key] || key)
-          .join(', ')
+
+        const camposFaltantesTexto = camposFaltantesArr.map(campo => `• ${campo}`).join('\n')
 
         setMensajeErrorTitulo('Campos Obligatorios')
-        setMensajeError(`Por favor, complete los siguientes campos obligatorios antes de continuar:\n\n${camposFaltantes}`)
+        setMensajeError(`Por favor, complete los siguientes campos obligatorios antes de continuar:\n\n${camposFaltantesTexto}`)
         setMostrarModalError(true)
       }
     )()
@@ -4724,7 +4729,7 @@ export default function NuevaDenunciaPage() {
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                     </svg>
-                    <h3 className="font-bold text-sm uppercase tracking-wider">Información Estadística (Opcional)</h3>
+                    <h3 className="font-bold text-sm uppercase tracking-wider">Información Estadística</h3>
                   </div>
 
                   <p className="text-xs text-blue-600 mb-4 bg-white/60 p-3 rounded-lg border border-blue-100/50 leading-relaxed shadow-sm">
