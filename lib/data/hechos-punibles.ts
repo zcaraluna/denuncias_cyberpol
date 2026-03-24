@@ -7,6 +7,7 @@ export interface HechoPunible {
 }
 
 export const hechosPunibles: HechoPunible[] = [
+  { nombre: 'HECHO PUNIBLE A DETERMINAR', capitulo: 'A DETERMINAR' },
   { nombre: 'Homicidio doloso', capitulo: 'Hecho punible contra la vida' },
   { nombre: 'Homicidio motivado por súplica de la víctima', capitulo: 'Hecho punible contra la vida' },
   { nombre: 'Homicidio culposo', capitulo: 'Hecho punible contra la vida' },
