@@ -1,3 +1,4 @@
+Hecho punible a determinar
 Hechos punibles contra la vida
 Homicidio doloso
 Homicidio motivado por súplica de la víctima
@@ -23,7 +24,7 @@ Hechos punibles contra la libertad
 Coacción
 Coacción grave
 Amenaza
-tratamiento médico sin consentimiento
+Tratamiento médico sin consentimiento
 Privación de libertad
 Extrañamiento de personas
 Secuestro
@@ -34,7 +35,7 @@ Coacción sexual y violación
 Trata de personas
 Rufianería
 Trata de personas con fines de su explotación sexual
-Trata de personas con fines of su explotación personal y laboral
+Trata de personas con fines de su explotación personal y laboral
 Abuso sexual en personas indefensas
 Abuso sexual en personas internadas
 Actos exhibicionistas
@@ -54,7 +55,7 @@ Hechos punibles contra el ámbito de vida y la intimidad de la persona
 Violación de domicilio
 Invasión de inmueble ajeno
 Lesión de la intimidad de la persona
-Lesión del derecho a la communication y a la imagen
+Lesión del derecho a la comunicación y a la imagen
 Violación de la confidencialidad de la palabra
 Violación del secreto de la comunicación
 Acceso indebido a datos
@@ -64,7 +65,7 @@ Revelación de un secreto de carácter privado
 Revelación de secretos privados por funcionarios o personas con obligación especial
 Revelación de secretos privados por motivos económicos
 
-Hechos punibles contra the honor y la reputación
+Hechos punibles contra el honor y la reputación
 Calumnia
 Difamación
 Injuria
@@ -139,7 +140,7 @@ Ingreso de sustancias nocivas en el territorio nacional
 Perjuicio a reservas naturales
 
 Hechos punibles contra la seguridad de las personas frente a riesgos colectivos
-Production de riesgos comunes
+Producción de riesgos comunes
 Actividades peligrosas en la construcción
 Exposición de personas a lugares de trabajo peligrosos
 Comercialización de medicamentos nocivos
@@ -178,7 +179,7 @@ Hechos punibles contra la paz de los difuntos
 Perturbación de la paz de los difuntos
 Perturbación de ceremonias fúnebres
 
-Hechos punibles contra la tolerance religiosa
+Hechos punibles contra la tolerancia religiosa
 Ultraje a la profesión de creencias
 
 Hechos punibles contra la seguridad de la convivencia de las personas
@@ -198,7 +199,7 @@ Retractación
 Declaración en estado de necesidad
 
 Hechos punibles contra la prueba documental
-Production de documentos no auténticos
+Producción de documentos no auténticos
 Manipulación de graficaciones técnicas
 Alteración de datos relevantes para la prueba
 Falsificación de tarjetas de débito o de crédito y otros medios electrónicos de pago
@@ -223,9 +224,9 @@ Hechos punibles contra la autenticidad de monedas y valores
 Producción de moneda no auténtica
 Circulación de moneda no auténtica
 Producción y circulación de marcas de valor no auténticas
-Preparación para la producción de moneda y marcas de value no auténticas
-Títulos de value falsos
-Moneda, marcas de value y títulos de valor del extranjero
+Preparación para la producción de moneda y marcas de valor no auténticas
+Títulos de valor falsos
+Moneda, marcas de valor y títulos de valor del extranjero
 
 Hechos punibles contra la competencia
 Cohecho privado
