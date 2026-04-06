@@ -474,13 +474,15 @@ export default function ReportesPage() {
       .map(d => ({
         ...d,
         denuncia: `${d.numero_denuncia}/${d.año}`,
-        tipo_hecho: d.tipo_especifico || d.shp
+        tipo_hecho: d.tipo_especifico || d.shp,
+        entidad_afectada: d.entidad_reportada || '-'
       }));
 
     const columns = [
       { header: 'Denuncia', key: 'denuncia', width: 15 },
       { header: 'Denunciante', key: 'denunciante', width: 30 },
       { header: 'Hecho Punible', key: 'tipo_hecho', width: 40 },
+      { header: 'Entidad Afectada', key: 'entidad_afectada', width: 30 },
       { header: 'Monto Daño', key: 'monto_dano', width: 15 },
       { header: 'Moneda', key: 'moneda', width: 15 }
     ];
@@ -1203,6 +1205,9 @@ export default function ReportesPage() {
                         </th>
                         <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Denunciante</th>
                         <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Hecho Punible</th>
+                        <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 cursor-pointer hover:text-[#002147] transition" onClick={() => handleSort('entidad_reportada')}>
+                          <div className="flex items-center gap-2">Entidad afectada <SortIcon field="entidad_reportada" currentField={sortField} direction={sortDirection} /></div>
+                        </th>
                         <th className="px-6 py-4 text-right text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 cursor-pointer hover:text-[#002147] transition" onClick={() => handleSort('monto_dano')}>
                           <div className="flex items-center gap-2 justify-end">Monto <SortIcon field="monto_dano" currentField={sortField} direction={sortDirection} /></div>
                         </th>
@@ -1218,6 +1223,9 @@ export default function ReportesPage() {
                             <span className="inline-block px-2 py-0.5 bg-slate-100 border border-slate-200 rounded text-[8px] font-black text-slate-500 uppercase tracking-wider">
                               {row.shp}
                             </span>
+                          </td>
+                          <td className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-tight italic">
+                            {row.entidad_reportada || '-'}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-[11px] font-black text-[#002147] text-right bg-slate-50/30">
                             {row.monto_dano?.toLocaleString('es-PY')}
