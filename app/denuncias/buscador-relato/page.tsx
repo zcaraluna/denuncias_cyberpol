@@ -220,29 +220,29 @@ export default function BuscadorRelatoPage() {
                         </div>
 
                         {resultados.length > 0 && (
-                            <div className="flex items-center gap-2">
+                            <div className="grid grid-cols-2 md:flex items-center gap-2 w-full md:w-auto">
                                 <button
                                     onClick={manejarExportacion}
                                     disabled={exportando}
-                                    className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white font-black text-[10px] uppercase tracking-widest rounded-xl hover:bg-green-700 transition shadow-lg shadow-green-900/10 disabled:opacity-50"
+                                    className="flex items-center justify-center gap-2 px-4 py-2.5 bg-green-600 text-white font-black text-[10px] uppercase tracking-widest rounded-xl hover:bg-green-700 transition shadow-lg shadow-green-900/10 disabled:opacity-50"
                                 >
                                     <Download className="w-3.5 h-3.5" />
-                                    Excel
+                                    <span>Excel</span>
                                 </button>
                                 <button
                                     onClick={manejarExportacionJSON}
                                     disabled={exportando}
-                                    className="inline-flex items-center gap-2 px-4 py-2 bg-[#002147] text-white font-black text-[10px] uppercase tracking-widest rounded-xl hover:bg-[#003366] transition shadow-lg shadow-blue-900/10 disabled:opacity-50"
+                                    className="flex items-center justify-center gap-2 px-4 py-2.5 bg-[#002147] text-white font-black text-[10px] uppercase tracking-widest rounded-xl hover:bg-[#003366] transition shadow-lg shadow-blue-900/10 disabled:opacity-50"
                                 >
                                     <Database className="w-3.5 h-3.5" />
-                                    JSON
+                                    <span>JSON</span>
                                 </button>
                             </div>
                         )}
                     </div>
 
                     {/* Search Card */}
-                    <div className="bg-white rounded-xl shadow-lg border border-slate-100 p-6 mb-8">
+                    <div className="bg-white rounded-2xl shadow-lg border border-slate-100 p-4 md:p-8 mb-8">
                         <div className="space-y-6">
                             {/* Barra de Búsqueda Principal */}
                             <div className="relative">
@@ -254,8 +254,8 @@ export default function BuscadorRelatoPage() {
                                     value={termino}
                                     onChange={(e) => setTermino(e.target.value)}
                                     onKeyPress={(e) => e.key === 'Enter' && realizarBusqueda(1)}
-                                    placeholder="Escriba palabras clave del relato... (ej: estafa, tarjeta, sim-swap)"
-                                    className="block w-full h-[54px] pl-12 pr-4 text-sm font-bold border-2 border-slate-100 rounded-2xl focus:border-[#002147] transition-all outline-none bg-slate-50/50"
+                                    placeholder="Buscar por palabras clave del relato..."
+                                    className="block w-full h-[54px] pl-12 pr-4 text-sm font-bold border-2 border-slate-100 rounded-2xl focus:border-[#002147] transition-all outline-none bg-slate-50/50 placeholder:font-medium sm:placeholder:font-bold"
                                 />
                             </div>
 
@@ -325,7 +325,7 @@ export default function BuscadorRelatoPage() {
                                 <button
                                     onClick={() => realizarBusqueda(1)}
                                     disabled={buscando}
-                                    className="px-10 py-3 bg-[#002147] text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl hover:bg-[#003366] transition shadow-xl shadow-blue-900/20 disabled:opacity-50 flex items-center gap-3"
+                                    className="w-full md:w-auto px-10 py-3.5 bg-[#002147] text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl hover:bg-[#003366] transition shadow-xl shadow-blue-900/20 disabled:opacity-50 flex items-center justify-center gap-3"
                                 >
                                     <Search className="w-4 h-4" />
                                     {buscando ? "Buscando..." : "Realizar Búsqueda"}
