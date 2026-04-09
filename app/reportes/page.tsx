@@ -919,7 +919,6 @@ export default function ReportesPage() {
                 ))}
               </div>
             </div>
-            </div>
           )}
 
           {/* Resultados Mensual */}
@@ -1296,7 +1295,6 @@ export default function ReportesPage() {
                     </div>
                   ))}
                 </div>
-              </div>
               </div>
             </div>
           )}
