@@ -14,6 +14,7 @@
     "corregir-fechas-denuncias": "node scripts/corregir-fechas-denuncias.js"
   },
   "dependencies": {
+    "@ducanh2912/next-pwa": "^10.2.9",
     "@hookform/resolvers": "^3.3.2",
     "@react-pdf/renderer": "^4.3.2",
     "@tailwindcss/postcss": "^4.1.13",

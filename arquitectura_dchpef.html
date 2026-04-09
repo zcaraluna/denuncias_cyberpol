@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arquitectura básica del Sistema de Denuncias - DCHPEF</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --background: #ffffff;
+            --foreground: #09090b;
+            --card: #ffffff;
+            --primary: #18181b;
+            --primary-foreground: #fafafa;
+            --secondary: #f4f4f5;
+            --muted-foreground: #71717a;
+            --border: #d4d4d8;
+            /* Darker border for lines */
+            --radius: 0.5rem;
+            --line-width: 2px;
+            print-color-adjust: exact;
+            -webkit-print-color-adjust: exact;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f4f4f5;
+            color: var(--foreground);
+            line-height: 1.4;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .page {
+            width: 210mm;
+            height: 297mm;
+            margin: 40px auto;
+            padding: 2cm 1.5cm;
+            position: relative;
+            background: white;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: -0.05em;
+            margin-bottom: 0.25rem;
+            color: var(--primary);
+            text-transform: uppercase;
+        }
+
+        .subtitle {
+            font-size: 0.75rem;
+            color: var(--muted-foreground);
+            font-weight: 500;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        /* Hierarchy System */
+        .hierarchy-container {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 1rem;
+        }
+
+        .node {
+            width: 220px;
+            padding: 1rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: white;
+            text-align: center;
+            position: relative;
+            z-index: 10;
+        }
+
+        .node.dark {
+            background-color: var(--primary);
+            color: var(--primary-foreground);
+            border: none;
+        }
+
+        .node-tag {
+            font-size: 0.55rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            margin-bottom: 0.25rem;
+            display: block;
+            opacity: 0.6;
+        }
+
+        .dark .node-tag {
+            color: #a1a1aa;
+        }
+
+        .node-name {
+            font-size: 0.9rem;
+            font-weight: 700;
+            margin-bottom: 0.35rem;
+            display: block;
+        }
+
+        .node-desc {
+            font-size: 0.65rem;
+            line-height: 1.3;
+            opacity: 0.8;
+        }
+
+        /* Branching */
+        .branches {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-top: 0;
+            position: relative;
+        }
+
+        /* Horizontal Connector */
+        .branches::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: calc(100% / 6);
+            right: calc(100% / 6);
+            height: var(--line-width);
+            background-color: var(--border);
+            z-index: 1; /* Below nodes */
+        }
+
+        /* Vertical Connector from Admin to Horizontal Line */
+        .hierarchy-container>.connector-v:first-of-type+.node+.connector-v {
+            position: relative;
+        }
+
+        /* Branch Items */
+        .branch-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+            width: 33.33%;
+            position: relative;
+            padding-top: 4rem; /* Force space for line */
+        }
+
+        /* Vertical Connectors from Horizontal Line to Supervisors */
+        .branch-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: calc(50% - var(--line-width)/2);
+            width: var(--line-width);
+            height: 4rem;
+            background-color: var(--border);
+            z-index: 1;
+        }
+
+        /* Single Vertical Connectors */
+        .connector-v {
+            width: var(--line-width);
+            height: 4rem;
+            background-color: var(--border);
+            z-index: 1;
+            position: relative;
+        }
+
+        .node.small {
+            width: 180px;
+            padding: 0.75rem;
+        }
+
+        .node.small .node-name {
+            font-size: 0.8rem;
+        }
+
+        .node.small .node-desc {
+            font-size: 0.6rem;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.15rem 0.4rem;
+            background-color: var(--secondary);
+            border-radius: 3px;
+            font-size: 0.55rem;
+            font-weight: 800;
+            margin-top: 0.5rem;
+            text-transform: uppercase;
+        }
+
+        .dark .badge {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+
+        /* Second Page Section */
+        .summary-box {
+            padding-top: 1rem;
+        }
+
+        .summary-box h2 {
+            font-size: 1rem;
+            font-weight: 800;
+            margin-bottom: 2rem;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--primary);
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem 1.5rem;
+        }
+
+        .summary-item {
+            font-size: 0.75rem;
+            color: #3f3f46;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #f4f4f5;
+        }
+
+        .summary-item strong {
+            display: block;
+            font-size: 0.85rem;
+            margin-bottom: 0.35rem;
+            color: var(--primary);
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        footer {
+            margin-top: auto;
+            padding-top: 2rem;
+            text-align: center;
+            font-size: 0.55rem;
+            color: var(--muted-foreground);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        @media print {
+            body {
+                background: none;
+                margin: 0;
+                print-color-adjust: exact;
+                -webkit-print-color-adjust: exact;
+            }
+
+            .page {
+                width: 210mm;
+                height: 297mm;
+                margin: 0;
+                box-shadow: none;
+                page-break-after: always;
+                padding: 2cm 1.5cm;
+            }
+
+            .page:last-child {
+                page-break-after: auto;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Página 1: Jerarquía -->
+    <div class="page">
+        <header>
+            <h1>Arquitectura básica del Sistema de Denuncias</h1>
+            <p class="subtitle">Estructura Organizacional y Flujo Jerárquico</p>
+        </header>
+
+        <div class="hierarchy-container">
+            <!-- Nivel 1: Desarrollador -->
+            <div class="node dark">
+                <span class="node-tag">Soporte Técnico</span>
+                <span class="node-name">Desarrollador</span>
+                <p class="node-desc">Mantenimiento de infraestructura tecnológica y actualizaciones del software.</p>
+            </div>
+
+            <div class="connector-v"></div>
+
+            <!-- Nivel 2: Administrador ASU -->
+            <div class="node">
+                <span class="node-tag">Gestor Central</span>
+                <span class="node-name">Administrador (DCHPEF-ASU)</span>
+                <p class="node-desc">Supervisión técnica delegada y gestión regional desde la sede central Asunción.</p>
+                <span class="badge">Administrador Central</span>
+            </div>
+
+            <div class="connector-v"></div>
+
+            <!-- Nivel 3: Ramificación Regional -->
+            <div class="branches">
+                <!-- Rama CDE -->
+                <div class="branch-item">
+                    <div class="node small">
+                        <span class="node-tag">Ciudad del Este</span>
+                        <span class="node-name">Supervisor CDE</span>
+                        <p class="node-desc">Jefatura de oficina regional. Supervisión de personal y validación de
+                            registros.</p>
+                    </div>
+                    <div class="connector-v"></div>
+                    <div class="node small">
+                        <span class="node-name">Operadores CDE</span>
+                        <p class="node-desc">Personal de guardia. Carga de denuncias, atención al ciudadano y toma de
+                            datos iniciales.</p>
+                    </div>
+                </div>
+
+                <!-- Rama ENC -->
+                <div class="branch-item">
+                    <div class="node small">
+                        <span class="node-tag">Encarnación</span>
+                        <span class="node-name">Supervisor ENC</span>
+                        <p class="node-desc">Jefatura de oficina regional. Supervisión de personal y validación de
+                            registros.</p>
+                    </div>
+                    <div class="connector-v"></div>
+                    <div class="node small">
+                        <span class="node-name">Operadores ENC</span>
+                        <p class="node-desc">Personal de guardia. Carga de denuncias, atención al ciudadano y toma de
+                            datos iniciales.</p>
+                    </div>
+                </div>
+
+                <!-- Rama CGZ -->
+                <div class="branch-item">
+                    <div class="node small">
+                        <span class="node-tag">Caaguazú</span>
+                        <span class="node-name">Supervisor CGZ</span>
+                        <p class="node-desc">Jefatura de oficina regional. Supervisión de personal y validación de
+                            registros.</p>
+                    </div>
+                    <div class="connector-v"></div>
+                    <div class="node small">
+                        <span class="node-name">Operadores CGZ</span>
+                        <p class="node-desc">Personal de guardia. Carga de denuncias, atención al ciudadano y toma de
+                            datos iniciales.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            DCHPEF — DIRECCIÓN DE LUCHA CONTRA HECHOS PUNIBLES ECONÓMICOS Y FINANCIEROS<br>
+            PÁGINA 1 — ESQUEMA ORGANIZACIONAL POR SEDES
+        </footer>
+    </div>
+
+    <!-- Página 2: Flujo de Responsabilidades -->
+    <div class="page">
+        <section class="summary-box">
+            <h2>Protocolos de Responsabilidad Institucional</h2>
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <strong>Administración Técnica (ASU)</strong>
+                    Coordina la emisión de credenciales y el monitoreo de integridad desde la Sede Central Asunción.
+                </div>
+                <div class="summary-item">
+                    <strong>Gestión Regional</strong>
+                    Cada oficina (CDE, ENC, CGZ) cuenta con un supervisor directo responsable de su personal asignado.
+                </div>
+                <div class="summary-item">
+                    <strong>Autonomía Registral</strong>
+                    Cada oficina regional se rige por su propia numeración de denuncias, manteniendo la independencia
+                    entre dependencias.
+                </div>
+                <div class="summary-item">
+                    <strong>Auditoría Central</strong>
+                    Desde la sede en Asunción se tiene la capacidad técnica para auditar todas las denuncias realizadas
+                    a nivel nacional.
+                </div>
+                <div class="summary-item">
+                    <strong>Soporte Técnico</strong>
+                    El Desarrollador garantiza la estabilidad del software y el mantenimiento de la infraestructura
+                    tecnológica central.
+                </div>
+                <div class="summary-item">
+                    <strong>Trazabilidad Vertical</strong>
+                    Cada acción en cualquier regional es monitoreada automáticamente hacia los niveles superiores para
+                    asegurar transparencia.
+                </div>
+                <div class="summary-item">
+                    <strong>Gestión Operativa</strong>
+                    Los operadores (personal de guardia) garantizan la integridad inicial de los datos y el cumplimiento
+                    de los protocolos.
+                </div>
+            </div>
+        </section>
+
+        <footer>
+            DCHPEF — PARAGUAY 2026<br>
+            PÁGINA 2 — DETALLES TÉCNICOS Y OPERATIVOS
+        </footer>
+    </div>
+</body>
+
+</html>

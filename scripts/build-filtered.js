@@ -1,6 +1,6 @@
 const { spawn } = require('child_process');
 
-const buildProcess = spawn('next', ['build'], {
+const buildProcess = spawn('next', ['build', '--webpack'], {
   shell: true,
   stdio: ['inherit', 'pipe', 'pipe']
 });

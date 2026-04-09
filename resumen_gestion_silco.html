@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resumen de Gestión Operativa SILCO</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #09090b;
+            --primary-foreground: #fafafa;
+            --secondary: #f4f4f5;
+            --muted-foreground: #71717a;
+            --border: #d4d4d8;
+            --radius: 0.5rem;
+            --line-width: 2px;
+            print-color-adjust: exact;
+            -webkit-print-color-adjust: exact;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: #f0f0f0;
+            color: var(--primary);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .page {
+            background-color: white;
+            width: 210mm;
+            height: 297mm;
+            margin: 10mm auto;
+            padding: 1.25cm 1.5cm;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 1rem;
+        }
+
+        .sys-name {
+            font-size: 0.75rem;
+            font-weight: 800;
+            letter-spacing: 0.2em;
+            color: var(--muted-foreground);
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+
+        h1 {
+            font-size: 1.75rem;
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            margin-bottom: 0.5rem;
+            line-height: 1.1;
+        }
+
+        .meta-info {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--muted-foreground);
+            text-transform: uppercase;
+        }
+
+        .section-title {
+            font-size: 0.65rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--muted-foreground);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .section-title::after {
+            content: '';
+            flex-grow: 1;
+            height: 1px;
+            background-color: var(--border);
+        }
+
+        /* Metrics Grid */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .metric-card {
+            padding: 1rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            display: block;
+        }
+
+        .metric-label {
+            font-size: 0.65rem;
+            font-weight: 600;
+            color: var(--muted-foreground);
+            text-transform: uppercase;
+            margin-top: 0.25rem;
+        }
+
+        /* Key Values */
+        .values-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .value-item {
+            display: flex;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            background-color: var(--secondary);
+            border-radius: var(--radius);
+        }
+
+        .value-content h3 {
+            font-size: 0.85rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .value-content p {
+            font-size: 0.75rem;
+            color: var(--muted-foreground);
+            line-height: 1.4;
+        }
+
+        /* Proposals Section */
+        .proposals {
+            margin-top: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.75rem;
+        }
+
+        .option-card {
+            padding: 1rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .option-card.highlight {
+            border: 2px solid var(--primary);
+        }
+
+        .opt-tag {
+            font-size: 0.55rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            color: var(--muted-foreground);
+            margin-bottom: 0.5rem;
+        }
+
+        .opt-title {
+            font-size: 0.9rem;
+            font-weight: 800;
+            margin-bottom: 0.75rem;
+        }
+
+        .opt-desc {
+            font-size: 0.7rem;
+            color: var(--muted-foreground);
+            line-height: 1.4;
+            flex-grow: 1;
+            margin-bottom: 1rem;
+        }
+
+        .opt-price {
+            font-size: 1.1rem;
+            font-weight: 800;
+            border-top: 1px solid var(--border);
+            padding-top: 0.75rem;
+        }
+
+        .opt-subprice {
+            font-size: 0.6rem;
+            color: var(--muted-foreground);
+            font-weight: 600;
+        }
+
+        /* Clauses */
+        .clause-box {
+            font-size: 0.7rem;
+            padding: 0.75rem;
+            border-left: 3px solid var(--primary);
+            background-color: var(--secondary);
+            margin-bottom: 1rem;
+        }
+
+        .clause-box strong {
+            display: block;
+            margin-bottom: 0.25rem;
+        }
+
+        .disclaimer {
+            font-style: italic;
+            font-size: 0.65rem;
+            color: var(--muted-foreground);
+            text-align: center;
+            margin-top: auto;
+            padding-top: 1rem;
+        }
+
+        footer {
+            margin-top: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .footer-org {
+            font-size: 0.75rem;
+            font-weight: 800;
+        }
+
+        .footer-org span {
+            display: block;
+            font-size: 0.6rem;
+            font-weight: 500;
+            color: var(--muted-foreground);
+        }
+
+        .signature-line {
+            width: 200px;
+            border-top: 1px solid var(--primary);
+            text-align: center;
+            font-size: 0.65rem;
+            padding-top: 0.5rem;
+            font-weight: 600;
+        }
+
+        @media print {
+            body { background: none; margin: 0; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+            .page { width: 210mm; height: 297mm; margin: 0; box-shadow: none; padding: 2cm 1.5cm; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page">
+        <header>
+            <div class="sys-name">SILCO — SISTEMA DE GESTIÓN INTEGRADA</div>
+            <h1>Resumen de Gestión Operativa<br>DECFESPA</h1>
+            <div class="meta-info">
+                <span>REF: INF-DEC-2026-001</span>
+                <span>FECHA: 20 / 03 / 2026</span>
+            </div>
+        </header>
+
+        <section>
+            <div class="section-title">Métricas de Impacto Operacional</div>
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <span class="metric-value">36.900</span>
+                    <span class="metric-label">Personal Registrado</span>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-value">247</span>
+                    <span class="metric-label">Empresas Habilitadas</span>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-value">1.850</span>
+                    <span class="metric-label">Credenciales Emitidas</span>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-value">3.4 d</span>
+                    <span class="metric-label">Velocidad Promedio</span>
+                </div>
+            </div>
+        </section>
+
+
+        <section class="proposals">
+            <div class="section-title">Esquemas de Renovación y Sostenibilidad (Abril 2026)</div>
+            <div class="options-grid">
+                <div class="option-card">
+                    <span class="opt-tag">Opción 01</span>
+                    <h3 class="opt-title">Renovación Anual</h3>
+                    <p class="opt-desc">Acceso total por 12 meses, soporte preventivo y actualizaciones de seguridad críticas.</p>
+                    <div class="opt-price">9.000.000 Gs.</div>
+                    <div class="opt-subprice">8.000 Gs. por Credencial</div>
+                </div>
+                <div class="option-card">
+                    <span class="opt-tag">Opción 02</span>
+                    <h3 class="opt-title">Renovación Semestral</h3>
+                    <p class="opt-desc">Licencia SILCO por 06 meses. Acceso completo al ecosistema digital sin limitaciones.</p>
+                    <div class="opt-price">5.000.000 Gs.</div>
+                    <div class="opt-subprice">8.000 Gs. por Credencial</div>
+                </div>
+                <div class="option-card highlight">
+                    <span class="opt-tag">Opción 03</span>
+                    <h3 class="opt-title">Exoneración Directiva</h3>
+                    <p class="opt-desc">Canon de licencia exonerado. Válido hasta el fin de la presente gestión de mando.</p>
+                    <div class="opt-price">18.000 Gs.</div>
+                    <div class="opt-subprice">Precio Único por Unidad</div>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <div class="clause-box">
+                <strong>Cláusula de Propiedad Intelectual</strong>
+                Los derechos de uso institucional son cedidos para fiscalización. La Propiedad Intelectual permanece vinculada exclusivamente al Desarrollador Original.
+            </div>
+            <div class="clause-box" style="background-color: transparent; border: 1px dashed var(--border);">
+                <strong>Nota sobre Continuidad de Datos</strong>
+                En caso de no renovación, se entregará un dispositivo USB con la base de datos íntegra, garantizando el 100% del histórico institucional.
+            </div>
+        </section>
+
+        <p class="disclaimer">Documento oficial de planificación estratégica SILCO. Propuesta técnica no vinculante hasta su formalización administrativa.</p>
+
+        <footer>
+            <div class="footer-org">
+                DECFESPA • POLICÍA NACIONAL
+                <span>REPÚBLICA DEL PARAGUAY</span>
+            </div>
+            <div class="signature-line">
+                DIRECCIÓN / RECIBIDO Y CONFORME
+            </div>
+        </footer>
+    </div>
+</body>
+
+</html>

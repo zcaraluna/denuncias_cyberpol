@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Presupuesto de Expansión - DCHPEF</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --background: #ffffff;
+            --foreground: #09090b;
+            --card: #ffffff;
+            --card-foreground: #09090b;
+            --popover: #ffffff;
+            --popover-foreground: #09090b;
+            --primary: #18181b;
+            --primary-foreground: #fafafa;
+            --secondary: #f4f4f5;
+            --secondary-foreground: #18181b;
+            --muted: #f4f4f5;
+            --muted-foreground: #71717a;
+            --accent: #f4f4f5;
+            --accent-foreground: #18181b;
+            --destructive: #ef4444;
+            --destructive-foreground: #fafafa;
+            --border: #e4e4e7;
+            --input: #e4e4e7;
+            --ring: #18181b;
+            --radius: 0.5rem;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--background);
+            color: var(--foreground);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+        }
+
+        header {
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 1rem;
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: -0.04em;
+            margin-bottom: 0.25rem;
+        }
+
+        .subtitle {
+            font-size: 1rem;
+            color: var(--muted-foreground);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .card {
+            background-color: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            transition: border-color 0.2s ease;
+        }
+
+        .card:hover {
+            border-color: var(--foreground);
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .price {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .currency {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--muted-foreground);
+            vertical-align: middle;
+            margin-left: 0.25rem;
+        }
+
+        .description {
+            font-size: 0.8125rem;
+            color: var(--muted-foreground);
+            margin-bottom: 0.5rem;
+            flex-grow: 1;
+        }
+
+        .maintenance-section {
+            background-color: var(--secondary);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .maintenance-section h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+        }
+
+        .maintenance-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.875rem;
+        }
+
+        .maintenance-item:last-child {
+            border-bottom: none;
+        }
+
+        .metrics-section {
+            margin-bottom: 2.5rem;
+            text-align: center;
+        }
+
+        .metrics-section h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .metric-card {
+            background-color: var(--background);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.25rem 2rem;
+            text-align: center;
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .metric-label {
+            font-size: 0.8125rem;
+            color: var(--muted-foreground);
+            text-transform: none;
+            letter-spacing: normal;
+            margin-top: 0;
+        }
+
+        .disclaimer {
+            font-size: 0.875rem;
+            background-color: #fafafa;
+            border: 1px solid var(--border);
+            padding: 1.25rem;
+            border-radius: var(--radius);
+            color: var(--foreground);
+            margin-top: 2rem;
+            line-height: 1.6;
+        }
+
+        .disclaimer-title {
+            display: block;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            font-size: 0.9375rem;
+        }
+
+        footer {
+            margin-top: 3rem;
+            text-align: center;
+            font-size: 0.7rem;
+            color: var(--muted-foreground);
+        }
+
+        @media print {
+            body {
+                background: white;
+            }
+
+            .container {
+                padding: 1cm;
+                max-width: 100%;
+            }
+
+            .card:hover {
+                border-color: var(--border);
+            }
+
+            .maintenance-section {
+                background-color: #f9f9f9 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            footer {
+                margin-top: 2rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>Propuesta</h1>
+            <p class="subtitle">Expansión del Sistema de Denuncias DCHPEF</p>
+        </header>
+
+        <section class="grid">
+            <div class="card">
+                <span class="card-title">Habilitación Total</span>
+                <div class="price">35.000.000 <span class="currency">PYG</span></div>
+                <p class="description">Pago único por la habilitación del sistema en todas las oficinas de la DCHPEF
+                    existentes a la fecha.</p>
+            </div>
+
+            <div class="card">
+                <span class="card-title">Habilitación por Oficina</span>
+                <div class="price">6.000.000 <span class="currency">PYG</span></div>
+                <p class="description">Pago por cada oficina en la que se desee implementar el sistema de manera
+                    individual.</p>
+            </div>
+        </section>
+
+        <section class="maintenance-section">
+            <h2>Mantenimiento Anual</h2>
+            <div class="maintenance-item">
+                <span>Base de pago anual (incluye Asunción)</span>
+                <strong>5.500.000 PYG</strong>
+            </div>
+            <div class="maintenance-item">
+                <span>Aumento anual por cada nueva oficina habilitada</span>
+                <strong>+1.500.000 PYG</strong>
+            </div>
+        </section>
+
+        <section class="metrics-section">
+            <h2>Métricas de Uso Actual</h2>
+            <div class="metric-card">
+                <div class="metric-value">12</div>
+                <div class="metric-label">Denuncias diarias promedio</div>
+            </div>
+        </section>
+
+        <div class="disclaimer">
+            <span class="disclaimer-title">⚠ Nota Importante</span>
+            Esta propuesta contempla exclusivamente la <strong>habilitación y licenciamiento del software</strong>. No
+            incluye la adquisición de equipos informáticos (computadoras o periféricos), los cuales podrán ser
+            presupuestados por separado según los requerimientos técnicos de cada oficina.
+        </div>
+    </div>
+</body>
+
+</html>
