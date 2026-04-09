@@ -290,7 +290,7 @@ export default function DenunciasPage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                   {/* Filtro Nombre */}
-                  <div className="space-y-1.5 flex flex-col justify-end">
+                  <div className="hidden md:flex flex-col justify-end space-y-1.5">
                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-1">
                       <User className="w-2.5 h-2.5" /> Denunciante
                     </label>
@@ -320,7 +320,7 @@ export default function DenunciasPage() {
                   </div>
 
                   {/* Filtro Hash (NUEVO PARA ADMIN) */}
-                  <div className="space-y-1.5 flex flex-col justify-end">
+                  <div className="hidden md:flex flex-col justify-end space-y-1.5">
                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-1">
                       <Hash className="w-2.5 h-2.5" /> Hash de Denuncia
                     </label>
@@ -335,7 +335,7 @@ export default function DenunciasPage() {
                   </div>
 
                   {/* Filtro Tipo (react-select) */}
-                  <div className="space-y-1.5 flex flex-col justify-end">
+                  <div className="hidden md:flex flex-col justify-end space-y-1.5">
                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-1">
                       <AlertCircle className="w-2.5 h-2.5" /> Hecho Punible
                     </label>
@@ -392,7 +392,7 @@ export default function DenunciasPage() {
                   </div>
 
                   {/* Filtro Fecha */}
-                  <div className="space-y-1.5 flex flex-col justify-end">
+                  <div className="hidden md:flex flex-col justify-end space-y-1.5">
                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-1">
                       <Calendar className="w-2.5 h-2.5" /> Rango Fechas
                     </label>
@@ -410,16 +410,16 @@ export default function DenunciasPage() {
                   </div>
                 </div>
 
-                <div className="mt-4 flex justify-end gap-2 pt-3 border-t border-slate-50">
+                <div className="mt-4 flex justify-end gap-2 pt-3 border-t border-slate-50 md:mt-4">
                   <button
                     onClick={limpiarFiltros}
-                    className="px-4 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest border border-slate-200 rounded-lg hover:bg-slate-50 transition-all"
+                    className="hidden md:block px-4 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest border border-slate-200 rounded-lg hover:bg-slate-50 transition-all"
                   >
                     Limpiar
                   </button>
                   <button
                     onClick={aplicarFiltros}
-                    className="px-6 py-2 text-[9px] font-black text-white bg-[#002147] uppercase tracking-widest rounded-lg hover:bg-[#003366] shadow-md transition-all"
+                    className="w-full md:w-auto px-6 py-2 text-[9px] font-black text-white bg-[#002147] uppercase tracking-widest rounded-lg hover:bg-[#003366] shadow-md transition-all"
                   >
                     Aplicar filtros
                   </button>
@@ -436,7 +436,7 @@ export default function DenunciasPage() {
                         <th className="px-4 py-3 text-left text-[9px] font-black text-[#002147]/50 uppercase tracking-widest border-b border-slate-100">Denunciante / C.I.</th>
                         <th className="px-4 py-3 text-left text-[9px] font-black text-[#002147]/50 uppercase tracking-widest border-b border-slate-100">Supuesto Hecho</th>
                         <th className="px-4 py-3 text-left text-[9px] font-black text-[#002147]/50 uppercase tracking-widest border-b border-slate-100">Fecha y Hora</th>
-                        <th className="px-4 py-3 text-right text-[9px] font-black text-[#002147]/50 uppercase tracking-widest border-b border-slate-100">Acciones</th>
+                        <th className="hidden md:table-cell px-4 py-3 text-right text-[9px] font-black text-[#002147]/50 uppercase tracking-widest border-b border-slate-100">Acciones</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50">
@@ -451,7 +451,11 @@ export default function DenunciasPage() {
                         </tr>
                       ) : (
                         denunciasPaginaActual.map((denuncia) => (
-                          <tr key={denuncia.id} className="group hover:bg-blue-50/30 transition-all duration-200">
+                          <tr 
+                            key={denuncia.id} 
+                            onClick={() => verDenuncia(denuncia.id)}
+                            className="group hover:bg-blue-50/30 transition-all duration-200 cursor-pointer"
+                          >
                             <td className="px-4 py-3.5 whitespace-nowrap">
                               <span className="text-xs font-black text-[#002147]">#{denuncia.numero_orden}</span>
                             </td>
@@ -470,9 +474,9 @@ export default function DenunciasPage() {
                                 <span className="text-slate-300">{denuncia.hora_denuncia} hs</span>
                               </div>
                             </td>
-                            <td className="px-4 py-3.5 whitespace-nowrap text-right">
+                            <td className="hidden md:table-cell px-4 py-3.5 whitespace-nowrap text-right">
                               <button
-                                onClick={() => verDenuncia(denuncia.id)}
+                                onClick={(e) => { e.stopPropagation(); verDenuncia(denuncia.id); }}
                                 className="inline-flex items-center gap-1.5 px-3 py-1 bg-white border border-slate-200 rounded-lg text-[9px] font-black text-[#002147] uppercase tracking-wider shadow-sm hover:bg-[#002147] hover:text-white transition-all duration-200"
                               >
                                 <Eye className="w-3 h-3" />
@@ -543,7 +547,7 @@ export default function DenunciasPage() {
               <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 p-6 sm:p-8">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start relative">
                   {/* Hash Segment */}
-                  <div className="space-y-4">
+                  <div className="hidden md:block space-y-4">
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-blue-50 rounded-lg">
                         <Hash className="w-4 h-4 text-[#002147]" />
@@ -623,12 +627,16 @@ export default function DenunciasPage() {
                           <th className="px-4 py-3 text-left text-[9px] font-black text-[#002147]/50 uppercase tracking-widest">Nº Acta</th>
                           <th className="px-4 py-3 text-left text-[9px] font-black text-[#002147]/50 uppercase tracking-widest">Supuesto Hecho</th>
                           <th className="px-4 py-3 text-left text-[9px] font-black text-[#002147]/50 uppercase tracking-widest">Fecha / Hora</th>
-                          <th className="px-4 py-3 text-right text-[9px] font-black text-[#002147]/50 uppercase tracking-widest">Acción</th>
+                          <th className="hidden md:table-cell px-4 py-3 text-right text-[9px] font-black text-[#002147]/50 uppercase tracking-widest">Acción</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-50">
                         {denunciasPorCedula.map((denuncia) => (
-                          <tr key={denuncia.id} className="group hover:bg-green-50/30 transition-all duration-200">
+                          <tr 
+                            key={denuncia.id} 
+                            onClick={() => verDenuncia(denuncia.id)}
+                            className="group hover:bg-green-50/30 transition-all duration-200 cursor-pointer"
+                          >
                             <td className="px-4 py-3 whitespace-nowrap">
                               <span className="text-xs font-black text-[#002147]">#{denuncia.numero_orden}</span>
                             </td>
@@ -641,9 +649,9 @@ export default function DenunciasPage() {
                                 <span className="text-slate-300">{denuncia.hora_denuncia} hs</span>
                               </div>
                             </td>
-                            <td className="px-4 py-3 whitespace-nowrap text-right">
+                            <td className="hidden md:table-cell px-4 py-3 whitespace-nowrap text-right">
                               <button
-                                onClick={() => verDenuncia(denuncia.id)}
+                                onClick={(e) => { e.stopPropagation(); verDenuncia(denuncia.id); }}
                                 className="px-3 py-1 bg-white border border-slate-200 rounded-lg text-[9px] font-black text-[#002147] uppercase tracking-wider hover:bg-[#002147] hover:text-white transition-all shadow-sm"
                               >
                                 Ver
