@@ -269,13 +269,13 @@ export default function GestionUsuariosPage() {
             <div className="absolute top-0 right-0 w-64 h-64 bg-slate-50 rounded-full -mr-32 -mt-32 z-0 opacity-50"></div>
 
             <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-              <div className="flex items-start gap-5">
-                <div className="p-4 bg-[#002147] rounded-2xl shadow-lg shadow-blue-900/10 shrink-0">
-                  <Users className="h-8 w-8 text-white" />
+              <div className="flex items-start gap-3 md:gap-5">
+                <div className="p-3 md:p-4 bg-[#002147] rounded-2xl shadow-lg shadow-blue-900/10 shrink-0">
+                  <Users className="h-6 w-6 md:h-8 md:w-8 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-3xl font-black text-[#002147] leading-tight">Gestión de Usuarios</h1>
-                  <p className="text-slate-500 font-medium mt-1">
+                  <h1 className="text-xl md:text-3xl font-black text-[#002147] leading-tight">Gestión de Usuarios</h1>
+                  <p className="hidden md:block text-slate-500 font-medium mt-1">
                     Administre las cuentas, roles y accesos de los funcionarios de la institución.
                   </p>
                 </div>
@@ -283,18 +283,19 @@ export default function GestionUsuariosPage() {
 
               <button
                 onClick={() => setMostrarModalCrear(true)}
-                className="group flex items-center justify-center gap-2 px-6 py-3.5 bg-[#002147] text-white rounded-2xl hover:bg-[#003366] transition-all shadow-lg shadow-blue-900/10 font-black text-sm"
+                className="group flex items-center justify-center gap-2 px-6 py-3.5 bg-[#002147] text-white rounded-2xl hover:bg-[#003366] transition-all shadow-lg shadow-blue-900/10 font-black text-xs md:text-sm"
               >
                 <UserPlus className="h-4 w-4" />
-                NUEVO USUARIO
+                <span>NUEVO USUARIO</span>
               </button>
             </div>
           </div>
         </div>
 
         <div className="max-w-7xl mx-auto">
-          <div className="bg-white rounded-3xl border border-slate-200/60 shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
+          <div className="bg-white md:rounded-3xl md:border border-slate-200/60 shadow-sm overflow-hidden mb-20 md:mb-0">
+            {/* Tabla para Escritorio */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="min-w-full divide-y divide-slate-100">
                 <thead>
                   <tr className="bg-slate-50/50 text-left border-b border-slate-100">
@@ -347,7 +348,7 @@ export default function GestionUsuariosPage() {
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1.5">
                             {user.activo ? (
                               <div className="flex items-center gap-1.5 text-emerald-600">
                                 <CheckCircle2 className="h-3.5 w-3.5" />
@@ -391,6 +392,80 @@ export default function GestionUsuariosPage() {
                   )}
                 </tbody>
               </table>
+            </div>
+
+            {/* Vista de Tarjetas para Móvil */}
+            <div className="md:hidden grid grid-cols-1 gap-4 p-4 bg-slate-50/30">
+              {usuarios.length === 0 ? (
+                <div className="text-center py-10 text-slate-400 font-bold uppercase tracking-widest text-[10px]">
+                  No se encontraron usuarios
+                </div>
+              ) : (
+                usuarios.map((user) => (
+                  <div key={user.id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm active:scale-[0.98] transition-all">
+                    <div className="p-4 flex items-center justify-between border-b border-slate-100">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 bg-slate-50 rounded-xl flex items-center justify-center text-[#002147] font-black text-xs border border-slate-100">
+                          {user.nombre?.[0] || '?'}{user.apellido?.[0] || ''}
+                        </div>
+                        <div>
+                          <p className="text-xs font-black text-[#002147] leading-tight">{user.nombre} {user.apellido}</p>
+                          <p className="text-[9px] font-mono text-slate-400 uppercase tracking-tighter">{user.usuario}</p>
+                        </div>
+                      </div>
+                      <div className={`px-2 py-0.5 text-[8px] font-black uppercase tracking-widest rounded-md border flex items-center gap-1 ${user.rol === 'superadmin' ? 'bg-red-50 text-red-600 border-red-100' :
+                        user.rol === 'admin' ? 'bg-orange-50 text-orange-600 border-orange-100' :
+                          user.rol === 'supervisor' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                            'bg-blue-50 text-blue-600 border-blue-100'
+                        }`}>
+                        {roles.find(r => r.value === user.rol)?.label}
+                      </div>
+                    </div>
+                    
+                    <div className="px-4 py-3 bg-slate-50/50 space-y-2">
+                       <div className="flex items-center justify-between text-[9px]">
+                          <span className="text-slate-400 font-black uppercase tracking-widest">Grado</span>
+                          <span className="font-bold text-slate-600 uppercase italic">{user.grado}</span>
+                       </div>
+                       <div className="flex items-center justify-between text-[9px]">
+                          <span className="text-slate-400 font-black uppercase tracking-widest">Oficina</span>
+                          <span className="font-bold text-slate-600 uppercase">{user.oficina}</span>
+                       </div>
+                       <div className="flex items-center justify-between text-[9px]">
+                          <span className="text-slate-400 font-black uppercase tracking-widest">Estado</span>
+                          {user.activo ? (
+                            <span className="font-black text-emerald-600 uppercase tracking-widest">Activo</span>
+                          ) : (
+                            <span className="font-black text-slate-400 uppercase tracking-widest">Inactivo</span>
+                          )}
+                       </div>
+                    </div>
+
+                    <div className="p-3 flex items-center gap-2 border-t border-slate-100">
+                        <Link
+                          href={`/perfil-usuario/${user.id}`}
+                          className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-white border border-slate-200 text-[#002147] rounded-xl text-[10px] font-black uppercase tracking-widest active:bg-slate-50 transition-colors"
+                        >
+                          <UserCircle className="h-3.5 w-3.5" />
+                          Perfil
+                        </Link>
+                        <button
+                          onClick={() => handleAbrirEditar(user)}
+                          className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-white border border-slate-200 text-blue-600 rounded-xl text-[10px] font-black uppercase tracking-widest active:bg-slate-50 transition-colors"
+                        >
+                          <Edit3 className="h-3.5 w-3.5" />
+                          Editar
+                        </button>
+                        <button
+                          onClick={() => handleEliminarUsuario(user.id)}
+                          className="p-2.5 bg-red-50 text-red-600 rounded-xl border border-red-100 active:bg-red-100 transition-colors"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>

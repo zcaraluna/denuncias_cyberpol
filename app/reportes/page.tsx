@@ -843,7 +843,8 @@ export default function ReportesPage() {
                   </button>
                 </div>
               </div>
-              <div className="overflow-x-auto">
+              {/* Tabla para Escritorio */}
+              <div className="hidden md:block overflow-x-auto">
                 <table className="min-w-full border-separate border-spacing-0">
                   <thead>
                     <tr className="bg-slate-50/20">
@@ -888,6 +889,36 @@ export default function ReportesPage() {
                   </tbody>
                 </table>
               </div>
+
+              {/* Vista de Tarjetas para Móvil */}
+              <div className="md:hidden divide-y divide-slate-100">
+                {datosDiarioOrdenados.map((row, index) => (
+                  <div key={index} className="p-4 space-y-3 bg-white hover:bg-slate-50 transition-colors">
+                    <div className="flex justify-between items-start">
+                      <span className="px-2 py-1 bg-slate-100 text-[#002147] font-black text-[10px] rounded uppercase">#{row.numero_denuncia}</span>
+                      <div className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase">
+                        <Clock className="w-3 h-3" />
+                        {row.hora_denuncia || '--:--'} HS
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="text-[11px] font-black text-blue-600 uppercase leading-tight mb-1">{row.tipo_especifico || row.shp || '-'}</h3>
+                      <p className="text-[10px] font-bold text-slate-600 uppercase tracking-tight">{row.denunciante || '-'}</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-50">
+                      <div>
+                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Interviniente</p>
+                        <p className="text-[9px] font-bold text-[#002147] uppercase truncate italic">{row.interviniente || '-'}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Monto (Gs.)</p>
+                        <p className="text-[10px] font-black text-[#002147]">{row.monto_dano ? row.monto_dano.toLocaleString('es-PY') : '0'}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
             </div>
           )}
 
@@ -1196,7 +1227,8 @@ export default function ReportesPage() {
                     Exportar Datos
                   </button>
                 </div>
-                <div className="overflow-x-auto">
+                {/* Tabla para Escritorio */}
+                <div className="hidden md:block overflow-x-auto">
                   <table className="min-w-full border-separate border-spacing-0">
                     <thead>
                       <tr className="bg-slate-50/20">
@@ -1238,6 +1270,33 @@ export default function ReportesPage() {
                     </tbody>
                   </table>
                 </div>
+
+                {/* Vista de Tarjetas para Móvil */}
+                <div className="md:hidden divide-y divide-slate-100">
+                  {datosDanosOrdenados.filter(d => (d.monto_dano || 0) > 0).map((row, index) => (
+                    <div key={index} className="p-4 space-y-3 bg-white hover:bg-slate-50 transition-colors">
+                      <div className="flex justify-between items-start">
+                        <span className="px-2 py-1 bg-slate-100 text-[#002147] font-black text-[10px] rounded uppercase">#{row.numero_denuncia}/{row.año}</span>
+                        <div className="text-[10px] font-black text-blue-500 uppercase tracking-widest italic">{row.moneda}</div>
+                      </div>
+                      <div>
+                        <h3 className="text-[10px] font-black text-slate-500 uppercase leading-snug mb-1">{row.shp}</h3>
+                        <p className="text-[10px] font-bold text-slate-600 uppercase tracking-tight">{row.denunciante}</p>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-50">
+                        <div>
+                          <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Entidad</p>
+                          <p className="text-[9px] font-bold text-[#002147] uppercase truncate italic">{row.entidad_reportada || '-'}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Impacto</p>
+                          <p className="text-[11px] font-black text-[#002147]">{row.monto_dano?.toLocaleString('es-PY')}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
               </div>
             </div>
           )}

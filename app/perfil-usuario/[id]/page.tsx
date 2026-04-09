@@ -174,46 +174,46 @@ export default function PerfilUsuarioPage({ params }: { params: Promise<{ id: st
                             </Link>
 
                             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-                                <div className="flex items-start gap-6">
-                                    <div className="p-5 bg-[#002147] rounded-3xl shadow-xl shadow-blue-900/20 text-white">
-                                        <User className="h-10 w-10" />
+                                <div className="flex flex-col md:flex-row items-center md:items-start gap-4 md:gap-6 text-center md:text-left">
+                                    <div className="p-4 md:p-5 bg-[#002147] rounded-3xl shadow-xl shadow-blue-900/20 text-white">
+                                        <User className="h-8 w-8 md:h-10 md:w-10" />
                                     </div>
                                     <div>
-                                        <div className="flex items-center gap-3 mb-1">
-                                            <span className={`px-2.5 py-1 text-[10px] font-black uppercase tracking-widest rounded-lg border ${usuario.rol === 'superadmin' ? 'bg-red-50 text-red-600 border-red-100' :
+                                        <div className="flex items-center justify-center md:justify-start gap-3 mb-1.5 md:mb-1">
+                                            <span className={`px-2 py-0.5 md:px-2.5 md:py-1 text-[9px] md:text-[10px] font-black uppercase tracking-widest rounded-lg border ${usuario.rol === 'superadmin' ? 'bg-red-50 text-red-600 border-red-100' :
                                                 usuario.rol === 'admin' ? 'bg-orange-50 text-orange-600 border-orange-100' :
                                                     'bg-blue-50 text-blue-600 border-blue-100'
                                                 }`}>
                                                 {usuario.rol}
                                             </span>
                                             {usuario.activo ? (
-                                                <span className="flex items-center gap-1.5 text-[10px] font-black text-emerald-600 uppercase tracking-widest">
-                                                    <Activity className="h-3 w-3" /> Activo
+                                                <span className="flex items-center gap-1.5 text-[9px] md:text-[10px] font-black text-emerald-600 uppercase tracking-widest">
+                                                    <Activity className="h-2.5 md:h-3 md:w-3" /> Activo
                                                 </span>
                                             ) : (
-                                                <span className="flex items-center gap-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                                                    <Activity className="h-3 w-3" /> Inactivo
+                                                <span className="flex items-center gap-1.5 text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                                    <Activity className="h-2.5 md:h-3 md:w-3" /> Inactivo
                                                 </span>
                                             )}
                                         </div>
-                                        <h1 className="text-4xl font-black text-[#002147] leading-tight">
+                                        <h1 className="text-2xl md:text-4xl font-black text-[#002147] leading-tight">
                                             {usuario.nombre} {usuario.apellido}
                                         </h1>
-                                        <p className="text-slate-500 font-bold mt-1 flex items-center gap-2">
+                                        <p className="text-slate-500 font-bold mt-1.5 md:mt-1 flex items-center justify-center md:justify-start gap-2 text-xs md:text-base">
                                             <Shield className="h-4 w-4 text-slate-300" />
                                             {usuario.grado}
                                         </p>
                                     </div>
                                 </div>
 
-                                <div className="flex gap-3">
-                                    <div className="px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl">
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Usuario de Sistema</p>
-                                        <p className="text-sm font-bold text-[#002147]">{usuario.usuario}</p>
+                                <div className="grid grid-cols-2 md:flex gap-3">
+                                    <div className="px-4 py-3 md:px-6 md:py-4 bg-slate-50 border border-slate-100 rounded-2xl flex-1 md:flex-none">
+                                        <p className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Usuario</p>
+                                        <p className="text-xs md:text-sm font-bold text-[#002147]">{usuario.usuario}</p>
                                     </div>
-                                    <div className="px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl">
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Oficina / Base</p>
-                                        <p className="text-sm font-bold text-[#002147]">{usuario.oficina}</p>
+                                    <div className="px-4 py-3 md:px-6 md:py-4 bg-slate-50 border border-slate-100 rounded-2xl flex-1 md:flex-none">
+                                        <p className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Base</p>
+                                        <p className="text-xs md:text-sm font-bold text-[#002147]">{usuario.oficina}</p>
                                     </div>
                                 </div>
                             </div>
@@ -247,8 +247,9 @@ export default function PerfilUsuarioPage({ params }: { params: Promise<{ id: st
                                 <p className="text-slate-400 font-black uppercase tracking-widest text-sm italic">Sin registros de consulta bajo este perfil</p>
                             </div>
                         ) : (
-                            <div className="bg-white rounded-[32px] border border-slate-200/60 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-300">
-                                <div className="overflow-x-auto">
+                            <div className="bg-white md:rounded-[32px] md:border border-slate-200/60 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-300 mb-20 md:mb-0">
+                                {/* Tabla Escritorio */}
+                                <div className="hidden md:block overflow-x-auto">
                                     <table className="min-w-full divide-y divide-slate-100">
                                         <thead>
                                             <tr className="bg-slate-50/50 text-left border-b border-slate-100">
@@ -285,6 +286,28 @@ export default function PerfilUsuarioPage({ params }: { params: Promise<{ id: st
                                         </tbody>
                                     </table>
                                 </div>
+
+                                {/* Vista Móvil */}
+                                <div className="md:hidden divide-y divide-slate-100">
+                                    {visitasPaginaActual.map((visita) => (
+                                        <div key={visita.id} className="p-4 bg-white space-y-3">
+                                            <div className="flex justify-between items-start">
+                                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{formatearFecha(visita.fecha_visita)}</span>
+                                                <span className="text-blue-600 font-black text-sm">#{visita.numero_orden}</span>
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] font-black text-[#002147] uppercase leading-tight">{visita.nombre_denunciante}</p>
+                                                <p className="text-[9px] font-bold text-slate-500 uppercase italic mt-1">{visita.tipo_hecho}</p>
+                                            </div>
+                                            <div className="flex items-center justify-between pt-2">
+                                                <p className="text-[8px] font-mono text-slate-400 uppercase tracking-tighter">{visita.hash_denuncia}</p>
+                                                <Link href={`/ver-denuncia/${visita.denuncia_id}`} className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-[9px] font-black text-[#002147] uppercase tracking-widest">
+                                                    Detalles
+                                                </Link>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         )
                     ) : (
@@ -293,8 +316,9 @@ export default function PerfilUsuarioPage({ params }: { params: Promise<{ id: st
                                 <p className="text-slate-400 font-black uppercase tracking-widest text-sm italic">Este funcionario no ha tomado denuncias aún</p>
                             </div>
                         ) : (
-                            <div className="bg-white rounded-[32px] border border-slate-200/60 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-300">
-                                <div className="overflow-x-auto">
+                            <div className="bg-white md:rounded-[32px] md:border border-slate-200/60 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-300 mb-20 md:mb-0">
+                                {/* Tabla Escritorio */}
+                                <div className="hidden md:block overflow-x-auto">
                                     <table className="min-w-full divide-y divide-slate-100">
                                         <thead>
                                             <tr className="bg-slate-50/50 text-left border-b border-slate-100">
@@ -333,6 +357,31 @@ export default function PerfilUsuarioPage({ params }: { params: Promise<{ id: st
                                             ))}
                                         </tbody>
                                     </table>
+                                </div>
+
+                                {/* Vista Móvil */}
+                                <div className="md:hidden divide-y divide-slate-100">
+                                    {denunciasTomadasPaginaActual.map((denuncia) => (
+                                        <div key={denuncia.id} className="p-4 bg-white space-y-3">
+                                            <div className="flex justify-between items-start">
+                                                <span className="text-blue-600 font-black text-lg">#{denuncia.numero_orden}</span>
+                                                <span className="text-xs font-bold text-slate-500">{denuncia.cedula_denunciante}</span>
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] font-black text-[#002147] uppercase leading-tight">{denuncia.nombre_denunciante}</p>
+                                                <p className="text-[9px] font-bold text-slate-500 uppercase italic mt-1">{denuncia.tipo_hecho}</p>
+                                            </div>
+                                            <div className="flex items-center justify-between pt-2">
+                                                <div className="flex flex-col">
+                                                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Fecha Toma</span>
+                                                    <span className="text-[9px] font-bold text-slate-600">{formatearFechaSinTimezone(denuncia.fecha_denuncia)} {denuncia.hora_denuncia}</span>
+                                                </div>
+                                                <Link href={`/ver-denuncia/${denuncia.id}`} className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-[9px] font-black text-[#002147] uppercase tracking-widest">
+                                                    Detalles
+                                                </Link>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
                         )

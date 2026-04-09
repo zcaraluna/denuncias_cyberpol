@@ -214,9 +214,9 @@ export default function BuscadorRelatoPage() {
                                 <div className="p-1.5 bg-[#002147] rounded-lg shadow-lg">
                                     <FileSearch className="w-4 h-4 text-white" />
                                 </div>
-                                <h1 className="text-xl font-black text-[#002147] uppercase tracking-tight">Buscador Especial por Relato</h1>
+                                <h1 className="text-xl font-black text-[#002147] uppercase tracking-tight md:text-xl">Buscador Relato</h1>
                             </div>
-                            <p className="text-slate-500 font-medium text-xs ml-11">Búsqueda avanzada de coincidencias en el relato de los hechos.</p>
+                            <p className="hidden md:block text-slate-500 font-medium text-xs ml-11">Búsqueda avanzada de coincidencias en el relato de los hechos.</p>
                         </div>
 
                         {resultados.length > 0 && (
@@ -353,18 +353,21 @@ export default function BuscadorRelatoPage() {
                                     <table className="min-w-full border-separate border-spacing-0">
                                         <thead>
                                             <tr className="bg-slate-50/50">
-                                                <th className="px-4 py-3 text-left text-[9px] font-black text-[#002147]/50 uppercase tracking-widest border-b border-slate-100">Nº Acta</th>
+                                                <th className="hidden md:table-cell px-4 py-3 text-left text-[9px] font-black text-[#002147]/50 uppercase tracking-widest border-b border-slate-100">Nº Acta</th>
                                                 <th className="px-4 py-3 text-left text-[9px] font-black text-[#002147]/50 uppercase tracking-widest border-b border-slate-100">Denunciante / C.I.</th>
                                                 <th className="px-4 py-3 text-left text-[9px] font-black text-[#002147]/50 uppercase tracking-widest border-b border-slate-100">Supuesto Hecho</th>
-                                                <th className="px-4 py-3 text-left text-[9px] font-black text-[#002147]/50 uppercase tracking-widest border-b border-slate-100">Fecha</th>
+                                                <th className="hidden md:table-cell px-4 py-3 text-left text-[9px] font-black text-[#002147]/50 uppercase tracking-widest border-b border-slate-100">Fecha</th>
                                                 <th className="px-4 py-3 text-right text-[9px] font-black text-[#002147]/50 uppercase tracking-widest border-b border-slate-100">Acciones</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-50">
                                             {resultados.map((res) => (
                                                 <React.Fragment key={res.id}>
-                                                    <tr className={`group transition-all duration-200 ${filaExpandida === res.id ? 'bg-blue-50/50' : 'hover:bg-slate-50'}`}>
-                                                        <td className="px-4 py-4 whitespace-nowrap">
+                                                    <tr 
+                                                        onClick={() => setFilaExpandida(filaExpandida === res.id ? null : res.id)}
+                                                        className={`group transition-all duration-200 cursor-pointer ${filaExpandida === res.id ? 'bg-blue-50/50' : 'hover:bg-slate-50'}`}
+                                                    >
+                                                        <td className="hidden md:table-cell px-4 py-4 whitespace-nowrap">
                                                             <span className="text-xs font-black text-[#002147]">#{res.numero_orden}</span>
                                                         </td>
                                                         <td className="px-4 py-4">
@@ -376,7 +379,7 @@ export default function BuscadorRelatoPage() {
                                                         <td className="px-4 py-4">
                                                             <span className="text-[10px] font-bold text-slate-600 uppercase tracking-tight">{res.tipo_hecho}</span>
                                                         </td>
-                                                        <td className="px-4 py-4 whitespace-nowrap">
+                                                        <td className="hidden md:table-cell px-4 py-4 whitespace-nowrap">
                                                             <div className="text-[10px] font-bold text-slate-500">
                                                                 {formatearFechaSinTimezone(res.fecha_denuncia)}
                                                             </div>
@@ -384,28 +387,28 @@ export default function BuscadorRelatoPage() {
                                                         <td className="px-4 py-4 text-right">
                                                             <div className="flex items-center justify-end gap-2">
                                                                 <button
-                                                                    onClick={() => setFilaExpandida(filaExpandida === res.id ? null : res.id)}
+                                                                    onClick={(e) => { e.stopPropagation(); setFilaExpandida(filaExpandida === res.id ? null : res.id); }}
                                                                     className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all duration-200 ${filaExpandida === res.id
                                                                             ? 'bg-[#002147] text-white shadow-lg shadow-blue-900/20'
                                                                             : 'bg-white border border-slate-200 text-[#002147] hover:bg-slate-50 shadow-sm'
                                                                         }`}
                                                                 >
                                                                     {filaExpandida === res.id ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                                                                    {filaExpandida === res.id ? 'Cerrar' : 'Relato'}
+                                                                    <span className="hidden sm:inline">{filaExpandida === res.id ? 'Cerrar' : 'Relato'}</span>
                                                                 </button>
                                                                 <button
-                                                                    onClick={() => router.push(`/ver-denuncia/${res.id}`)}
+                                                                    onClick={(e) => { e.stopPropagation(); router.push(`/ver-denuncia/${res.id}`); }}
                                                                     className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 text-[#002147] rounded-lg text-[9px] font-black uppercase tracking-wider shadow-sm hover:bg-[#002147] hover:text-white transition-all duration-200"
                                                                 >
                                                                     <ExternalLink className="w-3 h-3" />
-                                                                    Expediente
+                                                                    <span className="hidden sm:inline">Expediente</span>
                                                                 </button>
                                                             </div>
                                                         </td>
                                                     </tr>
                                                     {filaExpandida === res.id && (
                                                         <tr className="bg-blue-50/30">
-                                                            <td colSpan={5} className="px-6 py-6 border-b border-blue-100">
+                                                            <td colSpan={5} className="px-4 py-6 md:px-6 border-b border-blue-100">
                                                                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                                                                     <div className="lg:col-span-2 space-y-3">
                                                                         <div className="flex items-center gap-2 mb-2">
