@@ -149,12 +149,13 @@ export function Sidebar() {
 // Barra de navegación inferior para dispositivos móviles
 export function MobileBottomNav() {
     const pathname = usePathname()
-    const { usuario } = useAuth()
+    const { usuario, logout } = useAuth()
     const { esMovilReal, isLoaded } = useDeviceDetection()
 
     if (!usuario || !isLoaded) return null
 
     const esAdmin = usuario.rol === 'admin' || usuario.rol === 'superadmin'
+    const numColumnas = esAdmin ? 5 : 4
 
     return (
         <nav className={cn(
@@ -163,53 +164,70 @@ export function MobileBottomNav() {
         )}>
             <div className={cn(
                 "w-full h-16 grid",
-                esAdmin ? 'grid-cols-3' : 'grid-cols-2'
+                numColumnas === 5 ? "grid-cols-5" : "grid-cols-4"
             )}>
-                {mobileNavItems.map((item) => {
-                    const Icon = item.icon
-                    const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
-                    return (
-                        <Link
-                            key={item.href}
-                            href={item.href}
-                            className={cn(
-                                'flex flex-col items-center justify-center gap-1 text-[10px] font-bold uppercase tracking-wider transition-all duration-200 relative',
-                                isActive
-                                    ? 'text-[#002147]'
-                                    : 'text-slate-400 hover:text-[#002147]'
-                            )}
-                        >
-                            {isActive && (
-                                <span className="absolute top-0 left-1/4 right-1/4 h-0.5 bg-[#002147] rounded-b-full" />
-                            )}
-                            <Icon className={cn('h-5 w-5', isActive ? 'text-[#002147]' : 'text-slate-400')} />
-                            {item.label}
-                        </Link>
-                    )
-                })}
+                {/* Consultar */}
+                <Link
+                    href="/denuncias"
+                    className={cn(
+                        'flex flex-col items-center justify-center gap-1 text-[8px] font-bold uppercase tracking-wider transition-all duration-200 relative',
+                        pathname === '/denuncias' ? 'text-[#002147]' : 'text-slate-400'
+                    )}
+                >
+                    {pathname === '/denuncias' && <span className="absolute top-0 left-1/4 right-1/4 h-0.5 bg-[#002147] rounded-b-full" />}
+                    <Search className="h-5 w-5" />
+                    Consultar
+                </Link>
 
-                {/* Usuarios — solo para admin/superadmin */}
-                {esAdmin && (() => {
-                    const href = '/gestion-usuarios'
-                    const isActive = pathname === href
-                    return (
-                        <Link
-                            href={href}
-                            className={cn(
-                                'flex flex-col items-center justify-center gap-1 text-[10px] font-bold uppercase tracking-wider transition-all duration-200 relative',
-                                isActive
-                                    ? 'text-[#002147]'
-                                    : 'text-slate-400 hover:text-[#002147]'
-                            )}
-                        >
-                            {isActive && (
-                                <span className="absolute top-0 left-1/4 right-1/4 h-0.5 bg-[#002147] rounded-b-full" />
-                            )}
-                            <Users className={cn('h-5 w-5', isActive ? 'text-[#002147]' : 'text-slate-400')} />
-                            Usuarios
-                        </Link>
-                    )
-                })()}
+                {/* Reportes */}
+                <Link
+                    href="/reportes"
+                    className={cn(
+                        'flex flex-col items-center justify-center gap-1 text-[8px] font-bold uppercase tracking-wider transition-all duration-200 relative',
+                        pathname === '/reportes' ? 'text-[#002147]' : 'text-slate-400'
+                    )}
+                >
+                    {pathname === '/reportes' && <span className="absolute top-0 left-1/4 right-1/4 h-0.5 bg-[#002147] rounded-b-full" />}
+                    <BarChart3 className="h-5 w-5" />
+                    Reportes
+                </Link>
+
+                {/* Inicio */}
+                <Link
+                    href="/inicio"
+                    className={cn(
+                        'flex flex-col items-center justify-center gap-1 text-[8px] font-bold uppercase tracking-wider transition-all duration-200 relative',
+                        pathname === '/inicio' ? 'text-[#002147]' : 'text-slate-400'
+                    )}
+                >
+                    {pathname === '/inicio' && <span className="absolute top-0 left-1/4 right-1/4 h-0.5 bg-[#002147] rounded-b-full" />}
+                    <LayoutDashboard className="h-5 w-5" />
+                    Inicio
+                </Link>
+
+                {/* Usuarios (Solo Admin) */}
+                {esAdmin && (
+                    <Link
+                        href="/gestion-usuarios"
+                        className={cn(
+                            'flex flex-col items-center justify-center gap-1 text-[8px] font-bold uppercase tracking-wider transition-all duration-200 relative',
+                            pathname === '/gestion-usuarios' ? 'text-[#002147]' : 'text-slate-400'
+                        )}
+                    >
+                        {pathname === '/gestion-usuarios' && <span className="absolute top-0 left-1/4 right-1/4 h-0.5 bg-[#002147] rounded-b-full" />}
+                        <Users className="h-5 w-5" />
+                        Usuarios
+                    </Link>
+                )}
+
+                {/* Cerrar Sesión */}
+                <button
+                    onClick={logout}
+                    className="flex flex-col items-center justify-center gap-1 text-[8px] font-bold uppercase tracking-wider text-red-500 active:scale-95 transition-all"
+                >
+                    <LogOut className="h-5 w-5" />
+                    Salir
+                </button>
             </div>
         </nav>
     )
