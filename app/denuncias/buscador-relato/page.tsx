@@ -220,7 +220,7 @@ export default function BuscadorRelatoPage() {
                         </div>
 
                         {resultados.length > 0 && (
-                            <div className="grid grid-cols-2 md:flex items-center gap-2 w-full md:w-auto">
+                            <div className="hidden md:flex items-center gap-2">
                                 <button
                                     onClick={manejarExportacion}
                                     disabled={exportando}
