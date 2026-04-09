@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: 'CYBERPOL Denuncias',
     short_name: 'Cyberpol',
     description: 'Sistema de Gestión de Denuncias - Policía Nacional',
-    start_url: '/',
+    start_url: '/inicio',
     display: 'standalone',
     background_color: '#002147',
     theme_color: '#002147',
