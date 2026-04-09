@@ -17,6 +17,12 @@ import {
     User as UserIcon
 } from 'lucide-react'
 
+// Items visibles en la barra de navegación móvil
+const mobileNavItems = [
+    { href: '/denuncias', label: 'Consultar', icon: Search },
+    { href: '/reportes', label: 'Reportes', icon: BarChart3 },
+]
+
 const navItems = [
     { href: '/inicio', label: 'Inicio', icon: LayoutDashboard },
     { href: '/nueva-denuncia', label: 'Nueva Denuncia', icon: PlusCircle },
@@ -38,7 +44,7 @@ export function Sidebar() {
     if (!usuario) return null
 
     return (
-        <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r border-[#e2e8f0] bg-white shadow-sm transition-transform md:translate-x-0">
+        <aside className="hidden md:flex fixed left-0 top-0 z-40 h-screen w-64 border-r border-[#e2e8f0] bg-white shadow-sm flex-col transition-transform">
             <div className="flex h-full flex-col px-4 py-8">
                 {/* Header */}
                 <div className="mb-10 flex items-center gap-3 px-2">
@@ -134,5 +140,67 @@ export function Sidebar() {
                 </div>
             </div>
         </aside>
+    )
+}
+
+// Barra de navegación inferior para dispositivos móviles
+export function MobileBottomNav() {
+    const pathname = usePathname()
+    const { usuario } = useAuth()
+
+    if (!usuario) return null
+
+    const esAdmin = usuario.rol === 'admin' || usuario.rol === 'superadmin'
+
+    return (
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 shadow-[0_-4px_20px_rgba(0,33,71,0.08)]">
+            <div className={`grid ${esAdmin ? 'grid-cols-3' : 'grid-cols-2'} h-16`}>
+                {mobileNavItems.map((item) => {
+                    const Icon = item.icon
+                    const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
+                    return (
+                        <Link
+                            key={item.href}
+                            href={item.href}
+                            className={cn(
+                                'flex flex-col items-center justify-center gap-1 text-[10px] font-bold uppercase tracking-wider transition-all duration-200 relative',
+                                isActive
+                                    ? 'text-[#002147]'
+                                    : 'text-slate-400 hover:text-[#002147]'
+                            )}
+                        >
+                            {isActive && (
+                                <span className="absolute top-0 left-1/4 right-1/4 h-0.5 bg-[#002147] rounded-b-full" />
+                            )}
+                            <Icon className={cn('h-5 w-5', isActive ? 'text-[#002147]' : 'text-slate-400')} />
+                            {item.label}
+                        </Link>
+                    )
+                })}
+
+                {/* Usuarios — solo para admin/superadmin */}
+                {esAdmin && (() => {
+                    const href = '/gestion-usuarios'
+                    const isActive = pathname === href
+                    return (
+                        <Link
+                            href={href}
+                            className={cn(
+                                'flex flex-col items-center justify-center gap-1 text-[10px] font-bold uppercase tracking-wider transition-all duration-200 relative',
+                                isActive
+                                    ? 'text-[#002147]'
+                                    : 'text-slate-400 hover:text-[#002147]'
+                            )}
+                        >
+                            {isActive && (
+                                <span className="absolute top-0 left-1/4 right-1/4 h-0.5 bg-[#002147] rounded-b-full" />
+                            )}
+                            <Users className={cn('h-5 w-5', isActive ? 'text-[#002147]' : 'text-slate-400')} />
+                            Usuarios
+                        </Link>
+                    )
+                })()}
+            </div>
+        </nav>
     )
 }
