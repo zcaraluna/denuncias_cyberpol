@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAuth } from '@/lib/hooks/useAuth'
+import { useDeviceDetection } from '@/lib/hooks/useDeviceDetection'
 import { cn, formatNombrePolicial } from '@/lib/utils'
 import {
     LayoutDashboard,
@@ -40,8 +41,10 @@ const adminItems = [
 export function Sidebar() {
     const pathname = usePathname()
     const { usuario, logout } = useAuth()
+    const { esMovilReal, isLoaded } = useDeviceDetection()
 
-    if (!usuario) return null
+    if (!usuario || !isLoaded) return null
+    if (esMovilReal) return null // No mostrar sidebar en móviles reales, incluso en modo escritorio
 
     return (
         <aside className="hidden md:flex fixed left-0 top-0 z-40 h-screen w-64 border-r border-[#e2e8f0] bg-white shadow-sm flex-col transition-transform">
@@ -147,13 +150,17 @@ export function Sidebar() {
 export function MobileBottomNav() {
     const pathname = usePathname()
     const { usuario } = useAuth()
+    const { esMovilReal, isLoaded } = useDeviceDetection()
 
-    if (!usuario) return null
+    if (!usuario || !isLoaded) return null
 
     const esAdmin = usuario.rol === 'admin' || usuario.rol === 'superadmin'
 
     return (
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 shadow-[0_-4px_20px_rgba(0,33,71,0.08)]">
+        <nav className={cn(
+            "fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 shadow-[0_-4px_20px_rgba(0,33,71,0.08)]",
+            esMovilReal ? "flex" : "md:hidden" // Forzar flex en móviles reales
+        )}>
             <div className={`grid ${esAdmin ? 'grid-cols-3' : 'grid-cols-2'} h-16`}>
                 {mobileNavItems.map((item) => {
                     const Icon = item.icon
