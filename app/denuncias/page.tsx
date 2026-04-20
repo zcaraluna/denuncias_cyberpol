@@ -191,9 +191,9 @@ export default function DenunciasPage() {
         }
       }
 
-      return nombreMatch && cedulaMatch && tipoMatch && fechaMatch
+      return nombreMatch && cedulaMatch && hashMatch && tipoMatch && fechaMatch
     })
-  }, [denuncias, filtroNombre, filtroCedula, filtroTipo, filtroFechaDesde, filtroFechaHasta])
+  }, [denuncias, filtroNombre, filtroCedula, filtroHash, filtroTipo, filtroFechaDesde, filtroFechaHasta])
 
   const totalPaginas = Math.ceil(denunciasFiltradas.length / itemsPorPagina)
   const indiceInicio = (paginaActual - 1) * itemsPorPagina
