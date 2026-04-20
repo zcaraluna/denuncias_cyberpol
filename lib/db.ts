@@ -13,7 +13,8 @@ connectionString = connectionString.replace('sslmode=require', 'sslmode=disable'
 
 // Configuración de SSL: Desactivar validación de certificados para conexiones remotas (necesario para Supabase/Poolers)
 const isLocal = connectionString.includes('localhost') || connectionString.includes('127.0.0.1');
-const sslConfig = isLocal ? false : { rejectUnauthorized: false };
+const isSSLDisabled = connectionString.includes('sslmode=disable');
+const sslConfig = (isLocal || isSSLDisabled) ? false : { rejectUnauthorized: false };
 
 const pool = new Pool({
   connectionString,
