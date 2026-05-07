@@ -94,6 +94,7 @@ interface DatosMensuales {
 type SortField = 'numero_denuncia' | 'hora_denuncia' | 'shp' | 'monto_dano' | 'moneda' | 'entidad_reportada'
 type SortDirection = 'asc' | 'desc'
 type Tab = 'diario' | 'mensual' | 'danos' | 'bancos'
+type BancoSortField = 'monto_total' | 'cantidad'
 
 const SortIcon = ({ field, currentField, direction }: { field: SortField, currentField: SortField, direction: SortDirection }) => {
   if (field !== currentField) return (
@@ -144,6 +145,8 @@ export default function ReportesPage() {
   const [datosMensuales, setDatosMensuales] = useState<DatosMensuales | null>(null)
   const [datosDanos, setDatosDanos] = useState<ReporteRow[]>([])
   const [filtrosTiposDanos, setFiltrosTiposDanos] = useState<string[]>([])
+  const [bancoSortField, setBancoSortField] = useState<BancoSortField>('monto_total')
+  const [bancoSortDirection, setBancoSortDirection] = useState<SortDirection>('desc')
 
   const [cargando, setCargando] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -328,10 +331,32 @@ export default function ReportesPage() {
       const cantidadB = typeof b.cantidad === 'string' ? parseInt(b.cantidad, 10) : b.cantidad
       const montoA = typeof a.monto_total === 'string' ? parseInt(a.monto_total, 10) : a.monto_total
       const montoB = typeof b.monto_total === 'string' ? parseInt(b.monto_total, 10) : b.monto_total
-      if (cantidadB !== cantidadA) return cantidadB - cantidadA
-      return montoB - montoA
+
+      let comparison = 0
+      if (bancoSortField === 'monto_total') {
+        comparison = montoA - montoB
+        if (comparison === 0) {
+          comparison = cantidadA - cantidadB
+        }
+      } else {
+        comparison = cantidadA - cantidadB
+        if (comparison === 0) {
+          comparison = montoA - montoB
+        }
+      }
+
+      return bancoSortDirection === 'asc' ? comparison : -comparison
     })
-  }, [datosMensuales])
+  }, [datosMensuales, bancoSortField, bancoSortDirection])
+
+  const handleSortBancos = (field: BancoSortField) => {
+    if (bancoSortField === field) {
+      setBancoSortDirection(bancoSortDirection === 'asc' ? 'desc' : 'asc')
+    } else {
+      setBancoSortField(field)
+      setBancoSortDirection('desc')
+    }
+  }
 
   function rowKey(row: ReporteRow) {
     return row.tipo_especifico || row.shp || ''
@@ -1341,8 +1366,24 @@ export default function ReportesPage() {
                       <thead>
                         <tr className="bg-slate-50/20">
                           <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Banco / Entidad</th>
-                          <th className="px-6 py-4 text-right text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Denuncias</th>
-                          <th className="px-6 py-4 text-right text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Monto Total (Gs.)</th>
+                          <th
+                            className="px-6 py-4 text-right text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 cursor-pointer hover:text-[#002147] transition"
+                            onClick={() => handleSortBancos('cantidad')}
+                          >
+                            <div className="flex items-center justify-end gap-2">
+                              Denuncias
+                              <SortIcon field="monto_dano" currentField={bancoSortField === 'cantidad' ? 'monto_dano' : 'numero_denuncia'} direction={bancoSortDirection} />
+                            </div>
+                          </th>
+                          <th
+                            className="px-6 py-4 text-right text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 cursor-pointer hover:text-[#002147] transition"
+                            onClick={() => handleSortBancos('monto_total')}
+                          >
+                            <div className="flex items-center justify-end gap-2">
+                              Monto Total (Gs.)
+                              <SortIcon field="monto_dano" currentField={bancoSortField === 'monto_total' ? 'monto_dano' : 'numero_denuncia'} direction={bancoSortDirection} />
+                            </div>
+                          </th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-50 font-medium">
