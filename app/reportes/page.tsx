@@ -88,11 +88,12 @@ interface DatosMensuales {
   denunciantes_recurrentes: Recurrente[]
   resumen_danos: { moneda: string; total: number }[]
   denuncias_danos?: ReporteRow[]
+  bancos_afectados?: { banco: string; cantidad: number; monto_total: number }[]
 }
 
 type SortField = 'numero_denuncia' | 'hora_denuncia' | 'shp' | 'monto_dano' | 'moneda' | 'entidad_reportada'
 type SortDirection = 'asc' | 'desc'
-type Tab = 'diario' | 'mensual' | 'danos'
+type Tab = 'diario' | 'mensual' | 'danos' | 'bancos'
 
 const SortIcon = ({ field, currentField, direction }: { field: SortField, currentField: SortField, direction: SortDirection }) => {
   if (field !== currentField) return (
@@ -250,7 +251,12 @@ export default function ReportesPage() {
         setFiltrosTiposDanos(tiposUnicos) // Select all by default
       }
 
-      if (data.resumen_especifico.length === 0 && data.resumen_general.length === 0 && (!data.denuncias_danos || data.denuncias_danos.length === 0)) {
+      if (
+        data.resumen_especifico.length === 0 &&
+        data.resumen_general.length === 0 &&
+        (!data.denuncias_danos || data.denuncias_danos.length === 0) &&
+        (!data.bancos_afectados || data.bancos_afectados.length === 0)
+      ) {
         setError(`No se encontraron denuncias para el período ${mes}/${año}`)
       }
     } catch (error) {
@@ -314,6 +320,18 @@ export default function ReportesPage() {
     })
     return sorted
   }, [datosDanos, sortField, sortDirection, filtrosTiposDanos])
+
+  const bancosAfectadosOrdenados = useMemo(() => {
+    if (!datosMensuales?.bancos_afectados) return []
+    return [...datosMensuales.bancos_afectados].sort((a, b) => {
+      const cantidadA = typeof a.cantidad === 'string' ? parseInt(a.cantidad, 10) : a.cantidad
+      const cantidadB = typeof b.cantidad === 'string' ? parseInt(b.cantidad, 10) : b.cantidad
+      const montoA = typeof a.monto_total === 'string' ? parseInt(a.monto_total, 10) : a.monto_total
+      const montoB = typeof b.monto_total === 'string' ? parseInt(b.monto_total, 10) : b.monto_total
+      if (cantidadB !== cantidadA) return cantidadB - cantidadA
+      return montoB - montoA
+    })
+  }, [datosMensuales])
 
   function rowKey(row: ReporteRow) {
     return row.tipo_especifico || row.shp || ''
@@ -628,7 +646,8 @@ export default function ReportesPage() {
               {[
                 { id: 'diario', label: 'Diario', icon: CalendarDays },
                 { id: 'mensual', label: 'Mensual', icon: TrendingUp },
-                { id: 'danos', label: 'Daños', icon: DollarSign }
+                { id: 'danos', label: 'Daños', icon: DollarSign },
+                { id: 'bancos', label: 'Bancos', icon: Briefcase }
               ].map((tab) => {
                 const Icon = tab.icon
                 return (
@@ -1295,6 +1314,59 @@ export default function ReportesPage() {
                     </div>
                   ))}
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Resultados Bancos */}
+          {activeTab === 'bancos' && (
+            <div className="space-y-8 animate-in fade-in slide-in-from-right-4">
+              <div className="bg-white rounded-2xl shadow-xl shadow-blue-900/5 overflow-hidden border border-slate-100 relative">
+                <div className="absolute top-0 left-0 w-1 h-full bg-[#002147]"></div>
+                <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex items-center gap-3">
+                  <div className="p-2 bg-[#002147] rounded-xl shadow-lg shadow-blue-900/10">
+                    <Briefcase className="w-4 h-4 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-[11px] font-black text-[#002147] uppercase tracking-widest">Bancos Más Afectados</h3>
+                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">
+                      Ranking por cantidad de denuncias en el período
+                    </p>
+                  </div>
+                </div>
+
+                {bancosAfectadosOrdenados.length > 0 ? (
+                  <div className="hidden md:block overflow-x-auto">
+                    <table className="min-w-full border-separate border-spacing-0">
+                      <thead>
+                        <tr className="bg-slate-50/20">
+                          <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Banco / Entidad</th>
+                          <th className="px-6 py-4 text-right text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Denuncias</th>
+                          <th className="px-6 py-4 text-right text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Monto Total (Gs.)</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-50 font-medium">
+                        {bancosAfectadosOrdenados.map((row, idx) => (
+                          <tr key={`${row.banco}-${idx}`} className="group hover:bg-slate-50 transition-all">
+                            <td className="px-6 py-4 text-[10px] font-bold text-slate-600 uppercase tracking-tight">{row.banco}</td>
+                            <td className="px-6 py-4 text-[10px] font-black text-[#002147] text-right bg-slate-50/30">
+                              {typeof row.cantidad === 'string' ? parseInt(row.cantidad, 10) : row.cantidad}
+                            </td>
+                            <td className="px-6 py-4 text-[10px] font-black text-[#002147] text-right">
+                              {(typeof row.monto_total === 'string' ? parseInt(row.monto_total, 10) : row.monto_total).toLocaleString('es-PY')}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="p-12 text-center">
+                    <p className="text-slate-400 font-black uppercase tracking-widest text-xs">
+                      No hay entidades bancarias registradas en este período.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           )}

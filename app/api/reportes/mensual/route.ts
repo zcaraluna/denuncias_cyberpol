@@ -148,6 +148,22 @@ export async function GET(request: NextRequest) {
             [primerDia, ultimoDia]
         )
 
+        // 5. Bancos/entidades más afectados en el período
+        const bancosAfectadosResult = await pool.query(
+            `SELECT
+                TRIM(entidad_bancaria_vulnerada) as banco,
+                COUNT(*) as cantidad,
+                COALESCE(SUM(CASE WHEN monto_dano > 0 THEN monto_dano ELSE 0 END), 0) as monto_total
+            FROM denuncias
+            WHERE fecha_denuncia BETWEEN $1::DATE AND $2::DATE
+                AND estado = 'completada'
+                AND entidad_bancaria_vulnerada IS NOT NULL
+                AND TRIM(entidad_bancaria_vulnerada) <> ''
+            GROUP BY TRIM(entidad_bancaria_vulnerada)
+            ORDER BY cantidad DESC, monto_total DESC`,
+            [primerDia, ultimoDia]
+        )
+
         return NextResponse.json({
             resumen_especifico,
             resumen_general,
@@ -155,7 +171,8 @@ export async function GET(request: NextRequest) {
             resumen_danos,
             denunciantes_recurrentes: recurrentesResult.rows,
             top_operadores: topOperadoresResult.rows,
-            denuncias_danos: denunciasDanosResult.rows
+            denuncias_danos: denunciasDanosResult.rows,
+            bancos_afectados: bancosAfectadosResult.rows
         })
     } catch (error) {
         console.error('Error obteniendo resumen mensual:', error)
