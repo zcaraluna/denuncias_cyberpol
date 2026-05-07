@@ -95,7 +95,7 @@ function ConfirmacionPage() {
 
     const id = searchParams.get('id')
     if (!id) {
-      router.push('/dashboard')
+      router.push('/inicio')
       return
     }
 
@@ -126,7 +126,7 @@ function ConfirmacionPage() {
         }
       } catch (error) {
         console.error('Error:', error)
-        router.push('/dashboard')
+        router.push('/inicio')
       } finally {
         setLoading(false)
       }
@@ -223,7 +223,7 @@ function ConfirmacionPage() {
                   Descargar PDF
                 </button>
                 <button
-                  onClick={() => router.push('/dashboard')}
+                  onClick={() => router.push('/inicio')}
                   className="w-full sm:col-span-2 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg font-bold uppercase tracking-widest text-[9px] transition-all flex items-center justify-center border border-slate-200"
                 >
                   Ir al Inicio
