@@ -352,6 +352,12 @@ export default function NuevaDenunciaPage() {
   const router = useRouter()
   const { usuario, loading: authLoading } = useAuth()
   const [paso, setPaso] = useState(1)
+  const irAlPaso = (nuevoPaso: number) => {
+    setPaso(nuevoPaso)
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }
   const [autorConocido, setAutorConocido] = useState<'Conocido' | 'Desconocido' | 'No aplica'>('Desconocido')
   const [lugarHechoNoAplica, setLugarHechoNoAplica] = useState(false)
   const [coordenadas, setCoordenadas] = useState<{ lat: number; lng: number } | null>(null)
@@ -1782,7 +1788,7 @@ export default function NuevaDenunciaPage() {
       }
 
       // Ir directamente al paso 3 (relato) cuando se carga un borrador
-      setPaso(3)
+      irAlPaso(3)
     } catch (error) {
       console.error('Error cargando borrador:', error)
     }
@@ -1821,7 +1827,7 @@ export default function NuevaDenunciaPage() {
       return
     }
 
-    setPaso(2)
+    irAlPaso(2)
   }
 
   const handlePaso1Submit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -1831,7 +1837,7 @@ export default function NuevaDenunciaPage() {
 
     if (esFormularioDenuncianteVacio(datosActuales)) {
       resetFormularioDenunciante(obtenerRolSugerido())
-      setPaso(2)
+      irAlPaso(2)
       return
     }
 
@@ -1839,7 +1845,7 @@ export default function NuevaDenunciaPage() {
   }
 
   const onAutorSubmit = (data: any) => {
-    setPaso(3)
+    irAlPaso(3)
   }
 
   const onVistaPrevia = async () => {
@@ -1847,14 +1853,14 @@ export default function NuevaDenunciaPage() {
 
     if (denunciantes.length === 0) {
       alert('Agrega al menos un denunciante antes de generar la vista previa.')
-      setPaso(1)
+      irAlPaso(1)
       return
     }
 
     const denunciantePrincipal = obtenerDenunciantePrincipal()
     if (!denunciantePrincipal) {
       alert('Debes registrar un denunciante principal antes de continuar.')
-      setPaso(1)
+      irAlPaso(1)
       return
     }
 
@@ -1868,7 +1874,7 @@ export default function NuevaDenunciaPage() {
       !denunciantePrincipal.correo
     ) {
       alert('Por favor completa todos los campos obligatorios del denunciante principal.')
-      setPaso(1)
+      irAlPaso(1)
       return
     }
 
@@ -1992,7 +1998,7 @@ export default function NuevaDenunciaPage() {
       setMensajeErrorTitulo('Faltan Denunciantes')
       setMensajeError('Debes agregar al menos un denunciante antes de completar la denuncia.')
       setMostrarModalError(true)
-      setPaso(1)
+      irAlPaso(1)
       return
     }
 
@@ -2001,7 +2007,7 @@ export default function NuevaDenunciaPage() {
       setMensajeErrorTitulo('Falta Denunciante Principal')
       setMensajeError('Debes registrar un denunciante principal antes de completar la denuncia.')
       setMostrarModalError(true)
-      setPaso(1)
+      irAlPaso(1)
       return
     }
 
@@ -2162,14 +2168,14 @@ export default function NuevaDenunciaPage() {
 
     if (denunciantes.length === 0) {
       alert('Debes agregar al menos un denunciante antes de completar la denuncia.')
-      setPaso(1)
+      irAlPaso(1)
       return
     }
 
     const denunciantePrincipal = obtenerDenunciantePrincipal()
     if (!denunciantePrincipal) {
       alert('Debes registrar un denunciante principal antes de completar la denuncia.')
-      setPaso(1)
+      irAlPaso(1)
       return
     }
 
@@ -2290,14 +2296,14 @@ export default function NuevaDenunciaPage() {
 
     if (denunciantes.length === 0) {
       alert('Debes agregar al menos un denunciante antes de completar la denuncia.')
-      setPaso(1)
+      irAlPaso(1)
       return
     }
 
     const denunciantePrincipal = obtenerDenunciantePrincipal()
     if (!denunciantePrincipal) {
       alert('Debes registrar un denunciante principal antes de completar la denuncia.')
-      setPaso(1)
+      irAlPaso(1)
       return
     }
 
@@ -2424,14 +2430,14 @@ export default function NuevaDenunciaPage() {
     try {
       if (denunciantes.length === 0) {
         alert('Agrega al menos un denunciante antes de guardar el borrador.')
-        setPaso(1)
+        irAlPaso(1)
         return
       }
 
       const denunciantePrincipal = obtenerDenunciantePrincipal()
       if (!denunciantePrincipal) {
         alert('Debes registrar un denunciante principal antes de guardar el borrador.')
-        setPaso(1)
+        irAlPaso(1)
         return
       }
 
@@ -4190,7 +4196,7 @@ export default function NuevaDenunciaPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setPaso(1)}
+                    onClick={() => irAlPaso(1)}
                     className="flex items-center space-x-2 px-6 py-3 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 transition-all font-bold text-sm"
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -5196,7 +5202,7 @@ export default function NuevaDenunciaPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setPaso(2)}
+                    onClick={() => irAlPaso(2)}
                     className="flex items-center space-x-2 px-6 py-3 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 transition-all font-bold text-sm"
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

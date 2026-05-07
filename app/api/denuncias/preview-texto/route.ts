@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
         const abogado = abogados.find((a: any) => !a.con_carta_poder);
         const totalComparecientes = 1 + coDenunciantes.length + (abogado ? 1 : 0) + (abogadoConCartaPoder ? 1 : 0);
 
-        let html = `<p class="text-justify mb-4">En la Sala de Denuncias de la Dirección Contra Hechos Punibles Económicos y Financieros, Oficina ASUNCIÓN, en fecha <strong>${formatFecha(fechaDenuncia)}</strong> siendo las <strong>${toSafeString(horaDenuncia)}</strong>, ante mí <strong>${operadorNombre.toUpperCase()}</strong>, `;
+        let html = `<p class="text-justify mb-4">En la Sala de Denuncias de la Dirección Contra Hechos Punibles Económicos y Financieros, Oficina ${toSafeString(operador.oficina || 'ASUNCIÓN').toUpperCase()}, en fecha <strong>${formatFecha(fechaDenuncia)}</strong> siendo las <strong>${toSafeString(horaDenuncia)}</strong>, ante mí <strong>${operadorNombre.toUpperCase()}</strong>, `;
 
         // Lógica principal de narrativa (similar a PrimerParrafo.tsx)
         if (abogadoConCartaPoder && coDenunciantes.length === 0 && !abogado) {

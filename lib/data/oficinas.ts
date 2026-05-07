@@ -66,6 +66,14 @@ const OFFICE_ALIASES: Record<string, keyof typeof OFFICE_CONFIG> = {
   'PEDRO JUAN CABALLERO': 'PEDRO_JUAN_CABALLERO',
 }
 
+export const ACTIVE_OFFICES = [
+  'Asunción',
+  'Ciudad del Este',
+  'Encarnación',
+  'Loma Pytã',
+  'Pedro Juan Caballero',
+]
+
 export function getOfficeHashCode(oficina: string): string {
   const key = OFFICE_ALIASES[normalizeOffice(oficina)] ?? 'ASUNCION'
   return OFFICE_CONFIG[key].hashCode

@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/lib/hooks/useAuth'
+import { ACTIVE_OFFICES } from '@/lib/data/oficinas'
 import { MainLayout } from '@/components/MainLayout'
 import {
   UserPlus,
@@ -60,16 +61,7 @@ const grados = [
   'Funcionario/a'
 ]
 
-const oficinas = [
-  'Asunción',
-  'Ciudad del Este',
-  'Encarnación',
-  'Loma Pytã',
-  'Coronel Oviedo',
-  'Pedro Juan Caballero',
-  'Villarrica',
-  'San Lorenzo'
-]
+const oficinas = ACTIVE_OFFICES
 
 const roles = [
   { value: 'operador', label: 'Operador', color: 'blue' },
