@@ -64,6 +64,7 @@ const oficinas = [
   'Asunción',
   'Ciudad del Este',
   'Encarnación',
+  'Loma Pytã',
   'Coronel Oviedo',
   'Pedro Juan Caballero',
   'Villarrica',

@@ -30,6 +30,7 @@ interface InvolucradoData extends DenuncianteData {
 interface DenunciaData {
     fecha_denuncia: any;
     hora_denuncia: string;
+    oficina?: string;
     operador_grado?: string;
     operador_nombre?: string;
     operador_apellido?: string;
@@ -64,6 +65,11 @@ const formatFecha = (fecha: any): string => {
         return `${parts[2]}/${parts[1]}/${parts[0]}`;
     }
     return fechaStr;
+};
+
+const getOficinaTexto = (oficina?: string): string => {
+    const valor = toSafeString(oficina).trim();
+    return valor ? valor.toUpperCase() : 'ASUNCIÓN';
 };
 
 /**
@@ -221,9 +227,10 @@ function generarParrafoConAbogado(
     operador: string,
     styles: any
 ): React.ReactElement {
+    const oficinaTexto = getOficinaTexto(denuncia.oficina);
     return (
         <Text style={styles.paragraph}>
-            En la Sala de Denuncias de la Dirección Contra Hechos Punibles Económicos y Financieros, Oficina ASUNCIÓN, en fecha{' '}
+            En la Sala de Denuncias de la Dirección Contra Hechos Punibles Económicos y Financieros, Oficina {oficinaTexto}, en fecha{' '}
             <Text style={{ fontWeight: 'bold' }}>{formatFecha(denuncia.fecha_denuncia)}</Text> siendo las{' '}
             <Text style={{ fontWeight: 'bold' }}>{toSafeString(denuncia.hora_denuncia)}</Text>, ante mí{' '}
             <Text style={{ fontWeight: 'bold' }}>{operador || 'PERSONAL POLICIAL INTERVINIENTE'}</Text>, concurre{' '}
@@ -248,9 +255,10 @@ function generarParrafoAbogadoRepresentante(
     operador: string,
     styles: any
 ): React.ReactElement {
+    const oficinaTexto = getOficinaTexto(denuncia.oficina);
     return (
         <Text style={styles.paragraph}>
-            En la Sala de Denuncias de la Dirección Contra Hechos Punibles Económicos y Financieros, Oficina ASUNCIÓN, en fecha{' '}
+            En la Sala de Denuncias de la Dirección Contra Hechos Punibles Económicos y Financieros, Oficina {oficinaTexto}, en fecha{' '}
             <Text style={{ fontWeight: 'bold' }}>{formatFecha(denuncia.fecha_denuncia)}</Text> siendo las{' '}
             <Text style={{ fontWeight: 'bold' }}>{toSafeString(denuncia.hora_denuncia)}</Text>, ante mí{' '}
             <Text style={{ fontWeight: 'bold' }}>{operador || 'PERSONAL POLICIAL INTERVINIENTE'}</Text>, concurre{' '}
@@ -283,10 +291,11 @@ function generarParrafoMultiple(
     styles: any
 ): React.ReactElement {
     const { denunciantePrincipal, coDenunciantes, abogado, abogadoConCartaPoder } = analisis;
+    const oficinaTexto = getOficinaTexto(denuncia.oficina);
 
     return (
         <Text style={styles.paragraph}>
-            En la Sala de Denuncias de la Dirección Contra Hechos Punibles Económicos y Financieros, Oficina ASUNCIÓN, en fecha{' '}
+            En la Sala de Denuncias de la Dirección Contra Hechos Punibles Económicos y Financieros, Oficina {oficinaTexto}, en fecha{' '}
             <Text style={{ fontWeight: 'bold' }}>{formatFecha(denuncia.fecha_denuncia)}</Text> siendo las{' '}
             <Text style={{ fontWeight: 'bold' }}>{toSafeString(denuncia.hora_denuncia)}</Text>, ante mí{' '}
             <Text style={{ fontWeight: 'bold' }}>{operador || 'PERSONAL POLICIAL INTERVINIENTE'}</Text>, concurren los ciudadanos:{' '}
@@ -347,9 +356,10 @@ function generarParrafoSimple(
     operador: string,
     styles: any
 ): React.ReactElement {
+    const oficinaTexto = getOficinaTexto(denuncia.oficina);
     return (
         <Text style={styles.paragraph}>
-            En la Sala de Denuncias de la Dirección Contra Hechos Punibles Económicos y Financieros, Oficina ASUNCIÓN, en fecha{' '}
+            En la Sala de Denuncias de la Dirección Contra Hechos Punibles Económicos y Financieros, Oficina {oficinaTexto}, en fecha{' '}
             <Text style={{ fontWeight: 'bold' }}>{formatFecha(denuncia.fecha_denuncia)}</Text> siendo las{' '}
             <Text style={{ fontWeight: 'bold' }}>{toSafeString(denuncia.hora_denuncia)}</Text>, ante mí{' '}
             <Text style={{ fontWeight: 'bold' }}>{operador || 'PERSONAL POLICIAL INTERVINIENTE'}</Text>, concurre{' '}
