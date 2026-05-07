@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image } from '@react-pdf/renderer';
+import { getOfficeHeaderConfig } from '@/lib/data/oficinas';
 
 const styles = StyleSheet.create({
     headerContainer: {
@@ -71,6 +72,7 @@ const styles = StyleSheet.create({
 interface ParaguayHeaderProps {
     numeroActa: string;
     año: number;
+    oficina?: string;
     esAmpliacion?: boolean;
     numeroAmpliacion?: number;
     logos?: {
@@ -80,7 +82,9 @@ interface ParaguayHeaderProps {
     };
 }
 
-const ParaguayHeader: React.FC<ParaguayHeaderProps> = ({ numeroActa, año, esAmpliacion, numeroAmpliacion, logos }) => {
+const ParaguayHeader: React.FC<ParaguayHeaderProps> = ({ numeroActa, año, oficina, esAmpliacion, numeroAmpliacion, logos }) => {
+    const header = getOfficeHeaderConfig(oficina || 'Asunción');
+
     return (
         <View style={styles.headerContainer}>
             {/* Fila de Logos: Izquierda (Policía), Centro (DCHEF), Derecha (Gobierno) */}
@@ -93,16 +97,20 @@ const ParaguayHeader: React.FC<ParaguayHeaderProps> = ({ numeroActa, año, esAmp
             {/* Bloque de Texto Informativo */}
             <View style={styles.titleSection}>
                 <Text style={styles.mainTitle}>DIRECCIÓN CONTRA HECHOS PUNIBLES ECONÓMICOS Y FINANCIEROS</Text>
-                <Text style={styles.subTitle}>SALA DE DENUNCIAS</Text>
+                <Text style={styles.subTitle}>{header.sala}</Text>
                 <Text style={styles.infoText}>
-                    <Text style={{ fontWeight: 'bold' }}>Dirección:</Text> E. V. Haedo 725 casi O'Leary
+                    <Text style={{ fontWeight: 'bold' }}>Dirección:</Text> {header.direccion}
                 </Text>
-                <Text style={styles.infoText}>
-                    <Text style={{ fontWeight: 'bold' }}>Teléfono:</Text> (021) 443-159 Fax: (021) 443-126 (021) 441-111
-                </Text>
-                <Text style={styles.infoText}>
-                    <Text style={{ fontWeight: 'bold' }}>E-mail:</Text> ayudantia@delitoseconomicos.gov.py
-                </Text>
+                {header.telefono ? (
+                    <Text style={styles.infoText}>
+                        <Text style={{ fontWeight: 'bold' }}>Teléfono:</Text> {header.telefono}
+                    </Text>
+                ) : null}
+                {header.email ? (
+                    <Text style={styles.infoText}>
+                        <Text style={{ fontWeight: 'bold' }}>E-mail:</Text> {header.email}
+                    </Text>
+                ) : null}
             </View>
 
             {/* Línea Divisoria y Número de Acta */}

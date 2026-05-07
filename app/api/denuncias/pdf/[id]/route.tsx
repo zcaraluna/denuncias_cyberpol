@@ -205,6 +205,7 @@ export async function GET(
             operador_grado: String(denuncia.operador_grado_final || ''),
             operador_nombre: String(denuncia.operador_nombre_final || ''),
             operador_apellido: String(denuncia.operador_apellido_final || ''),
+            oficina: String(denuncia.oficina || 'Asunción'),
             nombres_denunciante: String(denuncia.nombres_denunciante),
             cedula: String(denuncia.cedula),
             tipo_documento: denuncia.tipo_documento ? String(denuncia.tipo_documento) : undefined,

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/lib/db'
 import { randomBytes } from 'crypto'
+import { getOfficeHashCode } from '@/lib/data/oficinas'
 
 type RolDenunciante = 'principal' | 'co-denunciante' | 'abogado'
 
@@ -35,14 +36,7 @@ interface DenuncianteEntrada {
 const ROLES_VALIDOS: RolDenunciante[] = ['principal', 'co-denunciante', 'abogado']
 
 function generarHash(oficina: string): string {
-  const identificadores: Record<string, string> = {
-    'Asunción': 'A',
-    'Ciudad del Este': 'B',
-    'Encarnación': 'C',
-    'Coronel Oviedo': 'D'
-  }
-
-  const idOficina = identificadores[oficina] || '0'
+  const idOficina = getOfficeHashCode(oficina)
   const año = new Date().getFullYear() % 100
   const hashBase = randomBytes(3).toString('hex').toUpperCase()
 
@@ -360,26 +354,27 @@ export async function POST(request: NextRequest) {
 
     if (borradorId) {
       const año = fechaActual.split('-')[0]
+      const oficina = usuario.oficina
       // Bloquear las filas del año actual para evitar condiciones de carrera
       // Luego buscar el primer número de orden disponible (reutilizar si hay huecos)
       await client.query(
         `SELECT orden FROM denuncias 
-         WHERE EXTRACT(YEAR FROM fecha_denuncia) = $1 AND orden >= 1
+         WHERE EXTRACT(YEAR FROM fecha_denuncia) = $1 AND orden >= 1 AND oficina = $2
          FOR UPDATE`,
-        [año]
+        [año, oficina]
       )
 
       const ordenResult = await client.query(
         `SELECT COALESCE(
           (SELECT MIN(n.orden_numero)
-           FROM generate_series(1, COALESCE((SELECT MAX(orden) FROM denuncias WHERE EXTRACT(YEAR FROM fecha_denuncia) = $1 AND orden >= 1), 0) + 1) AS n(orden_numero)
+           FROM generate_series(1, COALESCE((SELECT MAX(orden) FROM denuncias WHERE EXTRACT(YEAR FROM fecha_denuncia) = $1 AND orden >= 1 AND oficina = $2), 0) + 1) AS n(orden_numero)
            WHERE n.orden_numero NOT IN (
              SELECT orden FROM denuncias 
-             WHERE EXTRACT(YEAR FROM fecha_denuncia) = $1 AND orden >= 1
+             WHERE EXTRACT(YEAR FROM fecha_denuncia) = $1 AND orden >= 1 AND oficina = $2
            )),
-          COALESCE((SELECT MAX(orden) FROM denuncias WHERE EXTRACT(YEAR FROM fecha_denuncia) = $1 AND orden >= 1), 0) + 1
+          COALESCE((SELECT MAX(orden) FROM denuncias WHERE EXTRACT(YEAR FROM fecha_denuncia) = $1 AND orden >= 1 AND oficina = $2), 0) + 1
         ) as orden`,
-        [año]
+        [año, oficina]
       )
       numeroOrden = ordenResult.rows[0].orden
 
@@ -446,26 +441,27 @@ export async function POST(request: NextRequest) {
       denunciaId = borradorId
     } else {
       const año = fechaActual.split('-')[0]
+      const oficina = usuario.oficina
       // Bloquear las filas del año actual para evitar condiciones de carrera
       // Luego buscar el primer número de orden disponible (reutilizar si hay huecos)
       await client.query(
         `SELECT orden FROM denuncias 
-         WHERE EXTRACT(YEAR FROM fecha_denuncia) = $1 AND orden >= 1
+         WHERE EXTRACT(YEAR FROM fecha_denuncia) = $1 AND orden >= 1 AND oficina = $2
          FOR UPDATE`,
-        [año]
+        [año, oficina]
       )
 
       const ordenResult = await client.query(
         `SELECT COALESCE(
           (SELECT MIN(n.orden_numero)
-           FROM generate_series(1, COALESCE((SELECT MAX(orden) FROM denuncias WHERE EXTRACT(YEAR FROM fecha_denuncia) = $1 AND orden >= 1), 0) + 1) AS n(orden_numero)
+           FROM generate_series(1, COALESCE((SELECT MAX(orden) FROM denuncias WHERE EXTRACT(YEAR FROM fecha_denuncia) = $1 AND orden >= 1 AND oficina = $2), 0) + 1) AS n(orden_numero)
            WHERE n.orden_numero NOT IN (
              SELECT orden FROM denuncias 
-             WHERE EXTRACT(YEAR FROM fecha_denuncia) = $1 AND orden >= 1
+             WHERE EXTRACT(YEAR FROM fecha_denuncia) = $1 AND orden >= 1 AND oficina = $2
            )),
-          COALESCE((SELECT MAX(orden) FROM denuncias WHERE EXTRACT(YEAR FROM fecha_denuncia) = $1 AND orden >= 1), 0) + 1
+          COALESCE((SELECT MAX(orden) FROM denuncias WHERE EXTRACT(YEAR FROM fecha_denuncia) = $1 AND orden >= 1 AND oficina = $2), 0) + 1
         ) as orden`,
-        [año]
+        [año, oficina]
       )
       numeroOrden = ordenResult.rows[0].orden
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/lib/db'
 import { randomBytes } from 'crypto'
+import { getOfficeHashCode } from '@/lib/data/oficinas'
 
 type RolDenunciante = 'principal' | 'co-denunciante' | 'abogado'
 
@@ -35,14 +36,7 @@ interface DenuncianteEntrada {
 const ROLES_VALIDOS: RolDenunciante[] = ['principal', 'co-denunciante', 'abogado']
 
 function generarHash(oficina: string): string {
-  const identificadores: Record<string, string> = {
-    'Asunción': 'A',
-    'Ciudad del Este': 'B',
-    'Encarnación': 'C',
-    'Coronel Oviedo': 'D'
-  }
-
-  const idOficina = identificadores[oficina] || '0'
+  const idOficina = getOfficeHashCode(oficina)
   const año = new Date().getFullYear() % 100
   const hashBase = randomBytes(3).toString('hex').toUpperCase()
 

@@ -140,6 +140,11 @@ CREATE INDEX IF NOT EXISTS idx_denuncias_involucrados_denunciante ON denuncias_i
 -- Índices para mejorar rendimiento
 CREATE INDEX IF NOT EXISTS idx_denuncias_fecha ON denuncias(fecha_denuncia);
 CREATE INDEX IF NOT EXISTS idx_denuncias_orden ON denuncias(orden);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_denuncias_unique_oficina_anio_orden
+ON denuncias (oficina, (EXTRACT(YEAR FROM fecha_denuncia)), orden)
+WHERE estado = 'completada'
+  AND fecha_denuncia IS NOT NULL
+  AND orden >= 1;
 CREATE INDEX IF NOT EXISTS idx_denuncias_hash ON denuncias(hash);
 CREATE INDEX IF NOT EXISTS idx_denunciantes_cedula ON denunciantes(cedula);
 CREATE INDEX IF NOT EXISTS idx_denunciantes_matricula ON denunciantes(matricula);

@@ -130,6 +130,7 @@ export async function GET(
             operador_grado: String(ampliacion.operador_grado || ''),
             operador_nombre: String(ampliacion.operador_nombre || ''),
             operador_apellido: String(ampliacion.operador_apellido || ''),
+            oficina: String(denuncia.oficina || 'Asunción'),
 
             // Datos del denunciante original
             nombres_denunciante: String(denuncia.nombres_denunciante),

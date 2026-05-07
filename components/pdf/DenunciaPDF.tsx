@@ -152,6 +152,7 @@ const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 
                     <ParaguayHeader
                         numeroActa={denuncia.orden.toString()}
                         año={año}
+                        oficina={denuncia.oficina}
                         esAmpliacion={denuncia.es_ampliacion}
                         numeroAmpliacion={denuncia.numero_ampliacion}
                         logos={denuncia.logos}
@@ -217,6 +218,7 @@ const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 
                             <ParaguayHeader
                                 numeroActa={denuncia.orden.toString()}
                                 año={año}
+                                oficina={denuncia.oficina}
                                 esAmpliacion={denuncia.es_ampliacion}
                                 numeroAmpliacion={denuncia.numero_ampliacion}
                                 logos={denuncia.logos}
