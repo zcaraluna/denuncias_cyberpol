@@ -54,7 +54,7 @@ CREATE TABLE IF NOT EXISTS denuncias (
     operador_grado VARCHAR(50) NOT NULL,
     operador_nombre VARCHAR(100) NOT NULL,
     operador_apellido VARCHAR(100) NOT NULL,
-    monto_dano INTEGER,
+    monto_dano BIGINT,
     moneda VARCHAR(50),
     bancos_relacionados TEXT,
     entidad_bancaria_vulnerada TEXT,
