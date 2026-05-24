@@ -15,24 +15,28 @@ export async function POST(request: Request): Promise<NextResponse> {
         const arrayBuffer = await request.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
 
+        const uniqueId = Date.now();
+        const key = `denuncias_cyberpol/denuncias-escritas/${uniqueId}-${filename}`;
+
         await s3Client.send(
             new PutObjectCommand({
                 Bucket: bucketName,
-                Key: filename,
+                Key: key,
                 Body: buffer,
                 ContentType: request.headers.get('content-type') || 'application/octet-stream',
             })
         );
 
-        const url = `${process.env.GARAGE_ENDPOINT}/${bucketName}/${filename}`;
+        const url = `${process.env.GARAGE_ENDPOINT}/${bucketName}/${key}`;
 
         return NextResponse.json({
             url,
-            pathname: filename,
+            pathname: key,
         });
     } catch (error) {
         console.error('Error uploading to Garage S3:', error);
         return NextResponse.json({ error: 'Error uploading file' }, { status: 500 });
     }
 }
+
 

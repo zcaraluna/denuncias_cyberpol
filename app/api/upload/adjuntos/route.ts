@@ -15,7 +15,8 @@ export async function POST(request: Request): Promise<NextResponse> {
         const arrayBuffer = await request.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
 
-        const key = `adjuntos/${filename}`;
+        const uniqueId = Date.now();
+        const key = `denuncias_cyberpol/adjuntos/${uniqueId}-${filename}`;
 
         await s3Client.send(
             new PutObjectCommand({
@@ -37,4 +38,5 @@ export async function POST(request: Request): Promise<NextResponse> {
         return NextResponse.json({ error: 'Error uploading file' }, { status: 500 });
     }
 }
+
 
