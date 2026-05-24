@@ -3,7 +3,7 @@ const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../.env.local') });
 
 // Obtener credenciales
-const garageEndpoint = process.env.GARAGE_ENDPOINT || 'https://s3.s1mple.cloud';
+const garageEndpoint = process.env.GARAGE_PUBLIC_URL || 'https://web.s1mple.cloud';
 const bucketName = process.env.GARAGE_BUCKET_NAME || 's1mple-cloud';
 
 const pool = new Pool({

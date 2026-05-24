@@ -27,7 +27,8 @@ export async function POST(request: Request): Promise<NextResponse> {
             })
         );
 
-        const url = `${process.env.GARAGE_ENDPOINT}/${bucketName}/${key}`;
+        const publicEndpoint = process.env.GARAGE_PUBLIC_URL || process.env.GARAGE_ENDPOINT || 'https://web.s1mple.cloud';
+        const url = `${publicEndpoint}/${bucketName}/${key}`;
 
         return NextResponse.json({
             url,
