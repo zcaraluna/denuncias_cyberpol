@@ -2,10 +2,8 @@ const { Pool } = require('pg');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../.env.local') });
 
-// Obtener la URL pública de reemplazo
-const targetDomain = 's3.s1mple.cloud';
-const publicEndpoint = process.env.GARAGE_PUBLIC_URL || 'https://web.s1mple.cloud';
-const replacementDomain = new URL(publicEndpoint).host;
+// Obtener la URL de destino (s1mple-cloud.web.s1mple.cloud)
+const targetVHostUrl = 'https://s1mple-cloud.web.s1mple.cloud';
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -14,23 +12,25 @@ const pool = new Pool({
 
 async function runReplacement() {
   console.log(`🚀 Iniciando reemplazo de dominios en la base de datos...`);
-  console.log(`❌ Buscar: ${targetDomain}`);
-  console.log(`✅ Reemplazar con: ${replacementDomain}\n`);
+  console.log(`✅ Destino: ${targetVHostUrl}`);
 
   try {
-    // 1. Buscar denuncias que tengan el dominio s3.s1mple.cloud
+    // Buscar denuncias que tengan enlaces viejos de s3 o web (en formato path-style)
     const query = `
       SELECT id, archivo_denuncia_url, adjuntos_urls 
       FROM denuncias 
-      WHERE archivo_denuncia_url ILIKE $1
+      WHERE archivo_denuncia_url ILIKE '%s3.s1mple.cloud/s1mple-cloud%'
+         OR archivo_denuncia_url ILIKE '%web.s1mple.cloud/s1mple-cloud%'
          OR EXISTS (
-           SELECT 1 FROM unnest(adjuntos_urls) url WHERE url ILIKE $2
+           SELECT 1 FROM unnest(adjuntos_urls) url 
+           WHERE url ILIKE '%s3.s1mple.cloud/s1mple-cloud%'
+              OR url ILIKE '%web.s1mple.cloud/s1mple-cloud%'
          )
     `;
 
-    const result = await pool.query(query, [`%${targetDomain}%`, `%${targetDomain}%`]);
+    const result = await pool.query(query);
 
-    console.log(`📊 Encontradas ${result.rows.length} denuncias que contienen '${targetDomain}'.\n`);
+    console.log(`📊 Encontradas ${result.rows.length} denuncias que requieren migración a subdominio (VHost).\n`);
 
     let updatedCount = 0;
 
@@ -39,27 +39,44 @@ async function runReplacement() {
       let updatedAdjuntosUrls = row.adjuntos_urls ? [...row.adjuntos_urls] : [];
       let needsUpdate = false;
 
+      // Helper para convertir el formato path-style a virtual-host style
+      const toVHost = (urlStr) => {
+        if (!urlStr) return urlStr;
+        let newUrl = urlStr;
+        // Reemplazar s3.s1mple.cloud/s1mple-cloud/
+        newUrl = newUrl.replace('https://s3.s1mple.cloud/s1mple-cloud/', `${targetVHostUrl}/`);
+        newUrl = newUrl.replace('http://s3.s1mple.cloud/s1mple-cloud/', `${targetVHostUrl}/`);
+        // Reemplazar web.s1mple.cloud/s1mple-cloud/
+        newUrl = newUrl.replace('https://web.s1mple.cloud/s1mple-cloud/', `${targetVHostUrl}/`);
+        newUrl = newUrl.replace('http://web.s1mple.cloud/s1mple-cloud/', `${targetVHostUrl}/`);
+        return newUrl;
+      };
+
       // Actualizar archivo principal
-      if (row.archivo_denuncia_url && row.archivo_denuncia_url.includes(targetDomain)) {
-        const newUrl = row.archivo_denuncia_url.replace(targetDomain, replacementDomain);
-        console.log(`🔹 [Denuncia ${row.id}] Archivo principal:`);
-        console.log(`   ❌ Viejo: ${row.archivo_denuncia_url}`);
-        console.log(`   ✅ Nuevo: ${newUrl}`);
-        updatedArchivoUrl = newUrl;
-        needsUpdate = true;
+      if (row.archivo_denuncia_url) {
+        const newUrl = toVHost(row.archivo_denuncia_url);
+        if (newUrl !== row.archivo_denuncia_url) {
+          console.log(`🔹 [Denuncia ${row.id}] Archivo principal:`);
+          console.log(`   ❌ Viejo: ${row.archivo_denuncia_url}`);
+          console.log(`   ✅ Nuevo: ${newUrl}`);
+          updatedArchivoUrl = newUrl;
+          needsUpdate = true;
+        }
       }
 
       // Actualizar adjuntos
       if (row.adjuntos_urls && row.adjuntos_urls.length > 0) {
         for (let i = 0; i < row.adjuntos_urls.length; i++) {
           const urlStr = row.adjuntos_urls[i];
-          if (urlStr && urlStr.includes(targetDomain)) {
-            const newUrl = urlStr.replace(targetDomain, replacementDomain);
-            console.log(`🔹 [Denuncia ${row.id}] Adjunto [${i}]:`);
-            console.log(`   ❌ Viejo: ${urlStr}`);
-            console.log(`   ✅ Nuevo: ${newUrl}`);
-            updatedAdjuntosUrls[i] = newUrl;
-            needsUpdate = true;
+          if (urlStr) {
+            const newUrl = toVHost(urlStr);
+            if (newUrl !== urlStr) {
+              console.log(`🔹 [Denuncia ${row.id}] Adjunto [${i}]:`);
+              console.log(`   ❌ Viejo: ${urlStr}`);
+              console.log(`   ✅ Nuevo: ${newUrl}`);
+              updatedAdjuntosUrls[i] = newUrl;
+              needsUpdate = true;
+            }
           }
         }
       }
