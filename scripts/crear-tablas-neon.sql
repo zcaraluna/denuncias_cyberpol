@@ -64,7 +64,7 @@ CREATE TABLE denuncias (
     operador_grado VARCHAR(50) NOT NULL,
     operador_nombre VARCHAR(100) NOT NULL,
     operador_apellido VARCHAR(100) NOT NULL,
-    monto_dano INTEGER,
+    monto_dano BIGINT,
     moneda VARCHAR(50),
     hash VARCHAR(50) UNIQUE NOT NULL,
     pdf BYTEA,
