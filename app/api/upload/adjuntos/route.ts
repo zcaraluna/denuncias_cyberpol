@@ -28,16 +28,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         );
 
         const publicEndpoint = process.env.GARAGE_PUBLIC_URL || 'https://web.s1mple.cloud';
-        let url;
-        try {
-            const urlObj = new URL(publicEndpoint);
-            if (!urlObj.hostname.startsWith(`${bucketName}.`)) {
-                urlObj.hostname = `${bucketName}.${urlObj.hostname}`;
-            }
-            url = `${urlObj.origin}/${key}`;
-        } catch (e) {
-            url = `${publicEndpoint}/${bucketName}/${key}`;
-        }
+        const url = `${publicEndpoint}/${key}`;
 
         return NextResponse.json({
             url,

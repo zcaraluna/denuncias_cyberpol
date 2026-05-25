@@ -27,22 +27,11 @@ function convertVercelToGarage(urlStr) {
     const isAdjunto = pathname.startsWith('adjuntos/');
     const filename = isAdjunto ? pathname.substring('adjuntos/'.length) : pathname;
     
-    // Generar la nueva URL apuntando a Garage S3 con estilo virtual-host
-    let newUrl;
-    try {
-      const urlObj = new URL(garageEndpoint);
-      if (!urlObj.hostname.startsWith(`${bucketName}.`)) {
-        urlObj.hostname = `${bucketName}.${urlObj.hostname}`;
-      }
-      const key = isAdjunto 
-        ? `denuncias_cyberpol/adjuntos/${encodeURIComponent(filename)}`
-        : `denuncias_cyberpol/denuncias-escritas/${encodeURIComponent(filename)}`;
-      newUrl = `${urlObj.origin}/${key}`;
-    } catch (e) {
-      newUrl = isAdjunto
-        ? `${garageEndpoint}/${bucketName}/denuncias_cyberpol/adjuntos/${encodeURIComponent(filename)}`
-        : `${garageEndpoint}/${bucketName}/denuncias_cyberpol/denuncias-escritas/${encodeURIComponent(filename)}`;
-    }
+    // Generar la nueva URL apuntando a Garage S3 sin bucket en la ruta
+    const key = isAdjunto 
+      ? `denuncias_cyberpol/adjuntos/${encodeURIComponent(filename)}`
+      : `denuncias_cyberpol/denuncias-escritas/${encodeURIComponent(filename)}`;
+    const newUrl = `${garageEndpoint}/${key}`;
       
     return newUrl;
   } catch (err) {
