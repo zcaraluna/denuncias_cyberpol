@@ -30,40 +30,18 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'flex-end',
         alignItems: 'center',
-        paddingRight: 17,
     },
     logoIzquierda: {
         width: 100,
         height: 40,
     },
     logoDerecha: {
-        width: 110,
-        height: 55,
+        width: 120,
+        height: 60,
     },
     logoCentral: {
         width: 65,
         height: 65,
-    },
-    qrContainer: {
-        position: 'absolute',
-        right: -30,
-        top: 3,
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: 42,
-    },
-    qrHeaderImage: {
-        width: 42,
-        height: 42,
-    },
-    qrHeaderText: {
-        fontSize: 5,
-        color: '#666',
-        marginTop: 2,
-        fontFamily: 'Roboto',
-        textAlign: 'center',
-        width: '100%',
     },
     titleSection: {
         textAlign: 'center',
@@ -78,6 +56,17 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         width: '100%',
     },
+    infoWrapper: {
+        position: 'relative',
+        width: '100%',
+        alignItems: 'center',
+        marginTop: 4,
+        paddingBottom: 8,
+    },
+    infoBlock: {
+        alignItems: 'center',
+        width: '100%',
+    },
     subTitle: {
         fontSize: 12,
         fontWeight: 'bold',
@@ -88,6 +77,27 @@ const styles = StyleSheet.create({
     infoText: {
         fontSize: 10,
         marginBottom: 1,
+        textAlign: 'center',
+        width: '100%',
+    },
+    qrHeaderContainer: {
+        position: 'absolute',
+        right: 0,
+        top: -4,
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: 55,
+    },
+    qrHeaderImage: {
+        width: 55,
+        height: 55,
+    },
+    qrHeaderText: {
+        fontSize: 5,
+        color: '#666',
+        marginTop: 2,
+        fontFamily: 'Roboto',
         textAlign: 'center',
         width: '100%',
     },
@@ -135,7 +145,7 @@ const ParaguayHeader: React.FC<ParaguayHeaderProps> = ({
 
     return (
         <View style={styles.headerContainer}>
-            {/* Fila de Logos: Izquierda (Policía), Centro (DCHEF), Derecha (Gobierno + QR) */}
+            {/* Fila de Logos: Izquierda (Policía), Centro (DCHEF), Derecha (Gobierno) */}
             <View style={styles.topRow}>
                 <View style={styles.leftSection}>
                     {logos?.policia && <Image style={styles.logoIzquierda} src={logos.policia} />}
@@ -146,31 +156,36 @@ const ParaguayHeader: React.FC<ParaguayHeaderProps> = ({
                 <View style={styles.rightSection}>
                     {logos?.gobierno && <Image style={styles.logoDerecha} src={logos.gobierno} />}
                 </View>
-                {qrCodeUrl && (
-                    <View style={styles.qrContainer}>
-                        <Image style={styles.qrHeaderImage} src={qrCodeUrl} />
-                        <Text style={styles.qrHeaderText}>{hash}</Text>
-                    </View>
-                )}
             </View>
 
             {/* Bloque de Texto Informativo */}
             <View style={styles.titleSection}>
                 <Text style={styles.mainTitle}>DIRECCIÓN CONTRA HECHOS PUNIBLES ECONÓMICOS Y FINANCIEROS</Text>
-                <Text style={styles.subTitle}>{header.sala}</Text>
-                <Text style={styles.infoText}>
-                    <Text style={{ fontWeight: 'bold' }}>Dirección:</Text> {header.direccion}
-                </Text>
-                {header.telefono ? (
-                    <Text style={styles.infoText}>
-                        <Text style={{ fontWeight: 'bold' }}>Teléfono:</Text> {header.telefono}
-                    </Text>
-                ) : null}
-                {header.email ? (
-                    <Text style={styles.infoText}>
-                        <Text style={{ fontWeight: 'bold' }}>E-mail:</Text> {header.email}
-                    </Text>
-                ) : null}
+                
+                <View style={styles.infoWrapper}>
+                    <View style={styles.infoBlock}>
+                        <Text style={styles.subTitle}>{header.sala}</Text>
+                        <Text style={styles.infoText}>
+                            <Text style={{ fontWeight: 'bold' }}>Dirección:</Text> {header.direccion}
+                        </Text>
+                        {header.telefono ? (
+                            <Text style={styles.infoText}>
+                                <Text style={{ fontWeight: 'bold' }}>Teléfono:</Text> {header.telefono}
+                            </Text>
+                        ) : null}
+                        {header.email ? (
+                            <Text style={styles.infoText}>
+                                <Text style={{ fontWeight: 'bold' }}>E-mail:</Text> {header.email}
+                            </Text>
+                        ) : null}
+                    </View>
+                    {qrCodeUrl && (
+                        <View style={styles.qrHeaderContainer}>
+                            <Image style={styles.qrHeaderImage} src={qrCodeUrl} />
+                            <Text style={styles.qrHeaderText}>{hash}</Text>
+                        </View>
+                    )}
+                </View>
             </View>
 
             {/* Línea Divisoria y Número de Acta */}
