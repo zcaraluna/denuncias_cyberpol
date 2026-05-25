@@ -30,29 +30,32 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'flex-end',
         alignItems: 'center',
+        paddingRight: 17,
     },
     logoIzquierda: {
         width: 100,
         height: 40,
     },
     logoDerecha: {
-        width: 120,
-        height: 60,
-        marginRight: 10,
+        width: 110,
+        height: 55,
     },
     logoCentral: {
         width: 65,
         height: 65,
     },
     qrContainer: {
+        position: 'absolute',
+        right: -30,
+        top: 3,
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        width: 48,
+        width: 42,
     },
     qrHeaderImage: {
-        width: 48,
-        height: 48,
+        width: 42,
+        height: 42,
     },
     qrHeaderText: {
         fontSize: 5,
@@ -142,13 +145,13 @@ const ParaguayHeader: React.FC<ParaguayHeaderProps> = ({
                 </View>
                 <View style={styles.rightSection}>
                     {logos?.gobierno && <Image style={styles.logoDerecha} src={logos.gobierno} />}
-                    {qrCodeUrl && (
-                        <View style={styles.qrContainer}>
-                            <Image style={styles.qrHeaderImage} src={qrCodeUrl} />
-                            <Text style={styles.qrHeaderText}>{hash}</Text>
-                        </View>
-                    )}
                 </View>
+                {qrCodeUrl && (
+                    <View style={styles.qrContainer}>
+                        <Image style={styles.qrHeaderImage} src={qrCodeUrl} />
+                        <Text style={styles.qrHeaderText}>{hash}</Text>
+                    </View>
+                )}
             </View>
 
             {/* Bloque de Texto Informativo */}
