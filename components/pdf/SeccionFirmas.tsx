@@ -12,13 +12,7 @@ const styles = StyleSheet.create({
     column: {
         flexDirection: 'column',
         alignItems: 'center',
-        width: '30%',
-    },
-    qrColumn: {
-        flexDirection: 'column',
-        alignItems: 'center',
-        width: '40%',
-        marginTop: -55,
+        width: '45%',
     },
     line: {
         borderTopWidth: 1,
@@ -83,8 +77,6 @@ export const SeccionFirmas: React.FC<SeccionFirmasProps> = ({
     operador,
     denunciante,
     abogadoRep,
-    hash,
-    qrCodeUrl,
     isDuplicate,
     operadorActual,
     operadorOriginalId,
@@ -114,12 +106,6 @@ export const SeccionFirmas: React.FC<SeccionFirmasProps> = ({
                 </Text>
                 <Text style={styles.labelHistory}>{personal.grado.toUpperCase()}</Text>
                 <Text style={styles.labelHistory}>{etiquetaCargo}</Text>
-            </View>
-
-            {/* Columna Central: QR y HASH */}
-            <View style={styles.qrColumn}>
-                {qrCodeUrl && <Image src={qrCodeUrl} style={styles.qrImage} />}
-                <Text style={styles.hashText}>{hash}</Text>
             </View>
 
             {/* Columna Derecha (Observador): Denunciante o Representante Legal */}

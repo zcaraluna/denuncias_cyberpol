@@ -15,6 +15,22 @@ const styles = StyleSheet.create({
         width: '100%',
         marginBottom: 5,
     },
+    leftSection: {
+        flex: 1,
+        flexDirection: 'row',
+        justifyContent: 'flex-start',
+        alignItems: 'flex-start',
+    },
+    centerSection: {
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    rightSection: {
+        flex: 1,
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        alignItems: 'center',
+    },
     logoIzquierda: {
         width: 100,
         height: 40,
@@ -22,11 +38,29 @@ const styles = StyleSheet.create({
     logoDerecha: {
         width: 120,
         height: 60,
+        marginRight: 10,
     },
     logoCentral: {
         width: 65,
         height: 65,
-        marginLeft: 20,
+    },
+    qrContainer: {
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: 48,
+    },
+    qrHeaderImage: {
+        width: 48,
+        height: 48,
+    },
+    qrHeaderText: {
+        fontSize: 5,
+        color: '#666',
+        marginTop: 2,
+        fontFamily: 'Roboto',
+        textAlign: 'center',
+        width: '100%',
     },
     titleSection: {
         textAlign: 'center',
@@ -80,18 +114,41 @@ interface ParaguayHeaderProps {
         dchef?: string;
         gobierno?: string;
     };
+    qrCodeUrl?: string;
+    hash?: string;
 }
 
-const ParaguayHeader: React.FC<ParaguayHeaderProps> = ({ numeroActa, año, oficina, esAmpliacion, numeroAmpliacion, logos }) => {
+const ParaguayHeader: React.FC<ParaguayHeaderProps> = ({
+    numeroActa,
+    año,
+    oficina,
+    esAmpliacion,
+    numeroAmpliacion,
+    logos,
+    qrCodeUrl,
+    hash
+}) => {
     const header = getOfficeHeaderConfig(oficina || 'Asunción');
 
     return (
         <View style={styles.headerContainer}>
-            {/* Fila de Logos: Izquierda (Policía), Centro (DCHEF), Derecha (Gobierno) */}
+            {/* Fila de Logos: Izquierda (Policía), Centro (DCHEF), Derecha (Gobierno + QR) */}
             <View style={styles.topRow}>
-                {logos?.policia && <Image style={styles.logoIzquierda} src={logos.policia} />}
-                {logos?.dchef && <Image style={styles.logoCentral} src={logos.dchef} />}
-                {logos?.gobierno && <Image style={styles.logoDerecha} src={logos.gobierno} />}
+                <View style={styles.leftSection}>
+                    {logos?.policia && <Image style={styles.logoIzquierda} src={logos.policia} />}
+                </View>
+                <View style={styles.centerSection}>
+                    {logos?.dchef && <Image style={styles.logoCentral} src={logos.dchef} />}
+                </View>
+                <View style={styles.rightSection}>
+                    {logos?.gobierno && <Image style={styles.logoDerecha} src={logos.gobierno} />}
+                    {qrCodeUrl && (
+                        <View style={styles.qrContainer}>
+                            <Image style={styles.qrHeaderImage} src={qrCodeUrl} />
+                            <Text style={styles.qrHeaderText}>{hash}</Text>
+                        </View>
+                    )}
+                </View>
             </View>
 
             {/* Bloque de Texto Informativo */}

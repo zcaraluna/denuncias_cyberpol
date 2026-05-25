@@ -156,6 +156,8 @@ const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 
                         esAmpliacion={denuncia.es_ampliacion}
                         numeroAmpliacion={denuncia.numero_ampliacion}
                         logos={denuncia.logos}
+                        qrCodeUrl={denuncia.qr_code_url}
+                        hash={denuncia.hash}
                     />
                 </View>
 
@@ -222,6 +224,8 @@ const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 
                                 esAmpliacion={denuncia.es_ampliacion}
                                 numeroAmpliacion={denuncia.numero_ampliacion}
                                 logos={denuncia.logos}
+                                qrCodeUrl={denuncia.qr_code_url}
+                                hash={denuncia.hash}
                             />
                         </View>
                         <View style={{ marginTop: 20, alignItems: 'center' }}>
