@@ -346,6 +346,7 @@ export async function POST(request: NextRequest) {
     const moneda = denuncia?.moneda ?? null
     const usarRango = Boolean(denuncia?.usarRango)
     const entidadBancariaVulnerada = denuncia?.entidadBancariaVulnerada ?? null
+    const objetosExtraviados = denuncia?.objetosExtraviados ?? null
 
     const hash = generarHash(usuario.oficina)
 
@@ -406,8 +407,9 @@ export async function POST(request: NextRequest) {
           archivo_denuncia_url = $23,
           usar_rango = $24,
           bancos_relacionados = $25,
-          entidad_bancaria_vulnerada = $26
-        WHERE id = $27`,
+          entidad_bancaria_vulnerada = $26,
+          objetos_extraviados = $27
+        WHERE id = $28`,
         [
           principalId,
           fechaActual,
@@ -435,6 +437,7 @@ export async function POST(request: NextRequest) {
           usarRango,
           denuncia?.bancosRelacionados ? JSON.stringify(denuncia.bancosRelacionados) : null,
           entidadBancariaVulnerada,
+          objetosExtraviados ? JSON.stringify(objetosExtraviados) : null,
           borradorId
         ]
       )
@@ -487,8 +490,8 @@ export async function POST(request: NextRequest) {
           orden, usuario_id, oficina, operador_grado, operador_nombre,
           operador_apellido, monto_dano, moneda, hash, pdf, estado,
           es_denuncia_escrita, archivo_denuncia_url, lugar_hecho_no_aplica, adjuntos_urls, usar_rango,
-          bancos_relacionados, entidad_bancaria_vulnerada
-        ) VALUES ($1, $2::DATE, $3, $4::DATE, $5, $6::DATE, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, NULL, 'completada', $23, $24, $25, $26, $27, $28, $29)
+          bancos_relacionados, entidad_bancaria_vulnerada, objetos_extraviados
+        ) VALUES ($1, $2::DATE, $3, $4::DATE, $5, $6::DATE, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, NULL, 'completada', $23, $24, $25, $26, $27, $28, $29, $30)
         RETURNING id`,
         [
           principalId,
@@ -519,7 +522,8 @@ export async function POST(request: NextRequest) {
           adjuntosUrls,
           usarRango,
           denuncia?.bancosRelacionados ? JSON.stringify(denuncia.bancosRelacionados) : null,
-          entidadBancariaVulnerada
+          entidadBancariaVulnerada,
+          objetosExtraviados ? JSON.stringify(objetosExtraviados) : null
         ]
       )
       denunciaId = insertDenuncia.rows[0].id

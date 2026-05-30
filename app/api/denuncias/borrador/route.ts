@@ -277,6 +277,7 @@ export async function POST(request: NextRequest) {
     const moneda = denuncia?.moneda ?? null
     const usarRango = Boolean(denuncia?.usarRango)
     const entidadBancariaVulnerada = denuncia?.entidadBancariaVulnerada ?? null
+    const objetosExtraviados = denuncia?.objetosExtraviados ?? null
 
     if (borradorIdParam) {
       await client.query(
@@ -306,8 +307,9 @@ export async function POST(request: NextRequest) {
           archivo_denuncia_url = $22,
           adjuntos_urls = $23,
           usar_rango = $24,
-          entidad_bancaria_vulnerada = $25
-        WHERE id = $26`,
+          entidad_bancaria_vulnerada = $25,
+          objetos_extraviados = $26
+        WHERE id = $27`,
         [
           principalId,
           denuncia?.fechaDenuncia ?? null,
@@ -334,6 +336,7 @@ export async function POST(request: NextRequest) {
           adjuntosUrls,
           usarRango,
           entidadBancariaVulnerada,
+          objetosExtraviados ? JSON.stringify(objetosExtraviados) : null,
           borradorIdParam
         ]
       )
@@ -353,8 +356,8 @@ export async function POST(request: NextRequest) {
           orden, usuario_id, oficina, operador_grado, operador_nombre,
           operador_apellido, monto_dano, moneda, bancos_relacionados, hash, pdf, estado,
           lugar_hecho_no_aplica, es_denuncia_escrita, archivo_denuncia_url, adjuntos_urls, usar_rango,
-          entidad_bancaria_vulnerada
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, NULL, 'borrador', $24, $25, $26, $27, $28, $29)
+          entidad_bancaria_vulnerada, objetos_extraviados
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, NULL, 'borrador', $24, $25, $26, $27, $28, $29, $30)
         RETURNING id`,
         [
           principalId,
@@ -385,7 +388,8 @@ export async function POST(request: NextRequest) {
           archivoDenunciaUrl,
           adjuntosUrls,
           usarRango,
-          entidadBancariaVulnerada
+          entidadBancariaVulnerada,
+          objetosExtraviados ? JSON.stringify(objetosExtraviados) : null
         ]
       )
 

@@ -352,6 +352,108 @@ export default function NuevaDenunciaPage() {
   const router = useRouter()
   const { usuario, loading: authLoading } = useAuth()
   const [paso, setPaso] = useState(1)
+  const [tipoFormulario, setTipoFormulario] = useState<'hecho_punible' | 'extravio' | null>(null)
+  const [objetosExtraviados, setObjetosExtraviados] = useState<any[]>([])
+  const [nuevoObjetoTipo, setNuevoObjetoTipo] = useState<string>('')
+  const [nuevoObjetoCampos, setNuevoObjetoCampos] = useState<any>({ estado: 'En Blanco', moneda: 'PYG', firmado: 'Sí' })
+  const relatoModificadoPorUsuario = useRef(false)
+
+  const manejarAgregarObjeto = () => {
+    if (!nuevoObjetoTipo) return
+
+    if (nuevoObjetoTipo === 'cedula' && !nuevoObjetoCampos.numero?.trim()) {
+      alert('Debe ingresar el número de cédula.')
+      return
+    }
+    if (nuevoObjetoTipo === 'documento_origen') {
+      if (!nuevoObjetoCampos.nacionalidad) {
+        alert('Debe seleccionar la nacionalidad de origen.')
+        return
+      }
+      if (!nuevoObjetoCampos.numero?.trim()) {
+        alert('Debe ingresar el número de documento.')
+        return
+      }
+    }
+    if (nuevoObjetoTipo === 'pasaporte') {
+      if (!nuevoObjetoCampos.nacionalidad?.trim()) {
+        alert('Debe ingresar la nacionalidad del pasaporte.')
+        return
+      }
+      if (!nuevoObjetoCampos.numero?.trim()) {
+        alert('Debe ingresar el número de pasaporte.')
+        return
+      }
+    }
+    if (nuevoObjetoTipo === 'cheque') {
+      if (!nuevoObjetoCampos.banco) {
+        alert('Debe seleccionar el banco emisor.')
+        return
+      }
+      if (nuevoObjetoCampos.banco === 'OTRO' && !nuevoObjetoCampos.otroBanco?.trim()) {
+        alert('Debe especificar el banco emisor.')
+        return
+      }
+      if (!nuevoObjetoCampos.cuenta?.trim()) {
+        alert('Debe ingresar el número de cuenta corriente.')
+        return
+      }
+      if (!nuevoObjetoCampos.numero?.trim()) {
+        alert('Debe ingresar el número de cheque.')
+        return
+      }
+      if (nuevoObjetoCampos.estado === 'Completado') {
+        if (!nuevoObjetoCampos.monto?.trim()) {
+          alert('Debe ingresar el monto del cheque.')
+          return
+        }
+        if (!nuevoObjetoCampos.beneficiario?.trim()) {
+          alert('Debe ingresar el beneficiario del cheque.')
+          return
+        }
+      }
+    }
+    if (nuevoObjetoTipo === 'tarjeta_debito' || nuevoObjetoTipo === 'tarjeta_credito') {
+      if (!nuevoObjetoCampos.banco) {
+        alert('Debe seleccionar la entidad emisora.')
+        return
+      }
+      if (nuevoObjetoCampos.banco === 'OTRO' && !nuevoObjetoCampos.otroBanco?.trim()) {
+        alert('Debe especificar la entidad emisora.')
+        return
+      }
+      if (!nuevoObjetoCampos.marca) {
+        alert('Debe seleccionar la marca o franquicia.')
+        return
+      }
+      if (!nuevoObjetoCampos.ultimos4?.trim() || nuevoObjetoCampos.ultimos4.length !== 4) {
+        alert('Debe ingresar los últimos 4 dígitos de la tarjeta.')
+        return
+      }
+    }
+
+    const nuevoRegistro = {
+      tipo: nuevoObjetoTipo,
+      tipo_label: 
+        nuevoObjetoTipo === 'cedula' ? 'Cédula de Identidad Paraguaya' :
+        nuevoObjetoTipo === 'documento_origen' ? 'Documento de Identidad de origen' :
+        nuevoObjetoTipo === 'pasaporte' ? 'Pasaporte' :
+        nuevoObjetoTipo === 'cheque' ? 'Cheque bancario' :
+        nuevoObjetoTipo === 'tarjeta_debito' ? 'Tarjeta de Débito' : 'Tarjeta de Crédito',
+      ...nuevoObjetoCampos
+    }
+
+    setObjetosExtraviados([...objetosExtraviados, nuevoRegistro])
+    setNuevoObjetoTipo('')
+    setNuevoObjetoCampos({ estado: 'En Blanco', moneda: 'PYG', firmado: 'Sí' })
+  }
+
+  const manejarEliminarObjeto = (index: number) => {
+    const copia = [...objetosExtraviados]
+    copia.splice(index, 1)
+    setObjetosExtraviados(copia)
+  }
+
   const irAlPaso = (nuevoPaso: number) => {
     setPaso(nuevoPaso)
     if (typeof window !== 'undefined') {
@@ -1264,6 +1366,90 @@ export default function NuevaDenunciaPage() {
     }
   }, [ciudadSeleccionada, departamentoSeleccionado, barrioSeleccionado, setValueDenunciante])
 
+  useEffect(() => {
+    if (tipoFormulario === 'extravio') {
+      setValueDenuncia('tipoDenuncia', 'EXTRAVÍO DE OBJETOS Y/O DOCUMENTOS')
+      setValueDenuncia('montoDano', '0')
+      setValueDenuncia('moneda', 'PYG')
+      setValueDenuncia('bancosRelacionados', ['NO APLICA'])
+      setValueDenuncia('entidadBancariaVulnerada', 'NO APLICA')
+    } else if (tipoFormulario === 'hecho_punible') {
+      if (watchDenuncia('tipoDenuncia') === 'EXTRAVÍO DE OBJETOS Y/O DOCUMENTOS') {
+        setValueDenuncia('tipoDenuncia', '')
+        setValueDenuncia('montoDano', '')
+        setValueDenuncia('moneda', '')
+        setValueDenuncia('bancosRelacionados', [])
+        setValueDenuncia('entidadBancariaVulnerada', '')
+      }
+    }
+  }, [tipoFormulario, setValueDenuncia])
+
+  useEffect(() => {
+    if (tipoFormulario !== 'extravio' || relatoModificadoPorUsuario.current) return
+
+    const fechaStr = watchDenuncia('fechaHecho')
+    const horaStr = watchDenuncia('horaHecho')
+    const lugarStr = watchDenuncia('lugarHecho') || ''
+    
+    let fechaFormateada = fechaStr
+    if (fechaStr && fechaStr.includes('-')) {
+      const parts = fechaStr.split('-')
+      if (parts.length === 3) {
+        fechaFormateada = `${parts[2]}/${parts[1]}/${parts[0]}`
+      }
+    }
+
+    const itemsText = objetosExtraviados
+      .map((obj) => {
+        if (obj.tipo === 'cedula') {
+          return `UNA CÉDULA DE IDENTIDAD PARAGUAYA N° ${obj.numero}`
+        }
+        if (obj.tipo === 'documento_origen') {
+          return `UN DOCUMENTO DE IDENTIDAD DE ORIGEN N° ${obj.numero} (${obj.nacionalidad.toUpperCase()})`
+        }
+        if (obj.tipo === 'pasaporte') {
+          return `UN PASAPORTE N° ${obj.numero} (${obj.nacionalidad.toUpperCase()})`
+        }
+        if (obj.tipo === 'tarjeta_debito') {
+          const nomBanco = obj.banco === 'OTRO' ? obj.otroBanco : obj.banco
+          return `UNA TARJETA DE DÉBITO ${obj.marca.toUpperCase()} EMITIDA POR EL BANCO ${nomBanco.toUpperCase()} CON TERMINACIÓN ${obj.ultimos4}`
+        }
+        if (obj.tipo === 'tarjeta_credito') {
+          const nomBanco = obj.banco === 'OTRO' ? obj.otroBanco : obj.banco
+          return `UNA TARJETA DE CRÉDITO ${obj.marca.toUpperCase()} EMITIDA POR EL BANCO ${nomBanco.toUpperCase()} CON TERMINACIÓN ${obj.ultimos4}`
+        }
+        if (obj.tipo === 'cheque') {
+          const nomBanco = obj.banco === 'OTRO' ? obj.otroBanco : obj.banco
+          if (obj.estado === 'En Blanco') {
+            return `UN CHEQUE EN BLANCO N° ${obj.numero} DEL BANCO ${nomBanco.toUpperCase()} ASOCIADO A LA CUENTA CORRIENTE N° ${obj.cuenta}`
+          } else {
+            return `UN CHEQUE COMPLETADO N° ${obj.numero} DEL BANCO ${nomBanco.toUpperCase()} (CUENTA N° ${obj.cuenta}, POR EL IMPORTE DE ${obj.monto} ${obj.moneda}, EMITIDO A LA ORDEN DE ${obj.beneficiario.toUpperCase()}, CON FECHA ${obj.fechaEmision || 'NO ESPECIFICADA'} Y ${obj.firmado === 'Sí' ? 'DEBIDAMENTE FIRMADO' : 'SIN FIRMA'})`
+          }
+        }
+        return ''
+      })
+      .filter(Boolean)
+
+    if (itemsText.length === 0) {
+      setValueDenuncia('relato', '')
+      return
+    }
+
+    let enumeracion = ''
+    if (itemsText.length === 1) {
+      enumeracion = itemsText[0]
+    } else {
+      enumeracion = itemsText.slice(0, -1).join(', ') + ' Y ' + itemsText[itemsText.length - 1]
+    }
+
+    const fechaTexto = fechaFormateada ? ` EN FECHA ${fechaFormateada}` : ''
+    const horaTexto = horaStr ? ` SIENDO LAS ${horaStr} HORAS APROXIMADAMENTE` : ''
+    const lugarTexto = lugarStr ? `, EN LAS INMEDIACIONES DE ${lugarStr.toUpperCase()}` : ''
+
+    const relatoGenerado = `EL DENUNCIANTE COMPARECE ANTE ESTA OFICINA POLICIAL A LOS EFECTOS DE DECLARAR EL EXTRAVÍO DE LOS SIGUIENTES OBJETOS: ${enumeracion}. SEGÚN MANIFIESTA, EL EXTRAVÍO HABRÍA OCURRIDO${fechaTexto}${horaTexto}${lugarTexto}.`
+    setValueDenuncia('relato', relatoGenerado)
+  }, [objetosExtraviados, watchDenuncia('fechaHecho'), watchDenuncia('horaHecho'), watchDenuncia('lugarHecho'), tipoFormulario, setValueDenuncia])
+
   const {
     register: registerAutor,
     handleSubmit: handleSubmitAutor,
@@ -1702,6 +1888,22 @@ export default function NuevaDenunciaPage() {
         if (data.adjuntos_urls) {
           setAdjuntosUrls(data.adjuntos_urls)
         }
+      }
+
+      // Restaurar tipoFormulario y objetosExtraviados si vienen de un borrador
+      if (data.tipo_denuncia === 'EXTRAVÍO DE OBJETOS Y/O DOCUMENTOS') {
+        setTipoFormulario('extravio')
+        if (data.objetos_extraviados) {
+          try {
+            setObjetosExtraviados(JSON.parse(data.objetos_extraviados))
+          } catch (e) {
+            console.error('Error al parsear objetos extraviados del borrador:', e)
+            setObjetosExtraviados([])
+          }
+        }
+      } else if (data.tipo_denuncia) {
+        setTipoFormulario('hecho_punible')
+        setObjetosExtraviados([])
       }
 
       // Cargar datos del autor
@@ -2559,6 +2761,80 @@ export default function NuevaDenunciaPage() {
     )
   }
 
+  if (tipoFormulario === null) {
+    return (
+      <MainLayout hideSidebar={true}>
+        <MiniHeader />
+        <div className="min-h-[calc(100vh-4rem)] bg-[#f8fafc] py-12 px-4 sm:px-6 lg:px-8 font-sans flex items-center justify-center">
+          <div className="max-w-4xl w-full space-y-8">
+            <div className="text-center">
+              <h2 className="text-4xl font-extrabold text-[#002147] tracking-tight">
+                Nueva Acta de Denuncia o Reporte
+              </h2>
+              <p className="mt-3 text-lg text-slate-500 max-w-2xl mx-auto">
+                Seleccione el tipo de trámite policial que desea iniciar a continuación.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-12">
+              {/* Opción Hecho Punible */}
+              <div 
+                onClick={() => setTipoFormulario('hecho_punible')}
+                className="bg-white rounded-2xl border border-slate-200 p-8 shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col justify-between group"
+              >
+                <div>
+                  <div className="w-12 h-12 bg-red-50 text-red-600 rounded-xl flex items-center justify-center mb-6 group-hover:bg-red-100 transition-colors">
+                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-2xl font-bold text-[#002147] mb-3">
+                    Denunciar Hecho Punible
+                  </h3>
+                  <p className="text-slate-500 text-sm leading-relaxed">
+                    Utilice esta opción para denunciar crímenes o delitos (hechos punibles) como estafas mediante sistemas informáticos, accesos indebidos, amenazas, chantajes, robos u otras infracciones que requieran la intervención de la fiscalía.
+                  </p>
+                </div>
+                <div className="mt-8 pt-4 border-t border-slate-100 flex items-center text-red-600 font-bold text-sm">
+                  <span>Iniciar Denuncia Penal</span>
+                  <svg className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </div>
+
+              {/* Opción Extravío */}
+              <div 
+                onClick={() => setTipoFormulario('extravio')}
+                className="bg-white rounded-2xl border border-slate-200 p-8 shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col justify-between group"
+              >
+                <div>
+                  <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-6 group-hover:bg-blue-100 transition-colors">
+                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-2xl font-bold text-[#002147] mb-3">
+                    Reportar Extravío
+                  </h3>
+                  <p className="text-slate-500 text-sm leading-relaxed">
+                    Utilice esta opción para dejar constancia por el extravío de documentos personales (Cédula de Identidad Paraguaya, Pasaporte o Documentos de origen) u objetos financieros (cheques bancarios, tarjetas de crédito o de débito).
+                  </p>
+                </div>
+                <div className="mt-8 pt-4 border-t border-slate-100 flex items-center text-blue-600 font-bold text-sm">
+                  <span>Reportar Extravío</span>
+                  <svg className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </MainLayout>
+    )
+  }
+
   return (
     <MainLayout hideSidebar={true}>
       <MiniHeader />
@@ -2575,7 +2851,7 @@ export default function NuevaDenunciaPage() {
 
               {[
                 { num: 1, label: 'Denunciante', icon: 'User' },
-                { num: 2, label: 'Supuesto Autor', icon: 'ShieldAlert' },
+                { num: 2, label: tipoFormulario === 'extravio' ? 'Objetos Perdidos' : 'Supuesto Autor', icon: 'ShieldAlert' },
                 { num: 3, label: 'Detalles', icon: 'FileText' }
               ].map((step) => {
                 const isCompleted = paso > step.num;
@@ -3409,44 +3685,451 @@ export default function NuevaDenunciaPage() {
 
           {/* Paso 2: Supuesto Autor */}
           {paso === 2 && (
-            <form
-              data-paso="2"
-              onSubmit={handleSubmitAutor(onAutorSubmit)}
-              autoComplete="off"
-              className="bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-100 p-8 sm:p-10 transition-all duration-300 hover:shadow-slate-200/80"
-            >
-              <h2 className="text-3xl font-black text-[#002147] mb-8 border-b border-slate-100 pb-4">
-                Supuesto Autor
-              </h2>
+            tipoFormulario === 'extravio' ? (
+              <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-100 p-8 sm:p-10 transition-all duration-300 hover:shadow-slate-200/80">
+                <h2 className="text-3xl font-black text-[#002147] mb-8 border-b border-slate-100 pb-4">
+                  Objetos / Documentos Extraviados
+                </h2>
 
-              <div className="mb-10 bg-slate-50 p-6 rounded-xl border border-slate-100">
-                <label className="block text-xs font-black text-[#002147] uppercase tracking-wider mb-4">
-                  ¿El supuesto autor es conocido o desconocido? *
-                </label>
-                <div className="flex flex-wrap gap-8">
-                  {[
-                    { id: 'conocido', value: 'Conocido', label: 'Conocido' },
-                    { id: 'desconocido', value: 'Desconocido', label: 'Desconocido' },
-                    { id: 'no-aplica', value: 'No aplica', label: 'No aplica' }
-                  ].map((option) => (
-                    <label key={option.id} className="group flex items-center cursor-pointer">
-                      <div className="relative flex items-center justify-center">
-                        <input
-                          type="radio"
-                          value={option.value}
-                          checked={autorConocido === option.value}
-                          onChange={(e) => setAutorConocido(e.target.value as any)}
-                          className="peer sr-only"
-                        />
-                        <div className="w-5 h-5 border-2 border-slate-300 rounded-full transition-all peer-checked:border-[#002147] peer-checked:border-[6px]" />
-                      </div>
-                      <span className="ml-3 text-sm font-bold text-slate-600 group-hover:text-[#002147] transition-colors">
-                        {option.label}
-                      </span>
+                {/* Formulario para agregar un nuevo objeto */}
+                <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 mb-8 space-y-4">
+                  <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider mb-2">
+                    Agregar Objeto o Documento
+                  </h3>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                      Tipo de Objeto/Documento *
                     </label>
-                  ))}
+                    <select
+                      value={nuevoObjetoTipo}
+                      onChange={(e) => {
+                        setNuevoObjetoTipo(e.target.value)
+                        setNuevoObjetoCampos({ estado: 'En Blanco', moneda: 'PYG', firmado: 'Sí' })
+                      }}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm uppercase bg-white"
+                    >
+                      <option value="">-- Seleccionar Tipo --</option>
+                      <option value="cedula">Cédula de Identidad Paraguaya</option>
+                      <option value="documento_origen">Documento de Identidad de origen</option>
+                      <option value="pasaporte">Pasaporte</option>
+                      <option value="cheque">Cheque bancario</option>
+                      <option value="tarjeta_debito">Tarjeta de Débito</option>
+                      <option value="tarjeta_credito">Tarjeta de Crédito</option>
+                    </select>
+                  </div>
+
+                  {/* Campos dinámicos según el tipo de objeto */}
+                  {nuevoObjetoTipo === 'cedula' && (
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                        Número de Cédula *
+                      </label>
+                      <input
+                        type="text"
+                        value={nuevoObjetoCampos.numero || ''}
+                        onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, numero: e.target.value.replace(/\D/g, '') })}
+                        placeholder="Ej: 1234567"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm"
+                      />
+                    </div>
+                  )}
+
+                  {nuevoObjetoTipo === 'documento_origen' && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                          Nacionalidad de Origen *
+                        </label>
+                        <input
+                          type="text"
+                          value={nuevoObjetoCampos.nacionalidad || ''}
+                          onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, nacionalidad: e.target.value.toUpperCase() })}
+                          placeholder="Ej: ARGENTINA"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm uppercase"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                          Número de Documento *
+                        </label>
+                        <input
+                          type="text"
+                          value={nuevoObjetoCampos.numero || ''}
+                          onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, numero: e.target.value })}
+                          placeholder="Ej: ABC123456"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {nuevoObjetoTipo === 'pasaporte' && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                          Nacionalidad del Pasaporte *
+                        </label>
+                        <input
+                          type="text"
+                          value={nuevoObjetoCampos.nacionalidad || ''}
+                          onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, nacionalidad: e.target.value.toUpperCase() })}
+                          placeholder="Ej: ESPAÑOLA"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm uppercase"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                          Número de Pasaporte *
+                        </label>
+                        <input
+                          type="text"
+                          value={nuevoObjetoCampos.numero || ''}
+                          onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, numero: e.target.value })}
+                          placeholder="Ej: PASS123456"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {nuevoObjetoTipo === 'cheque' && (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                            Banco Emisor *
+                          </label>
+                          <select
+                            value={nuevoObjetoCampos.banco || ''}
+                            onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, banco: e.target.value })}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm bg-white uppercase"
+                          >
+                            <option value="">-- Seleccionar Banco --</option>
+                            {bancos.filter(b => b !== 'NO APLICA').map(b => (
+                              <option key={b} value={b}>{b}</option>
+                            ))}
+                          </select>
+                        </div>
+                        {nuevoObjetoCampos.banco === 'OTRO' && (
+                          <div>
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                              Especificar Banco *
+                            </label>
+                            <input
+                              type="text"
+                              value={nuevoObjetoCampos.otroBanco || ''}
+                              onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, otroBanco: e.target.value.toUpperCase() })}
+                              placeholder="Nombre del banco"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm uppercase"
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                            N° de Cuenta Corriente *
+                          </label>
+                          <input
+                            type="text"
+                            value={nuevoObjetoCampos.cuenta || ''}
+                            onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, cuenta: e.target.value })}
+                            placeholder="Número de cuenta"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                            Número de Cheque *
+                          </label>
+                          <input
+                            type="text"
+                            value={nuevoObjetoCampos.numero || ''}
+                            onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, numero: e.target.value })}
+                            placeholder="Número de cheque"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                            Estado del Cheque *
+                          </label>
+                          <select
+                            value={nuevoObjetoCampos.estado || 'En Blanco'}
+                            onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, estado: e.target.value })}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm bg-white uppercase"
+                          >
+                            <option value="En Blanco">En Blanco</option>
+                            <option value="Completado">Completado</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {nuevoObjetoCampos.estado === 'Completado' && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-slate-200 pt-4 mt-2">
+                          <div>
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                              Importe / Monto *
+                            </label>
+                            <input
+                              type="text"
+                              value={nuevoObjetoCampos.monto || ''}
+                              onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, monto: e.target.value })}
+                              placeholder="Ej: 1.500.000"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                              Moneda *
+                            </label>
+                            <select
+                              value={nuevoObjetoCampos.moneda || 'PYG'}
+                              onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, moneda: e.target.value })}
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm bg-white"
+                            >
+                              <option value="PYG">Guaraníes (PYG)</option>
+                              <option value="USD">Dólares (USD)</option>
+                              <option value="EUR">Euros (EUR)</option>
+                              <option value="BRL">Reales (BRL)</option>
+                              <option value="ARS">Pesos Argentinos (ARS)</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                              Beneficiario *
+                            </label>
+                            <input
+                              type="text"
+                              value={nuevoObjetoCampos.beneficiario || ''}
+                              onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, beneficiario: e.target.value.toUpperCase() })}
+                              placeholder="Nombre del beneficiario"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm uppercase"
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                                Fecha Emisión
+                              </label>
+                              <input
+                                type="date"
+                                value={nuevoObjetoCampos.fechaEmision || ''}
+                                onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, fechaEmision: e.target.value })}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                                ¿Está firmado?
+                              </label>
+                              <select
+                                value={nuevoObjetoCampos.firmado || 'Sí'}
+                                onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, firmado: e.target.value })}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm bg-white"
+                              >
+                                <option value="Sí">Sí</option>
+                                <option value="No">No</option>
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {(nuevoObjetoTipo === 'tarjeta_debito' || nuevoObjetoTipo === 'tarjeta_credito') && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                          Entidad Emisora (Banco) *
+                        </label>
+                        <select
+                          value={nuevoObjetoCampos.banco || ''}
+                          onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, banco: e.target.value })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm bg-white uppercase"
+                        >
+                          <option value="">-- Seleccionar Banco --</option>
+                          {bancos.filter(b => b !== 'NO APLICA').map(b => (
+                            <option key={b} value={b}>{b}</option>
+                          ))}
+                        </select>
+                        {nuevoObjetoCampos.banco === 'OTRO' && (
+                          <input
+                            type="text"
+                            value={nuevoObjetoCampos.otroBanco || ''}
+                            onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, otroBanco: e.target.value.toUpperCase() })}
+                            placeholder="Especificar banco"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm uppercase mt-2"
+                          />
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                          Marca / Franquicia *
+                        </label>
+                        <select
+                          value={nuevoObjetoCampos.marca || ''}
+                          onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, marca: e.target.value })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm bg-white uppercase"
+                        >
+                          <option value="">-- Seleccionar Marca --</option>
+                          <option value="Visa">Visa</option>
+                          <option value="Mastercard">Mastercard</option>
+                          <option value="American Express">American Express</option>
+                          <option value="Cabal">Cabal</option>
+                          <option value="Maestro">Maestro</option>
+                          <option value="Otros">Otros</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                          Últimos 4 Dígitos *
+                        </label>
+                        <input
+                          type="text"
+                          maxLength={4}
+                          value={nuevoObjetoCampos.ultimos4 || ''}
+                          onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, ultimos4: e.target.value.replace(/\D/g, '') })}
+                          placeholder="Ej: 4321"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {nuevoObjetoTipo && (
+                    <div className="flex justify-end pt-2">
+                      <button
+                        type="button"
+                        onClick={manejarAgregarObjeto}
+                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-bold text-xs uppercase shadow-sm"
+                      >
+                        Agregar a la lista
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Lista de objetos agregados */}
+                <div className="space-y-3 mb-8">
+                  <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider">
+                    Objetos Declarados ({objetosExtraviados.length})
+                  </h3>
+                  {objetosExtraviados.length === 0 ? (
+                    <div className="text-center py-6 bg-slate-50 border border-dashed border-slate-300 rounded-xl text-slate-500 text-sm">
+                      Aún no ha agregado ningún objeto o documento a la lista.
+                    </div>
+                  ) : (
+                    <div className="max-h-80 overflow-y-auto space-y-2 pr-1">
+                      {objetosExtraviados.map((obj, index) => (
+                        <div
+                          key={index}
+                          className="flex justify-between items-center p-4 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100/70 transition-colors"
+                        >
+                          <div>
+                            <span className="inline-block px-2 py-0.5 bg-[#002147] text-white text-[10px] font-black uppercase rounded mb-1">
+                              {obj.tipo_label}
+                            </span>
+                            <div className="text-slate-700 text-sm font-semibold">
+                              {obj.tipo === 'cedula' && `C.I. N° ${obj.numero}`}
+                              {obj.tipo === 'documento_origen' && `Doc N° ${obj.numero} (Origen: ${obj.nacionalidad})`}
+                              {obj.tipo === 'pasaporte' && `Pasaporte N° ${obj.numero} (Nac.: ${obj.nacionalidad})`}
+                              {obj.tipo === 'tarjeta_debito' && (
+                                `Tarjeta Débito ${obj.marca.toUpperCase()} | Banco: ${obj.banco === 'OTRO' ? obj.otroBanco : obj.banco} | Term.: **** **** **** ${obj.ultimos4}`
+                              )}
+                              {obj.tipo === 'tarjeta_credito' && (
+                                `Tarjeta Crédito ${obj.marca.toUpperCase()} | Banco: ${obj.banco === 'OTRO' ? obj.otroBanco : obj.banco} | Term.: **** **** **** ${obj.ultimos4}`
+                              )}
+                              {obj.tipo === 'cheque' && (
+                                `Cheque N° ${obj.numero} | Banco: ${obj.banco === 'OTRO' ? obj.otroBanco : obj.banco} | Cta: ${obj.cuenta} (${obj.estado === 'En Blanco' ? 'EN BLANCO' : `COMPLETADO - ${obj.monto} ${obj.moneda} a la orden de ${obj.beneficiario} - Firmado: ${obj.firmado}`})`
+                              )}
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => manejarEliminarObjeto(index)}
+                            className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors font-bold text-xs uppercase"
+                          >
+                            Eliminar
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Navegación del Paso 2 */}
+                <div className="flex justify-between items-center mt-8 pt-6 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => irAlPaso(1)}
+                    className="flex items-center space-x-2 px-6 py-3 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 transition-all font-bold text-sm"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                    <span>Anterior</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (objetosExtraviados.length === 0) {
+                        alert('Debe agregar al menos un objeto/documento extraviado para continuar.')
+                        return
+                      }
+                      irAlPaso(3)
+                    }}
+                    className="flex items-center space-x-2 px-8 py-3 bg-[#002147] text-white rounded-xl hover:bg-[#003366] transition-all font-bold text-sm shadow-lg shadow-blue-900/20"
+                  >
+                    <span>Siguiente paso</span>
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
                 </div>
               </div>
+            ) : (
+              <form
+                data-paso="2"
+                onSubmit={handleSubmitAutor(onAutorSubmit)}
+                autoComplete="off"
+                className="bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-100 p-8 sm:p-10 transition-all duration-300 hover:shadow-slate-200/80"
+              >
+                <h2 className="text-3xl font-black text-[#002147] mb-8 border-b border-slate-100 pb-4">
+                  Supuesto Autor
+                </h2>
+
+                <div className="mb-10 bg-slate-50 p-6 rounded-xl border border-slate-100">
+                  <label className="block text-xs font-black text-[#002147] uppercase tracking-wider mb-4">
+                    ¿El supuesto autor es conocido o desconocido? *
+                  </label>
+                  <div className="flex flex-wrap gap-8">
+                    {[
+                      { id: 'conocido', value: 'Conocido', label: 'Conocido' },
+                      { id: 'desconocido', value: 'Desconocido', label: 'Desconocido' },
+                      { id: 'no-aplica', value: 'No aplica', label: 'No aplica' }
+                    ].map((option) => (
+                      <label key={option.id} className="group flex items-center cursor-pointer">
+                        <div className="relative flex items-center justify-center">
+                          <input
+                            type="radio"
+                            value={option.value}
+                            checked={autorConocido === option.value}
+                            onChange={(e) => setAutorConocido(e.target.value as any)}
+                            className="peer sr-only"
+                          />
+                          <div className="w-5 h-5 border-2 border-slate-300 rounded-full transition-all peer-checked:border-[#002147] peer-checked:border-[6px]" />
+                        </div>
+                        <span className="ml-3 text-sm font-bold text-slate-600 group-hover:text-[#002147] transition-colors">
+                          {option.label}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
 
               {autorConocido === 'Conocido' && (
                 <div className="space-y-4 mb-6">
@@ -4216,7 +4899,7 @@ export default function NuevaDenunciaPage() {
                 </button>
               </div>
             </form>
-          )}
+          ))}
 
           {/* Paso 3: Detalles y Relato */}
           {paso === 3 && (
@@ -4340,99 +5023,103 @@ export default function NuevaDenunciaPage() {
                   </div>
                 )}
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Tipo de Denuncia *
-                  </label>
-                  <Controller
-                    name="tipoDenuncia"
-                    control={controlDenuncia}
-                    render={({ field }) => (
-                      <Select
-                        options={tiposDenunciaOptions}
-                        value={tiposDenunciaOptions.find((option) => option.value === field.value) || null}
-                        onChange={(option) => field.onChange(option?.value || '')}
-                        placeholder="Seleccione o busque..."
-                        isSearchable
-                        className="text-sm"
-                        styles={{
-                          control: (base, state) => ({
-                            ...base,
-                            fontFamily: 'Inter, sans-serif',
-                            fontSize: '14px',
-                            minHeight: '42px',
-                            borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
-                            boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
-                            '&:hover': {
-                              borderColor: '#3b82f6',
-                            },
-                          }),
-                          menu: (base) => ({
-                            ...base,
-                            fontFamily: 'Inter, sans-serif',
-                            fontSize: '14px',
-                            maxHeight: '300px',
-                            zIndex: 9999,
-                          }),
-                          menuList: (base) => ({
-                            ...base,
-                            maxHeight: '300px',
-                          }),
-                          option: (base, state) => ({
-                            ...base,
-                            fontFamily: 'Inter, sans-serif',
-                            fontSize: '14px',
-                            padding: '8px 12px',
-                            backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
-                            color: state.isSelected ? 'white' : '#1f2937',
-                            cursor: 'pointer',
-                          }),
-                          input: (base) => ({
-                            ...base,
-                            fontFamily: 'Inter, sans-serif',
-                            fontSize: '14px',
-                            margin: 0,
-                            padding: 0,
-                          }),
-                          singleValue: (base) => ({
-                            ...base,
-                            fontFamily: 'Inter, sans-serif',
-                            fontSize: '14px',
-                            color: '#1f2937',
-                          }),
-                          placeholder: (base) => ({
-                            ...base,
-                            fontFamily: 'Inter, sans-serif',
-                            fontSize: '14px',
-                            color: '#9ca3af',
-                          }),
-                        }}
-                        classNamePrefix="react-select"
+                {tipoFormulario !== 'extravio' && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Tipo de Denuncia *
+                      </label>
+                      <Controller
+                        name="tipoDenuncia"
+                        control={controlDenuncia}
+                        render={({ field }) => (
+                          <Select
+                            options={tiposDenunciaOptions}
+                            value={tiposDenunciaOptions.find((option) => option.value === field.value) || null}
+                            onChange={(option) => field.onChange(option?.value || '')}
+                            placeholder="Seleccione o busque..."
+                            isSearchable
+                            className="text-sm"
+                            styles={{
+                              control: (base, state) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                minHeight: '42px',
+                                borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
+                                boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
+                                '&:hover': {
+                                  borderColor: '#3b82f6',
+                                },
+                              }),
+                              menu: (base) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                maxHeight: '300px',
+                                zIndex: 9999,
+                              }),
+                              menuList: (base) => ({
+                                ...base,
+                                maxHeight: '300px',
+                              }),
+                              option: (base, state) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                padding: '8px 12px',
+                                backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
+                                color: state.isSelected ? 'white' : '#1f2937',
+                                cursor: 'pointer',
+                              }),
+                              input: (base) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                margin: 0,
+                                padding: 0,
+                              }),
+                              singleValue: (base) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                color: '#1f2937',
+                              }),
+                              placeholder: (base) => ({
+                                ...base,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                color: '#9ca3af',
+                              }),
+                            }}
+                            classNamePrefix="react-select"
+                          />
+                        )}
                       />
-                    )}
-                  />
-                  {errorsDenuncia.tipoDenuncia && (
-                    <p className="text-red-600 text-sm mt-1">{errorsDenuncia.tipoDenuncia.message as string}</p>
-                  )}
-                </div>
+                      {errorsDenuncia.tipoDenuncia && (
+                        <p className="text-red-600 text-sm mt-1">{errorsDenuncia.tipoDenuncia.message as string}</p>
+                      )}
+                    </div>
 
-                {tipoDenuncia === 'Otro (Especificar)' && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Especifique aquí *
-                    </label>
-                    <input
-                      {...registerDenuncia('otroTipo')}
-                      onChange={(e) => {
-                        convertirAMayusculas(e)
-                        registerDenuncia('otroTipo').onChange(e)
-                      }}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
-                    />
-                    {errorsDenuncia.otroTipo && (
-                      <p className="text-red-600 text-sm mt-1">{errorsDenuncia.otroTipo.message as string}</p>
+                    {tipoDenuncia === 'Otro (Especificar)' && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Especifique aquí *
+                        </label>
+                        <input
+                          {...registerDenuncia('otroTipo')}
+                          onChange={(e) => {
+                            convertirAMayusculas(e)
+                            registerDenuncia('otroTipo').onChange(e)
+                          }}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
+                        />
+                        {errorsDenuncia.otroTipo && (
+                          <p className="text-red-600 text-sm mt-1">{errorsDenuncia.otroTipo.message as string}</p>
+                        )}
+                      </div>
                     )}
-                  </div>
+                  </>
                 )}
 
                 <div className="space-y-4">
@@ -4730,168 +5417,170 @@ export default function NuevaDenunciaPage() {
                 </div>
 
                 {/* Campos Estadísticos (Opcional) */}
-                <div className="bg-blue-50/50 p-6 rounded-xl border border-blue-100 mb-6 font-sans">
-                  <div className="flex items-center gap-2 mb-4 text-blue-800">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                    </svg>
-                    <h3 className="font-bold text-sm uppercase tracking-wider">Información Estadística</h3>
-                  </div>
+                {tipoFormulario !== 'extravio' && (
+                  <div className="bg-blue-50/50 p-6 rounded-xl border border-blue-100 mb-6 font-sans">
+                    <div className="flex items-center gap-2 mb-4 text-blue-800">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                      </svg>
+                      <h3 className="font-bold text-sm uppercase tracking-wider">Información Estadística</h3>
+                    </div>
 
-                  <p className="text-xs text-blue-600 mb-4 bg-white/60 p-3 rounded-lg border border-blue-100/50 leading-relaxed shadow-sm">
-                    Los siguientes campos se solicitan <strong>únicamente con fines estadísticos</strong> para ayudar a cuantificar el impacto de los hechos punibles denunciados en esta Dirección. Esta información <strong>no se incluirá en el acta formal de la denuncia</strong>.
-                  </p>
+                    <p className="text-xs text-blue-600 mb-4 bg-white/60 p-3 rounded-lg border border-blue-100/50 leading-relaxed shadow-sm">
+                      Los siguientes campos se solicitan <strong>únicamente con fines estadísticos</strong> para ayudar a cuantificar el impacto de los hechos punibles denunciados en esta Dirección. Esta información <strong>no se incluirá en el acta formal de la denuncia</strong>.
+                    </p>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <div className="space-y-1.5 min-w-[120px]">
-                      <label className="block text-sm font-semibold text-gray-700">
-                        Monto de daño patrimonial *
-                      </label>
-                      <div className="relative">
-                        <input
-                          {...registerDenuncia('montoDano')}
-                          type="text"
-                          onChange={(e) => {
-                            let value = e.target.value.replace(/\D/g, '')
-                            if (value) {
-                              value = new Intl.NumberFormat('de-DE').format(parseInt(value))
-                            }
-                            e.target.value = value
-                            registerDenuncia('montoDano').onChange(e)
-                          }}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      <div className="space-y-1.5 min-w-[120px]">
+                        <label className="block text-sm font-semibold text-gray-700">
+                          Monto de daño patrimonial *
+                        </label>
+                        <div className="relative">
+                          <input
+                            {...registerDenuncia('montoDano')}
+                            type="text"
+                            onChange={(e) => {
+                              let value = e.target.value.replace(/\D/g, '')
+                              if (value) {
+                                value = new Intl.NumberFormat('de-DE').format(parseInt(value))
+                              }
+                              e.target.value = value
+                              registerDenuncia('montoDano').onChange(e)
+                            }}
+                            className={cn(
+                              "w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-medium",
+                              errorsDenuncia.montoDano ? "border-red-500 bg-red-50" : "border-gray-300"
+                            )}
+                            placeholder="0"
+                          />
+                        </div>
+                        {errorsDenuncia.montoDano && (
+                          <p className="text-red-600 text-xs mt-1">{errorsDenuncia.montoDano.message as string}</p>
+                        )}
+                      </div>
+                      <div className="space-y-1.5 min-w-[120px]">
+                        <label className="block text-sm font-semibold text-gray-700">
+                          Moneda *
+                        </label>
+                        <select
+                          {...registerDenuncia('moneda')}
                           className={cn(
                             "w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-medium",
-                            errorsDenuncia.montoDano ? "border-red-500 bg-red-50" : "border-gray-300"
+                            errorsDenuncia.moneda ? "border-red-500 bg-red-50" : "border-gray-300"
                           )}
-                          placeholder="0"
-                        />
+                          style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center', backgroundSize: '1.25rem' }}
+                        >
+                          <option value="">Seleccione moneda...</option>
+                          <option value="Guaraníes (PYG)">Guaraníes (PYG)</option>
+                          <option value="Dólares (USD)">Dólares (USD)</option>
+                          <option value="Euros (EUR)">Euros (EUR)</option>
+                          <option value="Pesos Argentinos (ARS)">Pesos Argentinos (ARS)</option>
+                          <option value="Reales (BRL)">Reales (BRL)</option>
+                        </select>
+                        {errorsDenuncia.moneda && (
+                          <p className="text-red-600 text-xs mt-1">{errorsDenuncia.moneda.message as string}</p>
+                        )}
                       </div>
-                      {errorsDenuncia.montoDano && (
-                        <p className="text-red-600 text-xs mt-1">{errorsDenuncia.montoDano.message as string}</p>
-                      )}
-                    </div>
-                    <div className="space-y-1.5 min-w-[120px]">
-                      <label className="block text-sm font-semibold text-gray-700">
-                        Moneda *
-                      </label>
-                      <select
-                        {...registerDenuncia('moneda')}
-                        className={cn(
-                          "w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-medium",
-                          errorsDenuncia.moneda ? "border-red-500 bg-red-50" : "border-gray-300"
-                        )}
-                        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center', backgroundSize: '1.25rem' }}
-                      >
-                        <option value="">Seleccione moneda...</option>
-                        <option value="Guaraníes (PYG)">Guaraníes (PYG)</option>
-                        <option value="Dólares (USD)">Dólares (USD)</option>
-                        <option value="Euros (EUR)">Euros (EUR)</option>
-                        <option value="Pesos Argentinos (ARS)">Pesos Argentinos (ARS)</option>
-                        <option value="Reales (BRL)">Reales (BRL)</option>
-                      </select>
-                      {errorsDenuncia.moneda && (
-                        <p className="text-red-600 text-xs mt-1">{errorsDenuncia.moneda.message as string}</p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <div className="space-y-1.5">
-                      <label className="block text-sm font-semibold text-gray-700">
-                        Entidad bancaria vulnerada *
-                      </label>
-                      <Controller
-                        name="entidadBancariaVulnerada"
-                        control={controlDenuncia}
-                        render={({ field }) => (
-                          <Select
-                            {...field}
-                            options={bancos.map(b => ({ value: b, label: b }))}
-                            placeholder="Seleccione entidad..."
-                            isClearable
-                            onChange={(option) => field.onChange((option as any)?.value || '')}
-                            value={bancos.find(b => b === field.value) ? { value: field.value, label: field.value } : null}
-                            styles={{
-                              control: (base, state) => ({
-                                ...base,
-                                borderRadius: '0.75rem',
-                                padding: '2px',
-                                borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
-                                boxShadow: state.isFocused ? '0 0 0 4px rgba(59, 130, 246, 0.1)' : 'none',
-                                '&:hover': {
-                                  borderColor: '#9ca3af',
-                                },
-                              }),
-                              option: (base, state) => ({
-                                ...base,
-                                backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
-                                color: state.isSelected ? 'white' : '#1f2937',
-                                cursor: 'pointer',
-                              }),
-                            }}
-                            classNamePrefix="react-select"
-                          />
-                        )}
-                      />
-                      {errorsDenuncia.entidadBancariaVulnerada && (
-                        <p className="text-red-600 text-xs mt-1">{errorsDenuncia.entidadBancariaVulnerada.message as string}</p>
-                      )}
                     </div>
 
-                    <div className="space-y-1.5">
-                      <label className="block text-sm font-semibold text-gray-700">
-                        Entidad(es) bancaria(s) relacionada(s) *
-                      </label>
-                      <Controller
-                        name="bancosRelacionados"
-                        control={controlDenuncia}
-                        render={({ field }) => (
-                          <Select
-                            {...field}
-                            isMulti
-                            options={bancos.map(b => ({ value: b, label: b }))}
-                            placeholder="Seleccione entidad(es)..."
-                            onChange={(selected) => field.onChange(selected ? (selected as any).map((option: any) => option.value) : [])}
-                            value={field.value ? field.value.map(v => ({ value: v, label: v })) : []}
-                            styles={{
-                              control: (base, state) => ({
-                                ...base,
-                                borderRadius: '0.75rem',
-                                padding: '2px',
-                                borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
-                                boxShadow: state.isFocused ? '0 0 0 4px rgba(59, 130, 246, 0.1)' : 'none',
-                                '&:hover': {
-                                  borderColor: '#9ca3af',
-                                },
-                              }),
-                              multiValue: (base) => ({
-                                ...base,
-                                backgroundColor: '#eff6ff',
-                                borderRadius: '0.375rem',
-                                color: '#1e40af',
-                              }),
-                              multiValueLabel: (base) => ({
-                                ...base,
-                                color: '#1e40af',
-                                fontWeight: '500',
-                              }),
-                              option: (base, state) => ({
-                                ...base,
-                                backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
-                                color: state.isSelected ? 'white' : '#1f2937',
-                                cursor: 'pointer',
-                              }),
-                            }}
-                            classNamePrefix="react-select"
-                          />
+                    <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-5">
+                      <div className="space-y-1.5">
+                        <label className="block text-sm font-semibold text-gray-700">
+                          Entidad bancaria vulnerada *
+                        </label>
+                        <Controller
+                          name="entidadBancariaVulnerada"
+                          control={controlDenuncia}
+                          render={({ field }) => (
+                            <Select
+                              {...field}
+                              options={bancos.map(b => ({ value: b, label: b }))}
+                              placeholder="Seleccione entidad..."
+                              isClearable
+                              onChange={(option) => field.onChange((option as any)?.value || '')}
+                              value={bancos.find(b => b === field.value) ? { value: field.value, label: field.value } : null}
+                              styles={{
+                                control: (base, state) => ({
+                                  ...base,
+                                  borderRadius: '0.75rem',
+                                  padding: '2px',
+                                  borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
+                                  boxShadow: state.isFocused ? '0 0 0 4px rgba(59, 130, 246, 0.1)' : 'none',
+                                  '&:hover': {
+                                    borderColor: '#9ca3af',
+                                  },
+                                }),
+                                option: (base, state) => ({
+                                  ...base,
+                                  backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
+                                  color: state.isSelected ? 'white' : '#1f2937',
+                                  cursor: 'pointer',
+                                }),
+                              }}
+                              classNamePrefix="react-select"
+                            />
+                          )}
+                        />
+                        {errorsDenuncia.entidadBancariaVulnerada && (
+                          <p className="text-red-600 text-xs mt-1">{errorsDenuncia.entidadBancariaVulnerada.message as string}</p>
                         )}
-                      />
-                      {errorsDenuncia.bancosRelacionados && (
-                        <p className="text-red-600 text-xs mt-1">{errorsDenuncia.bancosRelacionados.message as string}</p>
-                      )}
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="block text-sm font-semibold text-gray-700">
+                          Entidad(es) bancaria(s) relacionada(s) *
+                        </label>
+                        <Controller
+                          name="bancosRelacionados"
+                          control={controlDenuncia}
+                          render={({ field }) => (
+                            <Select
+                              {...field}
+                              isMulti
+                              options={bancos.map(b => ({ value: b, label: b }))}
+                              placeholder="Seleccione entidad(es)..."
+                              onChange={(selected) => field.onChange(selected ? (selected as any).map((option: any) => option.value) : [])}
+                              value={field.value ? field.value.map(v => ({ value: v, label: v })) : []}
+                              styles={{
+                                control: (base, state) => ({
+                                  ...base,
+                                  borderRadius: '0.75rem',
+                                  padding: '2px',
+                                  borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
+                                  boxShadow: state.isFocused ? '0 0 0 4px rgba(59, 130, 246, 0.1)' : 'none',
+                                  '&:hover': {
+                                    borderColor: '#9ca3af',
+                                  },
+                                }),
+                                multiValue: (base) => ({
+                                  ...base,
+                                  backgroundColor: '#eff6ff',
+                                  borderRadius: '0.375rem',
+                                  color: '#1e40af',
+                                }),
+                                multiValueLabel: (base) => ({
+                                  ...base,
+                                  color: '#1e40af',
+                                  fontWeight: '500',
+                                }),
+                                option: (base, state) => ({
+                                  ...base,
+                                  backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
+                                  color: state.isSelected ? 'white' : '#1f2937',
+                                  cursor: 'pointer',
+                                }),
+                              }}
+                              classNamePrefix="react-select"
+                            />
+                          )}
+                        />
+                        {errorsDenuncia.bancosRelacionados && (
+                          <p className="text-red-600 text-xs mt-1">{errorsDenuncia.bancosRelacionados.message as string}</p>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
 
                 <div className="space-y-4 border-t pt-4 mt-4">
                   <div className="flex items-center justify-between mb-4">

@@ -95,6 +95,7 @@ interface DenunciaCompleta {
   }>
   archivo_denuncia_url: string | null
   adjuntos_urls: string[] | null
+  objetos_extraviados: string | null
 }
 
 interface Usuario {
@@ -578,8 +579,90 @@ export default function VerDenunciaPage({ params }: { params: Promise<{ id: stri
                 </div>
               )}
 
+              {/* Objetos Extraviados (Si es extravío) */}
+              {denuncia.tipo_denuncia === 'EXTRAVÍO DE OBJETOS Y/O DOCUMENTOS' && denuncia.objetos_extraviados && (
+                <div className="bg-white rounded-3xl border border-slate-200/60 shadow-sm overflow-hidden">
+                  <div className="h-2 bg-blue-600"></div>
+                  <div className="p-6 md:p-8">
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600">
+                        <CreditCard className="h-5 w-5" />
+                      </div>
+                      <h2 className="text-sm font-black text-[#002147] uppercase tracking-widest">
+                        Objetos y Documentos Extraviados
+                      </h2>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-slate-200 text-sm font-sans">
+                        <thead className="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                          <tr>
+                            <th className="px-4 py-3 text-left">Tipo</th>
+                            <th className="px-4 py-3 text-left">Detalles</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 font-semibold text-slate-700">
+                          {(() => {
+                            try {
+                              const lista = JSON.parse(denuncia.objetos_extraviados)
+                              if (!Array.isArray(lista) || lista.length === 0) {
+                                return (
+                                  <tr>
+                                    <td colSpan={2} className="px-4 py-4 text-center text-slate-400 italic">
+                                      Sin objetos registrados
+                                    </td>
+                                  </tr>
+                                )
+                              }
+                              return lista.map((obj: any, idx: number) => (
+                                <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
+                                  <td className="px-4 py-4 whitespace-nowrap">
+                                    <span className="inline-block px-2 py-0.5 bg-[#002147] text-white text-[9px] font-black uppercase rounded">
+                                      {obj.tipo_label}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-4 leading-relaxed text-xs">
+                                    {obj.tipo === 'cedula' && `Número de Cédula: ${obj.numero}`}
+                                    {obj.tipo === 'documento_origen' && `Número: ${obj.numero} (Nacionalidad: ${obj.nacionalidad})`}
+                                    {obj.tipo === 'pasaporte' && `Número: ${obj.numero} (Nacionalidad: ${obj.nacionalidad})`}
+                                    {obj.tipo === 'tarjeta_debito' && `Banco: ${obj.banco === 'OTRO' ? obj.otroBanco : obj.banco} | Marca: ${obj.marca} | Term.: **** **** **** ${obj.ultimos4}`}
+                                    {obj.tipo === 'tarjeta_credito' && `Banco: ${obj.banco === 'OTRO' ? obj.otroBanco : obj.banco} | Marca: ${obj.marca} | Term.: **** **** **** ${obj.ultimos4}`}
+                                    {obj.tipo === 'cheque' && (
+                                      <>
+                                        Banco: {obj.banco === 'OTRO' ? obj.otroBanco : obj.banco} | Cta. Cte. N°: {obj.cuenta} | Cheque N°: {obj.numero}
+                                        <br />
+                                        Estado: <span className="font-bold text-blue-900">{obj.estado.toUpperCase()}</span>
+                                        {obj.estado === 'Completado' && (
+                                          <>
+                                            {' '} | Importe: {obj.monto} {obj.moneda}
+                                            <br />
+                                            A la orden de: {obj.beneficiario.toUpperCase()} | Fecha Emisión: {obj.fechaEmision || 'No especificada'} | Firmado: {obj.firmado}
+                                          </>
+                                        )}
+                                      </>
+                                    )}
+                                  </td>
+                                </tr>
+                              ))
+                            } catch (e) {
+                              return (
+                                <tr>
+                                  <td colSpan={2} className="px-4 py-4 text-center text-red-500 font-bold">
+                                    Error al cargar objetos
+                                  </td>
+                                </tr>
+                              )
+                            }
+                          })()}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Supuestos Autores */}
-              {denuncia.supuestos_autores && denuncia.supuestos_autores.length > 0 && (
+              {denuncia.tipo_denuncia !== 'EXTRAVÍO DE OBJETOS Y/O DOCUMENTOS' && denuncia.supuestos_autores && denuncia.supuestos_autores.length > 0 && (
                 <div className="bg-white rounded-3xl border border-slate-200/60 shadow-sm overflow-hidden">
                   <div className="h-2 bg-slate-400"></div>
                   <div className="p-6 md:p-8">

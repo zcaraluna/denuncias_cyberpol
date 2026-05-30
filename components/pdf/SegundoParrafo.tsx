@@ -80,6 +80,13 @@ export function generarSegundoParrafo(
     const autoresValidos = (denuncia.supuestos_autores || []).filter(a => a.autor_conocido !== 'No aplica');
 
     const renderTextoInicial = () => {
+        if (tipoBase === 'EXTRAVÍO DE OBJETOS Y/O DOCUMENTOS') {
+            return (
+                <>
+                    viene a reportar el <Text style={{ fontWeight: 'bold' }}>EXTRAVÍO DE OBJETOS Y/O DOCUMENTOS</Text>
+                </>
+            );
+        }
         if (denuncia.es_ampliacion) {
             return (
                 <>
@@ -122,7 +129,7 @@ export function generarSegundoParrafo(
                     , en la dirección <Text style={{ fontWeight: 'bold' }}>{toSafeString(denuncia.lugar_hecho).toUpperCase()}</Text>
                 </>
             )}
-            {autoresValidos.length > 0 && (
+            {tipoBase !== 'EXTRAVÍO DE OBJETOS Y/O DOCUMENTOS' && autoresValidos.length > 0 && (
                 <>
                     {', siendo sindicado como supuesto autor '}
                     {autoresValidos.map((autor, index) => {
