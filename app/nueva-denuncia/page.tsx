@@ -1404,28 +1404,28 @@ export default function NuevaDenunciaPage() {
     const itemsText = objetosExtraviados
       .map((obj) => {
         if (obj.tipo === 'cedula') {
-          return `UNA CÉDULA DE IDENTIDAD PARAGUAYA N° ${obj.numero}`
+          return `Una cédula de identidad paraguaya N° ${obj.numero}`
         }
         if (obj.tipo === 'documento_origen') {
-          return `UN DOCUMENTO DE IDENTIDAD DE ORIGEN N° ${obj.numero} (${obj.nacionalidad.toUpperCase()})`
+          return `Un documento de identidad de origen N° ${obj.numero} (${obj.nacionalidad})`
         }
         if (obj.tipo === 'pasaporte') {
-          return `UN PASAPORTE N° ${obj.numero} (${obj.nacionalidad.toUpperCase()})`
+          return `Un pasaporte N° ${obj.numero} (${obj.nacionalidad})`
         }
         if (obj.tipo === 'tarjeta_debito') {
           const nomBanco = obj.banco === 'OTRO' ? obj.otroBanco : obj.banco
-          return `UNA TARJETA DE DÉBITO ${obj.marca.toUpperCase()} EMITIDA POR EL BANCO ${nomBanco.toUpperCase()} CON TERMINACIÓN ${obj.ultimos4}`
+          return `Una tarjeta de débito ${obj.marca} emitida por el banco ${nomBanco} con terminación ${obj.ultimos4}`
         }
         if (obj.tipo === 'tarjeta_credito') {
           const nomBanco = obj.banco === 'OTRO' ? obj.otroBanco : obj.banco
-          return `UNA TARJETA DE CRÉDITO ${obj.marca.toUpperCase()} EMITIDA POR EL BANCO ${nomBanco.toUpperCase()} CON TERMINACIÓN ${obj.ultimos4}`
+          return `Una tarjeta de crédito ${obj.marca} emitida por el banco ${nomBanco} con terminación ${obj.ultimos4}`
         }
         if (obj.tipo === 'cheque') {
           const nomBanco = obj.banco === 'OTRO' ? obj.otroBanco : obj.banco
           if (obj.estado === 'En Blanco') {
-            return `UN CHEQUE EN BLANCO N° ${obj.numero} DEL BANCO ${nomBanco.toUpperCase()} ASOCIADO A LA CUENTA CORRIENTE N° ${obj.cuenta}`
+            return `Un cheque en blanco N° ${obj.numero} del banco ${nomBanco} asociado a la cuenta corriente N° ${obj.cuenta}`
           } else {
-            return `CHEQUE COMPLETADO N° ${obj.numero} DEL BANCO ${nomBanco.toUpperCase()} (CUENTA N° ${obj.cuenta}, POR EL IMPORTE DE ${obj.monto} ${obj.moneda}, EMITIDO A LA ORDEN DE ${obj.beneficiario.toUpperCase()}, CON FECHA ${formatearFechaDDMMAAAA(obj.fechaEmision)} Y ${obj.firmado === 'Sí' ? 'DEBIDAMENTE FIRMADO' : 'SIN FIRMA'})`
+            return `Cheque completado N° ${obj.numero} del banco ${nomBanco} (cuenta N° ${obj.cuenta}, por el importe de ${obj.monto} ${obj.moneda}, emitido a la orden de ${obj.beneficiario}, con fecha ${formatearFechaDDMMAAAA(obj.fechaEmision)} y ${obj.firmado === 'Sí' ? 'debidamente firmado' : 'sin firmar'})`
           }
         }
         return ''
@@ -1447,7 +1447,7 @@ export default function NuevaDenunciaPage() {
           if (idx === itemsText.length - 1) {
             return `\n${num}) ${item}`
           } else if (idx === itemsText.length - 2) {
-            return `\n${num}) ${item} Y;`
+            return `\n${num}) ${item} y;`
           } else {
             return `\n${num}) ${item};`
           }
@@ -1455,7 +1455,7 @@ export default function NuevaDenunciaPage() {
         .join('')
     }
 
-    const relatoGenerado = `EL DENUNCIANTE COMPARECE ANTE ESTA OFICINA POLICIAL A LOS EFECTOS DE DECLARAR EL EXTRAVÍO DE LOS SIGUIENTES OBJETOS:${enumeracion}`
+    const relatoGenerado = `El denunciante comparece ante esta oficina policial a los efectos de declarar el extravío de los siguientes objetos:${enumeracion}`
     setValueDenuncia('relato', relatoGenerado)
   }, [objetosExtraviados, tipoFormulario, setValueDenuncia])
 
