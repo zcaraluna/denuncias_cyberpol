@@ -66,6 +66,8 @@ const styles = StyleSheet.create({
     infoBlock: {
         alignItems: 'center',
         width: '100%',
+        paddingLeft: 65,
+        paddingRight: 65,
     },
     subTitle: {
         fontSize: 12,
