@@ -1294,10 +1294,13 @@ export default function NuevaDenunciaPage() {
   const lugarHechoCiudad = watchDenuncia('lugarHechoCiudad')
 
   // Opciones para tipo de denuncia (react-select)
-  const tiposDenunciaOptions = useMemo(
-    () => tiposDenuncia.map((tipo) => ({ value: tipo, label: tipo })),
-    []
-  )
+  const tiposDenunciaOptions = useMemo(() => {
+    let list = tiposDenuncia
+    if (tipoFormulario === 'hecho_punible') {
+      list = list.filter((tipo) => tipo !== 'EXTRAVÍO DE OBJETOS Y/O DOCUMENTOS')
+    }
+    return list.map((tipo) => ({ value: tipo, label: tipo }))
+  }, [tipoFormulario, tiposDenuncia])
 
   // Opciones de departamento y ciudad para lugar del hecho
   const lugarHechoDepartamentoOptions = useMemo(
