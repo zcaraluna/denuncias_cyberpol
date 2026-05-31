@@ -2789,16 +2789,15 @@ export default function NuevaDenunciaPage() {
                     </svg>
                   </div>
                   <h3 className="text-2xl font-bold text-[#002147] mb-3">
-                    Denunciar Hecho Punible
+                    Denunciar un hecho punible
                   </h3>
                   <p className="text-slate-500 text-sm leading-relaxed">
                     Utilice esta opción para denunciar crímenes o delitos (hechos punibles) como estafas mediante sistemas informáticos, accesos indebidos, amenazas, chantajes, robos u otras infracciones que requieran la intervención de la fiscalía.
                   </p>
                 </div>
-                <div className="mt-8 pt-4 border-t border-slate-100 flex items-center text-red-600 font-bold text-sm">
-                  <span>Iniciar Denuncia Penal</span>
-                  <svg className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                <div className="mt-8 pt-4 border-t border-slate-100 flex justify-end items-center text-red-600">
+                  <svg className="w-5 h-5 group-hover:translate-x-1.5 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
                   </svg>
                 </div>
               </div>
@@ -2815,16 +2814,15 @@ export default function NuevaDenunciaPage() {
                     </svg>
                   </div>
                   <h3 className="text-2xl font-bold text-[#002147] mb-3">
-                    Reportar Extravío
+                    Denuncia de extravío de objetos
                   </h3>
                   <p className="text-slate-500 text-sm leading-relaxed">
                     Utilice esta opción para dejar constancia por el extravío de documentos personales (Cédula de Identidad Paraguaya, Pasaporte o Documentos de origen) u objetos financieros (cheques bancarios, tarjetas de crédito o de débito).
                   </p>
                 </div>
-                <div className="mt-8 pt-4 border-t border-slate-100 flex items-center text-blue-600 font-bold text-sm">
-                  <span>Reportar Extravío</span>
-                  <svg className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                <div className="mt-8 pt-4 border-t border-slate-100 flex justify-end items-center text-blue-600">
+                  <svg className="w-5 h-5 group-hover:translate-x-1.5 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
                   </svg>
                 </div>
               </div>
