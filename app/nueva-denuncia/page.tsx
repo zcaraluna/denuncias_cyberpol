@@ -1387,20 +1387,19 @@ export default function NuevaDenunciaPage() {
     }
   }, [tipoFormulario, setValueDenuncia])
 
-  useEffect(() => {
-    if (tipoFormulario !== 'extravio' || relatoModificadoPorUsuario.current) return
-
-    const fechaStr = watchDenuncia('fechaHecho')
-    const horaStr = watchDenuncia('horaHecho')
-    const lugarStr = watchDenuncia('lugarHecho') || ''
-    
-    let fechaFormateada = fechaStr
-    if (fechaStr && fechaStr.includes('-')) {
+  const formatearFechaDDMMAAAA = (fechaStr: string): string => {
+    if (!fechaStr) return 'NO ESPECIFICADA'
+    if (fechaStr.includes('-')) {
       const parts = fechaStr.split('-')
       if (parts.length === 3) {
-        fechaFormateada = `${parts[2]}/${parts[1]}/${parts[0]}`
+        return `${parts[2]}/${parts[1]}/${parts[0]}`
       }
     }
+    return fechaStr
+  }
+
+  useEffect(() => {
+    if (tipoFormulario !== 'extravio' || relatoModificadoPorUsuario.current) return
 
     const itemsText = objetosExtraviados
       .map((obj) => {
@@ -1426,7 +1425,7 @@ export default function NuevaDenunciaPage() {
           if (obj.estado === 'En Blanco') {
             return `UN CHEQUE EN BLANCO N° ${obj.numero} DEL BANCO ${nomBanco.toUpperCase()} ASOCIADO A LA CUENTA CORRIENTE N° ${obj.cuenta}`
           } else {
-            return `UN CHEQUE COMPLETADO N° ${obj.numero} DEL BANCO ${nomBanco.toUpperCase()} (CUENTA N° ${obj.cuenta}, POR EL IMPORTE DE ${obj.monto} ${obj.moneda}, EMITIDO A LA ORDEN DE ${obj.beneficiario.toUpperCase()}, CON FECHA ${obj.fechaEmision || 'NO ESPECIFICADA'} Y ${obj.firmado === 'Sí' ? 'DEBIDAMENTE FIRMADO' : 'SIN FIRMA'})`
+            return `CHEQUE COMPLETADO N° ${obj.numero} DEL BANCO ${nomBanco.toUpperCase()} (CUENTA N° ${obj.cuenta}, POR EL IMPORTE DE ${obj.monto} ${obj.moneda}, EMITIDO A LA ORDEN DE ${obj.beneficiario.toUpperCase()}, CON FECHA ${formatearFechaDDMMAAAA(obj.fechaEmision)} Y ${obj.firmado === 'Sí' ? 'DEBIDAMENTE FIRMADO' : 'SIN FIRMA'})`
           }
         }
         return ''
@@ -1440,18 +1439,25 @@ export default function NuevaDenunciaPage() {
 
     let enumeracion = ''
     if (itemsText.length === 1) {
-      enumeracion = itemsText[0]
+      enumeracion = `\n1) ${itemsText[0]}`
     } else {
-      enumeracion = itemsText.slice(0, -1).join(', ') + ' Y ' + itemsText[itemsText.length - 1]
+      enumeracion = itemsText
+        .map((item, idx) => {
+          const num = idx + 1
+          if (idx === itemsText.length - 1) {
+            return `\n${num}) ${item}`
+          } else if (idx === itemsText.length - 2) {
+            return `\n${num}) ${item} Y;`
+          } else {
+            return `\n${num}) ${item};`
+          }
+        })
+        .join('')
     }
 
-    const fechaTexto = fechaFormateada ? ` EN FECHA ${fechaFormateada}` : ''
-    const horaTexto = horaStr ? ` SIENDO LAS ${horaStr} HORAS APROXIMADAMENTE` : ''
-    const lugarTexto = lugarStr ? `, EN LAS INMEDIACIONES DE ${lugarStr.toUpperCase()}` : ''
-
-    const relatoGenerado = `EL DENUNCIANTE COMPARECE ANTE ESTA OFICINA POLICIAL A LOS EFECTOS DE DECLARAR EL EXTRAVÍO DE LOS SIGUIENTES OBJETOS: ${enumeracion}. SEGÚN MANIFIESTA, EL EXTRAVÍO HABRÍA OCURRIDO${fechaTexto}${horaTexto}${lugarTexto}.`
+    const relatoGenerado = `EL DENUNCIANTE COMPARECE ANTE ESTA OFICINA POLICIAL A LOS EFECTOS DE DECLARAR EL EXTRAVÍO DE LOS SIGUIENTES OBJETOS:${enumeracion}`
     setValueDenuncia('relato', relatoGenerado)
-  }, [objetosExtraviados, watchDenuncia('fechaHecho'), watchDenuncia('horaHecho'), watchDenuncia('lugarHecho'), tipoFormulario, setValueDenuncia])
+  }, [objetosExtraviados, tipoFormulario, setValueDenuncia])
 
   const {
     register: registerAutor,
@@ -3866,7 +3872,11 @@ export default function NuevaDenunciaPage() {
                             <input
                               type="text"
                               value={nuevoObjetoCampos.monto || ''}
-                              onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, monto: e.target.value })}
+                              onChange={(e) => {
+                                const clean = e.target.value.replace(/\D/g, '');
+                                const formatted = clean.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                                setNuevoObjetoCampos({ ...nuevoObjetoCampos, monto: formatted });
+                              }}
                               placeholder="Ej: 1.500.000"
                               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm"
                             />
