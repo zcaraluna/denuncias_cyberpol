@@ -1,62 +1,54 @@
 /**
- * Utilidades para manejar fechas y horas en la zona horaria de Asunción, Paraguay
- * Paraguay usa UTC-4 (hora estándar de Paraguay, PYT)
- * Timezone: America/Asuncion
+ * Utilidades para manejar fechas y horas en la zona horaria de Asunción, Paraguay.
+ * De acuerdo con la Ley Nº 7349/24, Paraguay adoptó el huso horario UTC-3 de forma
+ * permanente (eliminando los cambios estacionales de horario de invierno).
  */
 
 /**
- * Obtiene la fecha y hora actual en la zona horaria de Asunción, Paraguay
- * @returns Objeto con fecha (YYYY-MM-DD) y hora (HH:MM) en formato de Paraguay
+ * Obtiene la fecha y hora actual en la zona horaria de Paraguay (UTC-3 permanente)
+ * @returns Objeto con fecha (YYYY-MM-DD) y hora (HH:MM)
  */
 export function getFechaHoraParaguay(): { fecha: string; hora: string } {
   const ahora = new Date()
   
-  // Usar toLocaleString con timezone de Asunción para obtener fecha y hora correctas
-  const fechaStr = ahora.toLocaleDateString('en-CA', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    timeZone: 'America/Asuncion'
-  })
+  // Paraguay está permanentemente en UTC-3.
+  // Desplazamos el tiempo UTC restándole 3 horas para obtener la hora oficial de Paraguay.
+  const pyTime = new Date(ahora.getTime() - (3 * 3600000))
   
-  const horaStr = ahora.toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-    timeZone: 'America/Asuncion'
-  })
+  const year = pyTime.getUTCFullYear()
+  const month = String(pyTime.getUTCMonth() + 1).padStart(2, '0')
+  const day = String(pyTime.getUTCDate()).padStart(2, '0')
+  const hour = String(pyTime.getUTCHours()).padStart(2, '0')
+  const minute = String(pyTime.getUTCMinutes()).padStart(2, '0')
   
   return {
-    fecha: fechaStr, // Ya viene en formato YYYY-MM-DD con en-CA
-    hora: horaStr
+    fecha: `${year}-${month}-${day}`,
+    hora: `${hour}:${minute}`
   }
 }
 
 /**
- * Convierte una fecha Date a string en formato YYYY-MM-DD usando la zona horaria de Paraguay
+ * Convierte una fecha Date a string en formato YYYY-MM-DD usando el huso UTC-3 de Paraguay
  * @param date Objeto Date a convertir
  * @returns String en formato YYYY-MM-DD
  */
 export function dateToParaguayString(date: Date): string {
-  return date.toLocaleDateString('en-CA', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    timeZone: 'America/Asuncion'
-  })
+  const pyTime = new Date(date.getTime() - (3 * 3600000))
+  const year = pyTime.getUTCFullYear()
+  const month = String(pyTime.getUTCMonth() + 1).padStart(2, '0')
+  const day = String(pyTime.getUTCDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
 /**
- * Convierte una fecha Date a hora en formato HH:MM usando la zona horaria de Paraguay
+ * Convierte una fecha Date a hora en formato HH:MM usando el huso UTC-3 de Paraguay
  * @param date Objeto Date a convertir
  * @returns String en formato HH:MM
  */
 export function dateToParaguayTime(date: Date): string {
-  return date.toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-    timeZone: 'America/Asuncion'
-  })
+  const pyTime = new Date(date.getTime() - (3 * 3600000))
+  const hour = String(pyTime.getUTCHours()).padStart(2, '0')
+  const minute = String(pyTime.getUTCMinutes()).padStart(2, '0')
+  return `${hour}:${minute}`
 }
 

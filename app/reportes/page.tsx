@@ -122,12 +122,12 @@ export default function ReportesPage() {
 
   // Estado para reporte diario
   const [fecha, setFecha] = useState(() => {
-    return new Intl.DateTimeFormat('sv-SE', {
-      timeZone: 'America/Asuncion',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
-    }).format(new Date())
+    const ahora = new Date()
+    const pyTime = new Date(ahora.getTime() - (3 * 3600000))
+    const year = pyTime.getUTCFullYear()
+    const month = String(pyTime.getUTCMonth() + 1).padStart(2, '0')
+    const day = String(pyTime.getUTCDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
   })
   const [fechaFin, setFechaFin] = useState('')
   const [horaInicio, setHoraInicio] = useState('07:00')

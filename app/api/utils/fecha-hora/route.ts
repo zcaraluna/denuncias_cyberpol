@@ -12,25 +12,19 @@ export async function GET() {
     return NextResponse.json({ fecha: fechaFormateada, hora })
   } catch (error) {
     console.error('Error en fecha-hora:', error)
-    // Fallback: usar métodos directos con timezone explícito
+    // Fallback: usar desplazamiento UTC-3 fijo
     const now = new Date()
+    const pyTime = new Date(now.getTime() - (3 * 3600000))
+    const year = pyTime.getUTCFullYear()
+    const month = String(pyTime.getUTCMonth() + 1).padStart(2, '0')
+    const day = String(pyTime.getUTCDate()).padStart(2, '0')
+    const hour = String(pyTime.getUTCHours()).padStart(2, '0')
+    const minute = String(pyTime.getUTCMinutes()).padStart(2, '0')
     
-    // Obtener fecha en formato DD/MM/YYYY usando timezone de Paraguay
-    const fecha = now.toLocaleDateString('es-PY', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      timeZone: 'America/Asuncion'
+    return NextResponse.json({
+      fecha: `${day}/${month}/${year}`,
+      hora: `${hour}:${minute}`
     })
-    
-    const hora = now.toLocaleTimeString('es-PY', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-      timeZone: 'America/Asuncion'
-    })
-    
-    return NextResponse.json({ fecha, hora })
   }
 }
 

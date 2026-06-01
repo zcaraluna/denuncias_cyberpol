@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import pool, { queryWithRetry } from './db';
-import { dateToParaguayString } from './utils/timezone';
+import { dateToParaguayString, dateToParaguayTime } from './utils/timezone';
 
 export interface Usuario {
   id: number;
@@ -117,14 +117,7 @@ export async function validarCodigoActivacion(
         return { valido: false, mensaje: 'El código DEMOSTRACION ha expirado (válido solo el 22/12/2025)' };
       }
 
-      // Verificar que no hayan pasado las 11:00 horas del día en zona horaria de Paraguay
-      // Obtener la hora actual en Paraguay
-      const horaActualParaguay = ahora.toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false,
-        timeZone: 'America/Asuncion'
-      });
+      const horaActualParaguay = dateToParaguayTime(ahora);
 
       const [horas, minutos] = horaActualParaguay.split(':').map(Number);
       const minutosTotales = horas * 60 + minutos;
@@ -336,12 +329,7 @@ export async function verificarDispositivoAutorizado(
         }
 
         // Verificar que no hayan pasado las 11:00 horas
-        const horaActualParaguay = ahora.toLocaleTimeString('en-US', {
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: false,
-          timeZone: 'America/Asuncion'
-        });
+        const horaActualParaguay = dateToParaguayTime(ahora);
 
         const [horas, minutos] = horaActualParaguay.split(':').map(Number);
         const minutosTotales = horas * 60 + minutos;

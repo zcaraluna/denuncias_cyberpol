@@ -604,9 +604,15 @@ export default function NuevaDenunciaPage() {
       return data
     } catch (error) {
       const now = new Date()
+      const pyTime = new Date(now.getTime() - (3 * 3600000))
+      const year = pyTime.getUTCFullYear()
+      const month = String(pyTime.getUTCMonth() + 1).padStart(2, '0')
+      const day = String(pyTime.getUTCDate()).padStart(2, '0')
+      const hour = String(pyTime.getUTCHours()).padStart(2, '0')
+      const minute = String(pyTime.getUTCMinutes()).padStart(2, '0')
       return {
-        fecha: now.toLocaleDateString('es-PY', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'America/Asuncion' }),
-        hora: now.toLocaleTimeString('es-PY', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Asuncion' }),
+        fecha: `${day}/${month}/${year}`,
+        hora: `${hour}:${minute}`
       }
     }
   }
@@ -624,19 +630,16 @@ export default function NuevaDenunciaPage() {
       } catch (error) {
         // Si falla, usar fecha/hora del cliente
         const now = new Date()
-        const fecha = now.toLocaleDateString('es-PY', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
-          timeZone: 'America/Asuncion'
+        const pyTime = new Date(now.getTime() - (3 * 3600000))
+        const year = pyTime.getUTCFullYear()
+        const month = String(pyTime.getUTCMonth() + 1).padStart(2, '0')
+        const day = String(pyTime.getUTCDate()).padStart(2, '0')
+        const hour = String(pyTime.getUTCHours()).padStart(2, '0')
+        const minute = String(pyTime.getUTCMinutes()).padStart(2, '0')
+        setFechaHoraInicioDenuncia({
+          fecha: `${day}/${month}/${year}`,
+          hora: `${hour}:${minute}`
         })
-        const hora = now.toLocaleTimeString('es-PY', {
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: false,
-          timeZone: 'America/Asuncion'
-        })
-        setFechaHoraInicioDenuncia({ fecha, hora })
       }
     }
 
