@@ -5408,19 +5408,26 @@ export default function NuevaDenunciaPage() {
 
                 <div className="space-y-4">
                   <div>
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold text-gray-800 border-b pb-2 flex-1">
-                        Lugar del Hecho
-                      </h3>
-                      <label className="flex items-center ml-4 cursor-pointer">
+                    <h3 className="text-lg font-bold text-gray-800 border-b pb-2 mb-4">
+                      Lugar del Hecho
+                    </h3>
+
+                    {/* Tarjeta de No Aplica altamente visible y estética */}
+                    <div className={cn(
+                      "p-5 rounded-2xl border transition-all duration-300 mb-6 flex items-start gap-4",
+                      lugarHechoNoAplica 
+                        ? "bg-slate-50/80 border-slate-200 shadow-inner" 
+                        : "bg-blue-50/40 border-blue-100 hover:border-blue-200 shadow-sm"
+                    )}>
+                      <div className="flex items-center h-6">
                         <input
+                          id="lugarHechoNoAplica"
                           type="checkbox"
                           {...registerDenuncia('lugarHechoNoAplica')}
                           checked={lugarHechoNoAplica}
                           onChange={(e) => {
                             registerDenuncia('lugarHechoNoAplica').onChange(e)
                             setLugarHechoNoAplica(e.target.checked)
-                            // value is updated by register, but we also want custom logic
                             setValueDenuncia('lugarHechoNoAplica', e.target.checked)
 
                             if (e.target.checked) {
@@ -5432,10 +5439,22 @@ export default function NuevaDenunciaPage() {
                               setCoordenadas(null)
                             }
                           }}
-                          className="mr-2"
+                          className="h-6 w-6 text-blue-600 focus:ring-blue-500 border-slate-300 rounded cursor-pointer transition-all duration-200 transform hover:scale-105"
                         />
-                        <span className="text-sm text-gray-700">No aplica</span>
-                      </label>
+                      </div>
+                      <div className="flex-1">
+                        <label htmlFor="lugarHechoNoAplica" className="block text-base font-bold text-[#002147] cursor-pointer select-none">
+                          Marcar como &quot;No aplica&quot; para esta denuncia
+                        </label>
+                        <p className={cn(
+                          "text-xs leading-relaxed mt-1 font-sans",
+                          lugarHechoNoAplica ? "text-gray-500" : "text-blue-700/80"
+                        )}>
+                          {lugarHechoNoAplica 
+                            ? "El lugar del hecho ha sido omitido. Los campos de ubicación geográfica y el mapa están deshabilitados." 
+                            : "Utilice esta opción si el hecho ocurrió enteramente en internet, redes sociales, llamadas telefónicas o si es imposible determinar un lugar físico del hecho."}
+                        </p>
+                      </div>
                     </div>
                     {!lugarHechoNoAplica && (
                       <>
