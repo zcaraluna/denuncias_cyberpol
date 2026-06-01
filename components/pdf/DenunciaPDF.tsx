@@ -19,6 +19,17 @@ Font.register({
     ],
 });
 
+const formatearFechaPDF = (fechaStr?: string): string => {
+    if (!fechaStr) return 'NO ESPECIFICADA';
+    if (fechaStr.includes('-')) {
+        const parts = fechaStr.split('-');
+        if (parts.length === 3) {
+            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+    }
+    return fechaStr;
+};
+
 const styles = StyleSheet.create({
     page: {
         paddingTop: 15,  // Margen superior mínimo
@@ -258,12 +269,15 @@ const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 
                                             {obj.tipo === 'cedula' && `NÚMERO DE CÉDULA: ${obj.numero}`}
                                             {obj.tipo === 'documento_origen' && `NÚMERO: ${obj.numero} (ORIGEN: ${obj.nacionalidad.toUpperCase()})`}
                                             {obj.tipo === 'pasaporte' && `NÚMERO: ${obj.numero} (NACIONALIDAD: ${obj.nacionalidad.toUpperCase()})`}
-                                            {obj.tipo === 'tarjeta_debito' && `BANCO: ${(obj.banco === 'OTRO' ? obj.otroBanco : obj.banco).toUpperCase()} | MARCA: ${obj.marca.toUpperCase()} | TERM.: **** **** **** ${obj.ultimos4}`}
-                                            {obj.tipo === 'tarjeta_credito' && `BANCO: ${(obj.banco === 'OTRO' ? obj.otroBanco : obj.banco).toUpperCase()} | MARCA: ${obj.marca.toUpperCase()} | TERM.: **** **** **** ${obj.ultimos4}`}
+                                            {obj.tipo === 'tarjeta_debito' && `ENTIDAD: ${(obj.banco === 'OTRO' ? obj.otroBanco : obj.banco).toUpperCase()} | MARCA: ${obj.marca.toUpperCase()} | TERM.: **** **** **** ${obj.ultimos4}`}
+                                            {obj.tipo === 'tarjeta_credito' && `ENTIDAD: ${(obj.banco === 'OTRO' ? obj.otroBanco : obj.banco).toUpperCase()} | MARCA: ${obj.marca.toUpperCase()} | TERM.: **** **** **** ${obj.ultimos4}`}
                                             {obj.tipo === 'cheque' && (
-                                                `BANCO: ${(obj.banco === 'OTRO' ? obj.otroBanco : obj.banco).toUpperCase()} | CTA. CTE. N°: ${obj.cuenta} | CHEQUE N°: ${obj.numero} | ESTADO: ${obj.estado.toUpperCase()}` + 
-                                                (obj.estado === 'Completado' ? ` | IMPORTE: ${obj.monto} ${obj.moneda} | BENEFICIARIO: ${obj.beneficiario.toUpperCase()} | FECHA EMISIÓN: ${obj.fechaEmision || 'NO ESPECIFICADA'} | FIRMADO: ${obj.firmado.toUpperCase()}` : '')
+                                                `ENTIDAD: ${(obj.banco === 'OTRO' ? obj.otroBanco : obj.banco).toUpperCase()} | CTA. CTE. N°: ${obj.cuenta} | CHEQUE N°: ${obj.numero} | ESTADO: ${obj.estado.toUpperCase()}` + 
+                                                (obj.estado === 'Completado' ? ` | IMPORTE: ${obj.monto} ${obj.moneda} | BENEFICIARIO: ${obj.beneficiario.toUpperCase()} | FECHA EMISIÓN: ${formatearFechaPDF(obj.fechaEmision)} | FIRMADO: ${obj.firmado.toUpperCase()}` : '')
                                             )}
+                                            {obj.tipo === 'celular' && `MARCA/MODELO: ${obj.marca.toUpperCase()} | N° DE LÍNEA: ${obj.numero}${obj.imei ? ` | IMEI: ${obj.imei}` : ''}`}
+                                            {obj.tipo === 'contrato' && `DOCUMENTO: ${obj.descripcion.toUpperCase()} | PARTES: ${obj.partes.toUpperCase()}${obj.fechaDocumento ? ` | FECHA DOC.: ${formatearFechaPDF(obj.fechaDocumento)}` : ''}`}
+                                            {obj.tipo === 'otro_objeto' && `DESCRIPCIÓN: ${obj.descripcion.toUpperCase()}`}
                                         </Text>
                                     </View>
                                 </View>

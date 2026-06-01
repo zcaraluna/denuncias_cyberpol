@@ -18,6 +18,59 @@ import { cn } from '@/lib/utils'
 // Importar el mapa dinámicamente (solo en cliente)
 const MapSelector = dynamic(() => import('@/components/MapSelector'), { ssr: false })
 
+const reactSelectCustomStyles = {
+  control: (base: any, state: any) => ({
+    ...base,
+    fontFamily: 'Inter, sans-serif',
+    fontSize: '14px',
+    minHeight: '42px',
+    borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
+    boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
+    '&:hover': {
+      borderColor: '#3b82f6',
+    },
+  }),
+  menu: (base: any) => ({
+    ...base,
+    fontFamily: 'Inter, sans-serif',
+    fontSize: '14px',
+    maxHeight: '250px',
+    zIndex: 9999,
+  }),
+  menuList: (base: any) => ({
+    ...base,
+    maxHeight: '250px',
+  }),
+  option: (base: any, state: any) => ({
+    ...base,
+    fontFamily: 'Inter, sans-serif',
+    fontSize: '14px',
+    padding: '8px 12px',
+    backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
+    color: state.isSelected ? 'white' : '#1f2937',
+    cursor: 'pointer',
+  }),
+  input: (base: any) => ({
+    ...base,
+    fontFamily: 'Inter, sans-serif',
+    fontSize: '14px',
+    margin: 0,
+    padding: 0,
+  }),
+  singleValue: (base: any) => ({
+    ...base,
+    fontFamily: 'Inter, sans-serif',
+    fontSize: '14px',
+    color: '#1f2937',
+  }),
+  placeholder: (base: any) => ({
+    ...base,
+    fontFamily: 'Inter, sans-serif',
+    fontSize: '14px',
+    color: '#9ca3af',
+  }),
+}
+
 // Esquemas de validación
 const ROLES_DENUNCIANTE = ['principal', 'co-denunciante', 'abogado'] as const
 type RolDenunciante = (typeof ROLES_DENUNCIANTE)[number]
@@ -387,11 +440,11 @@ export default function NuevaDenunciaPage() {
     }
     if (nuevoObjetoTipo === 'cheque') {
       if (!nuevoObjetoCampos.banco) {
-        alert('Debe seleccionar el banco emisor.')
+        alert('Debe seleccionar la entidad emisora.')
         return
       }
       if (nuevoObjetoCampos.banco === 'OTRO' && !nuevoObjetoCampos.otroBanco?.trim()) {
-        alert('Debe especificar el banco emisor.')
+        alert('Debe especificar la entidad emisora.')
         return
       }
       if (!nuevoObjetoCampos.cuenta?.trim()) {
@@ -431,6 +484,32 @@ export default function NuevaDenunciaPage() {
         return
       }
     }
+    if (nuevoObjetoTipo === 'celular') {
+      if (!nuevoObjetoCampos.marca?.trim()) {
+        alert('Debe ingresar la marca/modelo del celular.')
+        return
+      }
+      if (!nuevoObjetoCampos.numero?.trim()) {
+        alert('Debe ingresar el número de línea.')
+        return
+      }
+    }
+    if (nuevoObjetoTipo === 'contrato') {
+      if (!nuevoObjetoCampos.descripcion?.trim()) {
+        alert('Debe ingresar la descripción o nombre del documento.')
+        return
+      }
+      if (!nuevoObjetoCampos.partes?.trim()) {
+        alert('Debe especificar las partes del contrato.')
+        return
+      }
+    }
+    if (nuevoObjetoTipo === 'otro_objeto') {
+      if (!nuevoObjetoCampos.descripcion?.trim()) {
+        alert('Debe ingresar la descripción detallada.')
+        return
+      }
+    }
 
     const nuevoRegistro = {
       tipo: nuevoObjetoTipo,
@@ -439,7 +518,10 @@ export default function NuevaDenunciaPage() {
         nuevoObjetoTipo === 'documento_origen' ? 'Documento de Identidad de origen' :
         nuevoObjetoTipo === 'pasaporte' ? 'Pasaporte' :
         nuevoObjetoTipo === 'cheque' ? 'Cheque bancario' :
-        nuevoObjetoTipo === 'tarjeta_debito' ? 'Tarjeta de Débito' : 'Tarjeta de Crédito',
+        nuevoObjetoTipo === 'tarjeta_debito' ? 'Tarjeta de Débito' :
+        nuevoObjetoTipo === 'tarjeta_credito' ? 'Tarjeta de Crédito' :
+        nuevoObjetoTipo === 'celular' ? 'Celular / Teléfono Móvil' :
+        nuevoObjetoTipo === 'contrato' ? 'Contrato / Documento Privado' : 'Otros Objetos / Documentos',
       ...nuevoObjetoCampos
     }
 
@@ -1398,6 +1480,32 @@ export default function NuevaDenunciaPage() {
     return fechaStr
   }
 
+  const obtenerPreposicionYEntidad = (nombreEntidad: string, tipoDoc: 'cheque' | 'tarjeta'): string => {
+    if (!nombreEntidad) return ''
+    const nombreUpper = nombreEntidad.trim().toUpperCase()
+    const palabrasFemeninas = [
+      'COOPERATIVA', 'COOP', 'FINANCIERA', 'FINANC', 'ASOCIACION', 'ASOCIACIÓN', 'MUTUAL', 'SOCIEDAD', 'CAJA'
+    ]
+    const esFemeninoDetectado = palabrasFemeninas.some(p => {
+      const regex = new RegExp(`^${p}\\b`, 'i')
+      return regex.test(nombreUpper)
+    })
+
+    if (esFemeninoDetectado) {
+      if (tipoDoc === 'cheque') {
+        return `de la ${nombreEntidad}`
+      } else {
+        return `emitida por la ${nombreEntidad}`
+      }
+    } else {
+      if (tipoDoc === 'cheque') {
+        return `del banco ${nombreEntidad}`
+      } else {
+        return `emitida por el banco ${nombreEntidad}`
+      }
+    }
+  }
+
   useEffect(() => {
     if (tipoFormulario !== 'extravio' || relatoModificadoPorUsuario.current) return
 
@@ -1414,19 +1522,31 @@ export default function NuevaDenunciaPage() {
         }
         if (obj.tipo === 'tarjeta_debito') {
           const nomBanco = obj.banco === 'OTRO' ? obj.otroBanco : obj.banco
-          return `Una tarjeta de débito ${obj.marca} emitida por el banco ${nomBanco} con terminación ${obj.ultimos4}`
+          const prepYEnt = obtenerPreposicionYEntidad(nomBanco, 'tarjeta')
+          return `Una tarjeta de débito ${obj.marca} ${prepYEnt} con terminación ${obj.ultimos4}`
         }
         if (obj.tipo === 'tarjeta_credito') {
           const nomBanco = obj.banco === 'OTRO' ? obj.otroBanco : obj.banco
-          return `Una tarjeta de crédito ${obj.marca} emitida por el banco ${nomBanco} con terminación ${obj.ultimos4}`
+          const prepYEnt = obtenerPreposicionYEntidad(nomBanco, 'tarjeta')
+          return `Una tarjeta de crédito ${obj.marca} ${prepYEnt} con terminación ${obj.ultimos4}`
         }
         if (obj.tipo === 'cheque') {
           const nomBanco = obj.banco === 'OTRO' ? obj.otroBanco : obj.banco
+          const prepYEnt = obtenerPreposicionYEntidad(nomBanco, 'cheque')
           if (obj.estado === 'En Blanco') {
-            return `Un cheque en blanco N° ${obj.numero} del banco ${nomBanco} asociado a la cuenta corriente N° ${obj.cuenta}`
+            return `Un cheque en blanco N° ${obj.numero} ${prepYEnt} asociado a la cuenta corriente N° ${obj.cuenta}`
           } else {
-            return `Cheque completado N° ${obj.numero} del banco ${nomBanco} (cuenta N° ${obj.cuenta}, por el importe de ${obj.monto} ${obj.moneda}, emitido a la orden de ${obj.beneficiario}, con fecha ${formatearFechaDDMMAAAA(obj.fechaEmision)} y ${obj.firmado === 'Sí' ? 'debidamente firmado' : 'sin firmar'})`
+            return `Cheque completado N° ${obj.numero} ${prepYEnt} (cuenta N° ${obj.cuenta}, por el importe de ${obj.monto} ${obj.moneda}, emitido a la orden de ${obj.beneficiario}, con fecha ${formatearFechaDDMMAAAA(obj.fechaEmision)} y ${obj.firmado === 'Sí' ? 'debidamente firmado' : 'sin firmar'})`
           }
+        }
+        if (obj.tipo === 'celular') {
+          return `Un teléfono celular marca ${obj.marca} con número de línea ${obj.numero}${obj.imei ? ` y registro de IMEI N° ${obj.imei}` : ''}`
+        }
+        if (obj.tipo === 'contrato') {
+          return `Un contrato/documento privado consistente en ${obj.descripcion}, celebrado entre las partes ${obj.partes}${obj.fechaDocumento ? ` con fecha ${formatearFechaDDMMAAAA(obj.fechaDocumento)}` : ''}`
+        }
+        if (obj.tipo === 'otro_objeto') {
+          return `Un objeto/documento consistente en: ${obj.descripcion}`
         }
         return ''
       })
@@ -2903,31 +3023,37 @@ export default function NuevaDenunciaPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Rol dentro de la denuncia *
                   </label>
-                  <select
-                    {...registerDenunciante('rol')}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-sans text-sm uppercase"
-                    style={{ fontFamily: 'Inter, sans-serif' }}
-                  >
-                    {ROLES_DENUNCIANTE.map((rol) => {
-                      const esRolActual = registroDenuncianteEnEdicion?.rol === rol
-                      const deshabilitarPrincipal = rol === 'principal' && existePrincipalRegistrado && !esRolActual
-                      const coDenunciantesRegistrados = denunciantes.filter((denunciante) => denunciante.rol === 'co-denunciante').length
-                      const deshabilitarCoDenunciante =
-                        rol === 'co-denunciante' && coDenunciantesRegistrados >= 2 && !esRolActual
-                      const deshabilitarAbogado = rol === 'abogado' && !principalActual && !esRolActual
+                  <Controller
+                    name="rol"
+                    control={controlDenunciante}
+                    render={({ field }) => {
+                      const options = [
+                        { value: 'principal', label: 'Denunciante principal' },
+                        { value: 'co-denunciante', label: 'Co-denunciante' },
+                        { value: 'abogado', label: 'Abogado / representante legal' }
+                      ]
                       return (
-                        <option
-                          key={rol}
-                          value={rol}
-                          disabled={deshabilitarPrincipal || deshabilitarAbogado || deshabilitarCoDenunciante}
-                        >
-                          {rol === 'principal' && 'Denunciante principal'}
-                          {rol === 'co-denunciante' && 'Co-denunciante'}
-                          {rol === 'abogado' && 'Abogado / representante legal'}
-                        </option>
+                        <Select
+                          options={options}
+                          value={options.find(opt => opt.value === field.value) || null}
+                          onChange={(option) => field.onChange(option?.value || 'principal')}
+                          isOptionDisabled={(option) => {
+                            const rol = option.value
+                            const esRolActual = registroDenuncianteEnEdicion?.rol === rol
+                            const deshabilitarPrincipal = rol === 'principal' && existePrincipalRegistrado && !esRolActual
+                            const coDenunciantesRegistrados = denunciantes.filter((denunciante) => denunciante.rol === 'co-denunciante').length
+                            const deshabilitarCoDenunciante =
+                              rol === 'co-denunciante' && coDenunciantesRegistrados >= 2 && !esRolActual
+                            const deshabilitarAbogado = rol === 'abogado' && !principalActual && !esRolActual
+                            return !!(deshabilitarPrincipal || deshabilitarAbogado || deshabilitarCoDenunciante)
+                          }}
+                          isSearchable={false}
+                          className="text-sm"
+                          styles={reactSelectCustomStyles}
+                        />
                       )
-                    })}
-                  </select>
+                    }}
+                  />
                   {errorsDenunciante.rol && (
                     <p className="text-red-600 text-sm mt-1">{errorsDenunciante.rol.message as string}</p>
                   )}
@@ -2969,16 +3095,28 @@ export default function NuevaDenunciaPage() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Documento de Identidad Tipo *
                     </label>
-                    <select
-                      {...registerDenunciante('tipoDocumento')}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-sans text-sm"
-                      style={{ fontFamily: 'Inter, sans-serif' }}
-                    >
-                      <option value="">Seleccione...</option>
-                      <option value="Cédula de Identidad Paraguaya">Cédula de Identidad Paraguaya</option>
-                      <option value="Documento de origen">Documento de origen</option>
-                      <option value="Pasaporte">Pasaporte</option>
-                    </select>
+                    <Controller
+                      name="tipoDocumento"
+                      control={controlDenunciante}
+                      render={({ field }) => {
+                        const options = [
+                          { value: 'Cédula de Identidad Paraguaya', label: 'Cédula de Identidad Paraguaya' },
+                          { value: 'Documento de origen', label: 'Documento de origen' },
+                          { value: 'Pasaporte', label: 'Pasaporte' }
+                        ]
+                        return (
+                          <Select
+                            options={options}
+                            value={options.find(opt => opt.value === field.value) || null}
+                            onChange={(option) => field.onChange(option?.value || '')}
+                            placeholder="Seleccione..."
+                            isSearchable={false}
+                            className="text-sm"
+                            styles={reactSelectCustomStyles}
+                          />
+                        )
+                      }}
+                    />
                     {errorsDenunciante.tipoDocumento && (
                       <p className="text-red-600 text-sm mt-1">{errorsDenunciante.tipoDocumento.message as string}</p>
                     )}
@@ -3169,18 +3307,21 @@ export default function NuevaDenunciaPage() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Estado Civil *
                     </label>
-                    <select
-                      {...registerDenunciante('estadoCivil')}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-sans text-sm"
-                      style={{ fontFamily: 'Inter, sans-serif' }}
-                    >
-                      <option value="">Seleccione...</option>
-                      {estadosCiviles.map((ec) => (
-                        <option key={ec} value={ec}>
-                          {ec}
-                        </option>
-                      ))}
-                    </select>
+                    <Controller
+                      name="estadoCivil"
+                      control={controlDenunciante}
+                      render={({ field }) => (
+                        <Select
+                          options={estadosCiviles.map((ec) => ({ value: ec, label: ec }))}
+                          value={estadosCiviles.find((ec) => ec === field.value) ? { value: field.value, label: field.value } : null}
+                          onChange={(option) => field.onChange(option?.value || '')}
+                          placeholder="Seleccione..."
+                          isSearchable={false}
+                          className="text-sm"
+                          styles={reactSelectCustomStyles}
+                        />
+                      )}
+                    />
                     {errorsDenunciante.estadoCivil && (
                       <p className="text-red-600 text-sm mt-1">{errorsDenunciante.estadoCivil.message as string}</p>
                     )}
@@ -3697,22 +3838,39 @@ export default function NuevaDenunciaPage() {
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
                       Tipo de Objeto/Documento *
                     </label>
-                    <select
-                      value={nuevoObjetoTipo}
-                      onChange={(e) => {
-                        setNuevoObjetoTipo(e.target.value)
+                    <Select
+                      options={[
+                        { value: 'cedula', label: 'Cédula de Identidad Paraguaya' },
+                        { value: 'documento_origen', label: 'Documento de Identidad de origen' },
+                        { value: 'pasaporte', label: 'Pasaporte' },
+                        { value: 'cheque', label: 'Cheque bancario' },
+                        { value: 'tarjeta_debito', label: 'Tarjeta de Débito' },
+                        { value: 'tarjeta_credito', label: 'Tarjeta de Crédito' },
+                        { value: 'celular', label: 'Celular / Teléfono Móvil' },
+                        { value: 'contrato', label: 'Contrato / Documento Privado' },
+                        { value: 'otro_objeto', label: 'Otros Objetos / Documentos' }
+                      ]}
+                      value={[
+                        { value: 'cedula', label: 'Cédula de Identidad Paraguaya' },
+                        { value: 'documento_origen', label: 'Documento de Identidad de origen' },
+                        { value: 'pasaporte', label: 'Pasaporte' },
+                        { value: 'cheque', label: 'Cheque bancario' },
+                        { value: 'tarjeta_debito', label: 'Tarjeta de Débito' },
+                        { value: 'tarjeta_credito', label: 'Tarjeta de Crédito' },
+                        { value: 'celular', label: 'Celular / Teléfono Móvil' },
+                        { value: 'contrato', label: 'Contrato / Documento Privado' },
+                        { value: 'otro_objeto', label: 'Otros Objetos / Documentos' }
+                      ].find(opt => opt.value === nuevoObjetoTipo) || null}
+                      onChange={(option) => {
+                        const val = option?.value || ''
+                        setNuevoObjetoTipo(val)
                         setNuevoObjetoCampos({ estado: 'En Blanco', moneda: 'PYG', firmado: 'Sí' })
                       }}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm uppercase bg-white"
-                    >
-                      <option value="">-- Seleccionar Tipo --</option>
-                      <option value="cedula">Cédula de Identidad Paraguaya</option>
-                      <option value="documento_origen">Documento de Identidad de origen</option>
-                      <option value="pasaporte">Pasaporte</option>
-                      <option value="cheque">Cheque bancario</option>
-                      <option value="tarjeta_debito">Tarjeta de Débito</option>
-                      <option value="tarjeta_credito">Tarjeta de Crédito</option>
-                    </select>
+                      placeholder="-- Seleccionar Tipo --"
+                      isSearchable={false}
+                      className="text-sm"
+                      styles={reactSelectCustomStyles}
+                    />
                   </div>
 
                   {/* Campos dinámicos según el tipo de objeto */}
@@ -3796,16 +3954,15 @@ export default function NuevaDenunciaPage() {
                           <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
                             Banco Emisor *
                           </label>
-                          <select
-                            value={nuevoObjetoCampos.banco || ''}
-                            onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, banco: e.target.value })}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm bg-white uppercase"
-                          >
-                            <option value="">-- Seleccionar Banco --</option>
-                            {bancos.filter(b => b !== 'NO APLICA').map(b => (
-                              <option key={b} value={b}>{b}</option>
-                            ))}
-                          </select>
+                          <Select
+                            options={bancos.filter(b => b !== 'NO APLICA').map(b => ({ value: b, label: b }))}
+                            value={bancos.filter(b => b !== 'NO APLICA').map(b => ({ value: b, label: b })).find(opt => opt.value === nuevoObjetoCampos.banco) || null}
+                            onChange={(option) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, banco: option?.value || '' })}
+                            placeholder="-- Seleccionar Banco --"
+                            isSearchable
+                            className="text-sm"
+                            styles={reactSelectCustomStyles}
+                          />
                         </div>
                         {nuevoObjetoCampos.banco === 'OTRO' && (
                           <div>
@@ -3852,14 +4009,20 @@ export default function NuevaDenunciaPage() {
                           <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
                             Estado del Cheque *
                           </label>
-                          <select
-                            value={nuevoObjetoCampos.estado || 'En Blanco'}
-                            onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, estado: e.target.value })}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm bg-white uppercase"
-                          >
-                            <option value="En Blanco">En Blanco</option>
-                            <option value="Completado">Completado</option>
-                          </select>
+                          <Select
+                            options={[
+                              { value: 'En Blanco', label: 'En Blanco' },
+                              { value: 'Completado', label: 'Completado' }
+                            ]}
+                            value={[
+                              { value: 'En Blanco', label: 'En Blanco' },
+                              { value: 'Completado', label: 'Completado' }
+                            ].find(opt => opt.value === (nuevoObjetoCampos.estado || 'En Blanco')) || null}
+                            onChange={(option) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, estado: option?.value || 'En Blanco' })}
+                            isSearchable={false}
+                            className="text-sm"
+                            styles={reactSelectCustomStyles}
+                          />
                         </div>
                       </div>
 
@@ -3885,17 +4048,26 @@ export default function NuevaDenunciaPage() {
                             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
                               Moneda *
                             </label>
-                            <select
-                              value={nuevoObjetoCampos.moneda || 'PYG'}
-                              onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, moneda: e.target.value })}
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm bg-white"
-                            >
-                              <option value="PYG">Guaraníes (PYG)</option>
-                              <option value="USD">Dólares (USD)</option>
-                              <option value="EUR">Euros (EUR)</option>
-                              <option value="BRL">Reales (BRL)</option>
-                              <option value="ARS">Pesos Argentinos (ARS)</option>
-                            </select>
+                            <Select
+                              options={[
+                                { value: 'PYG', label: 'Guaraníes (PYG)' },
+                                { value: 'USD', label: 'Dólares (USD)' },
+                                { value: 'EUR', label: 'Euros (EUR)' },
+                                { value: 'BRL', label: 'Reales (BRL)' },
+                                { value: 'ARS', label: 'Pesos Argentinos (ARS)' }
+                              ]}
+                              value={[
+                                { value: 'PYG', label: 'Guaraníes (PYG)' },
+                                { value: 'USD', label: 'Dólares (USD)' },
+                                { value: 'EUR', label: 'Euros (EUR)' },
+                                { value: 'BRL', label: 'Reales (BRL)' },
+                                { value: 'ARS', label: 'Pesos Argentinos (ARS)' }
+                              ].find(opt => opt.value === (nuevoObjetoCampos.moneda || 'PYG')) || null}
+                              onChange={(option) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, moneda: option?.value || 'PYG' })}
+                              isSearchable={false}
+                              className="text-sm"
+                              styles={reactSelectCustomStyles}
+                            />
                           </div>
                           <div>
                             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
@@ -3925,14 +4097,20 @@ export default function NuevaDenunciaPage() {
                               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
                                 ¿Está firmado?
                               </label>
-                              <select
-                                value={nuevoObjetoCampos.firmado || 'Sí'}
-                                onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, firmado: e.target.value })}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm bg-white"
-                              >
-                                <option value="Sí">Sí</option>
-                                <option value="No">No</option>
-                              </select>
+                              <Select
+                                options={[
+                                  { value: 'Sí', label: 'Sí' },
+                                  { value: 'No', label: 'No' }
+                                ]}
+                                value={[
+                                  { value: 'Sí', label: 'Sí' },
+                                  { value: 'No', label: 'No' }
+                                ].find(opt => opt.value === (nuevoObjetoCampos.firmado || 'Sí')) || null}
+                                onChange={(option) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, firmado: option?.value || 'Sí' })}
+                                isSearchable={false}
+                                className="text-sm"
+                                styles={reactSelectCustomStyles}
+                              />
                             </div>
                           </div>
                         </div>
@@ -3946,16 +4124,15 @@ export default function NuevaDenunciaPage() {
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
                           Entidad Emisora (Banco) *
                         </label>
-                        <select
-                          value={nuevoObjetoCampos.banco || ''}
-                          onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, banco: e.target.value })}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm bg-white uppercase"
-                        >
-                          <option value="">-- Seleccionar Banco --</option>
-                          {bancos.filter(b => b !== 'NO APLICA').map(b => (
-                            <option key={b} value={b}>{b}</option>
-                          ))}
-                        </select>
+                        <Select
+                          options={bancos.filter(b => b !== 'NO APLICA').map(b => ({ value: b, label: b }))}
+                          value={bancos.filter(b => b !== 'NO APLICA').map(b => ({ value: b, label: b })).find(opt => opt.value === nuevoObjetoCampos.banco) || null}
+                          onChange={(option) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, banco: option?.value || '' })}
+                          placeholder="-- Seleccionar Banco --"
+                          isSearchable
+                          className="text-sm"
+                          styles={reactSelectCustomStyles}
+                        />
                         {nuevoObjetoCampos.banco === 'OTRO' && (
                           <input
                             type="text"
@@ -3970,19 +4147,29 @@ export default function NuevaDenunciaPage() {
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
                           Marca / Franquicia *
                         </label>
-                        <select
-                          value={nuevoObjetoCampos.marca || ''}
-                          onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, marca: e.target.value })}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm bg-white uppercase"
-                        >
-                          <option value="">-- Seleccionar Marca --</option>
-                          <option value="Visa">Visa</option>
-                          <option value="Mastercard">Mastercard</option>
-                          <option value="American Express">American Express</option>
-                          <option value="Cabal">Cabal</option>
-                          <option value="Maestro">Maestro</option>
-                          <option value="Otros">Otros</option>
-                        </select>
+                        <Select
+                          options={[
+                            { value: 'Visa', label: 'Visa' },
+                            { value: 'Mastercard', label: 'Mastercard' },
+                            { value: 'American Express', label: 'American Express' },
+                            { value: 'Cabal', label: 'Cabal' },
+                            { value: 'Maestro', label: 'Maestro' },
+                            { value: 'Otros', label: 'Otros' }
+                          ]}
+                          value={[
+                            { value: 'Visa', label: 'Visa' },
+                            { value: 'Mastercard', label: 'Mastercard' },
+                            { value: 'American Express', label: 'American Express' },
+                            { value: 'Cabal', label: 'Cabal' },
+                            { value: 'Maestro', label: 'Maestro' },
+                            { value: 'Otros', label: 'Otros' }
+                          ].find(opt => opt.value === nuevoObjetoCampos.marca) || null}
+                          onChange={(option) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, marca: option?.value || '' })}
+                          placeholder="-- Seleccionar Marca --"
+                          isSearchable={false}
+                          className="text-sm"
+                          styles={reactSelectCustomStyles}
+                        />
                       </div>
                       <div>
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
@@ -3997,6 +4184,102 @@ export default function NuevaDenunciaPage() {
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm"
                         />
                       </div>
+                    </div>
+                  )}
+
+                  {nuevoObjetoTipo === 'celular' && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                          Marca / Modelo *
+                        </label>
+                        <input
+                          type="text"
+                          value={nuevoObjetoCampos.marca || ''}
+                          onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, marca: e.target.value.toUpperCase() })}
+                          placeholder="Ej: SAMSUNG GALAXY S23"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm uppercase"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                          N° de línea / Teléfono *
+                        </label>
+                        <input
+                          type="text"
+                          value={nuevoObjetoCampos.numero || ''}
+                          onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, numero: e.target.value.replace(/\D/g, '') })}
+                          placeholder="Ej: 0981234567"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                          Código IMEI (Opcional)
+                        </label>
+                        <input
+                          type="text"
+                          value={nuevoObjetoCampos.imei || ''}
+                          onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, imei: e.target.value.replace(/\D/g, '') })}
+                          placeholder="Ej: 351234567890123"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {nuevoObjetoTipo === 'contrato' && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                          Descripción/Nombre del Documento *
+                        </label>
+                        <input
+                          type="text"
+                          value={nuevoObjetoCampos.descripcion || ''}
+                          onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, descripcion: e.target.value.toUpperCase() })}
+                          placeholder="Ej: CONTRATO PRIVADO DE ALQUILER"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm uppercase"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                          Partes Firmantes *
+                        </label>
+                        <input
+                          type="text"
+                          value={nuevoObjetoCampos.partes || ''}
+                          onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, partes: e.target.value.toUpperCase() })}
+                          placeholder="Ej: JUAN PÉREZ Y MARÍA GÓMEZ"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm uppercase"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                          Fecha del Documento (Opcional)
+                        </label>
+                        <input
+                          type="date"
+                          value={nuevoObjetoCampos.fechaDocumento || ''}
+                          onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, fechaDocumento: e.target.value })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {nuevoObjetoTipo === 'otro_objeto' && (
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                        Descripción Detallada *
+                      </label>
+                      <textarea
+                        value={nuevoObjetoCampos.descripcion || ''}
+                        onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, descripcion: e.target.value.toUpperCase() })}
+                        placeholder="Ej: UNA HOJA DE CONTRATO ORIGINAL, UNA MOCHILA COLOR NEGRO..."
+                        rows={3}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm uppercase"
+                      />
                     </div>
                   )}
 
@@ -4038,13 +4321,22 @@ export default function NuevaDenunciaPage() {
                               {obj.tipo === 'documento_origen' && `Doc N° ${obj.numero} (Origen: ${obj.nacionalidad})`}
                               {obj.tipo === 'pasaporte' && `Pasaporte N° ${obj.numero} (Nac.: ${obj.nacionalidad})`}
                               {obj.tipo === 'tarjeta_debito' && (
-                                `Tarjeta Débito ${obj.marca.toUpperCase()} | Banco: ${obj.banco === 'OTRO' ? obj.otroBanco : obj.banco} | Term.: **** **** **** ${obj.ultimos4}`
+                                `Tarjeta Débito ${obj.marca.toUpperCase()} | Entidad: ${obj.banco === 'OTRO' ? obj.otroBanco : obj.banco} | Term.: **** **** **** ${obj.ultimos4}`
                               )}
                               {obj.tipo === 'tarjeta_credito' && (
-                                `Tarjeta Crédito ${obj.marca.toUpperCase()} | Banco: ${obj.banco === 'OTRO' ? obj.otroBanco : obj.banco} | Term.: **** **** **** ${obj.ultimos4}`
+                                `Tarjeta Crédito ${obj.marca.toUpperCase()} | Entidad: ${obj.banco === 'OTRO' ? obj.otroBanco : obj.banco} | Term.: **** **** **** ${obj.ultimos4}`
                               )}
                               {obj.tipo === 'cheque' && (
-                                `Cheque N° ${obj.numero} | Banco: ${obj.banco === 'OTRO' ? obj.otroBanco : obj.banco} | Cta: ${obj.cuenta} (${obj.estado === 'En Blanco' ? 'EN BLANCO' : `COMPLETADO - ${obj.monto} ${obj.moneda} a la orden de ${obj.beneficiario} - Firmado: ${obj.firmado}`})`
+                                `Cheque N° ${obj.numero} | Entidad: ${obj.banco === 'OTRO' ? obj.otroBanco : obj.banco} | Cta: ${obj.cuenta} (${obj.estado === 'En Blanco' ? 'EN BLANCO' : `COMPLETADO - ${obj.monto} ${obj.moneda} a la orden de ${obj.beneficiario} - Firmado: ${obj.firmado}`})`
+                              )}
+                              {obj.tipo === 'celular' && (
+                                `Celular ${obj.marca} | Línea: ${obj.numero}${obj.imei ? ` | IMEI: ${obj.imei}` : ''}`
+                              )}
+                              {obj.tipo === 'contrato' && (
+                                `Contrato: ${obj.descripcion} | Partes: ${obj.partes}${obj.fechaDocumento ? ` | Fecha Doc.: ${formatearFechaDDMMAAAA(obj.fechaDocumento)}` : ''}`
+                              )}
+                              {obj.tipo === 'otro_objeto' && (
+                                `Objeto: ${obj.descripcion}`
                               )}
                             </div>
                           </div>
@@ -4502,18 +4794,21 @@ export default function NuevaDenunciaPage() {
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Estado Civil
                       </label>
-                      <select
-                        {...registerAutor('estadoCivil')}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        style={{ fontFamily: 'Inter, sans-serif' }}
-                      >
-                        <option value="">Seleccione...</option>
-                        {estadosCiviles.map((ec) => (
-                          <option key={ec} value={ec}>
-                            {ec}
-                          </option>
-                        ))}
-                      </select>
+                      <Controller
+                        name="estadoCivil"
+                        control={controlAutor}
+                        render={({ field }) => (
+                          <Select
+                            options={estadosCiviles.map((ec) => ({ value: ec, label: ec }))}
+                            value={estadosCiviles.find((ec) => ec === field.value) ? { value: field.value, label: field.value } : null}
+                            onChange={(option) => field.onChange(option?.value || '')}
+                            placeholder="Seleccione..."
+                            isSearchable={false}
+                            className="text-sm"
+                            styles={reactSelectCustomStyles}
+                          />
+                        )}
+                      />
                     </div>
                   </div>
 
@@ -4605,42 +4900,39 @@ export default function NuevaDenunciaPage() {
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Altura</label>
-                          <select
-                            value={descripcionFisica.altura || ''}
-                            onChange={(e) => setDescripcionFisica({ ...descripcionFisica, altura: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                          >
-                            <option value="">Seleccione...</option>
-                            {opcionesAltura.map((opcion) => (
-                              <option key={opcion} value={opcion}>{opcion}</option>
-                            ))}
-                          </select>
+                          <Select
+                            options={opcionesAltura.map((opcion) => ({ value: opcion, label: opcion }))}
+                            value={opcionesAltura.map((opcion) => ({ value: opcion, label: opcion })).find(opt => opt.value === descripcionFisica.altura) || null}
+                            onChange={(option) => setDescripcionFisica({ ...descripcionFisica, altura: option?.value || '' })}
+                            placeholder="Seleccione..."
+                            isSearchable={false}
+                            className="text-sm"
+                            styles={reactSelectCustomStyles}
+                          />
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Complexión</label>
-                          <select
-                            value={descripcionFisica.complexion || ''}
-                            onChange={(e) => setDescripcionFisica({ ...descripcionFisica, complexion: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                          >
-                            <option value="">Seleccione...</option>
-                            {opcionesComplexion.map((opcion) => (
-                              <option key={opcion} value={opcion}>{opcion}</option>
-                            ))}
-                          </select>
+                          <Select
+                            options={opcionesComplexion.map((opcion) => ({ value: opcion, label: opcion }))}
+                            value={opcionesComplexion.map((opcion) => ({ value: opcion, label: opcion })).find(opt => opt.value === descripcionFisica.complexion) || null}
+                            onChange={(option) => setDescripcionFisica({ ...descripcionFisica, complexion: option?.value || '' })}
+                            placeholder="Seleccione..."
+                            isSearchable={false}
+                            className="text-sm"
+                            styles={reactSelectCustomStyles}
+                          />
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Postura</label>
-                          <select
-                            value={descripcionFisica.postura || ''}
-                            onChange={(e) => setDescripcionFisica({ ...descripcionFisica, postura: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                          >
-                            <option value="">Seleccione...</option>
-                            {opcionesPostura.map((opcion) => (
-                              <option key={opcion} value={opcion}>{opcion}</option>
-                            ))}
-                          </select>
+                          <Select
+                            options={opcionesPostura.map((opcion) => ({ value: opcion, label: opcion }))}
+                            value={opcionesPostura.map((opcion) => ({ value: opcion, label: opcion })).find(opt => opt.value === descripcionFisica.postura) || null}
+                            onChange={(option) => setDescripcionFisica({ ...descripcionFisica, postura: option?.value || '' })}
+                            placeholder="Seleccione..."
+                            isSearchable={false}
+                            className="text-sm"
+                            styles={reactSelectCustomStyles}
+                          />
                         </div>
                       </div>
                     </div>
@@ -4648,16 +4940,15 @@ export default function NuevaDenunciaPage() {
                     {/* 2. Forma del rostro */}
                     <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
                       <h4 className="font-semibold text-gray-800 mb-3">2. Forma del rostro</h4>
-                      <select
-                        value={descripcionFisica.formaRostro || ''}
-                        onChange={(e) => setDescripcionFisica({ ...descripcionFisica, formaRostro: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                      >
-                        <option value="">Seleccione...</option>
-                        {opcionesFormaRostro.map((opcion) => (
-                          <option key={opcion} value={opcion}>{opcion}</option>
-                        ))}
-                      </select>
+                      <Select
+                        options={opcionesFormaRostro.map((opcion) => ({ value: opcion, label: opcion }))}
+                        value={opcionesFormaRostro.map((opcion) => ({ value: opcion, label: opcion })).find(opt => opt.value === descripcionFisica.formaRostro) || null}
+                        onChange={(option) => setDescripcionFisica({ ...descripcionFisica, formaRostro: option?.value || '' })}
+                        placeholder="Seleccione..."
+                        isSearchable={false}
+                        className="text-sm"
+                        styles={reactSelectCustomStyles}
+                      />
                     </div>
 
                     {/* 3. Piel */}
@@ -4666,29 +4957,27 @@ export default function NuevaDenunciaPage() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Tono</label>
-                          <select
-                            value={descripcionFisica.tonoPiel || ''}
-                            onChange={(e) => setDescripcionFisica({ ...descripcionFisica, tonoPiel: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                          >
-                            <option value="">Seleccione...</option>
-                            {opcionesTonoPiel.map((opcion) => (
-                              <option key={opcion} value={opcion}>{opcion}</option>
-                            ))}
-                          </select>
+                          <Select
+                            options={opcionesTonoPiel.map((opcion) => ({ value: opcion, label: opcion }))}
+                            value={opcionesTonoPiel.map((opcion) => ({ value: opcion, label: opcion })).find(opt => opt.value === descripcionFisica.tonoPiel) || null}
+                            onChange={(option) => setDescripcionFisica({ ...descripcionFisica, tonoPiel: option?.value || '' })}
+                            placeholder="Seleccione..."
+                            isSearchable={false}
+                            className="text-sm"
+                            styles={reactSelectCustomStyles}
+                          />
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Textura</label>
-                          <select
-                            value={descripcionFisica.texturaPiel || ''}
-                            onChange={(e) => setDescripcionFisica({ ...descripcionFisica, texturaPiel: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                          >
-                            <option value="">Seleccione...</option>
-                            {opcionesTexturaPiel.map((opcion) => (
-                              <option key={opcion} value={opcion}>{opcion}</option>
-                            ))}
-                          </select>
+                          <Select
+                            options={opcionesTexturaPiel.map((opcion) => ({ value: opcion, label: opcion }))}
+                            value={opcionesTexturaPiel.map((opcion) => ({ value: opcion, label: opcion })).find(opt => opt.value === descripcionFisica.texturaPiel) || null}
+                            onChange={(option) => setDescripcionFisica({ ...descripcionFisica, texturaPiel: option?.value || '' })}
+                            placeholder="Seleccione..."
+                            isSearchable={false}
+                            className="text-sm"
+                            styles={reactSelectCustomStyles}
+                          />
                         </div>
                       </div>
                     </div>
@@ -4699,16 +4988,15 @@ export default function NuevaDenunciaPage() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Color</label>
-                          <select
-                            value={descripcionFisica.colorCabello || ''}
-                            onChange={(e) => setDescripcionFisica({ ...descripcionFisica, colorCabello: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                          >
-                            <option value="">Seleccione...</option>
-                            {opcionesColorCabello.map((opcion) => (
-                              <option key={opcion} value={opcion}>{opcion}</option>
-                            ))}
-                          </select>
+                          <Select
+                            options={opcionesColorCabello.map((opcion) => ({ value: opcion, label: opcion }))}
+                            value={opcionesColorCabello.map((opcion) => ({ value: opcion, label: opcion })).find(opt => opt.value === descripcionFisica.colorCabello) || null}
+                            onChange={(option) => setDescripcionFisica({ ...descripcionFisica, colorCabello: option?.value || '' })}
+                            placeholder="Seleccione..."
+                            isSearchable={false}
+                            className="text-sm"
+                            styles={reactSelectCustomStyles}
+                          />
                           {descripcionFisica.colorCabello === 'Teñido' && (
                             <input
                               type="text"
@@ -4721,42 +5009,39 @@ export default function NuevaDenunciaPage() {
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Longitud</label>
-                          <select
-                            value={descripcionFisica.longitudCabello || ''}
-                            onChange={(e) => setDescripcionFisica({ ...descripcionFisica, longitudCabello: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                          >
-                            <option value="">Seleccione...</option>
-                            {opcionesLongitudCabello.map((opcion) => (
-                              <option key={opcion} value={opcion}>{opcion}</option>
-                            ))}
-                          </select>
+                          <Select
+                            options={opcionesLongitudCabello.map((opcion) => ({ value: opcion, label: opcion }))}
+                            value={opcionesLongitudCabello.map((opcion) => ({ value: opcion, label: opcion })).find(opt => opt.value === descripcionFisica.longitudCabello) || null}
+                            onChange={(option) => setDescripcionFisica({ ...descripcionFisica, longitudCabello: option?.value || '' })}
+                            placeholder="Seleccione..."
+                            isSearchable={false}
+                            className="text-sm"
+                            styles={reactSelectCustomStyles}
+                          />
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Textura</label>
-                          <select
-                            value={descripcionFisica.texturaCabello || ''}
-                            onChange={(e) => setDescripcionFisica({ ...descripcionFisica, texturaCabello: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                          >
-                            <option value="">Seleccione...</option>
-                            {opcionesTexturaCabello.map((opcion) => (
-                              <option key={opcion} value={opcion}>{opcion}</option>
-                            ))}
-                          </select>
+                          <Select
+                            options={opcionesTexturaCabello.map((opcion) => ({ value: opcion, label: opcion }))}
+                            value={opcionesTexturaCabello.map((opcion) => ({ value: opcion, label: opcion })).find(opt => opt.value === descripcionFisica.texturaCabello) || null}
+                            onChange={(option) => setDescripcionFisica({ ...descripcionFisica, texturaCabello: option?.value || '' })}
+                            placeholder="Seleccione..."
+                            isSearchable={false}
+                            className="text-sm"
+                            styles={reactSelectCustomStyles}
+                          />
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Peinado</label>
-                          <select
-                            value={descripcionFisica.peinado || ''}
-                            onChange={(e) => setDescripcionFisica({ ...descripcionFisica, peinado: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                          >
-                            <option value="">Seleccione...</option>
-                            {opcionesPeinado.map((opcion) => (
-                              <option key={opcion} value={opcion}>{opcion}</option>
-                            ))}
-                          </select>
+                          <Select
+                            options={opcionesPeinado.map((opcion) => ({ value: opcion, label: opcion }))}
+                            value={opcionesPeinado.map((opcion) => ({ value: opcion, label: opcion })).find(opt => opt.value === descripcionFisica.peinado) || null}
+                            onChange={(option) => setDescripcionFisica({ ...descripcionFisica, peinado: option?.value || '' })}
+                            placeholder="Seleccione..."
+                            isSearchable={false}
+                            className="text-sm"
+                            styles={reactSelectCustomStyles}
+                          />
                         </div>
                       </div>
                     </div>
@@ -4767,29 +5052,27 @@ export default function NuevaDenunciaPage() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Forma</label>
-                          <select
-                            value={descripcionFisica.formaOjos || ''}
-                            onChange={(e) => setDescripcionFisica({ ...descripcionFisica, formaOjos: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                          >
-                            <option value="">Seleccione...</option>
-                            {opcionesFormaOjos.map((opcion) => (
-                              <option key={opcion} value={opcion}>{opcion}</option>
-                            ))}
-                          </select>
+                          <Select
+                            options={opcionesFormaOjos.map((opcion) => ({ value: opcion, label: opcion }))}
+                            value={opcionesFormaOjos.map((opcion) => ({ value: opcion, label: opcion })).find(opt => opt.value === descripcionFisica.formaOjos) || null}
+                            onChange={(option) => setDescripcionFisica({ ...descripcionFisica, formaOjos: option?.value || '' })}
+                            placeholder="Seleccione..."
+                            isSearchable={false}
+                            className="text-sm"
+                            styles={reactSelectCustomStyles}
+                          />
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Color</label>
-                          <select
-                            value={descripcionFisica.colorOjos || ''}
-                            onChange={(e) => setDescripcionFisica({ ...descripcionFisica, colorOjos: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                          >
-                            <option value="">Seleccione...</option>
-                            {opcionesColorOjos.map((opcion) => (
-                              <option key={opcion} value={opcion}>{opcion}</option>
-                            ))}
-                          </select>
+                          <Select
+                            options={opcionesColorOjos.map((opcion) => ({ value: opcion, label: opcion }))}
+                            value={opcionesColorOjos.map((opcion) => ({ value: opcion, label: opcion })).find(opt => opt.value === descripcionFisica.colorOjos) || null}
+                            onChange={(option) => setDescripcionFisica({ ...descripcionFisica, colorOjos: option?.value || '' })}
+                            placeholder="Seleccione..."
+                            isSearchable={false}
+                            className="text-sm"
+                            styles={reactSelectCustomStyles}
+                          />
                         </div>
                       </div>
                       <div className="mt-3">
@@ -5463,21 +5746,37 @@ export default function NuevaDenunciaPage() {
                         <label className="block text-sm font-semibold text-gray-700">
                           Moneda *
                         </label>
-                        <select
-                          {...registerDenuncia('moneda')}
-                          className={cn(
-                            "w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-medium",
-                            errorsDenuncia.moneda ? "border-red-500 bg-red-50" : "border-gray-300"
-                          )}
-                          style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center', backgroundSize: '1.25rem' }}
-                        >
-                          <option value="">Seleccione moneda...</option>
-                          <option value="Guaraníes (PYG)">Guaraníes (PYG)</option>
-                          <option value="Dólares (USD)">Dólares (USD)</option>
-                          <option value="Euros (EUR)">Euros (EUR)</option>
-                          <option value="Pesos Argentinos (ARS)">Pesos Argentinos (ARS)</option>
-                          <option value="Reales (BRL)">Reales (BRL)</option>
-                        </select>
+                        <Controller
+                          name="moneda"
+                          control={controlDenuncia}
+                          render={({ field }) => {
+                            const options = [
+                              { value: 'Guaraníes (PYG)', label: 'Guaraníes (PYG)' },
+                              { value: 'Dólares (USD)', label: 'Dólares (USD)' },
+                              { value: 'Euros (EUR)', label: 'Euros (EUR)' },
+                              { value: 'Pesos Argentinos (ARS)', label: 'Pesos Argentinos (ARS)' },
+                              { value: 'Reales (BRL)', label: 'Reales (BRL)' }
+                            ]
+                            return (
+                              <Select
+                                options={options}
+                                value={options.find(opt => opt.value === field.value) || null}
+                                onChange={(option) => field.onChange(option?.value || '')}
+                                placeholder="Seleccione moneda..."
+                                isSearchable={false}
+                                className="text-sm"
+                                styles={{
+                                  ...reactSelectCustomStyles,
+                                  control: (base, state) => ({
+                                    ...reactSelectCustomStyles.control(base, state),
+                                    borderColor: errorsDenuncia.moneda ? '#ef4444' : state.isFocused ? '#3b82f6' : '#d1d5db',
+                                    backgroundColor: errorsDenuncia.moneda ? '#fef2f2' : 'white',
+                                  })
+                                }}
+                              />
+                            )
+                          }}
+                        />
                         {errorsDenuncia.moneda && (
                           <p className="text-red-600 text-xs mt-1">{errorsDenuncia.moneda.message as string}</p>
                         )}

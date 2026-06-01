@@ -625,22 +625,39 @@ export default function VerDenunciaPage({ params }: { params: Promise<{ id: stri
                                     {obj.tipo === 'cedula' && `Número de Cédula: ${obj.numero}`}
                                     {obj.tipo === 'documento_origen' && `Número: ${obj.numero} (Nacionalidad: ${obj.nacionalidad})`}
                                     {obj.tipo === 'pasaporte' && `Número: ${obj.numero} (Nacionalidad: ${obj.nacionalidad})`}
-                                    {obj.tipo === 'tarjeta_debito' && `Banco: ${obj.banco === 'OTRO' ? obj.otroBanco : obj.banco} | Marca: ${obj.marca} | Term.: **** **** **** ${obj.ultimos4}`}
-                                    {obj.tipo === 'tarjeta_credito' && `Banco: ${obj.banco === 'OTRO' ? obj.otroBanco : obj.banco} | Marca: ${obj.marca} | Term.: **** **** **** ${obj.ultimos4}`}
+                                    {obj.tipo === 'tarjeta_debito' && `Banco/Entidad: ${obj.banco === 'OTRO' ? obj.otroBanco : obj.banco} | Marca: ${obj.marca} | Term.: **** **** **** ${obj.ultimos4}`}
+                                    {obj.tipo === 'tarjeta_credito' && `Banco/Entidad: ${obj.banco === 'OTRO' ? obj.otroBanco : obj.banco} | Marca: ${obj.marca} | Term.: **** **** **** ${obj.ultimos4}`}
                                     {obj.tipo === 'cheque' && (
                                       <>
-                                        Banco: {obj.banco === 'OTRO' ? obj.otroBanco : obj.banco} | Cta. Cte. N°: {obj.cuenta} | Cheque N°: {obj.numero}
+                                        Banco/Entidad: {obj.banco === 'OTRO' ? obj.otroBanco : obj.banco} | Cta. Cte. N°: {obj.cuenta} | Cheque N°: {obj.numero}
                                         <br />
                                         Estado: <span className="font-bold text-blue-900">{obj.estado.toUpperCase()}</span>
                                         {obj.estado === 'Completado' && (
                                           <>
                                             {' '} | Importe: {obj.monto} {obj.moneda}
                                             <br />
-                                            A la orden de: {obj.beneficiario.toUpperCase()} | Fecha Emisión: {obj.fechaEmision || 'No especificada'} | Firmado: {obj.firmado}
+                                            A la orden de: {obj.beneficiario.toUpperCase()} | Fecha Emisión: {(() => {
+                                              const f = obj.fechaEmision;
+                                              if (f && f.includes('-')) {
+                                                const p = f.split('-');
+                                                return `${p[2]}/${p[1]}/${p[0]}`;
+                                              }
+                                              return f || 'No especificada';
+                                            })()} | Firmado: {obj.firmado}
                                           </>
                                         )}
                                       </>
                                     )}
+                                    {obj.tipo === 'celular' && `Marca/Modelo: ${obj.marca} | N° de línea: ${obj.numero}${obj.imei ? ` | IMEI: ${obj.imei}` : ''}`}
+                                    {obj.tipo === 'contrato' && `Contrato: ${obj.descripcion} | Partes: ${obj.partes}${obj.fechaDocumento ? ` | Fecha Doc.: ${(() => {
+                                      const f = obj.fechaDocumento;
+                                      if (f && f.includes('-')) {
+                                        const p = f.split('-');
+                                        return `${p[2]}/${p[1]}/${p[0]}`;
+                                      }
+                                      return f || 'No especificada';
+                                    })()}` : ''}`}
+                                    {obj.tipo === 'otro_objeto' && `Descripción: ${obj.descripcion}`}
                                   </td>
                                 </tr>
                               ))

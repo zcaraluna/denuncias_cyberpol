@@ -1,0 +1,31 @@
+{
+  "totalFiles": 1721,
+  "totalSizeBytes": 1305931481,
+  "totalSizeMB": 1245.43,
+  "folders": {
+    "root": {
+      "count": 9,
+      "size": 5535843
+    },
+    "adjuntos": {
+      "count": 10,
+      "size": 2204380
+    },
+    "denuncias_cyberpol": {
+      "count": 37,
+      "size": 13666493
+    },
+    "dulce-esperanza": {
+      "count": 60,
+      "size": 28376973
+    },
+    "s1mple-dev": {
+      "count": 1464,
+      "size": 856421310
+    },
+    "vdgm": {
+      "count": 141,
+      "size": 399726482
+    }
+  }
+}
