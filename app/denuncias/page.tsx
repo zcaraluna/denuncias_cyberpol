@@ -236,6 +236,30 @@ export default function DenunciasPage() {
     setFiltroFechaHastaTemp(filtroFechaHasta)
   }
 
+  const confirmarEliminacion = async (id: number, numeroOrden: number) => {
+    const seguro = window.confirm(`¿Está seguro de que desea ELIMINAR permanentemente la denuncia #${numeroOrden}? Esta acción no se puede deshacer y borrará todos los registros asociados en el historial y la base de datos.`);
+    if (!seguro) return;
+
+    try {
+      const response = await fetch(`/api/denuncias/eliminar/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al eliminar la denuncia');
+      }
+
+      alert('Denuncia eliminada correctamente.');
+      cargarDenuncias();
+      if (cedulaBusqueda.trim() && mostrarResultadosCedula) {
+        buscarPorCedula();
+      }
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
   if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#f8fafc]">
@@ -475,13 +499,27 @@ export default function DenunciasPage() {
                               </div>
                             </td>
                             <td className="hidden md:table-cell px-4 py-3.5 whitespace-nowrap text-right">
-                              <button
-                                onClick={(e) => { e.stopPropagation(); verDenuncia(denuncia.id); }}
-                                className="inline-flex items-center gap-1.5 px-3 py-1 bg-white border border-slate-200 rounded-lg text-[9px] font-black text-[#002147] uppercase tracking-wider shadow-sm hover:bg-[#002147] hover:text-white transition-all duration-200"
-                              >
-                                <Eye className="w-3 h-3" />
-                                Detalles
-                              </button>
+                              <div className="flex items-center justify-end gap-2">
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); verDenuncia(denuncia.id); }}
+                                  className="inline-flex items-center gap-1.5 px-3 py-1 bg-white border border-slate-200 rounded-lg text-[9px] font-black text-[#002147] uppercase tracking-wider shadow-sm hover:bg-[#002147] hover:text-white transition-all duration-200"
+                                >
+                                  <Eye className="w-3 h-3" />
+                                  Detalles
+                                </button>
+                                {usuario.usuario === 'garv' && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      confirmarEliminacion(denuncia.id, denuncia.numero_orden);
+                                    }}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-50 border border-red-200 rounded-lg text-[9px] font-black text-red-600 uppercase tracking-wider shadow-sm hover:bg-red-600 hover:text-white transition-all duration-200"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                    Eliminar
+                                  </button>
+                                )}
+                              </div>
                             </td>
                           </tr>
                         ))
@@ -650,12 +688,26 @@ export default function DenunciasPage() {
                               </div>
                             </td>
                             <td className="hidden md:table-cell px-4 py-3 whitespace-nowrap text-right">
-                              <button
-                                onClick={(e) => { e.stopPropagation(); verDenuncia(denuncia.id); }}
-                                className="px-3 py-1 bg-white border border-slate-200 rounded-lg text-[9px] font-black text-[#002147] uppercase tracking-wider hover:bg-[#002147] hover:text-white transition-all shadow-sm"
-                              >
-                                Ver
-                              </button>
+                              <div className="flex items-center justify-end gap-2">
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); verDenuncia(denuncia.id); }}
+                                  className="px-3 py-1 bg-white border border-slate-200 rounded-lg text-[9px] font-black text-[#002147] uppercase tracking-wider hover:bg-[#002147] hover:text-white transition-all shadow-sm"
+                                >
+                                  Ver
+                                </button>
+                                {usuario.usuario === 'garv' && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      confirmarEliminacion(denuncia.id, denuncia.numero_orden);
+                                    }}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-50 border border-red-200 rounded-lg text-[9px] font-black text-red-600 uppercase tracking-wider shadow-sm hover:bg-red-600 hover:text-white transition-all duration-200"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                    Eliminar
+                                  </button>
+                                )}
+                              </div>
                             </td>
                           </tr>
                         ))}

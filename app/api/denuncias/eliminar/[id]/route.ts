@@ -12,9 +12,9 @@ export async function DELETE(
 
     const id = parseInt((await params).id)
 
-    // 1. Obtener información de la denuncia para validar
+    // 1. Obtener información de la denuncia para validar (incluyendo el hash)
     const denunciaResult = await client.query(
-      `SELECT id, estado, denunciante_id FROM denuncias WHERE id = $1`,
+      `SELECT id, estado, hash, denunciante_id FROM denuncias WHERE id = $1`,
       [id]
     )
 
@@ -28,12 +28,33 @@ export async function DELETE(
 
     const denuncia = denunciaResult.rows[0]
 
-    // Solo permitir eliminar borradores
+    // Obtener el usuario autenticado desde la cookie de sesión
+    const usuarioCookie = request.cookies.get('usuario_sesion')?.value
+    let usuarioLogueado = null
+    if (usuarioCookie) {
+      try {
+        usuarioLogueado = JSON.parse(decodeURIComponent(usuarioCookie))
+      } catch (e) {
+        console.error('Error al decodificar cookie de sesion:', e)
+      }
+    }
+
+    // Solo permitir eliminar borradores, a menos que el usuario sea "garv"
     if (denuncia.estado !== 'borrador') {
-      await client.query('ROLLBACK')
-      return NextResponse.json(
-        { error: 'Solo se pueden eliminar borradores' },
-        { status: 400 }
+      if (!usuarioLogueado || usuarioLogueado.usuario !== 'garv') {
+        await client.query('ROLLBACK')
+        return NextResponse.json(
+          { error: 'Acceso denegado. Solo el administrador "garv" puede eliminar denuncias completadas.' },
+          { status: 403 }
+        )
+      }
+    }
+
+    // Si el usuario es "garv", eliminamos también el historial de la denuncia (ya que no tiene FK de cascada)
+    if (usuarioLogueado && usuarioLogueado.usuario === 'garv' && denuncia.hash) {
+      await client.query(
+        'DELETE FROM historial_denuncias WHERE hash_denuncia = $1',
+        [denuncia.hash]
       )
     }
 
