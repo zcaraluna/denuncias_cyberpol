@@ -212,7 +212,19 @@ const denunciaSchema = z.object({
   entidadBancariaVulnerada: z.string().min(1, 'Seleccione una entidad o "NO APLICA"'),
   esDenunciaEscrita: z.boolean().optional(),
   archivoDenunciaUrl: z.string().optional(),
+  gradoEjecucion: z.string().optional(),
 }).superRefine((data, ctx) => {
+  // Validar gradoEjecucion si no es extravio
+  if (data.tipoDenuncia !== 'EXTRAVÍO DE OBJETOS Y/O DOCUMENTOS' && data.tipoDenuncia !== '') {
+    if (!data.gradoEjecucion || (data.gradoEjecucion !== 'consumado' && data.gradoEjecucion !== 'tentativa')) {
+      ctx.addIssue({
+        path: ['gradoEjecucion'],
+        code: z.ZodIssueCode.custom,
+        message: 'Debe seleccionar el grado de ejecución (Consumado o Tentativa)',
+      })
+    }
+  }
+
   // Validar relato si NO es denuncia escrita
   if (!data.esDenunciaEscrita) {
     if (!data.relato || data.relato.length < 10) {
@@ -1370,6 +1382,7 @@ export default function NuevaDenunciaPage() {
       moneda: '',
       bancosRelacionados: [],
       entidadBancariaVulnerada: '',
+      gradoEjecucion: '',
     }
   })
 
@@ -1976,6 +1989,11 @@ export default function NuevaDenunciaPage() {
         }
         setValueDenuncia('tipoDenuncia', data.tipo_denuncia === 'OTRO' ? 'Otro (Especificar)' : data.tipo_denuncia)
         if (data.otro_tipo) setValueDenuncia('otroTipo', data.otro_tipo)
+        if (data.grado_ejecucion) {
+          setValueDenuncia('gradoEjecucion', data.grado_ejecucion)
+        } else {
+          setValueDenuncia('gradoEjecucion', '')
+        }
         // Cargar lugar del hecho (descomponer)
         const lugarHechoParsed = descomponerDomicilio(data.lugar_hecho)
         const departamentoLugarValido =
@@ -2271,6 +2289,7 @@ export default function NuevaDenunciaPage() {
           archivoDenunciaUrl: denunciaData.archivoDenunciaUrl || null,
           adjuntosUrls: adjuntosUrls || [],
           lugarHechoNoAplica: denunciaData.lugarHechoNoAplica || false,
+          gradoEjecucion: denunciaData.gradoEjecucion || null,
         },
         autor: {
           conocido: autorConocido,
@@ -2413,6 +2432,7 @@ export default function NuevaDenunciaPage() {
               archivoDenunciaUrl: denunciaData.archivoDenunciaUrl || null,
               adjuntosUrls: adjuntosUrls || [],
               lugarHechoNoAplica: denunciaData.lugarHechoNoAplica || false,
+              gradoEjecucion: denunciaData.gradoEjecucion || null,
             },
             autor: {
               conocido: autorConocido,
@@ -2563,6 +2583,7 @@ export default function NuevaDenunciaPage() {
           archivoDenunciaUrl: denunciaData.archivoDenunciaUrl || null,
           adjuntosUrls: adjuntosUrls || [],
           lugarHechoNoAplica: denunciaData.lugarHechoNoAplica || false,
+          gradoEjecucion: denunciaData.gradoEjecucion || null,
         },
         autor: {
           conocido: autorConocido,
@@ -2828,6 +2849,7 @@ export default function NuevaDenunciaPage() {
           archivoDenunciaUrl: denunciaData.archivoDenunciaUrl || null,
           adjuntosUrls: adjuntosUrls || [],
           lugarHechoNoAplica: denunciaData.lugarHechoNoAplica || false,
+          gradoEjecucion: denunciaData.gradoEjecucion || null,
         },
         autor: {
           conocido: autorConocido,
@@ -5311,7 +5333,7 @@ export default function NuevaDenunciaPage() {
                 )}
 
                 {tipoFormulario !== 'extravio' && (
-                  <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Tipo de Denuncia *
@@ -5388,8 +5410,37 @@ export default function NuevaDenunciaPage() {
                       )}
                     </div>
 
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Grado de Ejecución *
+                      </label>
+                      <div className="flex gap-6 items-center min-h-[42px] border border-gray-300 rounded-lg px-4 bg-white">
+                        <label className="flex items-center gap-2 text-sm text-gray-700 font-medium cursor-pointer">
+                          <input
+                            type="radio"
+                            value="consumado"
+                            {...registerDenuncia('gradoEjecucion')}
+                            className="w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                          />
+                          Consumado
+                        </label>
+                        <label className="flex items-center gap-2 text-sm text-gray-700 font-medium cursor-pointer">
+                          <input
+                            type="radio"
+                            value="tentativa"
+                            {...registerDenuncia('gradoEjecucion')}
+                            className="w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                          />
+                          Tentativa
+                        </label>
+                      </div>
+                      {errorsDenuncia.gradoEjecucion && (
+                        <p className="text-red-600 text-sm mt-1">{errorsDenuncia.gradoEjecucion.message as string}</p>
+                      )}
+                    </div>
+
                     {tipoDenuncia === 'Otro (Especificar)' && (
-                      <div>
+                      <div className="md:col-span-2">
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Especifique aquí *
                         </label>
@@ -5406,7 +5457,7 @@ export default function NuevaDenunciaPage() {
                         )}
                       </div>
                     )}
-                  </>
+                  </div>
                 )}
 
                 <div className="space-y-4">

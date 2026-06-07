@@ -63,9 +63,11 @@ CREATE TABLE IF NOT EXISTS denuncias (
     lugar_hecho_no_aplica BOOLEAN DEFAULT FALSE,
     es_denuncia_escrita BOOLEAN DEFAULT FALSE,
     archivo_denuncia_url TEXT,
+    grado_ejecucion VARCHAR(30),
     estado VARCHAR(20) DEFAULT 'completada',
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT check_estado CHECK (estado IN ('borrador', 'completada')),
+    CONSTRAINT check_grado_ejecucion CHECK (grado_ejecucion IN ('consumado', 'tentativa')),
     CONSTRAINT check_completada CHECK (
         (estado = 'completada' AND fecha_denuncia IS NOT NULL AND hora_denuncia IS NOT NULL AND 
          fecha_hecho IS NOT NULL AND hora_hecho IS NOT NULL AND tipo_denuncia IS NOT NULL AND 

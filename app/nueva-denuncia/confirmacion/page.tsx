@@ -119,7 +119,7 @@ function ConfirmacionPage() {
           fecha: fechaStr,
           hora: data.hora_denuncia,
           denunciante: data.denunciante_nombres,
-          tipoHecho: data.tipo_denuncia,
+          tipoHecho: data.tipo_denuncia + (data.grado_ejecucion ? ` (${data.grado_ejecucion.toUpperCase()})` : ''),
         })
         if (SHOW_DIGITAL_SIGNATURE) {
           initFirmas(data.id)

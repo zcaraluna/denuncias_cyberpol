@@ -106,6 +106,7 @@ export async function GET(
       hora_hecho_fin: denuncia.hora_hecho_fin || null,
       tipo_denuncia: denuncia.tipo_denuncia,
       otro_tipo: denuncia.otro_tipo,
+      grado_ejecucion: denuncia.grado_ejecucion,
       relato: denuncia.relato,
       lugar_hecho: denuncia.lugar_hecho,
       latitud: denuncia.latitud,

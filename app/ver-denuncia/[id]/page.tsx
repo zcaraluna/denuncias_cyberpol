@@ -63,6 +63,7 @@ interface DenunciaCompleta {
   hora_hecho: string
   tipo_denuncia: string
   otro_tipo: string
+  grado_ejecucion: string | null
   relato: string
   lugar_hecho: string
   latitud: number
@@ -460,7 +461,10 @@ export default function VerDenunciaPage({ params }: { params: Promise<{ id: stri
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
                     <DataGroup
                       label="Tipo de Denuncia"
-                      value={denuncia.tipo_denuncia === 'OTRO' ? denuncia.otro_tipo : denuncia.tipo_denuncia}
+                      value={
+                        (denuncia.tipo_denuncia === 'OTRO' ? denuncia.otro_tipo : denuncia.tipo_denuncia) +
+                        (denuncia.grado_ejecucion ? ` (${denuncia.grado_ejecucion.toUpperCase()})` : '')
+                      }
                       icon={<Gavel className="h-3.5 w-3.5" />}
                     />
                     <DataGroup
