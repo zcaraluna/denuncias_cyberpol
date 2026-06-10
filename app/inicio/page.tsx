@@ -69,6 +69,7 @@ export default function InicioPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedManual, setSelectedManual] = useState<Manual | null>(null)
   const [isManualModalOpen, setIsManualModalOpen] = useState(false)
+  const [showUpdateModal, setShowUpdateModal] = useState(false)
 
   const fetchRates = async () => {
     setLoading(true)
@@ -92,8 +93,19 @@ export default function InicioPage() {
     }
     if (usuario) {
       fetchRates()
+
+      // Mostrar modal de actualizaciones una vez por sesión
+      const hasSeen = sessionStorage.getItem('hasSeenUpdateModal')
+      if (!hasSeen) {
+        setShowUpdateModal(true)
+      }
     }
   }, [usuario, authLoading, router])
+
+  const handleCloseUpdateModal = () => {
+    sessionStorage.setItem('hasSeenUpdateModal', 'true')
+    setShowUpdateModal(false)
+  }
 
   if (authLoading) {
     return (
@@ -226,7 +238,97 @@ export default function InicioPage() {
           onClose={() => setIsManualModalOpen(false)}
         />
       )}
+
+      {/* Modal de Actualización */}
+      {showUpdateModal && (
+        <UpdateModal
+          onClose={handleCloseUpdateModal}
+        />
+      )}
     </MainLayout>
+  )
+}
+
+function UpdateModal({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-[#002147]/45 backdrop-blur-sm transition-opacity"
+        onClick={onClose}
+      />
+
+      {/* Modal Card */}
+      <div className="relative bg-white rounded-[2.5rem] shadow-2xl border border-slate-100 w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-300">
+        {/* Header decoration */}
+        <div className="bg-[#002147] px-8 py-8 text-white relative">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full -mr-6 -mt-6 blur-lg" />
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/20">
+              <ShieldCheck className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <span className="text-[9px] font-black uppercase tracking-[0.25em] text-blue-200 block mb-0.5">
+                Nueva Actualización
+              </span>
+              <h2 className="text-xl font-extrabold tracking-tight">
+                SIDE Sistema de Denuncias
+              </h2>
+            </div>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="p-8">
+          <p className="text-xs text-slate-500 leading-relaxed mb-6 font-semibold">
+            Se ha implementado una nueva versión del sistema con herramientas avanzadas para optimizar la carga de actas y proteger tu trabajo.
+          </p>
+
+          <div className="space-y-5">
+            {/* Feature 1 */}
+            <div className="flex gap-4">
+              <div className="flex-shrink-0 flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 border border-blue-100">
+                <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                </svg>
+              </div>
+              <div>
+                <h4 className="text-xs font-black text-[#002147] uppercase tracking-wide mb-1">
+                  Autoguardado Automático
+                </h4>
+                <p className="text-[11px] text-slate-400 leading-relaxed font-medium">
+                  Tus datos se guardan silenciosamente cada **90 segundos** a partir del Paso 3. Si ocurre un corte de energía, falla de conexión o cierre accidental, podrás continuar la denuncia desde el último punto guardado.
+                </p>
+              </div>
+            </div>
+
+            {/* Feature 2 */}
+            <div className="flex gap-4">
+              <div className="flex-shrink-0 flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50 border border-amber-100">
+                <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <h4 className="text-xs font-black text-[#002147] uppercase tracking-wide mb-1">
+                  Expiración de Borradores
+                </h4>
+                <p className="text-[11px] text-slate-400 leading-relaxed font-medium">
+                  Para mantener el sistema optimizado y resguardar la privacidad de los datos, todo borrador no finalizado **se eliminará de manera automática pasadas las 24 horas** de su creación.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={onClose}
+            className="w-full bg-[#002147] text-white py-4 px-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.15em] hover:bg-blue-900 active:scale-[0.98] transition-all shadow-md shadow-blue-950/10 mt-8"
+          >
+            Entendido, Continuar
+          </button>
+        </div>
+      </div>
+    </div>
   )
 }
 
