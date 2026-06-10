@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/hooks/useAuth'
 import { useDeviceDetection } from '@/lib/hooks/useDeviceDetection'
 import { cn, formatNombrePolicial } from '@/lib/utils'
 import { useBorrador } from '@/lib/context/BorradorContext'
+import packageInfo from '@/package.json'
 import {
     LayoutDashboard,
     PlusCircle,
@@ -169,6 +170,12 @@ export function Sidebar() {
                         <LogOut className="h-5 w-5 transition-transform group-hover:-translate-x-1" />
                         Cerrar Sesión
                     </button>
+
+                    <div className="mt-4 text-center">
+                        <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">
+                            Versión {packageInfo.version}
+                        </span>
+                    </div>
                 </div>
             </div>
         </aside>
