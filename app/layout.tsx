@@ -12,13 +12,13 @@ const lato = Lato({
 })
 
 export const metadata: Metadata = {
-  title: 'Sistema de Denuncias - CYBERPOL',
+  title: 'Sistema de Denuncias - SIDE',
   description: 'Plataforma para gestión de denuncias policiales',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'Cyberpol',
+    title: 'SIDE',
   },
   formatDetection: {
     telephone: false,

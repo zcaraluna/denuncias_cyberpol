@@ -2,8 +2,8 @@ import { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'CYBERPOL Denuncias',
-    short_name: 'Cyberpol',
+    name: 'SIDE Denuncias',
+    short_name: 'SIDE',
     description: 'Sistema de Gestión de Denuncias - Policía Nacional',
     start_url: '/inicio',
     display: 'standalone',

@@ -84,7 +84,7 @@ export function Sidebar() {
                         <ShieldCheck className="h-6 w-6 text-white" />
                     </div>
                     <div className="flex flex-col">
-                        <span className="text-xl font-extrabold tracking-tight text-[#002147] leading-none">CYBERPOL</span>
+                        <span className="text-xl font-extrabold tracking-tight text-[#002147] leading-none">SIDE</span>
                         <span className="mt-1 text-[10px] font-bold uppercase text-slate-500 tracking-widest">Sistema de Denuncias</span>
                     </div>
                 </div>

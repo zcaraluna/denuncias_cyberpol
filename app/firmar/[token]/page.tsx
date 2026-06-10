@@ -163,7 +163,7 @@ export default function FirmarPage() {
     return (
         <div className="min-h-screen bg-slate-50 flex flex-col">
             <header className="bg-[#002147] p-6 text-center text-white shadow-lg">
-                <h1 className="text-lg font-black tracking-wider uppercase">Firma Digital Cyberpol</h1>
+                <h1 className="text-lg font-black tracking-wider uppercase">Firma Digital SIDE</h1>
                 <p className="text-xs text-blue-200 mt-1 opacity-80">ACTA Nº {info?.orden} • {info?.rol === 'operador' ? 'OPERADOR' : 'DENUNCIANTE'}</p>
             </header>
 

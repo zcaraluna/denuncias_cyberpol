@@ -65,7 +65,7 @@ export default function LoginPage() {
               <Shield className="h-7 w-7 text-[#002147]" strokeWidth={2} />
             </div>
             <h1 className="text-2xl font-black text-[#002147] tracking-tighter mb-1 uppercase">
-              CYBERPOL
+              SIDE
             </h1>
           </div>
 
@@ -216,7 +216,7 @@ export default function LoginPage() {
             </div>
 
             <p className="text-[8px] text-center text-slate-400 font-bold uppercase tracking-widest opacity-50">
-              Cyberpol System © {new Date().getFullYear()}
+              SIDE System © {new Date().getFullYear()}
             </p>
           </div>
         </div>

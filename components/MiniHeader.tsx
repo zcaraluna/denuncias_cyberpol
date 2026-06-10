@@ -34,7 +34,7 @@ export function MiniHeader() {
                         <ShieldCheck className="h-5 w-5 text-white" />
                     </div>
                     <div className="hidden flex-col sm:flex">
-                        <span className="text-lg font-black tracking-tight text-[#002147] leading-none uppercase">CYBERPOL</span>
+                        <span className="text-lg font-black tracking-tight text-[#002147] leading-none uppercase">SIDE</span>
                         <span className="text-[8px] font-bold uppercase text-slate-400 tracking-widest mt-0.5">Sistema de Denuncias</span>
                     </div>
                 </div>
