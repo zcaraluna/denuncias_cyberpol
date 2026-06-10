@@ -600,6 +600,9 @@ export default function NuevaDenunciaPage() {
   // Capturar fecha y hora cuando se inicia la creación de la denuncia (no al finalizar)
   const [fechaHoraInicioDenuncia, setFechaHoraInicioDenuncia] = useState<{ fecha: string; hora: string } | null>(null)
 
+  // Hora del último guardado de borrador (para mostrar al lado del Relato de los Hechos)
+  const [ultimoGuardadoHora, setUltimoGuardadoHora] = useState<string | null>(null)
+
   // Ref para prevenir múltiples envíos simultáneos
   const isSubmittingRef = useRef(false)
   // Ref para prevenir autoguardados simultáneos (condición de carrera)
@@ -1795,6 +1798,14 @@ export default function NuevaDenunciaPage() {
       const data = await response.json()
       setBorradorId(data.id)
 
+      // Si el borrador ya tenía una hora de registro, la usamos como hora del último guardado
+      if (data.hora_denuncia) {
+        const partesHora = data.hora_denuncia.split(':')
+        if (partesHora[0] && partesHora[1]) {
+          setUltimoGuardadoHora(`${partesHora[0]}:${partesHora[1]}`)
+        }
+      }
+
       // Restaurar la fecha/hora original del borrador si existe
       if (data.fecha_denuncia && data.hora_denuncia) {
         // Convertir fecha de YYYY-MM-DD a DD/MM/YYYY para el formato esperado
@@ -2914,6 +2925,12 @@ export default function NuevaDenunciaPage() {
       const result = await response.json()
       setBorradorId(result.borradorId)
 
+      // Actualizar hora de último guardado
+      const ahora = new Date()
+      const horas = ahora.getHours().toString().padStart(2, '0')
+      const minutos = ahora.getMinutes().toString().padStart(2, '0')
+      setUltimoGuardadoHora(`${horas}:${minutos}`)
+
       // Toast con id fijo: si ya está visible, lo reemplaza en lugar de apilar
       toast.success('Borrador guardado', {
         id: 'autoguardado-borrador',
@@ -2930,26 +2947,34 @@ export default function NuevaDenunciaPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paso, denunciantes, usuario, fechaHoraInicioDenuncia, construirPayloadBorrador])
 
+  // Guardar la última función de guardarBorradorSilencioso en un Ref para evitar reiniciar el intervalo
+  const guardarBorradorSilenciosoRef = useRef(guardarBorradorSilencioso)
+  useEffect(() => {
+    guardarBorradorSilenciosoRef.current = guardarBorradorSilencioso
+  }, [guardarBorradorSilencioso])
+
   /** Gestiona el ciclo de vida del intervalo de autoguardado */
   useEffect(() => {
-    // Limpiar intervalo previo siempre que cambie el paso
+    // Limpiar intervalo previo si existe
     if (autoguardadoIntervalRef.current) {
       clearInterval(autoguardadoIntervalRef.current)
       autoguardadoIntervalRef.current = null
     }
+
     // Solo activar el autoguardado a partir del paso 3
     if (paso >= 3) {
       autoguardadoIntervalRef.current = setInterval(() => {
-        guardarBorradorSilencioso()
+        guardarBorradorSilenciosoRef.current()
       }, INTERVALO_AUTOGUARDADO_MS)
     }
+
     return () => {
       if (autoguardadoIntervalRef.current) {
         clearInterval(autoguardadoIntervalRef.current)
         autoguardadoIntervalRef.current = null
       }
     }
-  }, [paso, guardarBorradorSilencioso])
+  }, [paso])
 
   // ─── Handlers del modal de guardia de navegación ──────────────────────────
 
@@ -3104,6 +3129,12 @@ export default function NuevaDenunciaPage() {
 
       const result = await response.json()
       setBorradorId(result.borradorId)
+
+      // Actualizar hora de último guardado
+      const ahora = new Date()
+      const horas = ahora.getHours().toString().padStart(2, '0')
+      const minutos = ahora.getMinutes().toString().padStart(2, '0')
+      setUltimoGuardadoHora(`${horas}:${minutos}`)
 
       setMostrarModalBorrador(true)
     } catch (error) {
@@ -6184,7 +6215,9 @@ export default function NuevaDenunciaPage() {
 
                 <div className="space-y-4 border-t pt-4 mt-4">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-gray-800">Relato de los Hechos</h3>
+                    <h3 className="text-lg font-semibold text-gray-800">
+                      Relato de los Hechos {ultimoGuardadoHora && <span className="text-sm font-normal text-slate-500 ml-2">(Último borrador guardado a las {ultimoGuardadoHora})</span>}
+                    </h3>
                     <div className="flex items-center bg-gray-100 p-1 rounded-lg">
                       <button
                         type="button"
