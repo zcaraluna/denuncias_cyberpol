@@ -250,28 +250,38 @@ export default function InicioPage() {
 }
 
 function UpdateModal({ onClose }: { onClose: () => void }) {
+  const [segundos, setSegundos] = useState(5)
+
+  useEffect(() => {
+    if (segundos <= 0) return
+    const timer = setInterval(() => {
+      setSegundos((prev) => prev - 1)
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [segundos])
+
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-[#002147]/45 backdrop-blur-sm transition-opacity"
-        onClick={onClose}
+        onClick={segundos === 0 ? onClose : undefined}
       />
 
       {/* Modal Card */}
-      <div className="relative bg-white rounded-[2.5rem] shadow-2xl border border-slate-100 w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-300">
+      <div className="relative bg-white rounded-[2.5rem] shadow-2xl border border-slate-100 w-full max-w-xl overflow-hidden animate-in fade-in zoom-in duration-300">
         {/* Header decoration */}
-        <div className="bg-[#002147] px-8 py-8 text-white relative">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full -mr-6 -mt-6 blur-lg" />
-          <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/20">
-              <ShieldCheck className="h-6 w-6 text-white" />
+        <div className="bg-[#002147] px-10 py-10 text-white relative">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-8 -mt-8 blur-lg" />
+          <div className="flex items-center gap-5">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/20 shrink-0">
+              <ShieldCheck className="h-7 w-7 text-white" />
             </div>
             <div>
-              <span className="text-[9px] font-black uppercase tracking-[0.25em] text-blue-200 block mb-0.5">
+              <span className="text-[10px] font-black uppercase tracking-[0.25em] text-blue-200 block mb-0.5">
                 Nueva Actualización
               </span>
-              <h2 className="text-xl font-extrabold tracking-tight">
+              <h2 className="text-2xl font-extrabold tracking-tight">
                 SIDE Sistema de Denuncias
               </h2>
             </div>
@@ -279,42 +289,42 @@ function UpdateModal({ onClose }: { onClose: () => void }) {
         </div>
 
         {/* Content */}
-        <div className="p-8">
-          <p className="text-xs text-slate-500 leading-relaxed mb-6 font-semibold">
+        <div className="p-10">
+          <p className="text-sm text-slate-500 leading-relaxed mb-8 font-semibold">
             Se ha implementado una nueva versión del sistema con herramientas avanzadas para optimizar la carga de actas y proteger tu trabajo.
           </p>
 
-          <div className="space-y-5">
+          <div className="space-y-6">
             {/* Feature 1 */}
-            <div className="flex gap-4">
-              <div className="flex-shrink-0 flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 border border-blue-100">
-                <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="flex gap-5">
+              <div className="flex-shrink-0 flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 border border-blue-100">
+                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
                 </svg>
               </div>
               <div>
-                <h4 className="text-xs font-black text-[#002147] uppercase tracking-wide mb-1">
+                <h4 className="text-sm font-black text-[#002147] uppercase tracking-wide mb-1.5">
                   Autoguardado Automático
                 </h4>
-                <p className="text-[11px] text-slate-400 leading-relaxed font-medium">
-                  Tus datos se guardan silenciosamente cada **90 segundos** a partir del Paso 3. Si ocurre un corte de energía, falla de conexión o cierre accidental, podrás continuar la denuncia desde el último punto guardado.
+                <p className="text-xs text-slate-400 leading-relaxed font-medium">
+                  Tus datos se guardan silenciosamente cada <strong className="font-extrabold text-[#002147]">90 segundos</strong> a partir del Paso 3. Si ocurre un corte de energía, falla de conexión o cierre accidental, podrás continuar la denuncia desde el último punto guardado.
                 </p>
               </div>
             </div>
 
             {/* Feature 2 */}
-            <div className="flex gap-4">
-              <div className="flex-shrink-0 flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50 border border-amber-100">
-                <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="flex gap-5">
+              <div className="flex-shrink-0 flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-50 border border-amber-100">
+                <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
               <div>
-                <h4 className="text-xs font-black text-[#002147] uppercase tracking-wide mb-1">
+                <h4 className="text-sm font-black text-[#002147] uppercase tracking-wide mb-1.5">
                   Expiración de Borradores
                 </h4>
-                <p className="text-[11px] text-slate-400 leading-relaxed font-medium">
-                  Para mantener el sistema optimizado y resguardar la privacidad de los datos, todo borrador no finalizado **se eliminará de manera automática pasadas las 24 horas** de su creación.
+                <p className="text-xs text-slate-400 leading-relaxed font-medium">
+                  Para mantener el sistema optimizado y resguardar la privacidad de los datos, todo borrador no finalizado <strong className="font-extrabold text-[#002147]">se eliminará de manera automática pasadas las 24 horas</strong> de su creación.
                 </p>
               </div>
             </div>
@@ -322,9 +332,10 @@ function UpdateModal({ onClose }: { onClose: () => void }) {
 
           <button
             onClick={onClose}
-            className="w-full bg-[#002147] text-white py-4 px-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.15em] hover:bg-blue-900 active:scale-[0.98] transition-all shadow-md shadow-blue-950/10 mt-8"
+            disabled={segundos > 0}
+            className="w-full bg-[#002147] text-white py-4 px-4 rounded-2xl font-black text-[11px] uppercase tracking-[0.15em] hover:bg-blue-900 active:scale-[0.98] transition-all shadow-md shadow-blue-950/10 mt-10 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#002147]"
           >
-            Entendido, Continuar
+            {segundos > 0 ? `Entendido, Continuar (${segundos}s)` : 'Entendido, Continuar'}
           </button>
         </div>
       </div>
