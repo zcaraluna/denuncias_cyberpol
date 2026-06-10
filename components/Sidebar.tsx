@@ -85,7 +85,10 @@ export function Sidebar() {
                         <ShieldCheck className="h-6 w-6 text-white" />
                     </div>
                     <div className="flex flex-col">
-                        <span className="text-xl font-extrabold tracking-tight text-[#002147] leading-none">SIDE</span>
+                        <span className="text-xl font-extrabold tracking-tight text-[#002147] leading-none flex items-baseline gap-1.5">
+                            SIDE
+                            <span className="text-[10px] font-semibold text-slate-400/80">v{packageInfo.version}</span>
+                        </span>
                         <span className="mt-1 text-[10px] font-bold uppercase text-slate-500 tracking-widest">Sistema de Denuncias</span>
                     </div>
                 </div>
@@ -170,12 +173,6 @@ export function Sidebar() {
                         <LogOut className="h-5 w-5 transition-transform group-hover:-translate-x-1" />
                         Cerrar Sesión
                     </button>
-
-                    <div className="mt-4 text-center">
-                        <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">
-                            Versión {packageInfo.version}
-                        </span>
-                    </div>
                 </div>
             </div>
         </aside>

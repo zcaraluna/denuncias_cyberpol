@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { cn, formatNombrePolicial } from '@/lib/utils'
+import packageInfo from '@/package.json'
 import {
     LayoutDashboard,
     FileText,
@@ -34,7 +35,10 @@ export function MiniHeader() {
                         <ShieldCheck className="h-5 w-5 text-white" />
                     </div>
                     <div className="hidden flex-col sm:flex">
-                        <span className="text-lg font-black tracking-tight text-[#002147] leading-none uppercase">SIDE</span>
+                        <span className="text-lg font-black tracking-tight text-[#002147] leading-none uppercase flex items-baseline gap-1.5">
+                            SIDE
+                            <span className="text-[9px] font-semibold text-slate-400/80 normal-case">v{packageInfo.version}</span>
+                        </span>
                         <span className="text-[8px] font-bold uppercase text-slate-400 tracking-widest mt-0.5">Sistema de Denuncias</span>
                     </div>
                 </div>
