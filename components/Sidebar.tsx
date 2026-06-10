@@ -1,10 +1,11 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { useDeviceDetection } from '@/lib/hooks/useDeviceDetection'
 import { cn, formatNombrePolicial } from '@/lib/utils'
+import { useBorrador } from '@/lib/context/BorradorContext'
 import {
     LayoutDashboard,
     PlusCircle,
@@ -17,6 +18,34 @@ import {
     LogOut,
     User as UserIcon
 } from 'lucide-react'
+
+/** Link que intercepta la navegación cuando hay un borrador activo */
+function GuardedLink({
+    href,
+    children,
+    className,
+}: {
+    href: string
+    children: React.ReactNode
+    className: string
+}) {
+    const { hayBorradorActivo, setPendingNavigation } = useBorrador()
+
+    const handleClick = (e: React.MouseEvent) => {
+        // Si hay un borrador activo y el destino NO es la misma página de nueva-denuncia
+        if (hayBorradorActivo && href !== '/nueva-denuncia') {
+            e.preventDefault()
+            setPendingNavigation(href)
+        }
+        // Si no hay borrador activo, el Link navega normalmente
+    }
+
+    return (
+        <Link href={href} className={className} onClick={handleClick}>
+            {children}
+        </Link>
+    )
+}
 
 // Items visibles en la barra de navegación móvil
 const mobileNavItems = [
@@ -67,7 +96,7 @@ export function Sidebar() {
                             const Icon = item.icon
                             const isActive = pathname === item.href
                             return (
-                                <Link
+                                <GuardedLink
                                     key={item.href}
                                     href={item.href}
                                     className={cn(
@@ -79,7 +108,7 @@ export function Sidebar() {
                                 >
                                     <Icon className={cn("h-5 w-5", isActive ? "text-white" : "text-slate-400 group-hover:text-[#002147]")} />
                                     {item.label}
-                                </Link>
+                                </GuardedLink>
                             )
                         })}
                     </div>
@@ -97,7 +126,7 @@ export function Sidebar() {
                                         const Icon = item.icon
                                         const isActive = pathname === item.href
                                         return (
-                                            <Link
+                                            <GuardedLink
                                                 key={item.href}
                                                 href={item.href}
                                                 className={cn(
@@ -109,7 +138,7 @@ export function Sidebar() {
                                             >
                                                 <Icon className={cn("h-5 w-5", isActive ? "text-white" : "text-slate-400 group-hover:text-[#002147]")} />
                                                 {item.label}
-                                            </Link>
+                                            </GuardedLink>
                                         )
                                     })}
                             </div>

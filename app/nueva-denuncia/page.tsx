@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import React, { useEffect, useMemo, useState, useRef } from 'react'
+import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -14,6 +14,9 @@ import { obtenerHechosPuniblesEspecificos } from '@/lib/data/hechos-punibles'
 import { MainLayout } from '@/components/MainLayout'
 import { MiniHeader } from '@/components/MiniHeader'
 import { cn } from '@/lib/utils'
+import { useBorrador } from '@/lib/context/BorradorContext'
+import { ModalGuardiaBorrador } from '@/components/ModalGuardiaBorrador'
+import { toast } from 'sonner'
 
 // Importar el mapa dinámicamente (solo en cliente)
 const MapSelector = dynamic(() => import('@/components/MapSelector'), { ssr: false })
@@ -599,6 +602,17 @@ export default function NuevaDenunciaPage() {
 
   // Ref para prevenir múltiples envíos simultáneos
   const isSubmittingRef = useRef(false)
+  // Ref para prevenir autoguardados simultáneos (condición de carrera)
+  const isAutoguardandoRef = useRef(false)
+  // Ref para el intervalo de autoguardado (necesario para limpiar en cleanup)
+  const autoguardadoIntervalRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Estados para el modal de guardia de navegación
+  const [guardandoParaSalir, setGuardandoParaSalir] = useState(false)
+  const [descartandoBorrador, setDescartandoBorrador] = useState(false)
+
+  // Contexto de borrador (comunica el estado al Sidebar para la guardia de navegación)
+  const { setHayBorradorActivo, pendingNavigation, setPendingNavigation } = useBorrador()
 
   // Cargar estado del modo pruebas desde localStorage
   useEffect(() => {
@@ -2649,6 +2663,12 @@ export default function NuevaDenunciaPage() {
       return
     }
 
+    // Detener el autoguardado inmediatamente al iniciar el envío final
+    if (autoguardadoIntervalRef.current) {
+      clearInterval(autoguardadoIntervalRef.current)
+      autoguardadoIntervalRef.current = null
+    }
+
     if (denunciantes.length === 0) {
       alert('Debes agregar al menos un denunciante antes de completar la denuncia.')
       irAlPaso(1)
@@ -2777,8 +2797,205 @@ export default function NuevaDenunciaPage() {
     }
   }
 
+  // ─── Autoguardado ────────────────────────────────────────────────────────────
+
+  /** Intervalo en ms del autoguardado (90 segundos) */
+  const INTERVALO_AUTOGUARDADO_MS = 90_000
+
+  /**
+   * Sincronizar el estado activo del borrador con el contexto global.
+   * Cuando esto sea true, el Sidebar interceptará la navegación.
+   */
+  useEffect(() => {
+    const activo = paso >= 3 && denunciantes.length > 0 && obtenerDenunciantePrincipal() !== null
+    setHayBorradorActivo(activo)
+    return () => setHayBorradorActivo(false)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paso, denunciantes])
+
+  /**
+   * Construye el payload del borrador. Centralizado para ser reutilizado
+   * tanto por guardarBorrador() manual como por guardarBorradorSilencioso().
+   */
+  const construirPayloadBorrador = useCallback(() => {
+    const denunciantePrincipal = obtenerDenunciantePrincipal()
+    if (!denunciantePrincipal || !fechaHoraInicioDenuncia || !usuario) return null
+
+    const fechaActual = fechaHoraInicioDenuncia.fecha.split('/').reverse().join('-')
+    const hora = fechaHoraInicioDenuncia.hora
+    const autorData = watchAutor()
+    const denunciaData = watchDenuncia()
+
+    let fechaHecho = denunciaData.fechaHecho
+    if (fechaHecho && fechaHecho.includes('/')) {
+      const [dia, mes, año] = fechaHecho.split('/')
+      fechaHecho = `${año}-${mes}-${dia}`
+    }
+
+    const denunciantePayload = construirDenunciantePayload(denunciantePrincipal)
+    const coleccionDenunciantes = construirColeccionDenunciantesPayload(denunciantes)
+
+    return {
+      denunciante: denunciantePayload,
+      denunciantes: coleccionDenunciantes,
+      denunciantePrincipalId: denunciantePrincipal.id,
+      denunciantePrincipalDocumento: denunciantePrincipal.numeroDocumento || denunciantePrincipal.matricula || null,
+      denunciantesAdicionales: coleccionDenunciantes.filter((d) => d.id !== denunciantePrincipal.id),
+      denuncia: {
+        fechaDenuncia: fechaActual,
+        horaDenuncia: hora,
+        fechaHecho: fechaHecho || '',
+        horaHecho: denunciaData.horaHecho || '',
+        tipoDenuncia: denunciaData.tipoDenuncia === 'Otro (Especificar)' ? 'OTRO' : denunciaData.tipoDenuncia || '',
+        otroTipo: denunciaData.tipoDenuncia === 'Otro (Especificar)' ? denunciaData.otroTipo?.toUpperCase() : null,
+        lugarHecho: lugarHechoNoAplica ? '' : (construirDomicilio(denunciaData.lugarHechoDepartamento, denunciaData.lugarHechoCiudad, denunciaData.lugarHechoBarrio, denunciaData.lugarHechoCalles)?.toUpperCase() || denunciaData.lugarHecho?.toUpperCase() || ''),
+        relato: denunciaData.relato || '',
+        montoDano: (denunciaData.montoDano !== undefined && denunciaData.montoDano !== '') ? parseInt(denunciaData.montoDano.replace(/\./g, '')) : null,
+        moneda: denunciaData.moneda || null,
+        latitud: coordenadas?.lat || null,
+        longitud: coordenadas?.lng || null,
+        bancosRelacionados: denunciaData.bancosRelacionados || [],
+        entidadBancariaVulnerada: denunciaData.entidadBancariaVulnerada || null,
+        esDenunciaEscrita: denunciaData.esDenunciaEscrita || false,
+        archivoDenunciaUrl: denunciaData.archivoDenunciaUrl || null,
+        adjuntosUrls: adjuntosUrls || [],
+        lugarHechoNoAplica: denunciaData.lugarHechoNoAplica || false,
+        gradoEjecucion: denunciaData.gradoEjecucion || null,
+      },
+      autor: {
+        conocido: autorConocido,
+        ...(autorConocido === 'Conocido' && {
+          nombre: autorData.nombre?.toUpperCase() || null,
+          cedula: autorData.cedula?.toUpperCase() || null,
+          domicilio: construirDomicilio(autorData.departamento, autorData.ciudad, autorData.barrio, autorData.calles) || null,
+          nacionalidad: autorData.nacionalidad?.toUpperCase() || null,
+          estadoCivil: autorData.estadoCivil?.toUpperCase() || null,
+          edad: autorData.edad || null,
+          fechaNacimiento: autorData.fechaNacimiento || null,
+          lugarNacimiento: autorData.lugarNacimiento?.toUpperCase() || null,
+          telefono: autorData.telefono?.toUpperCase() || null,
+          profesion: autorData.profesion?.toUpperCase() || null,
+        }),
+      },
+      descripcionFisica: autorConocido === 'Desconocido'
+        ? (Object.keys(descripcionFisica).length > 0 ? JSON.stringify(descripcionFisica) : null)
+        : null,
+      usuarioId: usuario.id,
+      borradorId: borradorId,
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paso, denunciantes, borradorId, usuario, fechaHoraInicioDenuncia, autorConocido, coordenadas, adjuntosUrls, lugarHechoNoAplica, descripcionFisica])
+
+  /**
+   * Versión silenciosa de guardarBorrador:
+   * - Sin alertas ni modales
+   * - Protegida contra condiciones de carrera con isAutoguardandoRef
+   * - Muestra un toast no invasivo al completar
+   */
+  const guardarBorradorSilencioso = useCallback(async (): Promise<boolean> => {
+    // Guardias de concurrencia
+    if (isSubmittingRef.current || isAutoguardandoRef.current) return false
+    if (paso < 3 || denunciantes.length === 0) return false
+    if (!obtenerDenunciantePrincipal() || !usuario || !fechaHoraInicioDenuncia) return false
+
+    isAutoguardandoRef.current = true
+    try {
+      const payload = construirPayloadBorrador()
+      if (!payload) return false
+
+      const response = await fetch('/api/denuncias/borrador', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+
+      if (!response.ok) throw new Error('Fallo autoguardado')
+
+      const result = await response.json()
+      setBorradorId(result.borradorId)
+
+      // Toast con id fijo: si ya está visible, lo reemplaza en lugar de apilar
+      toast.success('Borrador guardado', {
+        id: 'autoguardado-borrador',
+        duration: 2500,
+      })
+      return true
+    } catch {
+      // Error silencioso: no interrumpir al usuario
+      console.warn('[Autoguardado] Falló silenciosamente')
+      return false
+    } finally {
+      isAutoguardandoRef.current = false
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paso, denunciantes, usuario, fechaHoraInicioDenuncia, construirPayloadBorrador])
+
+  /** Gestiona el ciclo de vida del intervalo de autoguardado */
+  useEffect(() => {
+    // Limpiar intervalo previo siempre que cambie el paso
+    if (autoguardadoIntervalRef.current) {
+      clearInterval(autoguardadoIntervalRef.current)
+      autoguardadoIntervalRef.current = null
+    }
+    // Solo activar el autoguardado a partir del paso 3
+    if (paso >= 3) {
+      autoguardadoIntervalRef.current = setInterval(() => {
+        guardarBorradorSilencioso()
+      }, INTERVALO_AUTOGUARDADO_MS)
+    }
+    return () => {
+      if (autoguardadoIntervalRef.current) {
+        clearInterval(autoguardadoIntervalRef.current)
+        autoguardadoIntervalRef.current = null
+      }
+    }
+  }, [paso, guardarBorradorSilencioso])
+
+  // ─── Handlers del modal de guardia de navegación ──────────────────────────
+
+  const handleGuardarYSalir = async () => {
+    if (!pendingNavigation) return
+    setGuardandoParaSalir(true)
+    const exito = await guardarBorradorSilencioso()
+    setGuardandoParaSalir(false)
+    if (exito) {
+      toast.success('Borrador guardado correctamente')
+    } else {
+      toast.error('No se pudo guardar el borrador')
+    }
+    const destino = pendingNavigation
+    setPendingNavigation(null)
+    setHayBorradorActivo(false)
+    router.push(destino)
+  }
+
+  const handleDescartarYSalir = async () => {
+    if (!pendingNavigation) return
+    setDescartandoBorrador(true)
+    if (borradorId) {
+      try {
+        await fetch(`/api/denuncias/eliminar/${borradorId}`, { method: 'DELETE' })
+      } catch {
+        // Si falla el DELETE, navegar igual
+      }
+    }
+    setDescartandoBorrador(false)
+    const destino = pendingNavigation
+    setPendingNavigation(null)
+    setHayBorradorActivo(false)
+    router.push(destino)
+  }
+
+  const handleCancelarNavegacion = () => {
+    setPendingNavigation(null)
+  }
+
+  // ─── Fin autoguardado ─────────────────────────────────────────────────────
+
   const guardarBorrador = async () => {
     if (!usuario) return
+    // Evitar ejecutar si hay un autoguardado en curso
+    if (isAutoguardandoRef.current) return
 
     setGuardandoBorrador(true)
 
@@ -2980,6 +3197,16 @@ export default function NuevaDenunciaPage() {
   return (
     <MainLayout hideSidebar={true}>
       <MiniHeader />
+      {/* Modal de guardia de navegación — se muestra cuando el usuario intenta salir con un borrador activo */}
+      {pendingNavigation && (
+        <ModalGuardiaBorrador
+          onGuardarYSalir={handleGuardarYSalir}
+          onDescartarYSalir={handleDescartarYSalir}
+          onCancelar={handleCancelarNavegacion}
+          guardando={guardandoParaSalir}
+          descartando={descartandoBorrador}
+        />
+      )}
       <div className="min-h-[calc(100-4rem)] bg-[#f8fafc] py-6 px-4 sm:px-6 lg:px-8 font-sans">
         <div className="max-w-5xl mx-auto">
           <div className="mb-6">

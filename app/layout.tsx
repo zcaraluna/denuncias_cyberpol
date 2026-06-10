@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import { Inter, Lato } from 'next/font/google'
 import './globals.css'
+import { BorradorProvider } from '@/lib/context/BorradorContext'
+import { Toaster } from 'sonner'
 
 const inter = Inter({ subsets: ['latin'] })
 const lato = Lato({ 
@@ -43,7 +45,17 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body className={`${inter.className} ${lato.variable}`}>
-        {children}
+        <BorradorProvider>
+          {children}
+          <Toaster
+            position="bottom-right"
+            richColors
+            duration={3000}
+            toastOptions={{
+              style: { fontSize: '12px', fontWeight: '600' },
+            }}
+          />
+        </BorradorProvider>
       </body>
     </html>
   )
