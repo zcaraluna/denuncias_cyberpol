@@ -2791,6 +2791,7 @@ export default function NuevaDenunciaPage() {
           archivoDenunciaUrl: denunciaData.archivoDenunciaUrl || null,
           adjuntosUrls: adjuntosUrls || [],
           lugarHechoNoAplica: denunciaData.lugarHechoNoAplica || false,
+          objetosExtraviados: objetosExtraviados,
         },
         autor: {
           conocido: autorConocido,
@@ -2914,6 +2915,7 @@ export default function NuevaDenunciaPage() {
         adjuntosUrls: adjuntosUrls || [],
         lugarHechoNoAplica: denunciaData.lugarHechoNoAplica || false,
         gradoEjecucion: denunciaData.gradoEjecucion || null,
+        objetosExtraviados: objetosExtraviados,
       },
       autor: {
         conocido: autorConocido,
