@@ -1624,7 +1624,7 @@ export default function ReportesPage() {
                         <FileSearch className="w-4 h-4 text-white" />
                       </div>
                       <div>
-                        <h3 className="text-[11px] font-black text-[#002147] uppercase tracking-widest">Objetos Encontrados</h3>
+                        <h3 className="text-[11px] font-black text-[#002147] uppercase tracking-widest">Resultados de la Búsqueda</h3>
                         <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">
                           {datosObjetos.length} objetos extraviados en total
                         </p>
@@ -1712,7 +1712,7 @@ export default function ReportesPage() {
                     <div>
                       <h3 className="text-[11px] font-black text-[#002147] uppercase tracking-widest">Top Denunciantes</h3>
                       <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">
-                        Personas con más objetos extraviados
+                        Personas con más denuncias de extravío
                       </p>
                     </div>
                   </div>
@@ -1730,7 +1730,7 @@ export default function ReportesPage() {
                             </span>
                           </div>
                           <span className="shrink-0 px-2.5 py-1 bg-blue-50 text-blue-700 font-black text-[10px] rounded-lg">
-                            {row.cantidad} {row.cantidad === 1 ? 'objeto' : 'objetos'}
+                            {row.cantidad} {row.cantidad === 1 ? 'denuncia' : 'denuncias'}
                           </span>
                         </div>
                       ))}

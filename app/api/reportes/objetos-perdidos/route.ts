@@ -114,7 +114,7 @@ export async function GET(request: NextRequest) {
     }
 
     const porTipoMap: Record<string, { label: string; cantidad: number }> = {}
-    const porDenuncianteMap: Record<string, { nombre: string; cedula: string; cantidad: number }> = {}
+    const porDenuncianteMap: Record<string, { nombre: string; cedula: string; denuncias: Set<number> }> = {}
     const porBancoMap: Record<string, number> = {}
     const porOrigenChapaMap: Record<string, number> = { Nacional: 0, Mercosur: 0 }
     const porPaisChapaMap: Record<string, number> = {}
@@ -135,10 +135,10 @@ export async function GET(request: NextRequest) {
           porDenuncianteMap[denKey] = {
             nombre: item.denunciante,
             cedula: item.denunciante_cedula,
-            cantidad: 0
+            denuncias: new Set<number>()
           }
         }
-        porDenuncianteMap[denKey].cantidad++
+        porDenuncianteMap[denKey].denuncias.add(item.denuncia_id)
       }
 
       if (['cheque', 'tarjeta_debito', 'tarjeta_credito'].includes(obj.tipo)) {
@@ -158,6 +158,11 @@ export async function GET(request: NextRequest) {
 
     const statsPorTipo = Object.values(porTipoMap).sort((a, b) => b.cantidad - a.cantidad)
     const statsPorDenunciante = Object.values(porDenuncianteMap)
+      .map(d => ({
+        nombre: d.nombre,
+        cedula: d.cedula,
+        cantidad: d.denuncias.size
+      }))
       .sort((a, b) => b.cantidad - a.cantidad)
       .slice(0, 10)
 
