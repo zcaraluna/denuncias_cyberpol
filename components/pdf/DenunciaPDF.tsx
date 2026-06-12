@@ -277,6 +277,14 @@ const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 
                                             )}
                                             {obj.tipo === 'celular' && `MARCA/MODELO: ${obj.marca.toUpperCase()} | N° DE LÍNEA: ${obj.numero}${obj.imei ? ` | IMEI: ${obj.imei}` : ''}`}
                                             {obj.tipo === 'contrato' && `DOCUMENTO: ${obj.descripcion.toUpperCase()} | PARTES: ${obj.partes.toUpperCase()}${obj.fechaDocumento ? ` | FECHA DOC.: ${formatearFechaPDF(obj.fechaDocumento)}` : ''}`}
+                                            {obj.tipo === 'chapa_vehiculo' && (
+                                                `NÚMERO DE CHAPA: ${obj.caracteristicas.toUpperCase()} (${obj.tipoChapa.toUpperCase()} - ${obj.origenChapa === 'nacional' ? 'NACIONAL PARAGUAY' : `MERCOSUR ${obj.paisMercosur.toUpperCase()}`}) | ` +
+                                                `MARCA: ${obj.marca.toUpperCase()} | MODELO: ${obj.modelo.toUpperCase()}` +
+                                                (obj.año ? ` | AÑO: ${obj.año}` : '') +
+                                                (obj.color ? ` | COLOR: ${obj.color.toUpperCase()}` : '') +
+                                                (obj.chasis ? ` | CHASIS N°: ${obj.chasis.toUpperCase()}` : '') +
+                                                ` | REGISTRADO A NOMBRE DE: ${obj.registradoNombre === 'recurrente' ? 'DENUNCIANTE' : `${obj.nombreTercero.toUpperCase()} (DOC N° ${obj.documentoTercero})`}`
+                                            )}
                                             {obj.tipo === 'otro_objeto' && `DESCRIPCIÓN: ${obj.descripcion.toUpperCase()}`}
                                         </Text>
                                     </View>

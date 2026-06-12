@@ -519,6 +519,30 @@ export default function NuevaDenunciaPage() {
         return
       }
     }
+    if (nuevoObjetoTipo === 'chapa_vehiculo') {
+      if (!nuevoObjetoCampos.caracteristicas?.trim()) {
+        alert('Debe ingresar el número de chapa.')
+        return
+      }
+      if (!nuevoObjetoCampos.marca?.trim()) {
+        alert('Debe ingresar la marca del vehículo.')
+        return
+      }
+      if (!nuevoObjetoCampos.modelo?.trim()) {
+        alert('Debe ingresar el modelo del vehículo.')
+        return
+      }
+      if (nuevoObjetoCampos.registradoNombre === 'tercero') {
+        if (!nuevoObjetoCampos.nombreTercero?.trim()) {
+          alert('Debe ingresar el nombre del propietario.')
+          return
+        }
+        if (!nuevoObjetoCampos.documentoTercero?.trim()) {
+          alert('Debe ingresar el número de documento del propietario.')
+          return
+        }
+      }
+    }
     if (nuevoObjetoTipo === 'otro_objeto') {
       if (!nuevoObjetoCampos.descripcion?.trim()) {
         alert('Debe ingresar la descripción detallada.')
@@ -536,7 +560,8 @@ export default function NuevaDenunciaPage() {
         nuevoObjetoTipo === 'tarjeta_debito' ? 'Tarjeta de Débito' :
         nuevoObjetoTipo === 'tarjeta_credito' ? 'Tarjeta de Crédito' :
         nuevoObjetoTipo === 'celular' ? 'Celular / Teléfono Móvil' :
-        nuevoObjetoTipo === 'contrato' ? 'Contrato / Documento Privado' : 'Otros Objetos / Documentos',
+        nuevoObjetoTipo === 'contrato' ? 'Contrato / Documento Privado' :
+        nuevoObjetoTipo === 'chapa_vehiculo' ? 'Chapa de vehículo' : 'Otros Objetos / Documentos',
       ...nuevoObjetoCampos
     }
 
@@ -1577,6 +1602,23 @@ export default function NuevaDenunciaPage() {
         }
         if (obj.tipo === 'contrato') {
           return `Un contrato/documento privado consistente en ${obj.descripcion}, celebrado entre las partes ${obj.partes}${obj.fechaDocumento ? ` con fecha ${formatearFechaDDMMAAAA(obj.fechaDocumento)}` : ''}`
+        }
+        if (obj.tipo === 'chapa_vehiculo') {
+          const tipoChapaStr = obj.tipoChapa === 'provisoria' ? 'PROVISORIA' : 'DEFINITIVA'
+          const origenChapaStr = obj.origenChapa === 'nacional' ? 'NACIONAL (PARAGUAY)' : `MERCOSUR (${obj.paisMercosur.toUpperCase()})`
+          const registradoStr = obj.registradoNombre === 'recurrente' 
+            ? 'el recurrente' 
+            : `${obj.nombreTercero} con documento N° ${obj.documentoTercero}`
+          
+          const detallesVehiculo = [
+            `marca ${obj.marca}`,
+            `modelo ${obj.modelo}`,
+            obj.año ? `año ${obj.año}` : null,
+            obj.color ? `color ${obj.color}` : null,
+            obj.chasis ? `chasis N° ${obj.chasis}` : null
+          ].filter(Boolean).join(', ')
+
+          return `Una chapa de vehículo tipo ${tipoChapaStr} (${origenChapaStr}) con caracteres ${obj.caracteristicas}, correspondiente a un vehículo ${detallesVehiculo}, el cual se encuentra registrado a nombre de ${registradoStr}`
         }
         if (obj.tipo === 'otro_objeto') {
           return `Un objeto/documento consistente en: ${obj.descripcion}`
@@ -4131,6 +4173,7 @@ export default function NuevaDenunciaPage() {
                         { value: 'tarjeta_credito', label: 'Tarjeta de Crédito' },
                         { value: 'celular', label: 'Celular / Teléfono Móvil' },
                         { value: 'contrato', label: 'Contrato / Documento Privado' },
+                        { value: 'chapa_vehiculo', label: 'Chapa de vehículo' },
                         { value: 'otro_objeto', label: 'Otros Objetos / Documentos' }
                       ]}
                       value={[
@@ -4142,12 +4185,30 @@ export default function NuevaDenunciaPage() {
                         { value: 'tarjeta_credito', label: 'Tarjeta de Crédito' },
                         { value: 'celular', label: 'Celular / Teléfono Móvil' },
                         { value: 'contrato', label: 'Contrato / Documento Privado' },
+                        { value: 'chapa_vehiculo', label: 'Chapa de vehículo' },
                         { value: 'otro_objeto', label: 'Otros Objetos / Documentos' }
                       ].find(opt => opt.value === nuevoObjetoTipo) || null}
                       onChange={(option) => {
                         const val = option?.value || ''
                         setNuevoObjetoTipo(val)
-                        setNuevoObjetoCampos({ estado: 'En Blanco', moneda: 'PYG', firmado: 'Sí' })
+                        if (val === 'chapa_vehiculo') {
+                          setNuevoObjetoCampos({
+                            tipoChapa: 'definitiva',
+                            origenChapa: 'nacional',
+                            paisMercosur: 'Paraguay',
+                            registradoNombre: 'recurrente',
+                            caracteristicas: '',
+                            marca: '',
+                            modelo: '',
+                            año: '',
+                            color: '',
+                            chasis: '',
+                            nombreTercero: '',
+                            documentoTercero: ''
+                          })
+                        } else {
+                          setNuevoObjetoCampos({ estado: 'En Blanco', moneda: 'PYG', firmado: 'Sí' })
+                        }
                       }}
                       placeholder="-- Seleccionar Tipo --"
                       isSearchable={false}
@@ -4551,6 +4612,238 @@ export default function NuevaDenunciaPage() {
                     </div>
                   )}
 
+                  {nuevoObjetoTipo === 'chapa_vehiculo' && (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                            Características (Nro. de Chapa/Matrícula) *
+                          </label>
+                          <input
+                            type="text"
+                            value={nuevoObjetoCampos.caracteristicas || ''}
+                            onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, caracteristicas: e.target.value.toUpperCase() })}
+                            placeholder="Ej: ZYK988"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm uppercase"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                            Tipo de Chapa *
+                          </label>
+                          <div className="flex gap-4 items-center min-h-[42px] border border-gray-300 rounded-lg px-4 bg-white">
+                            <label className="flex items-center gap-2 text-sm text-gray-700 font-medium cursor-pointer">
+                              <input
+                                type="radio"
+                                name="tipoChapa"
+                                value="definitiva"
+                                checked={nuevoObjetoCampos.tipoChapa === 'definitiva'}
+                                onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, tipoChapa: e.target.value })}
+                                className="w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                              />
+                              Definitiva
+                            </label>
+                            <label className="flex items-center gap-2 text-sm text-gray-700 font-medium cursor-pointer">
+                              <input
+                                type="radio"
+                                name="tipoChapa"
+                                value="provisoria"
+                                checked={nuevoObjetoCampos.tipoChapa === 'provisoria'}
+                                onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, tipoChapa: e.target.value })}
+                                className="w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                              />
+                              Provisoria
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                            Origen de la Chapa *
+                          </label>
+                          <div className="flex gap-4 items-center min-h-[42px] border border-gray-300 rounded-lg px-4 bg-white">
+                            <label className="flex items-center gap-2 text-sm text-gray-700 font-medium cursor-pointer">
+                              <input
+                                type="radio"
+                                name="origenChapa"
+                                value="nacional"
+                                checked={nuevoObjetoCampos.origenChapa === 'nacional'}
+                                onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, origenChapa: e.target.value })}
+                                className="w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                              />
+                              Nacional (Paraguay)
+                            </label>
+                            <label className="flex items-center gap-2 text-sm text-gray-700 font-medium cursor-pointer">
+                              <input
+                                type="radio"
+                                name="origenChapa"
+                                value="mercosur"
+                                checked={nuevoObjetoCampos.origenChapa === 'mercosur'}
+                                onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, origenChapa: e.target.value })}
+                                className="w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                              />
+                              Chapa Mercosur
+                            </label>
+                          </div>
+                        </div>
+
+                        {nuevoObjetoCampos.origenChapa === 'mercosur' && (
+                          <div>
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                              País Mercosur *
+                            </label>
+                            <Select
+                              options={[
+                                { value: 'Paraguay', label: 'Paraguay' },
+                                { value: 'Argentina', label: 'Argentina' },
+                                { value: 'Brasil', label: 'Brasil' },
+                                { value: 'Uruguay', label: 'Uruguay' },
+                                { value: 'Venezuela', label: 'Venezuela' }
+                              ]}
+                              value={{ value: nuevoObjetoCampos.paisMercosur, label: nuevoObjetoCampos.paisMercosur }}
+                              onChange={(option) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, paisMercosur: option?.value || 'Paraguay' })}
+                              placeholder="-- Seleccionar País --"
+                              isSearchable={false}
+                              className="text-sm"
+                              styles={reactSelectCustomStyles}
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="bg-slate-100/50 p-4 rounded-xl border border-slate-200/60 space-y-4">
+                        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Datos del Vehículo</span>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div>
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                              Marca *
+                            </label>
+                            <input
+                              type="text"
+                              value={nuevoObjetoCampos.marca || ''}
+                              onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, marca: e.target.value.toUpperCase() })}
+                              placeholder="Ej: TOYOTA"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm uppercase"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                              Modelo *
+                            </label>
+                            <input
+                              type="text"
+                              value={nuevoObjetoCampos.modelo || ''}
+                              onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, modelo: e.target.value.toUpperCase() })}
+                              placeholder="Ej: COROLLA"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm uppercase"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                              Año
+                            </label>
+                            <input
+                              type="text"
+                              maxLength={4}
+                              value={nuevoObjetoCampos.año || ''}
+                              onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, año: e.target.value.replace(/\D/g, '') })}
+                              placeholder="Ej: 2018"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                              Color
+                            </label>
+                            <input
+                              type="text"
+                              value={nuevoObjetoCampos.color || ''}
+                              onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, color: e.target.value.toUpperCase() })}
+                              placeholder="Ej: ROJO"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm uppercase"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                              Chasis (N° VIN)
+                            </label>
+                            <input
+                              type="text"
+                              value={nuevoObjetoCampos.chasis || ''}
+                              onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, chasis: e.target.value.toUpperCase() })}
+                              placeholder="Ej: 9HN3298AHSJDU321"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm uppercase"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="border-t border-slate-200/80 pt-3">
+                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                            Registrado a nombre de *
+                          </label>
+                          <div className="flex gap-4 items-center min-h-[42px] border border-gray-300 rounded-lg px-4 bg-white font-sans">
+                            <label className="flex items-center gap-2 text-sm text-gray-700 font-medium cursor-pointer">
+                              <input
+                                type="radio"
+                                name="registradoNombre"
+                                value="recurrente"
+                                checked={nuevoObjetoCampos.registradoNombre === 'recurrente'}
+                                onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, registradoNombre: e.target.value })}
+                                className="w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                              />
+                              A nombre del recurrente (Denunciante)
+                            </label>
+                            <label className="flex items-center gap-2 text-sm text-gray-700 font-medium cursor-pointer">
+                              <input
+                                type="radio"
+                                name="registradoNombre"
+                                value="tercero"
+                                checked={nuevoObjetoCampos.registradoNombre === 'tercero'}
+                                onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, registradoNombre: e.target.value })}
+                                className="w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                              />
+                              A nombre de un tercero / Otro
+                            </label>
+                          </div>
+                        </div>
+
+                        {nuevoObjetoCampos.registradoNombre === 'tercero' && (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-white p-3 rounded-lg border border-slate-200">
+                            <div>
+                              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                                Nombre Completo del Titular *
+                              </label>
+                              <input
+                                type="text"
+                                value={nuevoObjetoCampos.nombreTercero || ''}
+                                onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, nombreTercero: e.target.value.toUpperCase() })}
+                                placeholder="Ej: JUAN PÉREZ"
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm uppercase"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                                N° Documento del Titular *
+                              </label>
+                              <input
+                                type="text"
+                                value={nuevoObjetoCampos.documentoTercero || ''}
+                                onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, documentoTercero: e.target.value.toUpperCase() })}
+                                placeholder="Ej: 4567890"
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm uppercase"
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   {nuevoObjetoTipo === 'otro_objeto' && (
                     <div>
                       <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
@@ -4617,6 +4910,9 @@ export default function NuevaDenunciaPage() {
                               )}
                               {obj.tipo === 'contrato' && (
                                 `Contrato: ${obj.descripcion} | Partes: ${obj.partes}${obj.fechaDocumento ? ` | Fecha Doc.: ${formatearFechaDDMMAAAA(obj.fechaDocumento)}` : ''}`
+                              )}
+                              {obj.tipo === 'chapa_vehiculo' && (
+                                `Chapa N° ${obj.caracteristicas} (${obj.tipoChapa.toUpperCase()} - ${obj.origenChapa === 'nacional' ? 'NACIONAL PARAGUAY' : `MERCOSUR ${obj.paisMercosur.toUpperCase()}`}) | Vehículo: ${obj.marca} ${obj.modelo} | Reg. a nombre de: ${obj.registradoNombre === 'recurrente' ? 'Denunciante' : `${obj.nombreTercero} (${obj.documentoTercero})`}`
                               )}
                               {obj.tipo === 'otro_objeto' && (
                                 `Objeto: ${obj.descripcion}`

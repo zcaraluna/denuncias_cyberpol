@@ -661,6 +661,15 @@ export default function VerDenunciaPage({ params }: { params: Promise<{ id: stri
                                       }
                                       return f || 'No especificada';
                                     })()}` : ''}`}
+                                    {obj.tipo === 'chapa_vehiculo' && (
+                                      <>
+                                        Chapa N°: {obj.caracteristicas.toUpperCase()} ({obj.tipoChapa.toUpperCase()} - {obj.origenChapa === 'nacional' ? 'NACIONAL PARAGUAY' : `MERCOSUR ${obj.paisMercosur.toUpperCase()}`})
+                                        <br />
+                                        Vehículo: {obj.marca.toUpperCase()} {obj.modelo.toUpperCase()} {obj.año ? `| Año: ${obj.año}` : ''} {obj.color ? `| Color: ${obj.color.toUpperCase()}` : ''} {obj.chasis ? `| Chasis N°: ${obj.chasis.toUpperCase()}` : ''}
+                                        <br />
+                                        Registrado a nombre de: {obj.registradoNombre === 'recurrente' ? 'Denunciante/Recurrente' : `${obj.nombreTercero.toUpperCase()} (Doc N° ${obj.documentoTercero})`}
+                                      </>
+                                    )}
                                     {obj.tipo === 'otro_objeto' && `Descripción: ${obj.descripcion}`}
                                   </td>
                                 </tr>
