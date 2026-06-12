@@ -3225,7 +3225,10 @@ export default function NuevaDenunciaPage() {
             <div className="flex flex-col gap-5 mt-10">
               {/* Opción Hecho Punible */}
               <div 
-                onClick={() => setTipoFormulario('hecho_punible')}
+                onClick={() => {
+                  setTipoFormulario('hecho_punible')
+                  setAutorConocido('Desconocido')
+                }}
                 className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm hover:shadow-md hover:border-slate-300 hover:-translate-y-0.5 transition-all duration-300 cursor-pointer flex items-center justify-between group"
               >
                 <div className="flex-1 pr-6">
@@ -3245,7 +3248,10 @@ export default function NuevaDenunciaPage() {
 
               {/* Opción Extravío */}
               <div 
-                onClick={() => setTipoFormulario('extravio')}
+                onClick={() => {
+                  setTipoFormulario('extravio')
+                  setAutorConocido('No aplica')
+                }}
                 className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm hover:shadow-md hover:border-slate-300 hover:-translate-y-0.5 transition-all duration-300 cursor-pointer flex items-center justify-between group"
               >
                 <div className="flex-1 pr-6">
