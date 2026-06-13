@@ -4,6 +4,8 @@ import pool from '@/lib/db';
 import { renderToBuffer } from '@react-pdf/renderer';
 import DenunciaPDFDocument from '@/components/pdf/DenunciaPDF';
 import QRCode from 'qrcode';
+import fs from 'fs';
+import path from 'path';
 
 export async function GET(
     request: NextRequest,
@@ -92,6 +94,34 @@ export async function GET(
                 di.id`,
             [denuncia.id]
         );
+
+        // Pre-cargar logos institucionales (Optimización para Vercel/VPS)
+        const loadLogos = async () => {
+            const logoFiles = {
+                policia: 'policianacional.png',
+                dchef: 'dchef.png',
+                gobierno: 'gobiernonacional.jpg'
+            };
+            const loadedLogos: Record<string, string> = {};
+
+            for (const [key, filename] of Object.entries(logoFiles)) {
+                try {
+                    const filePath = path.join(process.cwd(), 'public', filename);
+                    if (fs.existsSync(filePath)) {
+                        const buffer = fs.readFileSync(filePath);
+                        const extension = filename.split('.').pop();
+                        loadedLogos[key] = `data:image/${extension === 'jpg' ? 'jpeg' : extension};base64,${buffer.toString('base64')}`;
+                    } else {
+                        loadedLogos[key] = `${request.headers.get('x-forwarded-proto') || 'https'}://${request.headers.get('host')}/${filename}`;
+                    }
+                } catch (e) {
+                    console.error(`[PDF] Error cargando logo ${filename}:`, e);
+                }
+            }
+            return loadedLogos;
+        };
+
+        const logosData = await loadLogos();
 
         // 5. Preparar datos para el PDF usando la información de la ampliación
         // pero manteniendo los datos estructurales de la denuncia original
@@ -198,7 +228,8 @@ export async function GET(
             fecha_original: denuncia.fecha_denuncia instanceof Date
                 ? denuncia.fecha_denuncia.toISOString().split('T')[0]
                 : String(denuncia.fecha_denuncia),
-            hora_original: String(denuncia.hora_denuncia || '')
+            hora_original: String(denuncia.hora_denuncia || ''),
+            logos: logosData
         };
 
         // Determinar el tamaño de página
