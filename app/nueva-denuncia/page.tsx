@@ -650,6 +650,30 @@ export default function NuevaDenunciaPage() {
     }
   }, [])
 
+  // Efecto para desactivar sugerencias y autocompletado del navegador en todos los campos
+  useEffect(() => {
+    const desactivarSugerencias = () => {
+      const inputs = document.querySelectorAll('input, textarea')
+      inputs.forEach((input) => {
+        // 'new-password' o valores no estándar evitan las sugerencias automáticas de Chrome
+        input.setAttribute('autocomplete', 'new-password')
+      })
+    }
+
+    desactivarSugerencias()
+    const timeoutId = setTimeout(desactivarSugerencias, 100)
+
+    const observer = new MutationObserver(() => {
+      desactivarSugerencias()
+    })
+    observer.observe(document.body, { childList: true, subtree: true })
+
+    return () => {
+      clearTimeout(timeoutId)
+      observer.disconnect()
+    }
+  }, [paso])
+
   // Función para obtener fecha/hora actual
   const obtenerFechaHoraActual = async () => {
     try {

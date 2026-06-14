@@ -36,6 +36,7 @@ function ConfirmacionPage() {
   const [dependencias, setDependencias] = useState<string[]>([])
   const [cargandoDependencias, setCargandoDependencias] = useState(false)
   const [segundosRestantes, setSegundosRestantes] = useState(5)
+  const [seleccion, setSeleccion] = useState<string | null>(null)
 
   const cargarDependencias = async () => {
     setCargandoDependencias(true)
@@ -417,20 +418,32 @@ function ConfirmacionPage() {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {dependencias.map((depto) => (
-                    <button
-                      key={depto}
-                      disabled={segundosRestantes > 0}
-                      onClick={() => handleSeleccionarDependencia(depto)}
-                      className={`w-full p-3.5 text-left text-[11px] font-bold uppercase tracking-tight rounded-xl border transition-all duration-200 whitespace-normal break-words ${
-                        segundosRestantes > 0
-                          ? 'bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed'
-                          : 'bg-slate-50 hover:bg-blue-50/50 border-slate-200 hover:border-blue-200 text-[#002147] hover:translate-x-1 active:scale-[0.99] cursor-pointer'
-                      }`}
-                    >
-                      {depto}
-                    </button>
-                  ))}
+                  {dependencias.map((depto) => {
+                    const isSelected = depto === seleccion
+                    return (
+                      <button
+                        key={depto}
+                        disabled={segundosRestantes > 0}
+                        onClick={() => setSeleccion(isSelected ? null : depto)}
+                        className={`w-full p-3.5 text-left text-[11px] font-bold uppercase tracking-tight rounded-xl border transition-all duration-200 whitespace-normal break-words flex items-center justify-between ${
+                          segundosRestantes > 0
+                            ? 'bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed'
+                            : isSelected
+                              ? 'bg-blue-50 border-blue-500 text-blue-900 shadow-sm cursor-pointer'
+                              : 'bg-slate-50 hover:bg-blue-50/50 border-slate-200 hover:border-blue-200 text-[#002147] hover:translate-x-1 active:scale-[0.99] cursor-pointer'
+                        }`}
+                      >
+                        <span>{depto}</span>
+                        {isSelected && (
+                          <span className="shrink-0 ml-2 text-blue-600">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                            </svg>
+                          </span>
+                        )}
+                      </button>
+                    )
+                  })}
                 </div>
               )}
             </div>
@@ -439,14 +452,16 @@ function ConfirmacionPage() {
             <div className="p-5 border-t border-slate-100 bg-slate-50/50 shrink-0">
               <button
                 disabled={segundosRestantes > 0}
-                onClick={() => handleSeleccionarDependencia('Ninguna')}
+                onClick={() => handleSeleccionarDependencia(seleccion || 'Ninguna')}
                 className={`w-full py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all flex items-center justify-center gap-2 border cursor-pointer ${
                   segundosRestantes > 0
                     ? 'bg-slate-100 border-slate-200 text-slate-300 cursor-not-allowed'
-                    : 'bg-white hover:bg-red-50 border-slate-200 hover:border-red-200 text-slate-600 hover:text-red-600 shadow-sm active:scale-95'
+                    : seleccion
+                      ? 'bg-blue-600 hover:bg-blue-700 border-blue-600 hover:border-blue-700 text-white shadow-md active:scale-95'
+                      : 'bg-white hover:bg-red-50 border-slate-200 hover:border-red-200 text-slate-600 hover:text-red-600 shadow-sm active:scale-95'
                 }`}
               >
-                No remitir / Ninguna
+                {seleccion ? 'Confirmar remisión' : 'No remitir / Ninguna'}
               </button>
             </div>
           </div>
