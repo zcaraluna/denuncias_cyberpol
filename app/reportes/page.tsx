@@ -48,6 +48,11 @@ import { exportToDocx } from '@/lib/utils/export-docx'
 import { exportComponentToImage } from '@/lib/utils/export-image'
 
 interface ReporteRow {
+  id?: number
+  creado_en?: string
+  dependencia_remitida?: string | null
+  remitido_por?: string | null
+  remitido_en?: string | null
   numero_denuncia: number
   año: number
   hora_denuncia: string
@@ -64,6 +69,20 @@ interface ReporteRow {
   moneda?: string
   entidad_reportada?: string
 }
+
+const DEPARTAMENTOS_REMISION = [
+  "Departamento Especializado Contra el Lavado de Dinero y Financiamiento del Terrorismo",
+  "Departamento Especializado Contra la Violación de los Derechos Intelectuales",
+  "Departamento Especializado en la Investigación del Cybercrímen y los Hechos Punibles Informáticos",
+  "Departamento Especializado Contra los Hechos Punibles Financieros",
+  "Departamento Especializado Contra los Hechos Punibles Económicos",
+  "Departamento Especializado Contra la Falsificación de Documentos y Abuso de Documentos de Identidad",
+  "Departamento Especializado en el Control y Fiscalización de Empresas de Seguridad Privada y afines",
+  "Departamento Especializado en Seguridad Bancaria",
+  "Subunidad de Administración y Finanzas (SUAF)",
+  "Asesoría Jurídica",
+  "Gabinete"
+]
 
 interface ResumenTipo {
   tipo: string
@@ -118,6 +137,51 @@ export default function ReportesPage() {
   const { usuario, loading: authLoading, logout } = useAuth()
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<Tab>('diario')
+
+  const esEditableRemision = (row: ReporteRow) => {
+    if (!row.creado_en) return false
+    const creadoEnMs = new Date(row.creado_en).getTime()
+    const transcurrido = Date.now() - creadoEnMs
+    return transcurrido < 24 * 60 * 60 * 1000
+  }
+
+  const handleCambiarRemision = async (rowId: number, depto: string, index: number) => {
+    try {
+      const deptoValue = depto === 'Ninguna' ? null : depto
+      const res = await fetch(`/api/denuncias/${rowId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          dependencia_remitida: deptoValue,
+          remitido_por: usuario ? `${usuario.grado} ${usuario.nombre} ${usuario.apellido}`.trim() : 'Operador'
+        })
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        const updatedDenuncia = data.denuncia
+
+        // Actualizar el estado local
+        setDatosDiario(prev => prev.map(d => {
+          if (d.id === rowId) {
+            return {
+              ...d,
+              dependencia_remitida: updatedDenuncia.dependencia_remitida,
+              remitido_por: updatedDenuncia.remitido_por,
+              remitido_en: updatedDenuncia.remitido_en
+            }
+          }
+          return d
+        }))
+      } else {
+        const err = await res.json()
+        alert(err.error || 'Error al actualizar la sugerencia')
+      }
+    } catch (e) {
+      console.error('Error al actualizar sugerencia:', e)
+      alert('Error de red al actualizar la sugerencia')
+    }
+  }
   const [mostrarGeneral, setMostrarGeneral] = useState(true)
 
   // Estado para reporte diario
@@ -1021,6 +1085,7 @@ export default function ReportesPage() {
                       <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 cursor-pointer hover:text-[#002147] transition" onClick={() => handleSort('entidad_reportada')}>
                         <div className="flex items-center gap-2">ENTIDAD REPORTADA <SortIcon field="entidad_reportada" currentField={sortField} direction={sortDirection} /></div>
                       </th>
+                      <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">DEPARTAMENTO SUGERIDO</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
@@ -1044,6 +1109,42 @@ export default function ReportesPage() {
                           {row.monto_dano ? row.monto_dano.toLocaleString('es-PY') : '0'}
                         </td>
                         <td className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-tight">{row.entidad_reportada || '-'}</td>
+                        <td className="px-6 py-4 text-[10px] font-medium text-slate-700 whitespace-normal break-words max-w-xs">
+                          {row.id && esEditableRemision(row) ? (
+                            <div className="space-y-1.5">
+                              <select
+                                value={row.dependencia_remitida || 'Ninguna'}
+                                onChange={(e) => handleCambiarRemision(row.id!, e.target.value, index)}
+                                className="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 text-[#002147] text-[10px] font-bold rounded-lg focus:ring-2 focus:ring-blue-100 outline-none"
+                              >
+                                <option value="Ninguna">-- Ninguna / No remitir --</option>
+                                {DEPARTAMENTOS_REMISION.map(depto => (
+                                  <option key={depto} value={depto}>{depto}</option>
+                                ))}
+                              </select>
+                              {row.remitido_por && (
+                                <span className="block text-[8px] text-slate-400 font-bold uppercase tracking-tight">
+                                  Sindicado por {row.remitido_por}
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <div>
+                              {row.dependencia_remitida ? (
+                                <div className="space-y-1">
+                                  <span className="font-black text-[#002147] block">{row.dependencia_remitida}</span>
+                                  {row.remitido_por && (
+                                    <span className="block text-[8px] text-slate-400 font-bold uppercase tracking-tight">
+                                      Sindicado por {row.remitido_por}
+                                    </span>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-slate-400 italic">No sugerido</span>
+                              )}
+                            </div>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -1074,6 +1175,43 @@ export default function ReportesPage() {
                         <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Monto (Gs.)</p>
                         <p className="text-[10px] font-black text-[#002147]">{row.monto_dano ? row.monto_dano.toLocaleString('es-PY') : '0'}</p>
                       </div>
+                    </div>
+                    <div className="pt-2 border-t border-slate-50">
+                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Dpto. Sugerido</p>
+                      {row.id && esEditableRemision(row) ? (
+                        <div className="space-y-1">
+                          <select
+                            value={row.dependencia_remitida || 'Ninguna'}
+                            onChange={(e) => handleCambiarRemision(row.id!, e.target.value, index)}
+                            className="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 text-[#002147] text-[9px] font-bold rounded-lg outline-none"
+                          >
+                            <option value="Ninguna">-- Ninguna / No remitir --</option>
+                            {DEPARTAMENTOS_REMISION.map(depto => (
+                              <option key={depto} value={depto}>{depto}</option>
+                            ))}
+                          </select>
+                          {row.remitido_por && (
+                            <span className="block text-[8px] text-slate-400 font-bold uppercase tracking-tight">
+                              Sindicado por {row.remitido_por}
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <div>
+                          {row.dependencia_remitida ? (
+                            <div className="space-y-0.5">
+                              <span className="text-[9px] font-black text-[#002147] uppercase whitespace-normal break-words block">{row.dependencia_remitida}</span>
+                              {row.remitido_por && (
+                                <span className="block text-[8px] text-slate-400 font-bold uppercase tracking-tight">
+                                  Sindicado por {row.remitido_por}
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-[9px] text-slate-400 italic">No sugerido</span>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}

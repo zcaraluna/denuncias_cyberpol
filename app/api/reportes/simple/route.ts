@@ -55,6 +55,11 @@ export async function GET(request: NextRequest) {
     const query = `
       WITH denuncias_query AS (
         SELECT 
+          d.id,
+          d.creado_en,
+          d.dependencia_remitida,
+          d.remitido_por,
+          d.remitido_en,
           d.orden::text as numero_denuncia,
           EXTRACT(YEAR FROM d.fecha_denuncia)::integer as año,
           d.fecha_denuncia,
@@ -76,6 +81,11 @@ export async function GET(request: NextRequest) {
       ),
       ampliaciones_query AS (
         SELECT 
+          d.id,
+          a.creado_en,
+          d.dependencia_remitida,
+          d.remitido_por,
+          d.remitido_en,
           'AMP-' || a.numero_ampliacion || '-' || d.orden as numero_denuncia,
           EXTRACT(YEAR FROM a.fecha_ampliacion)::integer as año,
           a.fecha_ampliacion as fecha_denuncia,

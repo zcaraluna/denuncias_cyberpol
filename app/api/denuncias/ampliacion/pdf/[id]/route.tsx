@@ -4,6 +4,7 @@ import pool from '@/lib/db';
 import { renderToBuffer } from '@react-pdf/renderer';
 import DenunciaPDFDocument from '@/components/pdf/DenunciaPDF';
 import QRCode from 'qrcode';
+import { PDFDocument } from 'pdf-lib';
 import fs from 'fs';
 import path from 'path';
 
@@ -123,6 +124,56 @@ export async function GET(
 
         const logosData = await loadLogos();
 
+        // 6. Pre-descargar TODOS los adjuntos (PDFs e Imágenes) en paralelo
+        const allUrls = [...(denuncia.adjuntos_urls || [])];
+        if (denuncia.es_denuncia_escrita && denuncia.archivo_denuncia_url) {
+            allUrls.unshift(denuncia.archivo_denuncia_url);
+        }
+
+        const imagenes_adjuntas: Record<string, string> = {};
+        const pdf_adjuntos_buffers: ArrayBuffer[] = [];
+
+        if (allUrls.length > 0) {
+            const downloadsStartTime = Date.now();
+            console.log(`[PDF Ampliacion] Iniciando pre-descarga de ${allUrls.length} recursos en paralelo...`);
+
+            const downloadPromises = allUrls.map(async (url) => {
+                try {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 45000); // 45s timeout
+
+                    const response = await fetch(url, { signal: controller.signal });
+                    clearTimeout(timeoutId);
+
+                    if (!response.ok) return { url, data: null };
+
+                    const buffer = await response.arrayBuffer();
+                    return { url, data: buffer };
+                } catch (e) {
+                    console.error(`[PDF Ampliacion] Error descargando ${url}:`, e);
+                    return { url, data: null };
+                }
+            });
+
+            const results = await Promise.all(downloadPromises);
+
+            results.forEach(res => {
+                if (!res.data) return;
+
+                const isPdf = res.url.toLowerCase().endsWith('.pdf');
+                if (isPdf) {
+                    pdf_adjuntos_buffers.push(res.data);
+                } else {
+                    // Es imagen
+                    const extension = res.url.split('.').pop()?.toLowerCase() || 'png';
+                    const base64 = Buffer.from(res.data).toString('base64');
+                    imagenes_adjuntas[res.url] = `data:image/${extension === 'jpg' ? 'jpeg' : extension};base64,${base64}`;
+                }
+            });
+
+            console.log(`[PDF Ampliacion] Pre-descarga completada. PDFs: ${pdf_adjuntos_buffers.length}, Imágenes: ${Object.keys(imagenes_adjuntas).length}`);
+        }
+
         // 5. Preparar datos para el PDF usando la información de la ampliación
         // pero manteniendo los datos estructurales de la denuncia original
         const denunciaData = {
@@ -229,7 +280,9 @@ export async function GET(
                 ? denuncia.fecha_denuncia.toISOString().split('T')[0]
                 : String(denuncia.fecha_denuncia),
             hora_original: String(denuncia.hora_denuncia || ''),
-            logos: logosData
+            logos: logosData,
+            adjuntos_urls: denuncia.adjuntos_urls || [],
+            imagenes_adjuntas: imagenes_adjuntas
         };
 
         // Determinar el tamaño de página
@@ -245,6 +298,44 @@ export async function GET(
 
         // Convertir Buffer a Uint8Array
         const uint8Array = new Uint8Array(pdfBuffer);
+
+        // 7. Fusionar PDFs si existen (ya pre-cargados en pdf_adjuntos_buffers)
+        if (pdf_adjuntos_buffers.length > 0) {
+            try {
+                const mergeStartTime = Date.now();
+                console.log(`[PDF Ampliacion] Iniciando fusión de ${pdf_adjuntos_buffers.length} PDFs...`);
+                const mergedPdf = await PDFDocument.create();
+
+                // Cargar el documento original (Carátula + Imágenes)
+                const mainPdf = await PDFDocument.load(pdfBuffer);
+                const mainPages = await mergedPdf.copyPages(mainPdf, mainPdf.getPageIndices());
+                mainPages.forEach((page) => mergedPdf.addPage(page));
+
+                // Copiar páginas de cada adjunto pre-descargado
+                for (const buffer of pdf_adjuntos_buffers) {
+                    try {
+                        const adjuntoPdf = await PDFDocument.load(buffer);
+                        const pages = await mergedPdf.copyPages(adjuntoPdf, adjuntoPdf.getPageIndices());
+                        pages.forEach((page) => mergedPdf.addPage(page));
+                    } catch (err) {
+                        console.error(`[PDF Ampliacion] Error cargando/fusionando adjunto PDF:`, err);
+                    }
+                }
+
+                console.log(`[PDF Ampliacion] Fusión de PDFs completada en ${Date.now() - mergeStartTime}ms`);
+
+                const mergedPdfBytes = await mergedPdf.save();
+                return new NextResponse(Buffer.from(mergedPdfBytes), {
+                    headers: {
+                        'Content-Type': 'application/pdf',
+                        'Content-Disposition': `attachment; filename="ampliacion_${ampliacion.numero_ampliacion}_${denuncia.orden}.pdf"`,
+                    },
+                });
+
+            } catch (mergeError) {
+                console.error('[PDF Ampliacion] Error general fusionando PDFs:', mergeError);
+            }
+        }
 
         return new NextResponse(Buffer.from(uint8Array), {
             headers: {

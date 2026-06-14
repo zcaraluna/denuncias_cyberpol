@@ -31,6 +31,70 @@ function ConfirmacionPage() {
   const [firmasStatus, setFirmasStatus] = useState<{ operador: boolean, denunciante: boolean }>({ operador: false, denunciante: false })
   const [loadingStatus, setLoadingStatus] = useState(false)
 
+  // Estados para derivación a dependencias
+  const [mostrarModalRemision, setMostrarModalRemision] = useState(false)
+  const [dependencias, setDependencias] = useState<string[]>([])
+  const [cargandoDependencias, setCargandoDependencias] = useState(false)
+  const [segundosRestantes, setSegundosRestantes] = useState(5)
+
+  const cargarDependencias = async () => {
+    setCargandoDependencias(true)
+    try {
+      const res = await fetch('/api/denuncias/dependencias')
+      if (res.ok) {
+        const data = await res.json()
+        setDependencias(data.departamentos || [])
+      }
+    } catch (e) {
+      console.error('Error al cargar dependencias:', e)
+    } finally {
+      setCargandoDependencias(false)
+    }
+  }
+
+  const handleSeleccionarDependencia = async (depto: string | null) => {
+    if (!denuncia) return
+    try {
+      const res = await fetch(`/api/denuncias/${denuncia.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          dependencia_remitida: depto === 'Ninguna' ? null : depto,
+          remitido_por: usuario ? `${usuario.grado} ${usuario.nombre} ${usuario.apellido}`.trim() : null
+        })
+      })
+      if (res.ok) {
+        setDenuncia(prev => prev ? { 
+          ...prev, 
+          dependenciaRemitida: depto === 'Ninguna' ? null : depto,
+          remitidoPor: usuario ? `${usuario.grado} ${usuario.nombre} ${usuario.apellido}`.trim() : 'Operador'
+        } : null)
+        setMostrarModalRemision(false)
+      } else {
+        const err = await res.json()
+        alert(err.error || 'Error al guardar la selección')
+      }
+    } catch (e) {
+      console.error('Error al guardar selección:', e)
+      alert('Error de red al guardar la selección')
+    }
+  }
+
+  useEffect(() => {
+    if (!mostrarModalRemision) return
+    setSegundosRestantes(5)
+    const interval = setInterval(() => {
+      setSegundosRestantes((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval)
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [mostrarModalRemision])
+
   // Función para obtener/generar tokens de firma
   const initFirmas = async (denunciaId: any) => {
     try {
@@ -112,7 +176,7 @@ function ConfirmacionPage() {
           fechaStr = fechaStr.split('T')[0]
         }
 
-        setDenuncia({
+        const denunciaInfo = {
           id: data.id,
           orden: data.orden,
           año: fechaStr.split('-')[0],
@@ -120,7 +184,17 @@ function ConfirmacionPage() {
           hora: data.hora_denuncia,
           denunciante: data.denunciante_nombres,
           tipoHecho: data.tipo_denuncia + (data.grado_ejecucion ? ` (${data.grado_ejecucion.toUpperCase()})` : ''),
-        })
+          dependenciaRemitida: data.dependencia_remitida,
+          remitidoPor: data.remitido_por
+        }
+
+        setDenuncia(denunciaInfo)
+
+        if (!isSimulacion && !data.remitido_por) {
+          cargarDependencias()
+          setMostrarModalRemision(true)
+        }
+
         if (SHOW_DIGITAL_SIGNATURE) {
           initFirmas(data.id)
         }
@@ -295,6 +369,89 @@ function ConfirmacionPage() {
           </div>
         </div>
       </div>
+
+      {/* MODAL DE REMISIÓN A DEPENDENCIAS */}
+      {mostrarModalRemision && (
+        <div className="fixed inset-0 bg-[#000a12]/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl border border-slate-100 shadow-2xl max-w-lg w-full overflow-hidden transform transition-all animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+            {/* Cabecera del Modal */}
+            <div className="bg-[#002147] p-5 text-center text-white relative shrink-0">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full -mr-12 -mt-12 blur-xl" />
+              <div className="absolute bottom-0 left-0 w-16 h-16 bg-blue-400/10 rounded-full -ml-8 -mb-8 blur-xl" />
+              
+              <div className="relative z-10 flex flex-col items-center gap-2">
+                <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20">
+                  <svg className="w-5 h-5 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                  </svg>
+                </div>
+                <h3 className="text-base font-black uppercase tracking-tight">Sugerencia de Remisión</h3>
+                <p className="text-[10px] font-bold text-blue-200 uppercase tracking-wider">Control estadístico interno</p>
+                
+                {/* Visualización del Timer */}
+                <div className="mt-1">
+                  {segundosRestantes > 0 ? (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500/20 text-amber-300 text-[10px] font-black uppercase tracking-widest rounded-full border border-amber-500/30">
+                      <span className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-ping" />
+                      Espere {segundosRestantes}s para decidir
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-500/20 text-green-300 text-[10px] font-black uppercase tracking-widest rounded-full border border-green-500/30">
+                      Opciones habilitadas
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Contenido del Modal */}
+            <div className="p-5 overflow-y-auto flex-1 text-left space-y-4">
+              <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                ¿Considera que la denuncia realizada debería ser remitida a una de las siguientes dependencias especializadas?
+              </p>
+
+              {cargandoDependencias ? (
+                <div className="py-12 flex flex-col items-center justify-center">
+                  <div className="w-8 h-8 border-3 border-blue-200 border-t-[#002147] rounded-full animate-spin mb-3" />
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Cargando dependencias...</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {dependencias.map((depto) => (
+                    <button
+                      key={depto}
+                      disabled={segundosRestantes > 0}
+                      onClick={() => handleSeleccionarDependencia(depto)}
+                      className={`w-full p-3.5 text-left text-[11px] font-bold uppercase tracking-tight rounded-xl border transition-all duration-200 whitespace-normal break-words ${
+                        segundosRestantes > 0
+                          ? 'bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed'
+                          : 'bg-slate-50 hover:bg-blue-50/50 border-slate-200 hover:border-blue-200 text-[#002147] hover:translate-x-1 active:scale-[0.99] cursor-pointer'
+                      }`}
+                    >
+                      {depto}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Pie del Modal con "No remitir" */}
+            <div className="p-5 border-t border-slate-100 bg-slate-50/50 shrink-0">
+              <button
+                disabled={segundosRestantes > 0}
+                onClick={() => handleSeleccionarDependencia('Ninguna')}
+                className={`w-full py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all flex items-center justify-center gap-2 border cursor-pointer ${
+                  segundosRestantes > 0
+                    ? 'bg-slate-100 border-slate-200 text-slate-300 cursor-not-allowed'
+                    : 'bg-white hover:bg-red-50 border-slate-200 hover:border-red-200 text-slate-600 hover:text-red-600 shadow-sm active:scale-95'
+                }`}
+              >
+                No remitir / Ninguna
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </MainLayout>
   )
 }
