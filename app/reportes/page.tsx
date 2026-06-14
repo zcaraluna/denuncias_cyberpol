@@ -1123,6 +1123,11 @@ export default function ReportesPage() {
                                   <option key={depto} value={depto}>{depto}</option>
                                 ))}
                               </select>
+                              {row.dependencia_remitida && row.dependencia_remitida !== 'Ninguna' && (
+                                <span className="block text-[9px] text-[#002147]/80 font-bold bg-slate-100/60 px-1.5 py-0.5 rounded border border-slate-200/40 whitespace-normal break-words leading-snug">
+                                  {row.dependencia_remitida}
+                                </span>
+                              )}
                               {row.remitido_por && (
                                 <span className="block text-[8px] text-slate-400 font-bold uppercase tracking-tight">
                                   Sindicado por {row.remitido_por}
@@ -1191,6 +1196,11 @@ export default function ReportesPage() {
                               <option key={depto} value={depto}>{depto}</option>
                             ))}
                           </select>
+                          {row.dependencia_remitida && row.dependencia_remitida !== 'Ninguna' && (
+                            <span className="block text-[9px] text-[#002147]/80 font-bold bg-slate-100/60 px-1.5 py-0.5 rounded border border-slate-200/40 whitespace-normal break-words leading-snug">
+                              {row.dependencia_remitida}
+                            </span>
+                          )}
                           {row.remitido_por && (
                             <span className="block text-[8px] text-slate-400 font-bold uppercase tracking-tight">
                               Sindicado por {row.remitido_por}
