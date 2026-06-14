@@ -69,7 +69,7 @@ export default function InicioPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedManual, setSelectedManual] = useState<Manual | null>(null)
   const [isManualModalOpen, setIsManualModalOpen] = useState(false)
-  const [showUpdateModal, setShowUpdateModal] = useState(false)
+  const [activeModal, setActiveModal] = useState<'new' | 'old' | null>(null)
 
   const fetchRates = async () => {
     setLoading(true)
@@ -97,14 +97,18 @@ export default function InicioPage() {
       // Mostrar modal de actualizaciones una vez por sesión
       const hasSeen = sessionStorage.getItem('hasSeenUpdateModal')
       if (!hasSeen) {
-        setShowUpdateModal(true)
+        setActiveModal('new')
       }
     }
   }, [usuario, authLoading, router])
 
-  const handleCloseUpdateModal = () => {
+  const handleCloseNewModal = () => {
+    setActiveModal('old')
+  }
+
+  const handleCloseOldModal = () => {
     sessionStorage.setItem('hasSeenUpdateModal', 'true')
-    setShowUpdateModal(false)
+    setActiveModal(null)
   }
 
   if (authLoading) {
@@ -239,18 +243,111 @@ export default function InicioPage() {
         />
       )}
 
-      {/* Modal de Actualización */}
-      {showUpdateModal && (
+      {/* Modal de Actualización - Novedades (v1.5.522) */}
+      {activeModal === 'new' && (
         <UpdateModal
-          onClose={handleCloseUpdateModal}
+          version="v1.5.522"
+          onClose={handleCloseNewModal}
+          features={[
+            {
+              icon: (
+                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                </svg>
+              ),
+              title: "Archivos Adjuntos Integrados",
+              description: (
+                <>
+                  Los archivos que se adjuntan a una denuncia ahora <strong className="font-extrabold text-[#002147]">salen incorporados directamente en el PDF</strong>, por lo que ya no es necesario imprimirlos por separado.
+                </>
+              ),
+              bgClass: "bg-blue-50",
+              borderClass: "border-blue-100"
+            },
+            {
+              icon: (
+                <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+              ),
+              title: "Sugerencia de Remisión",
+              description: (
+                <>
+                  Al finalizar una denuncia y antes de imprimir, el sistema <strong className="font-extrabold text-[#002147]">solicitará una sugerencia de dependencia</strong> a la cual correspondería remitir la denuncia (pudiendo omitirse este paso si no se desea realizar).
+                </>
+              ),
+              bgClass: "bg-amber-50",
+              borderClass: "border-amber-100"
+            }
+          ]}
+        />
+      )}
+
+      {/* Modal de Actualización - Anterior (v1.5.519) */}
+      {activeModal === 'old' && (
+        <UpdateModal
+          version="v1.5.519"
+          onClose={handleCloseOldModal}
+          features={[
+            {
+              icon: (
+                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                </svg>
+              ),
+              title: "Autoguardado Automático",
+              description: (
+                <>
+                  Tus datos se guardan silenciosamente cada <strong className="font-extrabold text-[#002147]">90 segundos</strong> a partir del Paso 3. Si ocurre un corte de energía, falla de conexión o cierre accidental, podrás continuar la denuncia desde el último punto guardado.
+                </>
+              ),
+              bgClass: "bg-blue-50",
+              borderClass: "border-blue-100"
+            },
+            {
+              icon: (
+                <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              ),
+              title: "Expiración de Borradores",
+              description: (
+                <>
+                  Para mantener el sistema optimizado y resguardar la privacidad de los datos, todo borrador no finalizado <strong className="font-extrabold text-[#002147]">se eliminará de manera automática pasadas las 24 horas</strong> de su creación.
+                </>
+              ),
+              bgClass: "bg-amber-50",
+              borderClass: "border-amber-100"
+            }
+          ]}
         />
       )}
     </MainLayout>
   )
 }
 
-function UpdateModal({ onClose }: { onClose: () => void }) {
+interface Feature {
+  icon: React.ReactNode
+  title: string
+  description: React.ReactNode
+  bgClass: string
+  borderClass: string
+}
+
+function UpdateModal({
+  version,
+  features,
+  onClose
+}: {
+  version: string
+  features: Feature[]
+  onClose: () => void
+}) {
   const [segundos, setSegundos] = useState(5)
+
+  useEffect(() => {
+    setSegundos(5)
+  }, [version])
 
   useEffect(() => {
     if (segundos <= 0) return
@@ -279,7 +376,7 @@ function UpdateModal({ onClose }: { onClose: () => void }) {
             </div>
             <div>
               <span className="text-[10px] font-black uppercase tracking-[0.25em] text-blue-200 block mb-0.5">
-                Nueva Actualización (v1.5.522)
+                Nueva Actualización ({version})
               </span>
               <h2 className="text-2xl font-extrabold tracking-tight">
                 SIDE Sistema de Denuncias
@@ -295,39 +392,21 @@ function UpdateModal({ onClose }: { onClose: () => void }) {
           </p>
 
           <div className="space-y-6">
-            {/* Feature 1 */}
-            <div className="flex gap-5">
-              <div className="flex-shrink-0 flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 border border-blue-100">
-                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                </svg>
+            {features.map((feature, idx) => (
+              <div key={idx} className="flex gap-5">
+                <div className={`flex-shrink-0 flex h-11 w-11 items-center justify-center rounded-2xl ${feature.bgClass} border ${feature.borderClass}`}>
+                  {feature.icon}
+                </div>
+                <div>
+                  <h4 className="text-sm font-black text-[#002147] uppercase tracking-wide mb-1.5">
+                    {feature.title}
+                  </h4>
+                  <p className="text-xs text-slate-400 leading-relaxed font-medium">
+                    {feature.description}
+                  </p>
+                </div>
               </div>
-              <div>
-                <h4 className="text-sm font-black text-[#002147] uppercase tracking-wide mb-1.5">
-                  Archivos Adjuntos Integrados
-                </h4>
-                <p className="text-xs text-slate-400 leading-relaxed font-medium">
-                  Los archivos que se adjuntan a una denuncia ahora <strong className="font-extrabold text-[#002147]">salen incorporados directamente en el PDF</strong>, por lo que ya no es necesario imprimirlos por separado.
-                </p>
-              </div>
-            </div>
-
-            {/* Feature 2 */}
-            <div className="flex gap-5">
-              <div className="flex-shrink-0 flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-50 border border-amber-100">
-                <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                </svg>
-              </div>
-              <div>
-                <h4 className="text-sm font-black text-[#002147] uppercase tracking-wide mb-1.5">
-                  Sugerencia de Remisión
-                </h4>
-                <p className="text-xs text-slate-400 leading-relaxed font-medium">
-                  Al finalizar una denuncia y antes de imprimir, el sistema <strong className="font-extrabold text-[#002147]">solicitará una sugerencia de dependencia</strong> a la cual correspondería remitir la denuncia (pudiendo omitirse este paso si no se desea realizar).
-                </p>
-              </div>
-            </div>
+            ))}
           </div>
 
           <button
