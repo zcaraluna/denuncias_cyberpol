@@ -213,17 +213,29 @@ export async function GET(
 
             for (const [key, filename] of Object.entries(logoFiles)) {
                 try {
-                    const filePath = path.join(process.cwd(), 'public', filename);
-                    if (fs.existsSync(filePath)) {
-                        const buffer = fs.readFileSync(filePath);
-                        const extension = filename.split('.').pop();
-                        loadedLogos[key] = `data:image/${extension === 'jpg' ? 'jpeg' : extension};base64,${buffer.toString('base64')}`;
-                    } else {
-                        // Fallback a URL si no existe localmente (raro)
-                        loadedLogos[key] = `${request.headers.get('x-forwarded-proto') || 'https'}://${request.headers.get('host')}/${filename}`;
+                    const pathsToTry = [
+                        path.join(process.cwd(), 'public', filename),
+                        path.join(process.cwd(), '..', 'public', filename),
+                        path.join(process.cwd(), '.next', 'standalone', 'public', filename),
+                    ];
+                    
+                    let found = false;
+                    for (const filePath of pathsToTry) {
+                        if (fs.existsSync(filePath)) {
+                            const buffer = fs.readFileSync(filePath);
+                            const extension = filename.split('.').pop();
+                            loadedLogos[key] = `data:image/${extension === 'jpg' ? 'jpeg' : extension};base64,${buffer.toString('base64')}`;
+                            console.warn(`[DEBUG-PDF] Logo ${key} cargado con éxito desde ruta local: ${filePath}`);
+                            found = true;
+                            break;
+                        }
                     }
-                } catch (e) {
-                    console.error(`[PDF] Error cargando logo ${filename}:`, e);
+                    
+                    if (!found) {
+                        console.warn(`[DEBUG-PDF] ADVERTENCIA: Logo ${filename} no se encontró en ninguna de las rutas locales probadas: ${JSON.stringify(pathsToTry)}. Se omitirá el logo para evitar loopbacks HTTP.`);
+                    }
+                } catch (e: any) {
+                    console.error(`[DEBUG-PDF] Error cargando logo ${filename}:`, e.message || e);
                 }
             }
             return loadedLogos;
