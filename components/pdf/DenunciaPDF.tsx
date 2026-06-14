@@ -7,17 +7,17 @@ import { TercerParrafo } from './TercerParrafo';
 import { CierreDenuncia } from './CierreDenuncia';
 import { SeccionFirmas } from './SeccionFirmas';
 
-// Registrar fuente Roboto
-Font.register({
-    family: 'Roboto',
-    fonts: [
-        { src: 'https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-light-webfont.ttf', fontWeight: 300 },
-        { src: 'https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-regular-webfont.ttf', fontWeight: 400 },
-        { src: 'https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-italic-webfont.ttf', fontWeight: 400, fontStyle: 'italic' },
-        { src: 'https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-medium-webfont.ttf', fontWeight: 500 },
-        { src: 'https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-bold-webfont.ttf', fontWeight: 700 },
-    ],
-});
+// Registrar fuente Roboto (Comentado para evitar descargas externas que bloquean el VPS)
+// Font.register({
+//     family: 'Roboto',
+//     fonts: [
+//         { src: 'https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-light-webfont.ttf', fontWeight: 300 },
+//         { src: 'https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-regular-webfont.ttf', fontWeight: 400 },
+//         { src: 'https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-italic-webfont.ttf', fontWeight: 400, fontStyle: 'italic' },
+//         { src: 'https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-medium-webfont.ttf', fontWeight: 500 },
+//         { src: 'https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-bold-webfont.ttf', fontWeight: 700 },
+//     ],
+// });
 
 const formatearFechaPDF = (fechaStr?: string): string => {
     if (!fechaStr) return 'NO ESPECIFICADA';
@@ -36,7 +36,7 @@ const styles = StyleSheet.create({
         paddingBottom: 72,  // 2.54cm
         paddingHorizontal: 72,  // 2.54cm laterales
         fontSize: 11.5,
-        fontFamily: 'Roboto',
+        fontFamily: 'Helvetica',
     },
     headerFixed: {
         position: 'relative',

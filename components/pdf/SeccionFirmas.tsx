@@ -39,7 +39,7 @@ const styles = StyleSheet.create({
         fontSize: 6,
         textAlign: 'center',
         color: '#666',
-        fontFamily: 'Roboto',
+        fontFamily: 'Helvetica',
     }
 });
 
