@@ -3,7 +3,7 @@ import pool from '@/lib/db';
 import { renderToBuffer } from '@react-pdf/renderer';
 import DenunciaPDFDocument from '@/components/pdf/DenunciaPDF';
 import QRCode from 'qrcode';
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import fs from 'fs';
 import path from 'path';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
@@ -217,8 +217,8 @@ export async function GET(
             allUrls.unshift(denuncia.archivo_denuncia_url);
         }
 
-        const imagenes_adjuntas: Record<string, string> = {};
-        const pdf_adjuntos_buffers: any[] = [];
+        // Coleccionar buffers de adjuntos procesados para fusión con pdf-lib
+        const adjuntos_procesados: { tipo: 'pdf' | 'imagen'; buffer: Buffer; url: string }[] = [];
 
         if (allUrls.length > 0) {
             const downloadsStartTime = Date.now();
@@ -236,16 +236,18 @@ export async function GET(
 
                 const isPdf = res.url.toLowerCase().endsWith('.pdf');
                 if (isPdf) {
-                    pdf_adjuntos_buffers.push(res.data);
+                    adjuntos_procesados.push({ tipo: 'pdf', buffer: res.data, url: res.url });
                 } else {
-                    // Es imagen
-                    const extension = res.url.split('.').pop()?.toLowerCase() || 'png';
-                    const base64 = res.data.toString('base64');
-                    imagenes_adjuntas[res.url] = `data:image/${extension === 'jpg' ? 'jpeg' : extension};base64,${base64}`;
+                    const ext = res.url.split('.').pop()?.toLowerCase() || 'png';
+                    if (['jpg', 'jpeg', 'png'].includes(ext)) {
+                        adjuntos_procesados.push({ tipo: 'imagen', buffer: res.data, url: res.url });
+                    }
                 }
             });
 
-            console.warn(`[DEBUG-PDF-AMPLIACION] Pre-descarga completada en ${Date.now() - downloadsStartTime}ms. PDFs: ${pdf_adjuntos_buffers.length}, Imágenes: ${Object.keys(imagenes_adjuntas).length}`);
+            const pdfCount = adjuntos_procesados.filter(x => x.tipo === 'pdf').length;
+            const imgCount = adjuntos_procesados.filter(x => x.tipo === 'imagen').length;
+            console.warn(`[DEBUG-PDF-AMPLIACION] Pre-descarga completada en ${Date.now() - downloadsStartTime}ms. PDFs: ${pdfCount}, Imágenes: ${imgCount}`);
         }
 
         // 5. Preparar datos para el PDF usando la información de la ampliación
@@ -355,8 +357,8 @@ export async function GET(
                 : String(denuncia.fecha_denuncia),
             hora_original: String(denuncia.hora_denuncia || ''),
             logos: logosData,
-            adjuntos_urls: denuncia.adjuntos_urls || [],
-            imagenes_adjuntas: imagenes_adjuntas
+            adjuntos_urls: [], // Vacío para evitar que react-pdf intente procesar páginas de imágenes
+            imagenes_adjuntas: {} // Vacío para evitar procesamiento pesado en react-pdf
         };
 
         // Generar código QR antes del renderizado
@@ -382,33 +384,93 @@ export async function GET(
         // Convertir Buffer a Uint8Array
         const uint8Array = new Uint8Array(pdfBuffer);
 
-        // 7. Fusionar PDFs si existen (ya pre-cargados en pdf_adjuntos_buffers)
-        if (pdf_adjuntos_buffers.length > 0) {
+        // 7. Fusionar PDFs e Imágenes si existen (usando pdf-lib de forma lineal y rápida)
+        if (adjuntos_procesados.length > 0) {
             try {
                 const mergeStartTime = Date.now();
-                console.warn(`[DEBUG-PDF-AMPLIACION] Iniciando fusión de ${pdf_adjuntos_buffers.length} PDFs...`);
+                console.warn(`[DEBUG-PDF-AMPLIACION] Iniciando fusión de ${adjuntos_procesados.length} adjuntos con pdf-lib...`);
                 const mergedPdf = await PDFDocument.create();
 
-                // Cargar el documento original (Carátula + Imágenes)
+                // Cargar el documento original (Carátula)
                 console.warn(`[DEBUG-PDF-AMPLIACION] Cargando PDF principal en pdf-lib...`);
                 const mainPdf = await PDFDocument.load(pdfBuffer);
-                console.warn(`[DEBUG-PDF-AMPLIACION] PDF principal cargado en pdf-lib. Páginas: ${mainPdf.getPageCount()}`);
+                console.warn(`[DEBUG-PDF-AMPLIACION] PDF principal cargado. Copiando ${mainPdf.getPageCount()} páginas...`);
                 const mainPages = await mergedPdf.copyPages(mainPdf, mainPdf.getPageIndices());
                 mainPages.forEach((page) => mergedPdf.addPage(page));
 
-                // Copiar páginas de cada adjunto pre-descargado
-                let adjuntoIndex = 0;
-                for (const buffer of pdf_adjuntos_buffers) {
-                    try {
-                        adjuntoIndex++;
-                        console.warn(`[DEBUG-PDF-AMPLIACION] Cargando adjunto PDF #${adjuntoIndex} en pdf-lib (tamaño buffer: ${buffer.length})...`);
-                        const adjuntoPdf = await PDFDocument.load(buffer);
-                        console.warn(`[DEBUG-PDF-AMPLIACION] Adjunto PDF #${adjuntoIndex} cargado con éxito. Copiando ${adjuntoPdf.getPageCount()} páginas...`);
-                        const pages = await mergedPdf.copyPages(adjuntoPdf, adjuntoPdf.getPageIndices());
-                        pages.forEach((page) => mergedPdf.addPage(page));
-                        console.warn(`[DEBUG-PDF-AMPLIACION] Páginas del adjunto PDF #${adjuntoIndex} copiadas con éxito.`);
-                    } catch (err: any) {
-                        console.error(`[DEBUG-PDF-AMPLIACION] Error cargando/fusionando adjunto PDF #${adjuntoIndex}:`, err.message || err);
+                // Obtener fuente Helvetica-Bold para dibujar títulos en las hojas de imágenes
+                const font = await mergedPdf.embedFont(StandardFonts.HelveticaBold);
+
+                // Procesar cada adjunto ordenadamente
+                let imageCount = 0;
+                let pdfCount = 0;
+                for (const adjunto of adjuntos_procesados) {
+                    if (adjunto.tipo === 'pdf') {
+                        pdfCount++;
+                        console.warn(`[DEBUG-PDF-AMPLIACION] Fusionando PDF adjunto #${pdfCount}: ${adjunto.url}`);
+                        try {
+                            const adjuntoPdf = await PDFDocument.load(adjunto.buffer);
+                            const pages = await mergedPdf.copyPages(adjuntoPdf, adjuntoPdf.getPageIndices());
+                            pages.forEach((page) => mergedPdf.addPage(page));
+                            console.warn(`[DEBUG-PDF-AMPLIACION] Páginas del PDF adjunto #${pdfCount} copiadas con éxito.`);
+                        } catch (err: any) {
+                            console.error(`[DEBUG-PDF-AMPLIACION] Error cargando/fusionando PDF adjunto #${pdfCount}:`, err.message || err);
+                        }
+                    } else {
+                        imageCount++;
+                        console.warn(`[DEBUG-PDF-AMPLIACION] Incrustando imagen adjunta #${imageCount}: ${adjunto.url}`);
+                        try {
+                            const ext = adjunto.url.split('.').pop()?.toLowerCase() || 'png';
+                            let image;
+                            if (ext === 'png') {
+                                image = await mergedPdf.embedPng(adjunto.buffer);
+                            } else {
+                                image = await mergedPdf.embedJpg(adjunto.buffer);
+                            }
+                            
+                            // Crear página Oficio [612, 936] para mantener uniformidad
+                            const page = mergedPdf.addPage([612, 936]);
+                            const pageWidth = 612;
+                            const pageHeight = 936;
+                            const titleHeight = 40;
+                            const margin = 50;
+                            
+                            // Dibujar título "ADJUNTO X"
+                            page.drawText(`ADJUNTO ${imageCount}`, {
+                                x: margin,
+                                y: pageHeight - margin - 10,
+                                size: 12,
+                                font: font,
+                                color: rgb(0, 0.13, 0.28), // Navy blue
+                            });
+                            
+                            // Calcular dimensiones de escalado proporcional
+                            const maxImgWidth = pageWidth - margin * 2;
+                            const maxImgHeight = pageHeight - margin * 2 - titleHeight;
+                            
+                            let imgWidth = image.width;
+                            let imgHeight = image.height;
+                            
+                            const scale = Math.min(maxImgWidth / imgWidth, maxImgHeight / imgHeight);
+                            if (scale < 1) {
+                                imgWidth = imgWidth * scale;
+                                imgHeight = imgHeight * scale;
+                            }
+                            
+                            // Centrar la imagen en la página debajo del título
+                            const x = (pageWidth - imgWidth) / 2;
+                            const y = margin + (maxImgHeight - imgHeight) / 2;
+                            
+                            page.drawImage(image, {
+                                x,
+                                y,
+                                width: imgWidth,
+                                height: imgHeight,
+                            });
+                            console.warn(`[DEBUG-PDF-AMPLIACION] Imagen adjunta #${imageCount} dibujada con éxito.`);
+                        } catch (err: any) {
+                            console.error(`[DEBUG-PDF-AMPLIACION] Error incrustando imagen adjunta #${imageCount}:`, err.message || err);
+                        }
                     }
                 }
 
@@ -425,7 +487,7 @@ export async function GET(
                 });
 
             } catch (mergeError: any) {
-                console.error('[DEBUG-PDF-AMPLIACION] Error general fusionando PDFs:', mergeError.message || mergeError);
+                console.error('[DEBUG-PDF-AMPLIACION] Error general fusionando PDFs e imágenes:', mergeError.message || mergeError);
             }
         }
 
