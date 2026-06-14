@@ -11,6 +11,7 @@ import { s3Client, bucketName } from '@/lib/s3';
 
 // Función para descargar un adjunto de forma segura
 async function descargarRecurso(url: string): Promise<Buffer | null> {
+    console.warn(`[DEBUG-PDF-AMPLIACION] Inicio descargarRecurso para: ${url}`);
     try {
         const publicEndpoint = process.env.GARAGE_PUBLIC_URL || 'https://web.s1mple.cloud';
         
@@ -27,35 +28,51 @@ async function descargarRecurso(url: string): Promise<Buffer | null> {
             }
             
             const decodedKey = decodeURIComponent(key);
-            console.log(`[PDF Ampliacion] Descargando desde S3 directamente: ${decodedKey}`);
+            console.warn(`[DEBUG-PDF-AMPLIACION] S3 MATCH: key=${decodedKey}, bucket=${bucketName}`);
+            
+            console.warn(`[DEBUG-PDF-AMPLIACION] Enviando GetObjectCommand a S3...`);
             const response = await s3Client.send(
                 new GetObjectCommand({
                     Bucket: bucketName,
                     Key: decodedKey,
                 })
             );
+            console.warn(`[DEBUG-PDF-AMPLIACION] Respuesta de GetObjectCommand recibida.`);
             
             if (response.Body) {
+                console.warn(`[DEBUG-PDF-AMPLIACION] Consumiendo body con transformToByteArray...`);
                 const bytes = await response.Body.transformToByteArray();
+                console.warn(`[DEBUG-PDF-AMPLIACION] Body consumido con éxito, size=${bytes.length}`);
                 return Buffer.from(bytes);
+            } else {
+                console.warn(`[DEBUG-PDF-AMPLIACION] GetObjectCommand retornó respuesta sin Body.`);
             }
+        } else {
+            console.warn(`[DEBUG-PDF-AMPLIACION] HTTP MATCH (externo): ${url}`);
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => {
+                console.warn(`[DEBUG-PDF-AMPLIACION] HTTP timeout de 15s alcanzado para ${url}, abortando...`);
+                controller.abort();
+            }, 15000); // 15s timeout
+            
+            console.warn(`[DEBUG-PDF-AMPLIACION] Iniciando fetch HTTP para ${url}...`);
+            const response = await fetch(url, { signal: controller.signal });
+            clearTimeout(timeoutId);
+            console.warn(`[DEBUG-PDF-AMPLIACION] HTTP fetch completado, status=${response.status}`);
+            
+            if (!response.ok) {
+                console.warn(`[DEBUG-PDF-AMPLIACION] HTTP fetch falló con status no-ok`);
+                return null;
+            }
+            const arrayBuffer = await response.arrayBuffer();
+            console.warn(`[DEBUG-PDF-AMPLIACION] HTTP body consumido con éxito, size=${arrayBuffer.byteLength}`);
+            return Buffer.from(arrayBuffer);
         }
-        
-        // Fallback para URLs externas reales (si las hay) con abort controller
-        console.log(`[PDF Ampliacion] Descargando por HTTP (fallback): ${url}`);
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
-        
-        const response = await fetch(url, { signal: controller.signal });
-        clearTimeout(timeoutId);
-        
-        if (!response.ok) return null;
-        const arrayBuffer = await response.arrayBuffer();
-        return Buffer.from(arrayBuffer);
-    } catch (e) {
-        console.error(`[PDF Ampliacion] Error descargando recurso ${url}:`, e);
+    } catch (e: any) {
+        console.error(`[DEBUG-PDF-AMPLIACION] EXCEPCIÓN en descargarRecurso para ${url}:`, e.message || e);
         return null;
     }
+    return null;
 }
 
 
@@ -64,7 +81,9 @@ export async function GET(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const startTime = Date.now();
         const { id: idStr } = await params;
+        console.warn(`[DEBUG-PDF-AMPLIACION] Iniciando generación para ampliacion ${idStr} - ${new Date().toISOString()}`);
         const id = parseInt(idStr);
         const { searchParams } = new URL(request.url);
         const tipo = searchParams.get('tipo') || 'oficio';
@@ -147,6 +166,8 @@ export async function GET(
             [denuncia.id]
         );
 
+        console.warn(`[DEBUG-PDF-AMPLIACION] Consultas DB completadas en ${Date.now() - startTime}ms`);
+
         // Pre-cargar logos institucionales (Optimización para Vercel/VPS)
         const loadLogos = async () => {
             const logoFiles = {
@@ -173,7 +194,9 @@ export async function GET(
             return loadedLogos;
         };
 
+        const logosStartTime = Date.now();
         const logosData = await loadLogos();
+        console.warn(`[DEBUG-PDF-AMPLIACION] Logos cargados en ${Date.now() - logosStartTime}ms`);
 
         // 6. Pre-descargar TODOS los adjuntos (PDFs e Imágenes) en paralelo usando S3 local
         const allUrls = [...(denuncia.adjuntos_urls || [])];
@@ -186,7 +209,7 @@ export async function GET(
 
         if (allUrls.length > 0) {
             const downloadsStartTime = Date.now();
-            console.log(`[PDF Ampliacion] Iniciando pre-descarga de ${allUrls.length} recursos desde S3/HTTP...`);
+            console.warn(`[DEBUG-PDF-AMPLIACION] Iniciando pre-descarga de ${allUrls.length} recursos desde S3/HTTP...`);
 
             const downloadPromises = allUrls.map(async (url) => {
                 const buffer = await descargarRecurso(url);
@@ -209,7 +232,7 @@ export async function GET(
                 }
             });
 
-            console.log(`[PDF Ampliacion] Pre-descarga completada. PDFs: ${pdf_adjuntos_buffers.length}, Imágenes: ${Object.keys(imagenes_adjuntas).length}`);
+            console.warn(`[DEBUG-PDF-AMPLIACION] Pre-descarga completada en ${Date.now() - downloadsStartTime}ms. PDFs: ${pdf_adjuntos_buffers.length}, Imágenes: ${Object.keys(imagenes_adjuntas).length}`);
         }
 
         // 5. Preparar datos para el PDF usando la información de la ampliación
@@ -308,7 +331,7 @@ export async function GET(
                 profesion: inv.profesion ? String(inv.profesion) : undefined,
                 matricula: inv.matricula ? String(inv.matricula) : undefined,
             })),
-            qr_code_url: await QRCode.toDataURL(`${request.headers.get('x-forwarded-proto') || 'https'}://${request.headers.get('host')}/verificar/${denuncia.hash}`),
+            qr_code_url: '', // Se asignará abajo
             usuario_id: ampliacion.usuario_id,
             es_denuncia_escrita: Boolean(denuncia.es_denuncia_escrita),
             archivo_denuncia_url: denuncia.archivo_denuncia_url,
@@ -323,16 +346,25 @@ export async function GET(
             imagenes_adjuntas: imagenes_adjuntas
         };
 
+        // Generar código QR antes del renderizado
+        console.warn(`[DEBUG-PDF-AMPLIACION] Generando código QR para hash ${denuncia.hash}...`);
+        const qrCodeUrl = await QRCode.toDataURL(`${request.headers.get('x-forwarded-proto') || 'https'}://${request.headers.get('host')}/verificar/${denuncia.hash}`);
+        console.warn(`[DEBUG-PDF-AMPLIACION] Código QR generado.`);
+        denunciaData.qr_code_url = qrCodeUrl;
+
         // Determinar el tamaño de página
         const pageSize = tipo === 'a4' ? 'A4' : 'LETTER';
 
         // Generar el PDF
+        const renderStartTime = Date.now();
+        console.warn(`[DEBUG-PDF-AMPLIACION] Iniciando renderToBuffer (Solo Acta)...`);
         const pdfBuffer = await renderToBuffer(
             <DenunciaPDFDocument
                 denuncia={denunciaData}
                 pageSize={pageSize as 'A4' | 'LETTER'}
             />
         );
+        console.warn(`[DEBUG-PDF-AMPLIACION] renderToBuffer completado en ${Date.now() - renderStartTime}ms`);
 
         // Convertir Buffer a Uint8Array
         const uint8Array = new Uint8Array(pdfBuffer);
@@ -341,28 +373,37 @@ export async function GET(
         if (pdf_adjuntos_buffers.length > 0) {
             try {
                 const mergeStartTime = Date.now();
-                console.log(`[PDF Ampliacion] Iniciando fusión de ${pdf_adjuntos_buffers.length} PDFs...`);
+                console.warn(`[DEBUG-PDF-AMPLIACION] Iniciando fusión de ${pdf_adjuntos_buffers.length} PDFs...`);
                 const mergedPdf = await PDFDocument.create();
 
                 // Cargar el documento original (Carátula + Imágenes)
+                console.warn(`[DEBUG-PDF-AMPLIACION] Cargando PDF principal en pdf-lib...`);
                 const mainPdf = await PDFDocument.load(pdfBuffer);
+                console.warn(`[DEBUG-PDF-AMPLIACION] PDF principal cargado en pdf-lib. Páginas: ${mainPdf.getPageCount()}`);
                 const mainPages = await mergedPdf.copyPages(mainPdf, mainPdf.getPageIndices());
                 mainPages.forEach((page) => mergedPdf.addPage(page));
 
                 // Copiar páginas de cada adjunto pre-descargado
+                let adjuntoIndex = 0;
                 for (const buffer of pdf_adjuntos_buffers) {
                     try {
+                        adjuntoIndex++;
+                        console.warn(`[DEBUG-PDF-AMPLIACION] Cargando adjunto PDF #${adjuntoIndex} en pdf-lib (tamaño buffer: ${buffer.length})...`);
                         const adjuntoPdf = await PDFDocument.load(buffer);
+                        console.warn(`[DEBUG-PDF-AMPLIACION] Adjunto PDF #${adjuntoIndex} cargado con éxito. Copiando ${adjuntoPdf.getPageCount()} páginas...`);
                         const pages = await mergedPdf.copyPages(adjuntoPdf, adjuntoPdf.getPageIndices());
                         pages.forEach((page) => mergedPdf.addPage(page));
-                    } catch (err) {
-                        console.error(`[PDF Ampliacion] Error cargando/fusionando adjunto PDF:`, err);
+                        console.warn(`[DEBUG-PDF-AMPLIACION] Páginas del adjunto PDF #${adjuntoIndex} copiadas con éxito.`);
+                    } catch (err: any) {
+                        console.error(`[DEBUG-PDF-AMPLIACION] Error cargando/fusionando adjunto PDF #${adjuntoIndex}:`, err.message || err);
                     }
                 }
 
-                console.log(`[PDF Ampliacion] Fusión de PDFs completada en ${Date.now() - mergeStartTime}ms`);
-
+                console.warn(`[DEBUG-PDF-AMPLIACION] Guardando documento PDF fusionado...`);
                 const mergedPdfBytes = await mergedPdf.save();
+                console.warn(`[DEBUG-PDF-AMPLIACION] Documento PDF fusionado guardado. Fusión completada en ${Date.now() - mergeStartTime}ms`);
+                console.warn(`[DEBUG-PDF-AMPLIACION] Proceso total finalizado exitosamente en ${Date.now() - startTime}ms`);
+
                 return new NextResponse(Buffer.from(mergedPdfBytes), {
                     headers: {
                         'Content-Type': 'application/pdf',
@@ -370,19 +411,20 @@ export async function GET(
                     },
                 });
 
-            } catch (mergeError) {
-                console.error('[PDF Ampliacion] Error general fusionando PDFs:', mergeError);
+            } catch (mergeError: any) {
+                console.error('[DEBUG-PDF-AMPLIACION] Error general fusionando PDFs:', mergeError.message || mergeError);
             }
         }
 
+        console.warn(`[DEBUG-PDF-AMPLIACION] Generación carátula simple completada en ${Date.now() - startTime}ms`);
         return new NextResponse(Buffer.from(uint8Array), {
             headers: {
                 'Content-Type': 'application/pdf',
                 'Content-Disposition': `attachment; filename="ampliacion_${ampliacion.numero_ampliacion}_${denuncia.orden}.pdf"`,
             },
         });
-    } catch (error) {
-        console.error('Error generando PDF de ampliación:', error);
+    } catch (error: any) {
+        console.error('Error generando PDF de ampliación:', error.message || error);
         return NextResponse.json(
             { error: 'Error al generar PDF' },
             { status: 500 }

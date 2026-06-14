@@ -12,6 +12,7 @@ import { s3Client, bucketName } from '@/lib/s3';
 
 // Función para descargar un adjunto de forma segura
 async function descargarRecurso(url: string): Promise<Buffer | null> {
+    console.warn(`[DEBUG-PDF] Inicio descargarRecurso para: ${url}`);
     try {
         const publicEndpoint = process.env.GARAGE_PUBLIC_URL || 'https://web.s1mple.cloud';
         
@@ -28,35 +29,51 @@ async function descargarRecurso(url: string): Promise<Buffer | null> {
             }
             
             const decodedKey = decodeURIComponent(key);
-            console.log(`[PDF] Descargando desde S3 directamente: ${decodedKey}`);
+            console.warn(`[DEBUG-PDF] S3 MATCH: key=${decodedKey}, bucket=${bucketName}`);
+            
+            console.warn(`[DEBUG-PDF] Enviando GetObjectCommand a S3...`);
             const response = await s3Client.send(
                 new GetObjectCommand({
                     Bucket: bucketName,
                     Key: decodedKey,
                 })
             );
+            console.warn(`[DEBUG-PDF] Respuesta de GetObjectCommand recibida.`);
             
             if (response.Body) {
+                console.warn(`[DEBUG-PDF] Consumiendo body con transformToByteArray...`);
                 const bytes = await response.Body.transformToByteArray();
+                console.warn(`[DEBUG-PDF] Body consumido con éxito, size=${bytes.length}`);
                 return Buffer.from(bytes);
+            } else {
+                console.warn(`[DEBUG-PDF] GetObjectCommand retornó respuesta sin Body.`);
             }
+        } else {
+            console.warn(`[DEBUG-PDF] HTTP MATCH (externo): ${url}`);
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => {
+                console.warn(`[DEBUG-PDF] HTTP timeout de 15s alcanzado para ${url}, abortando...`);
+                controller.abort();
+            }, 15000); // 15s timeout
+            
+            console.warn(`[DEBUG-PDF] Iniciando fetch HTTP para ${url}...`);
+            const response = await fetch(url, { signal: controller.signal });
+            clearTimeout(timeoutId);
+            console.warn(`[DEBUG-PDF] HTTP fetch completado, status=${response.status}`);
+            
+            if (!response.ok) {
+                console.warn(`[DEBUG-PDF] HTTP fetch falló con status no-ok`);
+                return null;
+            }
+            const arrayBuffer = await response.arrayBuffer();
+            console.warn(`[DEBUG-PDF] HTTP body consumido con éxito, size=${arrayBuffer.byteLength}`);
+            return Buffer.from(arrayBuffer);
         }
-        
-        // Fallback para URLs externas reales (si las hay) con abort controller
-        console.log(`[PDF] Descargando por HTTP (fallback): ${url}`);
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
-        
-        const response = await fetch(url, { signal: controller.signal });
-        clearTimeout(timeoutId);
-        
-        if (!response.ok) return null;
-        const arrayBuffer = await response.arrayBuffer();
-        return Buffer.from(arrayBuffer);
-    } catch (e) {
-        console.error(`[PDF] Error descargando recurso ${url}:`, e);
+    } catch (e: any) {
+        console.error(`[DEBUG-PDF] EXCEPCIÓN en descargarRecurso para ${url}:`, e.message || e);
         return null;
     }
+    return null;
 }
 
 
@@ -67,7 +84,7 @@ export async function GET(
     try {
         const startTime = Date.now();
         const { id: idStr_resolved } = await params;
-        console.log(`[PDF] Iniciando generación para denuncia ${idStr_resolved} - ${new Date().toISOString()}`);
+        console.warn(`[DEBUG-PDF] Iniciando generación para denuncia ${idStr_resolved} - ${new Date().toISOString()}`);
         const id = parseInt(idStr_resolved);
         const { searchParams } = new URL(request.url);
         const tipo = searchParams.get('tipo') || 'oficio';
@@ -102,7 +119,7 @@ export async function GET(
             isDuplicate = false;
         }
 
-        console.log(`[PDF] DB Update impresiones completado en ${Date.now() - startTime}ms`);
+        console.warn(`[DEBUG-PDF] DB Update impresiones completado en ${Date.now() - startTime}ms`);
 
         // Obtener datos de la base de datos (Unificado y robusto)
         const dbQueryStartTime = Date.now();
@@ -183,7 +200,7 @@ export async function GET(
             return acc;
         }, {});
 
-        console.log(`[PDF] Consultas DB completadas en ${Date.now() - dbQueryStartTime}ms`);
+        console.warn(`[DEBUG-PDF] Consultas DB completadas en ${Date.now() - dbQueryStartTime}ms`);
 
         // 5. Pre-cargar logos institucionales (Optimización crítica para Vercel)
         const loadLogos = async () => {
@@ -214,7 +231,7 @@ export async function GET(
 
         const logosStartTime = Date.now();
         const logosData = await loadLogos();
-        console.log(`[PDF] Logos cargados en ${Date.now() - logosStartTime}ms`);
+        console.warn(`[DEBUG-PDF] Logos cargados en ${Date.now() - logosStartTime}ms`);
 
         // 6. Pre-descargar TODOS los adjuntos (PDFs e Imágenes) en paralelo usando S3 local
         const allUrls = [...(denuncia.adjuntos_urls || [])];
@@ -227,7 +244,7 @@ export async function GET(
 
         if (allUrls.length > 0) {
             const downloadsStartTime = Date.now();
-            console.log(`[PDF] Iniciando pre-descarga de ${allUrls.length} recursos desde S3/HTTP...`);
+            console.warn(`[DEBUG-PDF] Iniciando pre-descarga de ${allUrls.length} recursos desde S3/HTTP...`);
 
             const downloadPromises = allUrls.map(async (url) => {
                 const buffer = await descargarRecurso(url);
@@ -250,8 +267,13 @@ export async function GET(
                 }
             });
 
-            console.log(`[PDF] Pre-descarga completada en ${Date.now() - downloadsStartTime}ms. PDFs: ${pdf_adjuntos_buffers.length}, Imágenes: ${Object.keys(imagenes_adjuntas).length}`);
+            console.warn(`[DEBUG-PDF] Pre-descarga completada en ${Date.now() - downloadsStartTime}ms. PDFs: ${pdf_adjuntos_buffers.length}, Imágenes: ${Object.keys(imagenes_adjuntas).length}`);
         }
+
+        // Generar código QR antes del objeto de datos
+        console.warn(`[DEBUG-PDF] Generando código QR para hash ${denuncia.hash}...`);
+        const qrCodeUrl = await QRCode.toDataURL(`${request.headers.get('x-forwarded-proto') || 'https'}://${request.headers.get('host')}/verificar/${denuncia.hash}`);
+        console.warn(`[DEBUG-PDF] Código QR generado.`);
 
         // Preparar datos para el PDF
         const denunciaData = {
@@ -337,7 +359,7 @@ export async function GET(
                 profesion: inv.profesion ? String(inv.profesion) : undefined,
                 matricula: inv.matricula ? String(inv.matricula) : undefined,
             })),
-            qr_code_url: await QRCode.toDataURL(`${request.headers.get('x-forwarded-proto') || 'https'}://${request.headers.get('host')}/verificar/${denuncia.hash}`),
+            qr_code_url: qrCodeUrl,
             is_duplicate: isDuplicate,
             operador_actual: operadorActual ? {
                 id: Number(operadorActual.id),
@@ -359,14 +381,14 @@ export async function GET(
 
         // Generar el PDF usando renderToBuffer con JSX
         const renderStartTime = Date.now();
-        console.log(`[PDF] Iniciando renderToBuffer (Solo Acta)...`);
+        console.warn(`[DEBUG-PDF] Iniciando renderToBuffer (Solo Acta)...`);
         const pdfBuffer = await renderToBuffer(
             <DenunciaPDFDocument
                 denuncia={denunciaData}
                 pageSize={pageSize as 'A4' | 'LETTER'}
             />
         );
-        console.log(`[PDF] renderToBuffer completado en ${Date.now() - renderStartTime}ms`);
+        console.warn(`[DEBUG-PDF] renderToBuffer completado en ${Date.now() - renderStartTime}ms`);
 
         // 7. Fusionar PDFs si existen (ya pre-cargados en pdf_adjuntos_buffers)
         if (pdf_adjuntos_buffers.length > 0) {
@@ -381,20 +403,25 @@ export async function GET(
                 mainPages.forEach((page) => mergedPdf.addPage(page));
 
                 // Copiar páginas de cada adjunto pre-descargado
+                let adjuntoIndex = 0;
                 for (const buffer of pdf_adjuntos_buffers) {
                     try {
+                        adjuntoIndex++;
+                        console.warn(`[DEBUG-PDF] Cargando adjunto PDF #${adjuntoIndex} en pdf-lib (tamaño buffer: ${buffer.length})...`);
                         const adjuntoPdf = await PDFDocument.load(buffer);
+                        console.warn(`[DEBUG-PDF] Adjunto PDF #${adjuntoIndex} cargado con éxito. Copiando ${adjuntoPdf.getPageCount()} páginas...`);
                         const pages = await mergedPdf.copyPages(adjuntoPdf, adjuntoPdf.getPageIndices());
                         pages.forEach((page) => mergedPdf.addPage(page));
-                    } catch (err) {
-                        console.error(`[PDF] Error cargando/fusionando adjunto PDF:`, err);
+                        console.warn(`[DEBUG-PDF] Páginas del adjunto PDF #${adjuntoIndex} copiadas con éxito.`);
+                    } catch (err: any) {
+                        console.error(`[DEBUG-PDF] Error cargando/fusionando adjunto PDF #${adjuntoIndex}:`, err.message || err);
                     }
                 }
 
-                console.log(`[PDF] Fusión de PDFs completada en ${Date.now() - mergeStartTime}ms`);
-
+                console.warn(`[DEBUG-PDF] Guardando documento PDF fusionado...`);
                 const mergedPdfBytes = await mergedPdf.save();
-                console.log(`[PDF] Proceso total finalizado exitosamente en ${Date.now() - startTime}ms`);
+                console.warn(`[DEBUG-PDF] Documento PDF fusionado guardado. Fusión completada en ${Date.now() - mergeStartTime}ms`);
+                console.warn(`[DEBUG-PDF] Proceso total finalizado exitosamente en ${Date.now() - startTime}ms`);
 
                 return new NextResponse(Buffer.from(mergedPdfBytes), {
                     headers: {
@@ -403,12 +430,12 @@ export async function GET(
                     },
                 });
 
-            } catch (mergeError) {
-                console.error('[PDF] Error general fusionando PDFs:', mergeError);
+            } catch (mergeError: any) {
+                console.error('[DEBUG-PDF] Error general fusionando PDFs:', mergeError.message || mergeError);
             }
         }
 
-        console.log(`[PDF] Generación carátula simple completada en ${Date.now() - startTime}ms`);
+        console.warn(`[DEBUG-PDF] Generación carátula simple completada en ${Date.now() - startTime}ms`);
 
         // Convertir Buffer a Uint8Array para NextResponse
         const uint8Array = new Uint8Array(pdfBuffer);
