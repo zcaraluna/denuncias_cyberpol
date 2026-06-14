@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
         fontSize: 5,
         color: '#666',
         marginTop: 2,
-        fontFamily: 'Helvetica',
+        fontFamily: 'Roboto',
         textAlign: 'center',
         width: '100%',
     },
@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontWeight: 'bold',
         textAlign: 'center',
-        fontFamily: 'Helvetica',
+        fontFamily: 'Roboto',
     }
 });
 

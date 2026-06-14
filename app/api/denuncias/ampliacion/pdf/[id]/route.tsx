@@ -357,7 +357,7 @@ export async function GET(
                 : String(denuncia.fecha_denuncia),
             hora_original: String(denuncia.hora_denuncia || ''),
             logos: logosData,
-            adjuntos_urls: [], // Vacío para evitar que react-pdf intente procesar páginas de imágenes
+            adjuntos_urls: adjuntos_procesados.filter(x => x.tipo === 'imagen').map(x => x.url), // Pasar URLs de imágenes para pre-renderizar las páginas de adjuntos con membrete
             imagenes_adjuntas: {} // Vacío para evitar procesamiento pesado en react-pdf
         };
 
@@ -398,12 +398,11 @@ export async function GET(
                 const mainPages = await mergedPdf.copyPages(mainPdf, mainPdf.getPageIndices());
                 mainPages.forEach((page) => mergedPdf.addPage(page));
 
-                // Obtener fuente Helvetica-Bold para dibujar títulos en las hojas de imágenes
-                const font = await mergedPdf.embedFont(StandardFonts.HelveticaBold);
-
                 // Procesar cada adjunto ordenadamente
                 let imageCount = 0;
                 let pdfCount = 0;
+                const totalImages = adjuntos_procesados.filter(x => x.tipo === 'imagen').length;
+
                 for (const adjunto of adjuntos_procesados) {
                     if (adjunto.tipo === 'pdf') {
                         pdfCount++;
@@ -428,46 +427,56 @@ export async function GET(
                                 image = await mergedPdf.embedJpg(adjunto.buffer);
                             }
                             
-                            // Crear página Oficio [612, 936] para mantener uniformidad
-                            const page = mergedPdf.addPage([612, 936]);
-                            const pageWidth = 612;
-                            const pageHeight = 936;
-                            const titleHeight = 40;
-                            const margin = 50;
+                            const pages = mergedPdf.getPages();
+                            const targetPageIndex = mainPdf.getPageCount() - totalImages + (imageCount - 1);
                             
-                            // Dibujar título "ADJUNTO X"
-                            page.drawText(`ADJUNTO ${imageCount}`, {
-                                x: margin,
-                                y: pageHeight - margin - 10,
-                                size: 12,
-                                font: font,
-                                color: rgb(0, 0.13, 0.28), // Navy blue
-                            });
-                            
-                            // Calcular dimensiones de escalado proporcional
-                            const maxImgWidth = pageWidth - margin * 2;
-                            const maxImgHeight = pageHeight - margin * 2 - titleHeight;
-                            
-                            let imgWidth = image.width;
-                            let imgHeight = image.height;
-                            
-                            const scale = Math.min(maxImgWidth / imgWidth, maxImgHeight / imgHeight);
-                            if (scale < 1) {
-                                imgWidth = imgWidth * scale;
-                                imgHeight = imgHeight * scale;
+                            if (targetPageIndex < 0 || targetPageIndex >= pages.length) {
+                                console.error(`[DEBUG-PDF-AMPLIACION] ERROR: targetPageIndex ${targetPageIndex} fuera de rango. Total páginas: ${pages.length}. Creando página nueva...`);
+                                const page = mergedPdf.addPage([612, 936]);
+                                // Dibujar imagen en página de fallback
+                                const maxImgWidth = 512;
+                                const maxImgHeight = 796;
+                                let imgWidth = image.width;
+                                let imgHeight = image.height;
+                                const scale = Math.min(maxImgWidth / imgWidth, maxImgHeight / imgHeight);
+                                if (scale < 1) {
+                                    imgWidth = imgWidth * scale;
+                                    imgHeight = imgHeight * scale;
+                                }
+                                const x = (612 - imgWidth) / 2;
+                                const y = 50 + (maxImgHeight - imgHeight) / 2;
+                                page.drawImage(image, { x, y, width: imgWidth, height: imgHeight });
+                            } else {
+                                const page = pages[targetPageIndex];
+                                
+                                // Espacio en blanco está reservado de forma que la imagen se dibuje
+                                // centrada dentro del área [x: 72 a 540] (ancho 468) e [y: 75 a 655] (alto 580)
+                                const maxImgWidth = 468;
+                                const maxImgHeight = 580;
+                                const minY = 75;
+                                
+                                let imgWidth = image.width;
+                                let imgHeight = image.height;
+                                
+                                const scale = Math.min(maxImgWidth / imgWidth, maxImgHeight / imgHeight);
+                                if (scale < 1) {
+                                    imgWidth = imgWidth * scale;
+                                    imgHeight = imgHeight * scale;
+                                }
+                                
+                                // Centrar horizontalmente en [72, 540]
+                                const x = 72 + (maxImgWidth - imgWidth) / 2;
+                                // Centrar verticalmente en [minY, minY + maxImgHeight]
+                                const y = minY + (maxImgHeight - imgHeight) / 2;
+                                
+                                page.drawImage(image, {
+                                    x,
+                                    y,
+                                    width: imgWidth,
+                                    height: imgHeight,
+                                });
+                                console.warn(`[DEBUG-PDF-AMPLIACION] Imagen adjunta #${imageCount} dibujada con éxito sobre página pre-renderizada ${targetPageIndex}.`);
                             }
-                            
-                            // Centrar la imagen en la página debajo del título
-                            const x = (pageWidth - imgWidth) / 2;
-                            const y = margin + (maxImgHeight - imgHeight) / 2;
-                            
-                            page.drawImage(image, {
-                                x,
-                                y,
-                                width: imgWidth,
-                                height: imgHeight,
-                            });
-                            console.warn(`[DEBUG-PDF-AMPLIACION] Imagen adjunta #${imageCount} dibujada con éxito.`);
                         } catch (err: any) {
                             console.error(`[DEBUG-PDF-AMPLIACION] Error incrustando imagen adjunta #${imageCount}:`, err.message || err);
                         }

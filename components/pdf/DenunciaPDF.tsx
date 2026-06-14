@@ -6,18 +6,60 @@ import { generarSegundoParrafo } from './SegundoParrafo';
 import { TercerParrafo } from './TercerParrafo';
 import { CierreDenuncia } from './CierreDenuncia';
 import { SeccionFirmas } from './SeccionFirmas';
+import path from 'path';
+import fs from 'fs';
 
-// Registrar fuente Roboto (Comentado para evitar descargas externas que bloquean el VPS)
-// Font.register({
-//     family: 'Roboto',
-//     fonts: [
-//         { src: 'https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-light-webfont.ttf', fontWeight: 300 },
-//         { src: 'https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-regular-webfont.ttf', fontWeight: 400 },
-//         { src: 'https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-italic-webfont.ttf', fontWeight: 400, fontStyle: 'italic' },
-//         { src: 'https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-medium-webfont.ttf', fontWeight: 500 },
-//         { src: 'https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-bold-webfont.ttf', fontWeight: 700 },
-//     ],
-// });
+// Registrar fuente Roboto localmente de forma segura
+const registrarRobotoLocal = () => {
+    try {
+        const fontFiles = {
+            light: 'Roboto-Light.ttf',
+            regular: 'Roboto-Regular.ttf',
+            italic: 'Roboto-Italic.ttf',
+            medium: 'Roboto-Medium.ttf',
+            bold: 'Roboto-Bold.ttf'
+        };
+
+        const pathsToTry = [
+            path.join(process.cwd(), 'public', 'fonts'),
+            path.join(process.cwd(), '..', 'public', 'fonts'),
+            path.join(process.cwd(), '.next', 'standalone', 'public', 'fonts'),
+        ];
+
+        const resolvedFonts: Record<string, string> = {};
+
+        for (const [key, filename] of Object.entries(fontFiles)) {
+            let found = false;
+            for (const dirPath of pathsToTry) {
+                const fullPath = path.join(dirPath, filename);
+                if (fs.existsSync(fullPath)) {
+                    resolvedFonts[key] = fullPath;
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                throw new Error(`Font file ${filename} not found in any path: ${JSON.stringify(pathsToTry)}`);
+            }
+        }
+
+        Font.register({
+            family: 'Roboto',
+            fonts: [
+                { src: resolvedFonts.light, fontWeight: 300 },
+                { src: resolvedFonts.regular, fontWeight: 400 },
+                { src: resolvedFonts.italic, fontWeight: 400, fontStyle: 'italic' },
+                { src: resolvedFonts.medium, fontWeight: 500 },
+                { src: resolvedFonts.bold, fontWeight: 700 },
+            ],
+        });
+        console.warn('[DEBUG-FONT] Roboto font registered successfully from local paths.');
+    } catch (e: any) {
+        console.error('[DEBUG-FONT] Failed to register Roboto font locally. Falling back to Helvetica.', e.message || e);
+    }
+};
+
+registrarRobotoLocal();
 
 const formatearFechaPDF = (fechaStr?: string): string => {
     if (!fechaStr) return 'NO ESPECIFICADA';
@@ -36,7 +78,7 @@ const styles = StyleSheet.create({
         paddingBottom: 72,  // 2.54cm
         paddingHorizontal: 72,  // 2.54cm laterales
         fontSize: 11.5,
-        fontFamily: 'Helvetica',
+        fontFamily: 'Roboto',
     },
     headerFixed: {
         position: 'relative',
@@ -328,9 +370,6 @@ const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 
             {denuncia.adjuntos_urls && denuncia.adjuntos_urls.length > 0 && denuncia.adjuntos_urls.map((url: string, index: number) => {
                 const isImage = /\.(jpg|jpeg|png|webp|gif)$/i.test(url);
                 if (!isImage) return null;
-                
-                const src = denuncia.imagenes_adjuntas && denuncia.imagenes_adjuntas[url];
-                if (!src) return null;
 
                 return (
                     <Page key={`adjunto-${index}`} size={[612, 936]} style={[styles.page, { paddingBottom: 30 }]}>
@@ -350,14 +389,8 @@ const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 
                             <Text style={[styles.paragraph, { textAlign: 'center', marginBottom: 10, fontWeight: 'bold' }]}>
                                 ADJUNTO {index + 1}
                             </Text>
-                            <Image
-                                src={src}
-                                style={{
-                                    maxWidth: '100%',
-                                    maxHeight: 700,
-                                    objectFit: 'contain'
-                                }}
-                            />
+                            {/* Espacio en blanco para que pdf-lib dibuje la imagen directamente encima */}
+                            <View style={{ height: 600 }} />
                         </View>
                     </Page>
                 );
