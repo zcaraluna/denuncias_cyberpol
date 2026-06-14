@@ -37,12 +37,8 @@ async function descargarRecurso(url: string): Promise<Buffer | null> {
             );
             
             if (response.Body) {
-                const stream = response.Body as any;
-                const chunks: any[] = [];
-                for await (const chunk of stream) {
-                    chunks.push(chunk);
-                }
-                return Buffer.concat(chunks);
+                const bytes = await response.Body.transformToByteArray();
+                return Buffer.from(bytes);
             }
         }
         
