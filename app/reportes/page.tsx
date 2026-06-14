@@ -41,7 +41,8 @@ import {
   LayoutDashboard,
   CalendarDays,
   RefreshCcw,
-  FilePieChart
+  FilePieChart,
+  Pencil
 } from 'lucide-react'
 import { exportToExcel } from '@/lib/utils/export-excel'
 import { exportToDocx } from '@/lib/utils/export-docx'
@@ -137,6 +138,7 @@ export default function ReportesPage() {
   const { usuario, loading: authLoading, logout } = useAuth()
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<Tab>('diario')
+  const [editingRowId, setEditingRowId] = useState<number | null>(null)
 
   const esEditableRemision = (row: ReporteRow) => {
     if (!row.creado_en) return false
@@ -173,6 +175,7 @@ export default function ReportesPage() {
           }
           return d
         }))
+        setEditingRowId(null)
       } else {
         const err = await res.json()
         alert(err.error || 'Error al actualizar la sugerencia')
@@ -1110,7 +1113,7 @@ export default function ReportesPage() {
                         </td>
                         <td className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-tight">{row.entidad_reportada || '-'}</td>
                         <td className="px-6 py-4 text-[10px] font-medium text-slate-700 whitespace-normal break-words max-w-xs min-w-[280px]">
-                          {row.id && esEditableRemision(row) ? (
+                          {row.id && esEditableRemision(row) && editingRowId === row.id ? (
                             <div className="space-y-1.5">
                               <select
                                 value={row.dependencia_remitida || 'Ninguna'}
@@ -1123,22 +1126,21 @@ export default function ReportesPage() {
                                   <option key={depto} value={depto}>{depto}</option>
                                 ))}
                               </select>
-                              {row.dependencia_remitida && row.dependencia_remitida !== 'Ninguna' && (
-                                <span className="block text-[9px] text-[#002147]/80 font-bold bg-slate-100/60 px-1.5 py-0.5 rounded border border-slate-200/40 whitespace-normal break-words leading-snug">
-                                  {row.dependencia_remitida}
-                                </span>
-                              )}
-                              {row.remitido_por && (
-                                <span className="block text-[8px] text-slate-400 font-bold uppercase tracking-tight">
-                                  Sindicado por {row.remitido_por}
-                                </span>
-                              )}
+                              <div className="flex justify-end">
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingRowId(null)}
+                                  className="inline-flex items-center gap-1 text-[8px] font-bold text-slate-500 hover:text-slate-600 bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded transition cursor-pointer"
+                                >
+                                  Cancelar
+                                </button>
+                              </div>
                             </div>
                           ) : (
-                            <div>
+                            <div className="space-y-1">
                               {row.dependencia_remitida ? (
-                                <div className="space-y-1" title={row.dependencia_remitida}>
-                                  <span className="font-black text-[#002147] block">{row.dependencia_remitida}</span>
+                                <div className="space-y-0.5">
+                                  <span className="font-black text-[#002147] block leading-snug">{row.dependencia_remitida}</span>
                                   {row.remitido_por && (
                                     <span className="block text-[8px] text-slate-400 font-bold uppercase tracking-tight">
                                       Sindicado por {row.remitido_por}
@@ -1147,6 +1149,16 @@ export default function ReportesPage() {
                                 </div>
                               ) : (
                                 <span className="text-slate-400 italic">No sugerido</span>
+                              )}
+                              {row.id && esEditableRemision(row) && (
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingRowId(row.id!)}
+                                  className="inline-flex items-center gap-1 mt-1 text-[9px] font-bold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded transition cursor-pointer"
+                                >
+                                  <Pencil className="w-2.5 h-2.5" />
+                                  Cambiar
+                                </button>
                               )}
                             </div>
                           )}
@@ -1184,34 +1196,33 @@ export default function ReportesPage() {
                     </div>
                     <div className="pt-2 border-t border-slate-50">
                       <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Dpto. Sugerido</p>
-                      {row.id && esEditableRemision(row) ? (
-                        <div className="space-y-1">
+                      {row.id && esEditableRemision(row) && editingRowId === row.id ? (
+                        <div className="space-y-1.5">
                           <select
                             value={row.dependencia_remitida || 'Ninguna'}
                             onChange={(e) => handleCambiarRemision(row.id!, e.target.value, index)}
-                            className="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 text-[#002147] text-[9px] font-bold rounded-lg outline-none"
+                            className="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 text-[#002147] text-[9px] font-bold rounded-lg outline-none cursor-pointer"
                           >
                             <option value="Ninguna">-- Ninguna / No remitir --</option>
                             {DEPARTAMENTOS_REMISION.map(depto => (
                               <option key={depto} value={depto}>{depto}</option>
                             ))}
                           </select>
-                          {row.dependencia_remitida && row.dependencia_remitida !== 'Ninguna' && (
-                            <span className="block text-[9px] text-[#002147]/80 font-bold bg-slate-100/60 px-1.5 py-0.5 rounded border border-slate-200/40 whitespace-normal break-words leading-snug">
-                              {row.dependencia_remitida}
-                            </span>
-                          )}
-                          {row.remitido_por && (
-                            <span className="block text-[8px] text-slate-400 font-bold uppercase tracking-tight">
-                              Sindicado por {row.remitido_por}
-                            </span>
-                          )}
+                          <div className="flex justify-end">
+                            <button
+                              type="button"
+                              onClick={() => setEditingRowId(null)}
+                              className="inline-flex items-center gap-1 text-[8px] font-bold text-slate-500 hover:text-slate-600 bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded transition cursor-pointer"
+                            >
+                              Cancelar
+                            </button>
+                          </div>
                         </div>
                       ) : (
-                        <div>
+                        <div className="space-y-1">
                           {row.dependencia_remitida ? (
                             <div className="space-y-0.5">
-                              <span className="text-[9px] font-black text-[#002147] uppercase whitespace-normal break-words block">{row.dependencia_remitida}</span>
+                              <span className="text-[9px] font-black text-[#002147] uppercase whitespace-normal break-words block leading-snug">{row.dependencia_remitida}</span>
                               {row.remitido_por && (
                                 <span className="block text-[8px] text-slate-400 font-bold uppercase tracking-tight">
                                   Sindicado por {row.remitido_por}
@@ -1219,7 +1230,17 @@ export default function ReportesPage() {
                               )}
                             </div>
                           ) : (
-                            <span className="text-[9px] text-slate-400 italic">No sugerido</span>
+                            <span className="text-[9px] text-slate-400 italic block">No sugerido</span>
+                          )}
+                          {row.id && esEditableRemision(row) && (
+                            <button
+                              type="button"
+                              onClick={() => setEditingRowId(row.id!)}
+                              className="inline-flex items-center gap-1 mt-1 text-[8.5px] font-bold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded transition cursor-pointer"
+                            >
+                              <Pencil className="w-2.5 h-2.5" />
+                              Cambiar
+                            </button>
                           )}
                         </div>
                       )}
