@@ -1085,7 +1085,7 @@ export default function ReportesPage() {
                       <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 cursor-pointer hover:text-[#002147] transition" onClick={() => handleSort('entidad_reportada')}>
                         <div className="flex items-center gap-2">ENTIDAD REPORTADA <SortIcon field="entidad_reportada" currentField={sortField} direction={sortDirection} /></div>
                       </th>
-                      <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">DEPARTAMENTO SUGERIDO</th>
+                      <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 min-w-[280px]">DEPARTAMENTO SUGERIDO</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
@@ -1109,13 +1109,14 @@ export default function ReportesPage() {
                           {row.monto_dano ? row.monto_dano.toLocaleString('es-PY') : '0'}
                         </td>
                         <td className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-tight">{row.entidad_reportada || '-'}</td>
-                        <td className="px-6 py-4 text-[10px] font-medium text-slate-700 whitespace-normal break-words max-w-xs">
+                        <td className="px-6 py-4 text-[10px] font-medium text-slate-700 whitespace-normal break-words max-w-xs min-w-[280px]">
                           {row.id && esEditableRemision(row) ? (
                             <div className="space-y-1.5">
                               <select
                                 value={row.dependencia_remitida || 'Ninguna'}
+                                title={row.dependencia_remitida || '-- Ninguna / No remitir --'}
                                 onChange={(e) => handleCambiarRemision(row.id!, e.target.value, index)}
-                                className="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 text-[#002147] text-[10px] font-bold rounded-lg focus:ring-2 focus:ring-blue-100 outline-none"
+                                className="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 text-[#002147] text-[10px] font-bold rounded-lg focus:ring-2 focus:ring-blue-100 outline-none cursor-pointer"
                               >
                                 <option value="Ninguna">-- Ninguna / No remitir --</option>
                                 {DEPARTAMENTOS_REMISION.map(depto => (
@@ -1131,7 +1132,7 @@ export default function ReportesPage() {
                           ) : (
                             <div>
                               {row.dependencia_remitida ? (
-                                <div className="space-y-1">
+                                <div className="space-y-1" title={row.dependencia_remitida}>
                                   <span className="font-black text-[#002147] block">{row.dependencia_remitida}</span>
                                   {row.remitido_por && (
                                     <span className="block text-[8px] text-slate-400 font-bold uppercase tracking-tight">
