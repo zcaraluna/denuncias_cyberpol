@@ -328,6 +328,10 @@ const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 
             {denuncia.adjuntos_urls && denuncia.adjuntos_urls.length > 0 && denuncia.adjuntos_urls.map((url: string, index: number) => {
                 const isImage = /\.(jpg|jpeg|png|webp|gif)$/i.test(url);
                 if (!isImage) return null;
+                
+                const src = denuncia.imagenes_adjuntas && denuncia.imagenes_adjuntas[url];
+                if (!src) return null;
+
                 return (
                     <Page key={`adjunto-${index}`} size={[612, 936]} style={[styles.page, { paddingBottom: 30 }]}>
                         <View fixed style={styles.headerFixed}>
@@ -347,7 +351,7 @@ const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 
                                 ADJUNTO {index + 1}
                             </Text>
                             <Image
-                                src={denuncia.imagenes_adjuntas && denuncia.imagenes_adjuntas[url] ? denuncia.imagenes_adjuntas[url] : url}
+                                src={src}
                                 style={{
                                     maxWidth: '100%',
                                     maxHeight: 700,

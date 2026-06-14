@@ -1,4 +1,3 @@
-
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import { renderToBuffer } from '@react-pdf/renderer';
@@ -7,6 +6,62 @@ import QRCode from 'qrcode';
 import { PDFDocument } from 'pdf-lib';
 import fs from 'fs';
 import path from 'path';
+import { GetObjectCommand } from '@aws-sdk/client-s3';
+import { s3Client, bucketName } from '@/lib/s3';
+
+// Función para descargar un adjunto de forma segura
+async function descargarRecurso(url: string): Promise<Buffer | null> {
+    try {
+        const publicEndpoint = process.env.GARAGE_PUBLIC_URL || 'https://web.s1mple.cloud';
+        
+        // Si el archivo está en nuestro Garage S3 local
+        if (url.startsWith(publicEndpoint) || url.includes('denuncias_cyberpol/')) {
+            let key = url;
+            if (url.startsWith(publicEndpoint)) {
+                key = url.substring(publicEndpoint.length).replace(/^\//, '');
+            } else {
+                const idx = url.indexOf('denuncias_cyberpol/');
+                if (idx !== -1) {
+                    key = url.substring(idx);
+                }
+            }
+            
+            const decodedKey = decodeURIComponent(key);
+            console.log(`[PDF Ampliacion] Descargando desde S3 directamente: ${decodedKey}`);
+            const response = await s3Client.send(
+                new GetObjectCommand({
+                    Bucket: bucketName,
+                    Key: decodedKey,
+                })
+            );
+            
+            if (response.Body) {
+                const stream = response.Body as any;
+                const chunks: any[] = [];
+                for await (const chunk of stream) {
+                    chunks.push(chunk);
+                }
+                return Buffer.concat(chunks);
+            }
+        }
+        
+        // Fallback para URLs externas reales (si las hay) con abort controller
+        console.log(`[PDF Ampliacion] Descargando por HTTP (fallback): ${url}`);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+        
+        const response = await fetch(url, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) return null;
+        const arrayBuffer = await response.arrayBuffer();
+        return Buffer.from(arrayBuffer);
+    } catch (e) {
+        console.error(`[PDF Ampliacion] Error descargando recurso ${url}:`, e);
+        return null;
+    }
+}
+
 
 export async function GET(
     request: NextRequest,
@@ -124,35 +179,22 @@ export async function GET(
 
         const logosData = await loadLogos();
 
-        // 6. Pre-descargar TODOS los adjuntos (PDFs e Imágenes) en paralelo
+        // 6. Pre-descargar TODOS los adjuntos (PDFs e Imágenes) en paralelo usando S3 local
         const allUrls = [...(denuncia.adjuntos_urls || [])];
         if (denuncia.es_denuncia_escrita && denuncia.archivo_denuncia_url) {
             allUrls.unshift(denuncia.archivo_denuncia_url);
         }
 
         const imagenes_adjuntas: Record<string, string> = {};
-        const pdf_adjuntos_buffers: ArrayBuffer[] = [];
+        const pdf_adjuntos_buffers: any[] = [];
 
         if (allUrls.length > 0) {
             const downloadsStartTime = Date.now();
-            console.log(`[PDF Ampliacion] Iniciando pre-descarga de ${allUrls.length} recursos en paralelo...`);
+            console.log(`[PDF Ampliacion] Iniciando pre-descarga de ${allUrls.length} recursos desde S3/HTTP...`);
 
             const downloadPromises = allUrls.map(async (url) => {
-                try {
-                    const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 45000); // 45s timeout
-
-                    const response = await fetch(url, { signal: controller.signal });
-                    clearTimeout(timeoutId);
-
-                    if (!response.ok) return { url, data: null };
-
-                    const buffer = await response.arrayBuffer();
-                    return { url, data: buffer };
-                } catch (e) {
-                    console.error(`[PDF Ampliacion] Error descargando ${url}:`, e);
-                    return { url, data: null };
-                }
+                const buffer = await descargarRecurso(url);
+                return { url, data: buffer };
             });
 
             const results = await Promise.all(downloadPromises);
@@ -166,7 +208,7 @@ export async function GET(
                 } else {
                     // Es imagen
                     const extension = res.url.split('.').pop()?.toLowerCase() || 'png';
-                    const base64 = Buffer.from(res.data).toString('base64');
+                    const base64 = res.data.toString('base64');
                     imagenes_adjuntas[res.url] = `data:image/${extension === 'jpg' ? 'jpeg' : extension};base64,${base64}`;
                 }
             });
