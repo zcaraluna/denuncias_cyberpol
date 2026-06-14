@@ -1143,7 +1143,7 @@ export default function ReportesPage() {
                                   <span className="font-black text-[#002147] block leading-snug">{row.dependencia_remitida}</span>
                                   {row.remitido_por && (
                                     <span className="block text-[8px] text-slate-400 font-bold uppercase tracking-tight">
-                                      Sindicado por {row.remitido_por}
+                                      Sugerido por {row.remitido_por}
                                     </span>
                                   )}
                                 </div>
@@ -1225,7 +1225,7 @@ export default function ReportesPage() {
                               <span className="text-[9px] font-black text-[#002147] uppercase whitespace-normal break-words block leading-snug">{row.dependencia_remitida}</span>
                               {row.remitido_por && (
                                 <span className="block text-[8px] text-slate-400 font-bold uppercase tracking-tight">
-                                  Sindicado por {row.remitido_por}
+                                  Sugerido por {row.remitido_por}
                                 </span>
                               )}
                             </div>
