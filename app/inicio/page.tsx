@@ -279,7 +279,7 @@ function UpdateModal({ onClose }: { onClose: () => void }) {
             </div>
             <div>
               <span className="text-[10px] font-black uppercase tracking-[0.25em] text-blue-200 block mb-0.5">
-                Nueva Actualización
+                Nueva Actualización (v1.5.519)
               </span>
               <h2 className="text-2xl font-extrabold tracking-tight">
                 SIDE Sistema de Denuncias
