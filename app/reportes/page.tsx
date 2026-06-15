@@ -578,7 +578,7 @@ export default function ReportesPage() {
         num: d.numero_denuncia,
         tipo_hecho: (d.tipo_especifico || d.shp || '').toUpperCase(),
         interviniente: intervinienteAbrev,
-        oficina_vacia: '',
+        dpto_a_cargo: d.dependencia_remitida || '',
         perdida: montoGs > 0 ? `${montoGs.toLocaleString('es-PY')} Gs.` : '-------'
       };
     });
@@ -589,7 +589,7 @@ export default function ReportesPage() {
       { header: 'S.H.P.', key: 'tipo_hecho', width: 16 },
       { header: 'DENUNCIANTE', key: 'denunciante', width: 18 },
       { header: 'INTERVINIENTE', key: 'interviniente', width: 16 },
-      { header: 'DPTO. A CARGO', key: 'oficina_vacia', width: 12 },
+      { header: 'DPTO. A CARGO', key: 'dpto_a_cargo', width: 12 },
       { header: 'PÉRDIDA (Gs.)', key: 'perdida', width: 12 },
       { header: 'ENTIDAD REPORTADA', key: 'entidad_reportada', width: 12 }
     ];
