@@ -243,11 +243,51 @@ export default function InicioPage() {
         />
       )}
 
-      {/* Modal de Actualización - Novedades (v1.5.522) */}
+      {/* Modal de Actualización - Novedades (v1.5.526) */}
       {activeModal === 'new' && (
         <UpdateModal
-          version="v1.5.522"
+          version="v1.5.526"
           onClose={handleCloseNewModal}
+          features={[
+            {
+              icon: (
+                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              ),
+              title: "Exportación a Word Completa",
+              description: (
+                <>
+                  Al exportar el reporte diario a Word, la columna <strong className="font-extrabold text-[#002147]">Dpto. a Cargo</strong> ahora se completa de manera automática con la dependencia sugerida, evitando celdas vacías en el documento.
+                </>
+              ),
+              bgClass: "bg-blue-50",
+              borderClass: "border-blue-100"
+            },
+            {
+              icon: (
+                <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              ),
+              title: "Limpieza del Entorno de Desarrollo",
+              description: (
+                <>
+                  Se ha configurado el sistema para ignorar directorios temporales y scripts experimentales en el repositorio, manteniendo el control de versiones enfocado únicamente en el código de producción.
+                </>
+              ),
+              bgClass: "bg-amber-50",
+              borderClass: "border-amber-100"
+            }
+          ]}
+        />
+      )}
+
+      {/* Modal de Actualización - Anterior (v1.5.522) */}
+      {activeModal === 'old' && (
+        <UpdateModal
+          version="v1.5.522"
+          onClose={handleCloseOldModal}
           features={[
             {
               icon: (
@@ -274,46 +314,6 @@ export default function InicioPage() {
               description: (
                 <>
                   Al finalizar una denuncia y antes de imprimir, el sistema <strong className="font-extrabold text-[#002147]">solicitará una sugerencia de dependencia</strong> a la cual correspondería remitir la denuncia (pudiendo omitirse este paso si no se desea realizar).
-                </>
-              ),
-              bgClass: "bg-amber-50",
-              borderClass: "border-amber-100"
-            }
-          ]}
-        />
-      )}
-
-      {/* Modal de Actualización - Anterior (v1.5.519) */}
-      {activeModal === 'old' && (
-        <UpdateModal
-          version="v1.5.519"
-          onClose={handleCloseOldModal}
-          features={[
-            {
-              icon: (
-                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-                </svg>
-              ),
-              title: "Autoguardado Automático",
-              description: (
-                <>
-                  Tus datos se guardan silenciosamente cada <strong className="font-extrabold text-[#002147]">90 segundos</strong> a partir del Paso 3. Si ocurre un corte de energía, falla de conexión o cierre accidental, podrás continuar la denuncia desde el último punto guardado.
-                </>
-              ),
-              bgClass: "bg-blue-50",
-              borderClass: "border-blue-100"
-            },
-            {
-              icon: (
-                <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              ),
-              title: "Expiración de Borradores",
-              description: (
-                <>
-                  Para mantener el sistema optimizado y resguardar la privacidad de los datos, todo borrador no finalizado <strong className="font-extrabold text-[#002147]">se eliminará de manera automática pasadas las 24 horas</strong> de su creación.
                 </>
               ),
               bgClass: "bg-amber-50",
