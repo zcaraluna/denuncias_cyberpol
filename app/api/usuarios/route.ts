@@ -2,14 +2,52 @@ import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/lib/db'
 import bcrypt from 'bcryptjs'
 
-// GET: Obtener lista de usuarios
+// GET: Obtener lista de usuarios (filtrado regional y enmascaramiento para supervisores)
 export async function GET(request: NextRequest) {
   try {
-    const result = await pool.query(
-      'SELECT id, usuario, nombre, apellido, grado, oficina, rol, activo, creado_en FROM usuarios ORDER BY creado_en DESC'
-    )
+    // 1. Obtener la sesión del usuario para aplicar filtrado regional y enmascaramiento
+    const usuarioCookie = request.cookies.get('usuario_sesion')?.value
+    let oficinaFilter: string | null = null
+    let esSupervisor = false
 
-    return NextResponse.json(result.rows)
+    if (usuarioCookie) {
+      try {
+        const usuario = JSON.parse(decodeURIComponent(usuarioCookie))
+        if (usuario.rol === 'supervisor') {
+          oficinaFilter = usuario.oficina
+          esSupervisor = true
+        } else if (usuario.rol === 'operador') {
+          return NextResponse.json({ error: 'Acción no autorizada' }, { status: 403 })
+        }
+      } catch (e) {
+        // Ignorar
+      }
+    }
+
+    let query = 'SELECT id, usuario, nombre, apellido, grado, oficina, rol, activo, creado_en FROM usuarios'
+    const queryParams: any[] = []
+
+    if (oficinaFilter) {
+      query += ' WHERE oficina = $1'
+      queryParams.push(oficinaFilter)
+    }
+
+    query += ' ORDER BY creado_en DESC'
+
+    const result = await pool.query(query, queryParams)
+
+    // Enmascarar el nombre de usuario (campo 'usuario') si el solicitante es supervisor
+    const rows = result.rows.map((row: any) => {
+      if (esSupervisor) {
+        return {
+          ...row,
+          usuario: '••••••'
+        }
+      }
+      return row
+    })
+
+    return NextResponse.json(rows)
   } catch (error) {
     console.error('Error obteniendo usuarios:', error)
     return NextResponse.json(
@@ -19,9 +57,27 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST: Crear nuevo usuario
+// POST: Crear nuevo usuario (solo administradores)
 export async function POST(request: NextRequest) {
   try {
+    // Verificar sesión del creador
+    const usuarioCookie = request.cookies.get('usuario_sesion')?.value
+    if (!usuarioCookie) {
+      return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+    }
+
+    let creador: { rol: string }
+    try {
+      creador = JSON.parse(decodeURIComponent(usuarioCookie))
+    } catch (e) {
+      return NextResponse.json({ error: 'Sesión inválida' }, { status: 401 })
+    }
+
+    // Solo superadmin y admin pueden crear usuarios
+    if (creador.rol !== 'superadmin' && creador.rol !== 'admin') {
+      return NextResponse.json({ error: 'Acción no autorizada' }, { status: 403 })
+    }
+
     const body = await request.json()
     const { usuario, contraseña, nombre, apellido, grado, oficina, rol } = body
 

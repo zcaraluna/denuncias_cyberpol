@@ -86,7 +86,7 @@ export default function DenunciasPage() {
 
   useEffect(() => {
     if (usuario) {
-      if (usuario.rol === 'admin' || usuario.rol === 'superadmin') {
+      if (usuario.rol === 'admin' || usuario.rol === 'superadmin' || usuario.rol === 'supervisor') {
         cargarDenuncias()
       } else {
         setLoading(false)
@@ -273,7 +273,7 @@ export default function DenunciasPage() {
 
   if (!usuario) return null
 
-  const isAdmin = usuario.rol === 'admin' || usuario.rol === 'superadmin'
+  const isAdmin = usuario.rol === 'admin' || usuario.rol === 'superadmin' || usuario.rol === 'supervisor'
 
   return (
     <MainLayout>

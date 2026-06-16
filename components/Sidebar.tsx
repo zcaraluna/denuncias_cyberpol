@@ -63,8 +63,8 @@ const navItems = [
 ]
 
 const adminItems = [
-    { href: '/gestion-usuarios', label: 'Usuarios', icon: Users, roles: ['admin', 'superadmin'] },
-    { href: '/log-visitas', label: 'Auditoría', icon: History, roles: ['admin', 'superadmin'] },
+    { href: '/gestion-usuarios', label: 'Usuarios', icon: Users, roles: ['admin', 'superadmin', 'supervisor'] },
+    { href: '/log-visitas', label: 'Auditoría', icon: History, roles: ['admin', 'superadmin', 'supervisor'] },
     { href: '/gestion-dispositivos', label: 'Dispositivos', icon: ShieldCheck, roles: ['superadmin'] },
 ]
 
@@ -118,7 +118,7 @@ export function Sidebar() {
                     </div>
 
                     {/* Admin Items Section */}
-                    {(usuario.rol === 'admin' || usuario.rol === 'superadmin') && (
+                    {(usuario.rol === 'admin' || usuario.rol === 'superadmin' || usuario.rol === 'supervisor') && (
                         <div className="pt-2">
                             <span className="mb-3 block px-3 text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em]">
                                 Administración
@@ -187,7 +187,7 @@ export function MobileBottomNav() {
 
     if (!usuario || !isLoaded) return null
 
-    const esAdmin = usuario.rol === 'admin' || usuario.rol === 'superadmin'
+    const esAdmin = usuario.rol === 'admin' || usuario.rol === 'superadmin' || usuario.rol === 'supervisor'
     const numColumnas = esAdmin ? 5 : 4
 
     return (

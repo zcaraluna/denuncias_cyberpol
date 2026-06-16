@@ -16,9 +16,10 @@ import {
   UserCircle,
   CheckCircle2,
   XCircle,
-  Search,
-  MoreVertical,
-  Key
+  Key,
+  Copy,
+  Check,
+  Building
 } from 'lucide-react'
 
 interface UsuarioCompleto {
@@ -40,6 +41,13 @@ interface UsuarioAuth {
   grado: string
   oficina: string
   rol: string
+}
+
+const ROLE_WEIGHTS: Record<string, number> = {
+  superadmin: 4,
+  admin: 3,
+  supervisor: 2,
+  operador: 1
 }
 
 const grados = [
@@ -80,6 +88,13 @@ export default function GestionUsuariosPage() {
   const [mostrarModalEditar, setMostrarModalEditar] = useState(false)
   const [usuarioEditando, setUsuarioEditando] = useState<UsuarioCompleto | null>(null)
 
+  // Estados para modal de restauración de contraseña
+  const [mostrarModalResetClave, setMostrarModalResetClave] = useState(false)
+  const [usuarioResetClave, setUsuarioResetClave] = useState<UsuarioCompleto | null>(null)
+  const [nuevaClaveTemporal, setNuevaClaveTemporal] = useState('')
+  const [claveCopiada, setClaveCopiada] = useState(false)
+  const [cargandoReset, setCargandoReset] = useState(false)
+
   // Estados para formulario de creación
   const [nuevoUsuario, setNuevoUsuario] = useState({
     usuario: '',
@@ -106,8 +121,12 @@ export default function GestionUsuariosPage() {
     if (usuarioAuth) {
       setUsuario(usuarioAuth)
 
-      // Solo superadmin y admin pueden acceder a esta página
-      if (usuarioAuth.rol !== 'superadmin' && usuarioAuth.rol !== 'admin') {
+      // Solo superadmin, admin y supervisor pueden acceder a esta página
+      if (
+        usuarioAuth.rol !== 'superadmin' &&
+        usuarioAuth.rol !== 'admin' &&
+        usuarioAuth.rol !== 'supervisor'
+      ) {
         router.push('/dashboard')
         return
       }
@@ -194,7 +213,7 @@ export default function GestionUsuariosPage() {
         return
       }
 
-      alert('Usuario actualizado exitosamente')
+      alert('Usuario actualizado exitosamente. Si se cambió la contraseña, deberá cambiarla al iniciar sesión.')
       setMostrarModalEditar(false)
       cargarUsuarios()
     } catch (error) {
@@ -208,7 +227,6 @@ export default function GestionUsuariosPage() {
       return
     }
 
-    // No permitir eliminar al propio usuario
     if (id === usuario?.id) {
       alert('No puede eliminar su propio usuario')
       return
@@ -232,20 +250,76 @@ export default function GestionUsuariosPage() {
     }
   }
 
-  const handleLogout = () => {
-    sessionStorage.removeItem('usuario')
-    router.push('/')
+  // Lógica de reseteo de claves
+  const handleAbrirResetClave = (user: UsuarioCompleto) => {
+    setUsuarioResetClave(user)
+    // Generar contraseña temporal sugerida: Cyberpol-XXXX (donde XXXX es un número de 4 dígitos)
+    const tempPassword = `Cyberpol-${Math.floor(1000 + Math.random() * 9000)}`
+    setNuevaClaveTemporal(tempPassword)
+    setClaveCopiada(false)
+    setMostrarModalResetClave(true)
   }
 
-  const getRolColor = (rol: string) => {
-    const rolObj = roles.find(r => r.value === rol)
-    return rolObj ? rolObj.color : 'gray'
+  const handleResetearClave = async () => {
+    if (!usuarioResetClave) return
+    setCargandoReset(true)
+
+    try {
+      const response = await fetch(`/api/usuarios/${usuarioResetClave.id}/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contraseña: nuevaClaveTemporal })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        alert(data.error || 'Error al restablecer la contraseña')
+        return
+      }
+
+      alert(`Contraseña de ${usuarioResetClave.nombre} ${usuarioResetClave.apellido} restablecida exitosamente a: ${nuevaClaveTemporal}`)
+      setMostrarModalResetClave(false)
+    } catch (error) {
+      console.error('Error:', error)
+      alert('Error de red al restablecer la contraseña')
+    } finally {
+      setCargandoReset(false)
+    }
   }
+
+  const handleCopiarClave = () => {
+    navigator.clipboard.writeText(nuevaClaveTemporal)
+    setClaveCopiada(true)
+    setTimeout(() => setClaveCopiada(false), 2000)
+  }
+
+  const puedoRestablecer = (targetUser: UsuarioCompleto) => {
+    const realizadorRol = usuario?.rol || ''
+    const targetRol = targetUser.rol
+    const realizadorPeso = ROLE_WEIGHTS[realizadorRol] || 0
+    const targetPeso = ROLE_WEIGHTS[targetRol] || 0
+
+    if (realizadorRol === 'operador') return false
+    if (realizadorPeso < targetPeso) return false
+
+    if (realizadorRol === 'supervisor') {
+      return targetUser.oficina === usuario?.oficina
+    }
+
+    return true
+  }
+
+  const esSupervisor = usuario?.rol === 'supervisor'
+  const esAdmin = usuario?.rol === 'admin' || usuario?.rol === 'superadmin'
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl">Cargando...</div>
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="flex flex-col items-center">
+          <div className="w-10 h-10 border-3 border-[#002147]/10 border-t-[#002147] rounded-full animate-spin mb-4" />
+          <div className="text-[#002147] font-bold animate-pulse text-sm uppercase tracking-widest">Cargando usuarios...</div>
+        </div>
       </div>
     )
   }
@@ -256,211 +330,187 @@ export default function GestionUsuariosPage() {
 
   return (
     <MainLayout>
-      <div className="min-h-screen bg-slate-50/50 p-4 md:p-8">
+      <div className="min-h-screen bg-slate-50/50 p-4 md:p-8 font-sans">
+        {/* Cabecera */}
         <div className="max-w-7xl mx-auto mb-8">
           <div className="bg-white rounded-3xl border border-slate-200/60 p-6 md:p-8 shadow-sm relative overflow-hidden">
             <div className="absolute top-0 right-0 w-64 h-64 bg-slate-50 rounded-full -mr-32 -mt-32 z-0 opacity-50"></div>
 
-            <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
               <div className="flex items-start gap-3 md:gap-5">
                 <div className="p-3 md:p-4 bg-[#002147] rounded-2xl shadow-lg shadow-blue-900/10 shrink-0">
                   <Users className="h-6 w-6 md:h-8 md:w-8 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-xl md:text-3xl font-black text-[#002147] leading-tight">Gestión de Usuarios</h1>
-                  <p className="hidden md:block text-slate-500 font-medium mt-1">
-                    Administre las cuentas, roles y accesos de los funcionarios de la institución.
+                  <h1 className="text-xl md:text-3xl font-black text-[#002147] leading-tight">
+                    {esSupervisor ? 'Personal de Guardia' : 'Gestión de Usuarios'}
+                  </h1>
+                  <p className="text-slate-500 font-medium text-xs md:text-sm mt-1">
+                    {esSupervisor
+                      ? `Lista de personal asignado a la oficina regional de ${usuario.oficina}.`
+                      : 'Administre las cuentas, roles y accesos de los funcionarios de la institución.'}
                   </p>
                 </div>
               </div>
 
-              <button
-                onClick={() => setMostrarModalCrear(true)}
-                className="group flex items-center justify-center gap-2 px-6 py-3.5 bg-[#002147] text-white rounded-2xl hover:bg-[#003366] transition-all shadow-lg shadow-blue-900/10 font-black text-xs md:text-sm"
-              >
-                <UserPlus className="h-4 w-4" />
-                <span>NUEVO USUARIO</span>
-              </button>
+              {esAdmin && (
+                <button
+                  onClick={() => setMostrarModalCrear(true)}
+                  className="group flex items-center justify-center gap-2 px-6 py-3.5 bg-[#002147] text-white rounded-2xl hover:bg-[#003366] transition-all shadow-lg shadow-blue-900/10 font-black text-xs md:text-sm"
+                >
+                  <UserPlus className="h-4 w-4" />
+                  <span>NUEVO USUARIO</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
 
+        {/* Grid Responsivo de Tarjetas (Visualización Premium sin Scroll) */}
         <div className="max-w-7xl mx-auto">
-          <div className="bg-white md:rounded-3xl md:border border-slate-200/60 shadow-sm overflow-hidden mb-20 md:mb-0">
-            {/* Tabla para Escritorio */}
-            <div className="hidden md:block overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-100">
-                <thead>
-                  <tr className="bg-slate-50/50 text-left border-b border-slate-100">
-                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Funcionario</th>
-                    <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Grado / Rango</th>
-                    <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Oficina</th>
-                    <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Rol de Sistema</th>
-                    <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Estado</th>
-                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-50">
-                  {usuarios.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="px-8 py-12 text-center text-slate-400 font-medium">
-                        No se encontraron usuarios registrados
-                      </td>
-                    </tr>
-                  ) : (
-                    usuarios.map((user) => (
-                      <tr key={user.id} className="hover:bg-slate-50/50 transition-colors group">
-                        <td className="px-8 py-4 whitespace-nowrap">
-                          <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 bg-slate-100 rounded-xl flex items-center justify-center text-[#002147] font-black text-xs border border-slate-200">
-                              {user.nombre?.[0] || '?'}{user.apellido?.[0] || ''}
-                            </div>
-                            <div>
-                              <p className="text-sm font-black text-[#002147]">{user.nombre} {user.apellido}</p>
-                              <p className="text-[10px] font-mono text-slate-400 uppercase tracking-tight">{user.usuario}</p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="text-xs font-bold text-slate-600 uppercase italic">{user.grado}</span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center gap-2">
-                            <Building2 className="h-3.5 w-3.5 text-slate-300" />
-                            <span className="text-xs font-bold text-slate-600">{user.oficina}</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2.5 py-1 text-[10px] font-black uppercase tracking-widest rounded-lg border flex items-center w-fit gap-1.5 ${user.rol === 'superadmin' ? 'bg-red-50 text-red-700 border-red-100' :
-                            user.rol === 'admin' ? 'bg-orange-50 text-orange-700 border-orange-100' :
-                              user.rol === 'supervisor' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
-                                'bg-blue-50 text-blue-700 border-blue-100'
-                            }`}>
-                            <Shield className="h-2.5 w-2.5" />
-                            {roles.find(r => r.value === user.rol)?.label}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center gap-1.5">
-                            {user.activo ? (
-                              <div className="flex items-center gap-1.5 text-emerald-600">
-                                <CheckCircle2 className="h-3.5 w-3.5" />
-                                <span className="text-[10px] font-black uppercase tracking-widest">Activo</span>
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-1.5 text-slate-400">
-                                <XCircle className="h-3.5 w-3.5" />
-                                <span className="text-[10px] font-black uppercase tracking-widest">Inactivo</span>
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-8 py-4 whitespace-nowrap text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <Link
-                              href={`/perfil-usuario/${user.id}`}
-                              className="p-2 text-slate-400 hover:text-[#002147] hover:bg-white rounded-xl border border-transparent hover:border-slate-100 transition-all shadow-sm group-hover:bg-white"
-                              title="Ver Perfil"
-                            >
-                              <UserCircle className="h-4 w-4" />
-                            </Link>
-                            <button
-                              onClick={() => handleAbrirEditar(user)}
-                              className="p-2 text-slate-400 hover:text-blue-600 hover:bg-white rounded-xl border border-transparent hover:border-blue-100 transition-all shadow-sm group-hover:bg-white"
-                              title="Editar Usuario"
-                            >
-                              <Edit3 className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => handleEliminarUsuario(user.id)}
-                              className="p-2 text-slate-400 hover:text-red-600 hover:bg-white rounded-xl border border-transparent hover:border-red-100 transition-all shadow-sm group-hover:bg-white font-black"
-                              title="Eliminar Usuario"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+          {usuarios.length === 0 ? (
+            <div className="bg-white rounded-3xl border border-slate-200/60 p-16 text-center shadow-sm">
+              <div className="inline-flex p-4 bg-slate-50 rounded-2xl text-slate-300 mb-4">
+                <Users className="h-10 w-10" />
+              </div>
+              <p className="text-slate-400 font-black uppercase tracking-widest text-sm">
+                No se encontraron usuarios registrados
+              </p>
             </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-20 md:mb-8">
+              {usuarios.map((user) => (
+                <div
+                  key={user.id}
+                  className="bg-white rounded-3xl border border-slate-200/60 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden flex flex-col group relative"
+                >
+                  {/* Barra lateral decorativa del rol */}
+                  <div
+                    className={`absolute left-0 top-0 bottom-0 w-1.5 ${
+                      user.rol === 'superadmin'
+                        ? 'bg-red-500'
+                        : user.rol === 'admin'
+                        ? 'bg-orange-500'
+                        : user.rol === 'supervisor'
+                        ? 'bg-emerald-500'
+                        : 'bg-blue-500'
+                    }`}
+                  />
 
-            {/* Vista de Tarjetas para Móvil */}
-            <div className="md:hidden grid grid-cols-1 gap-4 p-4 bg-slate-50/30">
-              {usuarios.length === 0 ? (
-                <div className="text-center py-10 text-slate-400 font-bold uppercase tracking-widest text-[10px]">
-                  No se encontraron usuarios
-                </div>
-              ) : (
-                usuarios.map((user) => (
-                  <div key={user.id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm active:scale-[0.98] transition-all">
-                    <div className="p-4 flex items-center justify-between border-b border-slate-100">
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 bg-slate-50 rounded-xl flex items-center justify-center text-[#002147] font-black text-xs border border-slate-100">
+                  {/* Cuerpo de la tarjeta */}
+                  <div className="p-6 flex-1 pl-8">
+                    <div className="flex items-start justify-between gap-4 mb-4">
+                      {/* Avatar y Funcionario */}
+                      <div className="flex items-center gap-3.5">
+                        <div className="h-12 w-12 bg-slate-50 rounded-2xl flex items-center justify-center text-[#002147] font-black text-sm border border-slate-200 shadow-inner group-hover:bg-slate-100 transition-colors">
                           {user.nombre?.[0] || '?'}{user.apellido?.[0] || ''}
                         </div>
                         <div>
-                          <p className="text-xs font-black text-[#002147] leading-tight">{user.nombre} {user.apellido}</p>
-                          <p className="text-[9px] font-mono text-slate-400 uppercase tracking-tighter">{user.usuario}</p>
+                          <h3 className="text-sm font-black text-[#002147] leading-tight">
+                            {user.nombre} {user.apellido}
+                          </h3>
+                          <p className="text-[10px] font-mono text-slate-400 uppercase tracking-tight mt-0.5">
+                            {esSupervisor ? '••••••' : user.usuario}
+                          </p>
                         </div>
                       </div>
-                      <div className={`px-2 py-0.5 text-[8px] font-black uppercase tracking-widest rounded-md border flex items-center gap-1 ${user.rol === 'superadmin' ? 'bg-red-50 text-red-600 border-red-100' :
-                        user.rol === 'admin' ? 'bg-orange-50 text-orange-600 border-orange-100' :
-                          user.rol === 'supervisor' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                            'bg-blue-50 text-blue-600 border-blue-100'
-                        }`}>
-                        {roles.find(r => r.value === user.rol)?.label}
-                      </div>
-                    </div>
-                    
-                    <div className="px-4 py-3 bg-slate-50/50 space-y-2">
-                       <div className="flex items-center justify-between text-[9px]">
-                          <span className="text-slate-400 font-black uppercase tracking-widest">Grado</span>
-                          <span className="font-bold text-slate-600 uppercase italic">{user.grado}</span>
-                       </div>
-                       <div className="flex items-center justify-between text-[9px]">
-                          <span className="text-slate-400 font-black uppercase tracking-widest">Oficina</span>
-                          <span className="font-bold text-slate-600 uppercase">{user.oficina}</span>
-                       </div>
-                       <div className="flex items-center justify-between text-[9px]">
-                          <span className="text-slate-400 font-black uppercase tracking-widest">Estado</span>
-                          {user.activo ? (
-                            <span className="font-black text-emerald-600 uppercase tracking-widest">Activo</span>
-                          ) : (
-                            <span className="font-black text-slate-400 uppercase tracking-widest">Inactivo</span>
-                          )}
-                       </div>
+
+                      {/* Badge de Rol */}
+                      <span
+                        className={`px-2 py-0.5 rounded-lg border text-[8px] font-black uppercase tracking-widest flex items-center gap-1 shrink-0 ${
+                          user.rol === 'superadmin'
+                            ? 'bg-red-50 text-red-700 border-red-100'
+                            : user.rol === 'admin'
+                            ? 'bg-orange-50 text-orange-700 border-orange-100'
+                            : user.rol === 'supervisor'
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+                            : 'bg-blue-50 text-blue-700 border-blue-100'
+                        }`}
+                      >
+                        <Shield className="h-2.5 w-2.5" />
+                        {roles.find((r) => r.value === user.rol)?.label}
+                      </span>
                     </div>
 
-                    <div className="p-3 flex items-center gap-2 border-t border-slate-100">
-                        <Link
-                          href={`/perfil-usuario/${user.id}`}
-                          className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-white border border-slate-200 text-[#002147] rounded-xl text-[10px] font-black uppercase tracking-widest active:bg-slate-50 transition-colors"
-                        >
-                          <UserCircle className="h-3.5 w-3.5" />
-                          Perfil
-                        </Link>
-                        <button
-                          onClick={() => handleAbrirEditar(user)}
-                          className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-white border border-slate-200 text-blue-600 rounded-xl text-[10px] font-black uppercase tracking-widest active:bg-slate-50 transition-colors"
-                        >
-                          <Edit3 className="h-3.5 w-3.5" />
-                          Editar
-                        </button>
-                        <button
-                          onClick={() => handleEliminarUsuario(user.id)}
-                          className="p-2.5 bg-red-50 text-red-600 rounded-xl border border-red-100 active:bg-red-100 transition-colors"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
+                    {/* Información */}
+                    <div className="space-y-2.5 py-4 border-t border-b border-slate-100 text-[11px]">
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400 font-bold uppercase tracking-widest">Rango</span>
+                        <span className="font-bold text-slate-700 uppercase italic">
+                          {user.grado}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400 font-bold uppercase tracking-widest">Base / Oficina</span>
+                        <span className="font-bold text-slate-700 flex items-center gap-1.5 uppercase">
+                          <Building className="h-3.5 w-3.5 text-slate-300" />
+                          {user.oficina}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                ))
-              )}
+
+                  {/* Acciones */}
+                  <div className="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between pl-8">
+                    {/* Estado */}
+                    <div className="flex items-center gap-1.5">
+                      {user.activo ? (
+                        <div className="flex items-center gap-1.5 text-emerald-600">
+                          <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                          <span className="text-[9px] font-black uppercase tracking-widest">Activo</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5 text-slate-400">
+                          <span className="h-2 w-2 rounded-full bg-slate-300" />
+                          <span className="text-[9px] font-black uppercase tracking-widest">Inactivo</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Botones de acción */}
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`/perfil-usuario/${user.id}`}
+                        className="p-2 text-slate-400 hover:text-[#002147] hover:bg-white rounded-xl border border-slate-200/40 hover:border-slate-200 transition-all shadow-sm bg-white"
+                        title="Ver Perfil"
+                      >
+                        <UserCircle className="h-4 w-4" />
+                      </Link>
+
+                      {puedoRestablecer(user) && (
+                        <button
+                          onClick={() => handleAbrirResetClave(user)}
+                          className="p-2 text-amber-600 hover:text-white hover:bg-amber-600 rounded-xl border border-amber-200/50 hover:border-amber-600 transition-all shadow-sm bg-white"
+                          title="Restaurar Contraseña"
+                        >
+                          <Key className="h-4 w-4" />
+                        </button>
+                      )}
+
+                      {esAdmin && (
+                        <>
+                          <button
+                            onClick={() => handleAbrirEditar(user)}
+                            className="p-2 text-slate-400 hover:text-blue-600 hover:bg-white rounded-xl border border-slate-200/40 hover:border-blue-100 transition-all shadow-sm bg-white"
+                            title="Editar Usuario"
+                          >
+                            <Edit3 className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleEliminarUsuario(user.id)}
+                            className="p-2 text-slate-400 hover:text-red-600 hover:bg-white rounded-xl border border-slate-200/40 hover:border-red-100 transition-all shadow-sm bg-white"
+                            title="Eliminar Usuario"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
-          </div>
+          )}
         </div>
 
         {/* Modal de Crear Usuario */}
@@ -474,7 +524,10 @@ export default function GestionUsuariosPage() {
                   </div>
                   <h3 className="text-2xl font-black text-[#002147] uppercase tracking-tight">Nuevo Usuario</h3>
                 </div>
-                <button onClick={() => setMostrarModalCrear(false)} className="p-2 hover:bg-slate-100 rounded-full transition-all text-slate-400">
+                <button
+                  onClick={() => setMostrarModalCrear(false)}
+                  className="p-2 hover:bg-slate-100 rounded-full transition-all text-slate-400"
+                >
                   <XCircle className="h-6 w-6" />
                 </button>
               </div>
@@ -482,7 +535,9 @@ export default function GestionUsuariosPage() {
               <div className="space-y-6">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Nombre de Usuario</label>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
+                      Nombre de Usuario
+                    </label>
                     <input
                       type="text"
                       value={nuevoUsuario.usuario}
@@ -494,7 +549,9 @@ export default function GestionUsuariosPage() {
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Contraseña</label>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
+                      Contraseña
+                    </label>
                     <div className="relative">
                       <Key className="absolute left-4 top-3.5 h-4 w-4 text-slate-300" />
                       <input
@@ -510,7 +567,9 @@ export default function GestionUsuariosPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Nombres</label>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
+                      Nombres
+                    </label>
                     <input
                       type="text"
                       value={nuevoUsuario.nombre}
@@ -521,7 +580,9 @@ export default function GestionUsuariosPage() {
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Apellidos</label>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
+                      Apellidos
+                    </label>
                     <input
                       type="text"
                       value={nuevoUsuario.apellido}
@@ -534,7 +595,9 @@ export default function GestionUsuariosPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Grado</label>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
+                      Grado
+                    </label>
                     <select
                       value={nuevoUsuario.grado}
                       onChange={(e) => setNuevoUsuario({ ...nuevoUsuario, grado: e.target.value })}
@@ -543,13 +606,17 @@ export default function GestionUsuariosPage() {
                     >
                       <option value="">Seleccione...</option>
                       {grados.map((grado) => (
-                        <option key={grado} value={grado}>{grado}</option>
+                        <option key={grado} value={grado}>
+                          {grado}
+                        </option>
                       ))}
                     </select>
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Oficina</label>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
+                      Oficina
+                    </label>
                     <select
                       value={nuevoUsuario.oficina}
                       onChange={(e) => setNuevoUsuario({ ...nuevoUsuario, oficina: e.target.value })}
@@ -558,24 +625,29 @@ export default function GestionUsuariosPage() {
                     >
                       <option value="">Seleccione...</option>
                       {oficinas.map((oficina) => (
-                        <option key={oficina} value={oficina}>{oficina}</option>
+                        <option key={oficina} value={oficina}>
+                          {oficina}
+                        </option>
                       ))}
                     </select>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Rol de Acceso</label>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
+                    Rol de Acceso
+                  </label>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                     {roles.map((rol) => (
                       <button
                         key={rol.value}
                         type="button"
                         onClick={() => setNuevoUsuario({ ...nuevoUsuario, rol: rol.value })}
-                        className={`px-3 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${nuevoUsuario.rol === rol.value
-                          ? 'bg-[#002147] text-white border-[#002147] shadow-md'
-                          : 'bg-white text-slate-400 border-slate-200 hover:border-blue-200 hover:text-blue-500'
-                          }`}
+                        className={`px-3 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${
+                          nuevoUsuario.rol === rol.value
+                            ? 'bg-[#002147] text-white border-[#002147] shadow-md'
+                            : 'bg-white text-slate-400 border-slate-200 hover:border-blue-200 hover:text-blue-500'
+                        }`}
                       >
                         {rol.label}
                       </button>
@@ -613,7 +685,10 @@ export default function GestionUsuariosPage() {
                   </div>
                   <h3 className="text-2xl font-black text-[#002147] uppercase tracking-tight">Editar Usuario</h3>
                 </div>
-                <button onClick={() => setMostrarModalEditar(false)} className="p-2 hover:bg-slate-100 rounded-full transition-all text-slate-400">
+                <button
+                  onClick={() => setMostrarModalEditar(false)}
+                  className="p-2 hover:bg-slate-100 rounded-full transition-all text-slate-400"
+                >
                   <XCircle className="h-6 w-6" />
                 </button>
               </div>
@@ -622,10 +697,14 @@ export default function GestionUsuariosPage() {
                 <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <UserCircle className="h-5 w-5 text-blue-500" />
-                    <span className="text-sm font-black text-blue-900 uppercase">{usuarioEditando.usuario}</span>
+                    <span className="text-sm font-black text-blue-900 uppercase">
+                      {usuarioEditando.usuario}
+                    </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <label className="text-[10px] font-black text-blue-700 uppercase tracking-widest cursor-pointer">Activo</label>
+                    <label className="text-[10px] font-black text-blue-700 uppercase tracking-widest cursor-pointer">
+                      Activo
+                    </label>
                     <input
                       type="checkbox"
                       checked={editUsuario.activo}
@@ -637,7 +716,9 @@ export default function GestionUsuariosPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Nombres</label>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
+                      Nombres
+                    </label>
                     <input
                       type="text"
                       value={editUsuario.nombre}
@@ -648,7 +729,9 @@ export default function GestionUsuariosPage() {
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Apellidos</label>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
+                      Apellidos
+                    </label>
                     <input
                       type="text"
                       value={editUsuario.apellido}
@@ -661,7 +744,9 @@ export default function GestionUsuariosPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Grado</label>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
+                      Grado
+                    </label>
                     <select
                       value={editUsuario.grado}
                       onChange={(e) => setEditUsuario({ ...editUsuario, grado: e.target.value })}
@@ -669,13 +754,17 @@ export default function GestionUsuariosPage() {
                       required
                     >
                       {grados.map((grado) => (
-                        <option key={grado} value={grado}>{grado}</option>
+                        <option key={grado} value={grado}>
+                          {grado}
+                        </option>
                       ))}
                     </select>
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Oficina</label>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
+                      Oficina
+                    </label>
                     <select
                       value={editUsuario.oficina}
                       onChange={(e) => setEditUsuario({ ...editUsuario, oficina: e.target.value })}
@@ -683,14 +772,18 @@ export default function GestionUsuariosPage() {
                       required
                     >
                       {oficinas.map((oficina) => (
-                        <option key={oficina} value={oficina}>{oficina}</option>
+                        <option key={oficina} value={oficina}>
+                          {oficina}
+                        </option>
                       ))}
                     </select>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Cambiar Contraseña</label>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
+                    Cambiar Contraseña
+                  </label>
                   <div className="relative">
                     <Key className="absolute left-4 top-3.5 h-4 w-4 text-slate-300" />
                     <input
@@ -704,17 +797,20 @@ export default function GestionUsuariosPage() {
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Rol de Acceso</label>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
+                    Rol de Acceso
+                  </label>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                     {roles.map((rol) => (
                       <button
                         key={rol.value}
                         type="button"
                         onClick={() => setEditUsuario({ ...editUsuario, rol: rol.value })}
-                        className={`px-3 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${editUsuario.rol === rol.value
-                          ? 'bg-[#002147] text-white border-[#002147] shadow-md'
-                          : 'bg-white text-slate-400 border-slate-200 hover:border-blue-200 hover:text-blue-500'
-                          }`}
+                        className={`px-3 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${
+                          editUsuario.rol === rol.value
+                            ? 'bg-[#002147] text-white border-[#002147] shadow-md'
+                            : 'bg-white text-slate-400 border-slate-200 hover:border-blue-200 hover:text-blue-500'
+                        }`}
                       >
                         {rol.label}
                       </button>
@@ -740,8 +836,90 @@ export default function GestionUsuariosPage() {
             </div>
           </div>
         )}
+
+        {/* Modal de Restablecer Contraseña (Con Sugerencia y Copiado Rápido) */}
+        {mostrarModalResetClave && usuarioResetClave && (
+          <div className="fixed inset-0 bg-[#002147]/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-[32px] shadow-2xl p-8 max-w-md w-full border border-slate-100 animate-in fade-in zoom-in duration-200">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-amber-50 rounded-2xl text-amber-600">
+                    <Key className="h-6 w-6" />
+                  </div>
+                  <h3 className="text-xl font-black text-[#002147] uppercase tracking-tight">Restaurar Clave</h3>
+                </div>
+                <button
+                  onClick={() => setMostrarModalResetClave(false)}
+                  className="p-2 hover:bg-slate-100 rounded-full transition-all text-slate-400"
+                >
+                  <XCircle className="h-6 w-6" />
+                </button>
+              </div>
+
+              <div className="space-y-5">
+                <div className="p-4.5 bg-slate-50 rounded-2xl border border-slate-150 text-[11px] space-y-1.5">
+                  <p className="text-slate-400 font-bold uppercase tracking-widest">Funcionario</p>
+                  <p className="text-sm font-black text-[#002147] uppercase leading-tight">
+                    {usuarioResetClave.grado} {usuarioResetClave.nombre} {usuarioResetClave.apellido}
+                  </p>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase">
+                    Base: {usuarioResetClave.oficina}
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                    Nueva Contraseña Sugerida
+                  </label>
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Key className="absolute left-4 top-3.5 h-4 w-4 text-slate-300" />
+                      <input
+                        type="text"
+                        value={nuevaClaveTemporal}
+                        onChange={(e) => setNuevaClaveTemporal(e.target.value)}
+                        className="w-full pl-11 pr-5 py-3 bg-slate-50 border-2 border-slate-200 rounded-2xl focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 focus:bg-white transition-all outline-none font-bold text-[#002147] tracking-wide"
+                        placeholder="Contraseña temporal"
+                        required
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleCopiarClave}
+                      className={`px-4 bg-slate-100 border border-slate-250 hover:bg-slate-200 rounded-2xl transition-all flex items-center justify-center gap-1.5 font-bold text-xs ${
+                        claveCopiada ? 'text-emerald-600 bg-emerald-50 border-emerald-200 hover:bg-emerald-50' : 'text-slate-600'
+                      }`}
+                      title="Copiar contraseña"
+                    >
+                      {claveCopiada ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                      <span>{claveCopiada ? '¡Copiado!' : 'Copiar'}</span>
+                    </button>
+                  </div>
+                  <p className="text-[9px] text-slate-400 italic ml-1">
+                    * El usuario deberá cambiar obligatoriamente esta clave temporal en su próximo inicio de sesión.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-4 mt-8">
+                <button
+                  onClick={() => setMostrarModalResetClave(false)}
+                  className="flex-1 py-3.5 bg-slate-50 text-slate-500 rounded-2xl hover:bg-slate-100 transition-all font-black text-xs uppercase tracking-widest"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleResetearClave}
+                  disabled={cargandoReset || nuevaClaveTemporal.trim().length < 4}
+                  className="flex-1 py-3.5 bg-[#002147] text-white rounded-2xl hover:bg-[#003366] transition-all font-black text-xs shadow-xl shadow-blue-900/10 uppercase tracking-widest disabled:opacity-50"
+                >
+                  {cargandoReset ? 'Procesando...' : 'Confirmar'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </MainLayout>
   )
 }
-

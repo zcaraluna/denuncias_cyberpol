@@ -3,8 +3,25 @@ import pool from '@/lib/db'
 
 export async function GET(request: NextRequest) {
   try {
-    const result = await pool.query(
-      `SELECT 
+    // 1. Obtener la sesión del usuario para aplicar filtrado regional
+    const usuarioCookie = request.cookies.get('usuario_sesion')?.value
+    let oficinaFilter: string | null = null
+
+    if (usuarioCookie) {
+      try {
+        const usuario = JSON.parse(decodeURIComponent(usuarioCookie))
+        if (usuario.rol === 'supervisor') {
+          oficinaFilter = usuario.oficina
+        } else if (usuario.rol === 'operador') {
+          return NextResponse.json({ error: 'Acción no autorizada' }, { status: 403 })
+        }
+      } catch (e) {
+        // Ignorar
+      }
+    }
+
+    let query = `
+      SELECT 
         v.id,
         v.denuncia_id,
         v.usuario_id,
@@ -12,6 +29,7 @@ export async function GET(request: NextRequest) {
         u.nombre as nombre_usuario,
         u.apellido as apellido_usuario,
         u.grado as grado_usuario,
+        u.oficina as oficina_usuario,
         d.orden as numero_orden,
         den.nombres as nombre_denunciante,
         d.hash as hash_denuncia
@@ -19,9 +37,16 @@ export async function GET(request: NextRequest) {
       LEFT JOIN usuarios u ON v.usuario_id = u.id
       LEFT JOIN denuncias d ON v.denuncia_id = d.id
       LEFT JOIN denunciantes den ON d.denunciante_id = den.id
-      ORDER BY v.fecha_visita DESC
-      LIMIT 1000`
-    )
+    `
+    const queryParams: any[] = []
+    if (oficinaFilter) {
+      query += ' WHERE u.oficina = $1'
+      queryParams.push(oficinaFilter)
+    }
+
+    query += ` ORDER BY v.fecha_visita DESC LIMIT 1000`
+
+    const result = await pool.query(query, queryParams)
 
     // Corregir las fechas restando 3 horas para ajustar la zona horaria del VPS
     const visitasCorregidas = result.rows.map((visita: any) => {

@@ -88,7 +88,7 @@ export default function PerfilUsuarioPage({ params }: { params: Promise<{ id: st
         if (usuarioAuth) {
             setUsuarioActivo(usuarioAuth)
 
-            if (usuarioAuth.rol !== 'superadmin' && usuarioAuth.rol !== 'admin') {
+            if (usuarioAuth.rol !== 'superadmin' && usuarioAuth.rol !== 'admin' && usuarioAuth.rol !== 'supervisor') {
                 router.push('/dashboard')
                 return
             }
@@ -182,7 +182,8 @@ export default function PerfilUsuarioPage({ params }: { params: Promise<{ id: st
                                         <div className="flex items-center justify-center md:justify-start gap-3 mb-1.5 md:mb-1">
                                             <span className={`px-2 py-0.5 md:px-2.5 md:py-1 text-[9px] md:text-[10px] font-black uppercase tracking-widest rounded-lg border ${usuario.rol === 'superadmin' ? 'bg-red-50 text-red-600 border-red-100' :
                                                 usuario.rol === 'admin' ? 'bg-orange-50 text-orange-600 border-orange-100' :
-                                                    'bg-blue-50 text-blue-600 border-blue-100'
+                                                    usuario.rol === 'supervisor' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                                                        'bg-blue-50 text-blue-600 border-blue-100'
                                                 }`}>
                                                 {usuario.rol}
                                             </span>
@@ -209,7 +210,9 @@ export default function PerfilUsuarioPage({ params }: { params: Promise<{ id: st
                                 <div className="grid grid-cols-2 md:flex gap-3">
                                     <div className="px-4 py-3 md:px-6 md:py-4 bg-slate-50 border border-slate-100 rounded-2xl flex-1 md:flex-none">
                                         <p className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Usuario</p>
-                                        <p className="text-xs md:text-sm font-bold text-[#002147]">{usuario.usuario}</p>
+                                        <p className="text-xs md:text-sm font-bold text-[#002147]">
+                                            {usuarioActivo?.rol === 'supervisor' && usuarioActivo?.id !== usuario.id ? '••••••' : usuario.usuario}
+                                        </p>
                                     </div>
                                     <div className="px-4 py-3 md:px-6 md:py-4 bg-slate-50 border border-slate-100 rounded-2xl flex-1 md:flex-none">
                                         <p className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Base</p>

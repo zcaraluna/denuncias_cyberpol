@@ -8,6 +8,24 @@ export async function GET(
   try {
     const usuarioId = parseInt((await params).id)
 
+    // Verificar sesión y rol
+    const usuarioCookie = request.cookies.get('usuario_sesion')?.value
+    if (!usuarioCookie) {
+      return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+    }
+
+    let solicitante: { rol: string }
+    try {
+      solicitante = JSON.parse(decodeURIComponent(usuarioCookie))
+    } catch (e) {
+      return NextResponse.json({ error: 'Sesión inválida' }, { status: 401 })
+    }
+
+    // Operadores no pueden ver registros de consultas de otros usuarios
+    if (solicitante.rol === 'operador') {
+      return NextResponse.json({ error: 'Acción no autorizada' }, { status: 403 })
+    }
+
     const result = await pool.query(
       `SELECT 
         v.id,
