@@ -414,7 +414,7 @@ export default function GestionUsuariosPage() {
                             {user.nombre} {user.apellido}
                           </h3>
                           <p className="text-[10px] font-mono text-slate-400 tracking-tight mt-0.5">
-                            {esSupervisor ? '••••••' : user.usuario}
+                            {user.usuario}
                           </p>
                         </div>
                       </div>

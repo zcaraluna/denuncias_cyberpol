@@ -211,7 +211,7 @@ export default function PerfilUsuarioPage({ params }: { params: Promise<{ id: st
                                     <div className="px-4 py-3 md:px-6 md:py-4 bg-slate-50 border border-slate-100 rounded-2xl flex-1 md:flex-none">
                                         <p className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Usuario</p>
                                         <p className="text-xs md:text-sm font-bold text-[#002147]">
-                                            {usuarioActivo?.rol === 'supervisor' && usuarioActivo?.id !== usuario.id ? '••••••' : usuario.usuario}
+                                            {usuario.usuario}
                                         </p>
                                     </div>
                                     <div className="px-4 py-3 md:px-6 md:py-4 bg-slate-50 border border-slate-100 rounded-2xl flex-1 md:flex-none">

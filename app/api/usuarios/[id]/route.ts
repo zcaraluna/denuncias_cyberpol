@@ -52,14 +52,7 @@ export async function GET(
       }
     }
 
-    // Enmascarar el nombre de usuario si el observador es supervisor y no es su propio perfil
-    const enmascarar = solicitante.rol === 'supervisor' && solicitante.id !== targetUser.id
-    const responseData = {
-      ...targetUser,
-      usuario: enmascarar ? '••••••' : targetUser.usuario
-    }
-
-    return NextResponse.json(responseData)
+    return NextResponse.json(targetUser)
   } catch (error) {
     console.error('Error obteniendo usuario:', error)
     return NextResponse.json(

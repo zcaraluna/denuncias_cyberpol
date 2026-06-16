@@ -36,18 +36,7 @@ export async function GET(request: NextRequest) {
 
     const result = await pool.query(query, queryParams)
 
-    // Enmascarar el nombre de usuario (campo 'usuario') si el solicitante es supervisor
-    const rows = result.rows.map((row: any) => {
-      if (esSupervisor) {
-        return {
-          ...row,
-          usuario: '••••••'
-        }
-      }
-      return row
-    })
-
-    return NextResponse.json(rows)
+    return NextResponse.json(result.rows)
   } catch (error) {
     console.error('Error obteniendo usuarios:', error)
     return NextResponse.json(

@@ -108,21 +108,23 @@ export default function CambiarPasswordPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label htmlFor="contraseña_actual" className="block text-sm font-medium text-gray-700 mb-2">
-              Contraseña Actual
-            </label>
-            <input
-              id="contraseña_actual"
-              type="password"
-              value={contraseñaActual}
-              onChange={(e) => setContraseñaActual(e.target.value)}
-              required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-              placeholder="Ingrese su contraseña actual"
-              autoFocus
-            />
-          </div>
+          {!usuario?.debe_cambiar_contraseña && (
+            <div>
+              <label htmlFor="contraseña_actual" className="block text-sm font-medium text-gray-700 mb-2">
+                Contraseña Actual
+              </label>
+              <input
+                id="contraseña_actual"
+                type="password"
+                value={contraseñaActual}
+                onChange={(e) => setContraseñaActual(e.target.value)}
+                required
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                placeholder="Ingrese su contraseña actual"
+                autoFocus
+              />
+            </div>
+          )}
 
           <div>
             <label htmlFor="nueva_contraseña" className="block text-sm font-medium text-gray-700 mb-2">
@@ -137,6 +139,7 @@ export default function CambiarPasswordPage() {
               minLength={6}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
               placeholder="Mínimo 6 caracteres"
+              autoFocus={usuario?.debe_cambiar_contraseña}
             />
             <p className="mt-1 text-xs text-gray-500">
               La contraseña debe tener al menos 6 caracteres

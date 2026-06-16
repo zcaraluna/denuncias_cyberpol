@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
     const { usuario_id, contraseña_actual, nueva_contraseña, confirmar_contraseña } = await request.json()
 
     // Validar campos requeridos
-    if (!usuario_id || !contraseña_actual || !nueva_contraseña || !confirmar_contraseña) {
+    if (!usuario_id || !nueva_contraseña || !confirmar_contraseña) {
       return NextResponse.json(
         { error: 'Todos los campos son requeridos' },
         { status: 400 }
@@ -30,9 +30,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verificar que la contraseña actual sea correcta y obtener datos del usuario
+    // Obtener datos del usuario de la base de datos
     const result = await pool.query(
-      'SELECT id, usuario, contraseña, nombre, apellido, grado, oficina, rol, activo FROM usuarios WHERE id = $1',
+      'SELECT id, usuario, contraseña, nombre, apellido, grado, oficina, rol, activo, debe_cambiar_contraseña FROM usuarios WHERE id = $1',
       [usuario_id]
     )
 
@@ -52,13 +52,21 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const contraseñaValida = await bcrypt.compare(contraseña_actual, user.contraseña)
-
-    if (!contraseñaValida) {
-      return NextResponse.json(
-        { error: 'La contraseña actual es incorrecta' },
-        { status: 401 }
-      )
+    // Validar contraseña actual solo si NO está obligado a cambiarla
+    if (!user.debe_cambiar_contraseña) {
+      if (!contraseña_actual) {
+        return NextResponse.json(
+          { error: 'La contraseña actual es requerida' },
+          { status: 400 }
+        )
+      }
+      const contraseñaValida = await bcrypt.compare(contraseña_actual, user.contraseña)
+      if (!contraseñaValida) {
+        return NextResponse.json(
+          { error: 'La contraseña actual es incorrecta' },
+          { status: 401 }
+        )
+      }
     }
 
     // Verificar que la nueva contraseña sea diferente a la actual
