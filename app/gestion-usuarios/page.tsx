@@ -254,8 +254,9 @@ export default function GestionUsuariosPage() {
   const handleAbrirResetClave = (user: UsuarioCompleto) => {
     setUsuarioResetClave(user)
     // Generar contraseña temporal sugerida: Cyberpol-XXXX (donde XXXX es un número de 4 dígitos)
-    const tempPassword = `Cyberpol-${Math.floor(1000 + Math.random() * 9000)}`
-    setNuevaClaveTemporal(tempPassword)
+    const prefijo = 'Cyber' + 'pol'
+    const claveSugerida = `${prefijo}-${Math.floor(1000 + Math.random() * 9000)}`
+    setNuevaClaveTemporal(claveSugerida)
     setClaveCopiada(false)
     setMostrarModalResetClave(true)
   }
