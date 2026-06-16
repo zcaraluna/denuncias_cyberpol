@@ -413,7 +413,7 @@ export default function GestionUsuariosPage() {
                           <h3 className="text-sm font-black text-[#002147] leading-tight">
                             {user.nombre} {user.apellido}
                           </h3>
-                          <p className="text-[10px] font-mono text-slate-400 uppercase tracking-tight mt-0.5">
+                          <p className="text-[10px] font-mono text-slate-400 tracking-tight mt-0.5">
                             {esSupervisor ? '••••••' : user.usuario}
                           </p>
                         </div>

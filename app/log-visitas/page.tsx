@@ -342,7 +342,7 @@ export default function LogVisitasPage() {
                                   <Building className="h-2.5 w-2.5" />
                                   {accion.oficina_afectado}
                                 </span>
-                                <span className="text-[8px] font-mono bg-slate-100 text-slate-500 px-1 py-0.2 rounded uppercase">
+                                <span className="text-[8px] font-mono bg-slate-100 text-slate-500 px-1 py-0.2 rounded">
                                   {accion.usuario_afectado}
                                 </span>
                               </div>
