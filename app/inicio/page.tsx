@@ -266,18 +266,18 @@ export default function InicioPage() {
             },
             {
               icon: (
-                <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 7a2 2 0 012 2m-3.418 3.818l-1.582 1.582a2 2 0 01-2.828 0l-1.414-1.414a2 2 0 010-2.828l1.582-1.582m4.242-4.242A7 7 0 1118 9v2h2v2h-2v2h-2V9.818" />
                 </svg>
               ),
-              title: "Limpieza del Entorno de Desarrollo",
+              title: "Gestión de Supervisores Regionales",
               description: (
                 <>
-                  Se ha configurado el sistema para ignorar directorios temporales y scripts experimentales en el repositorio, manteniendo el control de versiones enfocado únicamente en el código de producción.
+                  Se habilitaron accesos para supervisores de oficina, permitiendo consultar auditorías locales y restablecer contraseñas temporales para operadores de su misma dependencia de forma ágil y segura.
                 </>
               ),
-              bgClass: "bg-amber-50",
-              borderClass: "border-amber-100"
+              bgClass: "bg-emerald-50",
+              borderClass: "border-emerald-100"
             }
           ]}
         />
