@@ -121,13 +121,14 @@ export default function GestionUsuariosPage() {
     if (usuarioAuth) {
       setUsuario(usuarioAuth)
 
-      // Solo superadmin, admin y supervisor pueden acceder a esta página
+      // Solo superadmin, admin, supervisor y developer pueden acceder a esta página
       if (
         usuarioAuth.rol !== 'superadmin' &&
         usuarioAuth.rol !== 'admin' &&
-        usuarioAuth.rol !== 'supervisor'
+        usuarioAuth.rol !== 'supervisor' &&
+        usuarioAuth.rol !== 'developer'
       ) {
-        router.push('/dashboard')
+        router.push('/inicio')
         return
       }
 

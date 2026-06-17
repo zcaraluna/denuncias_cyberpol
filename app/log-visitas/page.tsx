@@ -62,13 +62,14 @@ export default function LogVisitasPage() {
 
   useEffect(() => {
     if (usuario) {
-      // Solo superadmin, admin y supervisor pueden acceder a esta página
+      // Solo superadmin, admin, supervisor y developer pueden acceder a esta página
       if (
         usuario.rol !== 'superadmin' &&
         usuario.rol !== 'admin' &&
-        usuario.rol !== 'supervisor'
+        usuario.rol !== 'supervisor' &&
+        usuario.rol !== 'developer'
       ) {
-        router.push('/dashboard')
+        router.push('/inicio')
         return
       }
       cargarVisitas()
@@ -110,7 +111,7 @@ export default function LogVisitasPage() {
     }
   }
 
-  const esSuperadmin = usuario?.rol === 'superadmin'
+  const esSuperadmin = usuario?.rol === 'superadmin' || usuario?.rol === 'developer'
 
   if (loading) {
     return (

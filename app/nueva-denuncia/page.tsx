@@ -3215,7 +3215,7 @@ export default function NuevaDenunciaPage() {
 
   const irAlInicio = () => {
     setMostrarModalBorrador(false)
-    router.push('/dashboard')
+    router.push('/inicio')
   }
 
   const permanecerEnPagina = () => {
