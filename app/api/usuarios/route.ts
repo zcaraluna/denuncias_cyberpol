@@ -86,6 +86,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Solo el rol developer puede crear un usuario con el rol developer
+    if (rol === 'developer' && creador.rol !== 'developer') {
+      return NextResponse.json(
+        { error: 'No autorizado para asignar el rol Developer' },
+        { status: 403 }
+      )
+    }
+
     // Hashear contraseña
     const hashedPassword = await bcrypt.hash(contraseña, 10)
 

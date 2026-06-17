@@ -100,6 +100,22 @@ export async function PUT(
       )
     }
 
+    // Consultar el rol actual del usuario a editar
+    const targetCheck = await pool.query('SELECT rol FROM usuarios WHERE id = $1', [id])
+    if (targetCheck.rows.length === 0) {
+      return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 })
+    }
+    const currentRol = targetCheck.rows[0].rol
+
+    // Si el usuario objetivo es developer, o si se intenta cambiar el rol a developer,
+    // el realizador obligatoriamente debe ser developer
+    if ((currentRol === 'developer' || rol === 'developer') && realizador.rol !== 'developer') {
+      return NextResponse.json(
+        { error: 'No autorizado para modificar o asignar el rol Developer' },
+        { status: 403 }
+      )
+    }
+
     let query: string
     let values: any[]
 
@@ -176,6 +192,21 @@ export async function DELETE(
     // No permitir eliminar al propio usuario
     if (id === realizador.id) {
       return NextResponse.json({ error: 'No puedes eliminar tu propio usuario' }, { status: 400 })
+    }
+
+    // Consultar el rol actual del usuario a eliminar
+    const targetCheck = await pool.query('SELECT rol FROM usuarios WHERE id = $1', [id])
+    if (targetCheck.rows.length === 0) {
+      return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 })
+    }
+    const currentRol = targetCheck.rows[0].rol
+
+    // Si el usuario objetivo es developer, el realizador obligatoriamente debe ser developer
+    if (currentRol === 'developer' && realizador.rol !== 'developer') {
+      return NextResponse.json(
+        { error: 'No autorizado para eliminar a un usuario con el rol Developer' },
+        { status: 403 }
+      )
     }
 
     const result = await pool.query(

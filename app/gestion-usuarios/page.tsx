@@ -648,20 +648,22 @@ export default function GestionUsuariosPage() {
                     Rol de Acceso
                   </label>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                    {roles.map((rol) => (
-                      <button
-                        key={rol.value}
-                        type="button"
-                        onClick={() => setNuevoUsuario({ ...nuevoUsuario, rol: rol.value })}
-                        className={`px-3 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${
-                          nuevoUsuario.rol === rol.value
-                            ? 'bg-[#002147] text-white border-[#002147] shadow-md'
-                            : 'bg-white text-slate-400 border-slate-200 hover:border-blue-200 hover:text-blue-500'
-                        }`}
-                      >
-                        {rol.label}
-                      </button>
-                    ))}
+                    {roles
+                      .filter((r) => r.value !== 'developer' || usuario?.rol === 'developer')
+                      .map((rol) => (
+                        <button
+                          key={rol.value}
+                          type="button"
+                          onClick={() => setNuevoUsuario({ ...nuevoUsuario, rol: rol.value })}
+                          className={`px-3 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${
+                            nuevoUsuario.rol === rol.value
+                              ? 'bg-[#002147] text-white border-[#002147] shadow-md'
+                              : 'bg-white text-slate-400 border-slate-200 hover:border-blue-200 hover:text-blue-500'
+                          }`}
+                        >
+                          {rol.label}
+                        </button>
+                      ))}
                   </div>
                 </div>
               </div>
@@ -811,20 +813,22 @@ export default function GestionUsuariosPage() {
                     Rol de Acceso
                   </label>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                    {roles.map((rol) => (
-                      <button
-                        key={rol.value}
-                        type="button"
-                        onClick={() => setEditUsuario({ ...editUsuario, rol: rol.value })}
-                        className={`px-3 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${
-                          editUsuario.rol === rol.value
-                            ? 'bg-[#002147] text-white border-[#002147] shadow-md'
-                            : 'bg-white text-slate-400 border-slate-200 hover:border-blue-200 hover:text-blue-500'
-                        }`}
-                      >
-                        {rol.label}
-                      </button>
-                    ))}
+                    {roles
+                      .filter((r) => r.value !== 'developer' || usuario?.rol === 'developer')
+                      .map((rol) => (
+                        <button
+                          key={rol.value}
+                          type="button"
+                          onClick={() => setEditUsuario({ ...editUsuario, rol: rol.value })}
+                          className={`px-3 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${
+                            editUsuario.rol === rol.value
+                              ? 'bg-[#002147] text-white border-[#002147] shadow-md'
+                              : 'bg-white text-slate-400 border-slate-200 hover:border-blue-200 hover:text-blue-500'
+                          }`}
+                        >
+                          {rol.label}
+                        </button>
+                      ))}
                   </div>
                 </div>
               </div>
