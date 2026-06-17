@@ -170,6 +170,19 @@ export default function InicioPage() {
     }
   }
 
+  const checkPreguntas = async () => {
+    try {
+      const res = await fetch('/api/usuarios/preguntas-seguridad')
+      const data = await res.json()
+      const omitidoSesion = sessionStorage.getItem('preguntas_omitidas')
+      if (res.ok && !data.configuradas && omitidoSesion !== 'true') {
+        setShowPreguntasReminder(true)
+      }
+    } catch (err) {
+      console.error('Error al verificar preguntas de seguridad:', err)
+    }
+  }
+
   useEffect(() => {
     if (!authLoading && usuario && usuario.debe_cambiar_contraseña) {
       router.push('/cambiar-password')
@@ -181,22 +194,9 @@ export default function InicioPage() {
       const hasSeen = sessionStorage.getItem('hasSeenUpdateModal')
       if (!hasSeen) {
         setActiveModal('new')
+      } else {
+        checkPreguntas()
       }
-
-      // Verificar si tiene configuradas las preguntas de seguridad
-      const checkPreguntas = async () => {
-        try {
-          const res = await fetch('/api/usuarios/preguntas-seguridad')
-          const data = await res.json()
-          const omitidoSesion = sessionStorage.getItem('preguntas_omitidas')
-          if (res.ok && !data.configuradas && omitidoSesion !== 'true') {
-            setShowPreguntasReminder(true)
-          }
-        } catch (err) {
-          console.error('Error al verificar preguntas de seguridad:', err)
-        }
-      }
-      checkPreguntas()
     }
   }, [usuario, authLoading, router])
 
@@ -207,6 +207,7 @@ export default function InicioPage() {
   const handleCloseOldModal = () => {
     sessionStorage.setItem('hasSeenUpdateModal', 'true')
     setActiveModal(null)
+    checkPreguntas()
   }
 
   if (authLoading) {
