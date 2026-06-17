@@ -836,9 +836,9 @@ export default function ReportesPage() {
               <p className="text-slate-500 font-medium text-sm ml-1">Analice el comportamiento de las denuncias y el desempeño institucional.</p>
             </div>
 
-            <div className="flex flex-col gap-2 w-full md:w-auto">
+            <div className="bg-white p-1.5 rounded-2xl shadow-sm border border-slate-200 w-full md:w-auto flex flex-col gap-1.5">
               {/* Hilera 1 */}
-              <div className="flex bg-white p-1 rounded-2xl shadow-sm border border-slate-200 w-full overflow-x-auto no-scrollbar">
+              <div className="flex w-full items-center gap-1.5 overflow-x-auto no-scrollbar">
                 {[
                   { id: 'diario', label: 'Diario', icon: CalendarDays },
                   { id: 'mensual', label: 'Mensual', icon: TrendingUp },
@@ -862,7 +862,7 @@ export default function ReportesPage() {
               </div>
 
               {/* Hilera 2 */}
-              <div className="flex bg-white p-1 rounded-2xl shadow-sm border border-slate-200 w-full overflow-x-auto no-scrollbar">
+              <div className="flex w-full items-center gap-1.5 overflow-x-auto no-scrollbar">
                 {[
                   { id: 'bancos', label: 'Bancos', icon: Briefcase },
                   { id: 'objetos_perdidos', label: 'Objetos Perdidos', icon: FileSearch },
