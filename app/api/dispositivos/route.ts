@@ -53,7 +53,16 @@ export async function GET(request: NextRequest) {
 // POST: Desactivar dispositivo o código
 export async function POST(request: NextRequest) {
   try {
-    const { tipo, id, usuario_rol, fecha_expiracion } = await request.json();
+    const body = await request.json();
+    const { 
+      tipo, 
+      id, 
+      usuario_rol, 
+      fecha_expiracion, 
+      tipo_serial = 'general', 
+      oficina = null, 
+      usuarios_autorizados = [] 
+    } = body;
 
     // Verificar que sea superadmin o developer
     if (!usuario_rol || (usuario_rol !== 'superadmin' && usuario_rol !== 'developer')) {
@@ -91,7 +100,13 @@ export async function POST(request: NextRequest) {
         expiraDate = new Date(fecha_expiracion + 'T23:59:59');
       }
 
-      const nuevoCodigo = await generarCodigoActivacion(expiraDate, id || 'DEV_GEN');
+      const nuevoCodigo = await generarCodigoActivacion(
+        expiraDate, 
+        id || 'DEV_GEN', 
+        tipo_serial, 
+        oficina, 
+        usuarios_autorizados
+      );
       resultado = !!nuevoCodigo;
       data_adicional = { codigo: nuevoCodigo };
     } else {

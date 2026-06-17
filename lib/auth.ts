@@ -365,11 +365,107 @@ export async function verificarDispositivoAutorizado(
 }
 
 /**
+ * Verifica si un usuario tiene permitido iniciar sesión en un dispositivo específico
+ * basado en el tipo de serial de activación (General, Oficina, Especial)
+ */
+export async function verificarRestriccionesDispositivo(
+  fingerprint: string,
+  usuarioId: number,
+  usuarioOficina: string,
+  usuarioRol: string
+): Promise<{ valido: boolean; mensaje?: string }> {
+  try {
+    // Los desarrolladores (rol developer) tienen bypass total para mantenimiento/soporte
+    if (usuarioRol === 'developer') {
+      return { valido: true };
+    }
+
+    // Buscar el dispositivo y la información de su serial
+    const resDispositivo = await queryWithRetry(
+      `SELECT d.id, d.activo, c.tipo, c.oficina, c.nombre as codigo_nombre, c.codigo as codigo_valor, d.nombre as disp_nombre
+       FROM dispositivos_autorizados d
+       LEFT JOIN codigos_activacion c ON d.codigo_activacion_id = c.id
+       WHERE d.fingerprint = $1`,
+      [fingerprint]
+    );
+
+    if (resDispositivo.rows.length === 0) {
+      return { valido: false, mensaje: 'Este dispositivo no está registrado en el sistema.' };
+    }
+
+    const disp = resDispositivo.rows[0];
+
+    if (!disp.activo) {
+      return { valido: false, mensaje: 'El acceso para este dispositivo ha sido revocado.' };
+    }
+
+    // Bypasses heredados para demostración y BARB
+    const esDemo = disp.disp_nombre === 'DEMOSTRACION' || disp.codigo_valor === 'DEMOSTRACION';
+    const esBarb = disp.disp_nombre === 'BARB' || disp.codigo_valor === '261220251624382049BARB';
+    if (esDemo || esBarb) {
+      return { valido: true };
+    }
+
+    const tipo = disp.tipo || 'general';
+
+    if (tipo === 'general') {
+      return { valido: true };
+    }
+
+    if (tipo === 'oficina') {
+      const oficinaRestringida = disp.oficina;
+      if (!oficinaRestringida) {
+        return { valido: true };
+      }
+
+      // Normalización robusta para evitar problemas de acentos, espacios y capitalización
+      const normOficinaRestringida = String(oficinaRestringida).trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      const normUsuarioOficina = String(usuarioOficina).trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+      if (normOficinaRestringida !== normUsuarioOficina) {
+        return {
+          valido: false,
+          mensaje: `Este terminal está restringido para la oficina de "${oficinaRestringida}". Su usuario pertenece a "${usuarioOficina}".`
+        };
+      }
+      return { valido: true };
+    }
+
+    if (tipo === 'especial') {
+      // Verificar si el usuario está asociado a este código de activación en la tabla intermedia
+      const resAutorizado = await queryWithRetry(
+        `SELECT 1 
+         FROM dispositivos_autorizados d
+         JOIN codigo_usuarios_autorizados cua ON d.codigo_activacion_id = cua.codigo_activacion_id
+         WHERE d.fingerprint = $1 AND cua.usuario_id = $2`,
+        [fingerprint, usuarioId]
+      );
+
+      if (resAutorizado.rows.length === 0) {
+        return {
+          valido: false,
+          mensaje: 'Su usuario no está autorizado para acceder desde este terminal especial.'
+        };
+      }
+      return { valido: true };
+    }
+
+    return { valido: true };
+  } catch (error) {
+    console.error('Error al verificar restricciones de dispositivo:', error);
+    return { valido: false, mensaje: 'Error interno de validación de dispositivo en el servidor.' };
+  }
+}
+
+/**
  * Genera un código de activación nuevo
  */
 export async function generarCodigoActivacion(
   expiraEnOrDias: number | Date = 30,
-  nombre?: string
+  nombre?: string,
+  tipo: string = 'general',
+  oficina: string | null = null,
+  usuariosAutorizadosIds: number[] = []
 ): Promise<string> {
   try {
     const crypto = require('crypto');
@@ -384,10 +480,30 @@ export async function generarCodigoActivacion(
       fechaExpiracion.setDate(fechaExpiracion.getDate() + (expiraEnOrDias as number));
     }
 
-    await queryWithRetry(
-      'INSERT INTO codigos_activacion (codigo, expira_en, nombre) VALUES ($1, $2, $3)',
-      [codigo, fechaExpiracion, nombre || null]
-    );
+    await queryWithRetry('BEGIN');
+
+    try {
+      const result = await queryWithRetry(
+        'INSERT INTO codigos_activacion (codigo, expira_en, nombre, tipo, oficina) VALUES ($1, $2, $3, $4, $5) RETURNING id',
+        [codigo, fechaExpiracion, nombre || null, tipo, oficina]
+      );
+      
+      const codigoId = result.rows[0].id;
+
+      if (tipo === 'especial' && Array.isArray(usuariosAutorizadosIds) && usuariosAutorizadosIds.length > 0) {
+        for (const usuarioId of usuariosAutorizadosIds) {
+          await queryWithRetry(
+            'INSERT INTO codigo_usuarios_autorizados (codigo_activacion_id, usuario_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+            [codigoId, usuarioId]
+          );
+        }
+      }
+
+      await queryWithRetry('COMMIT');
+    } catch (insertError) {
+      await queryWithRetry('ROLLBACK').catch(() => {});
+      throw insertError;
+    }
 
     return codigo;
   } catch (error) {
@@ -446,7 +562,9 @@ export async function obtenerDispositivosAutorizados() {
         c.codigo as codigo_activacion,
         c.usado as codigo_usado,
         c.expira_en as codigo_expira_en,
-        c.activo as codigo_activo
+        c.activo as codigo_activo,
+        c.tipo as codigo_tipo,
+        c.oficina as codigo_oficina
       FROM dispositivos_autorizados d
       LEFT JOIN codigos_activacion c ON d.codigo_activacion_id = c.id
       ORDER BY d.autorizado_en DESC
@@ -465,17 +583,30 @@ export async function obtenerCodigosActivacion() {
   try {
     const result = await queryWithRetry(`
       SELECT 
-        id,
-        codigo,
-        nombre,
-        usado,
-        usado_en,
-        dispositivo_fingerprint,
-        creado_en,
-        expira_en,
-        activo
-      FROM codigos_activacion
-      ORDER BY creado_en DESC
+        c.id,
+        c.codigo,
+        c.nombre,
+        c.usado,
+        c.usado_en,
+        c.dispositivo_fingerprint,
+        c.creado_en,
+        c.expira_en,
+        c.activo,
+        c.tipo,
+        c.oficina,
+        COALESCE(ua.ids, '{}') as usuarios_autorizados_ids,
+        COALESCE(ua.nombres, '{}') as usuarios_autorizados_nombres
+      FROM codigos_activacion c
+      LEFT JOIN (
+        SELECT 
+          cua.codigo_activacion_id,
+          ARRAY_AGG(u.id) as ids,
+          ARRAY_AGG(CONCAT(u.grado, ' ', u.nombre, ' ', u.apellido)) as nombres
+        FROM codigo_usuarios_autorizados cua
+        JOIN usuarios u ON cua.usuario_id = u.id
+        GROUP BY cua.codigo_activacion_id
+      ) ua ON c.id = ua.codigo_activacion_id
+      ORDER BY c.creado_en DESC
     `);
     return result.rows;
   } catch (error) {

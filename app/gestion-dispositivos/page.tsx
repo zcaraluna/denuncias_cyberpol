@@ -45,6 +45,8 @@ interface Dispositivo {
   codigo_usado: boolean | null
   codigo_expira_en: string | null
   codigo_activo: boolean | null
+  codigo_tipo?: string | null
+  codigo_oficina?: string | null
 }
 
 interface Codigo {
@@ -59,6 +61,10 @@ interface Codigo {
   activo: boolean
   dias_restantes: number | null
   esta_expirado: boolean
+  tipo?: string
+  oficina?: string | null
+  usuarios_autorizados_ids?: number[]
+  usuarios_autorizados_nombres?: string[]
 }
 
 export default function GestionDispositivosPage() {
@@ -74,6 +80,10 @@ export default function GestionDispositivosPage() {
   const [nombreCodigo, setNombreCodigo] = useState('')
   const [fechaExpiracion, setFechaExpiracion] = useState('')
   const [generando, setGenerando] = useState(false)
+  const [tipoSerial, setTipoSerial] = useState<'general' | 'especial' | 'oficina'>('general')
+  const [oficinaSerial, setOficinaSerial] = useState('')
+  const [usuariosAutorizados, setUsuariosAutorizados] = useState<number[]>([])
+  const [listaUsuarios, setListaUsuarios] = useState<Usuario[]>([])
 
   useEffect(() => {
     if (usuario) {
@@ -96,6 +106,15 @@ export default function GestionDispositivosPage() {
       const data = await response.json()
       setDispositivos(data.dispositivos)
       setCodigos(data.codigos)
+
+      // Cargar lista de usuarios para seriales especiales
+      if (usuario.rol === 'developer' || usuario.rol === 'superadmin') {
+        const usersResp = await fetch('/api/usuarios')
+        if (usersResp.ok) {
+          const usersData = await usersResp.json()
+          setListaUsuarios(usersData)
+        }
+      }
     } catch (error) {
       console.error('Error:', error)
       alert('Error al cargar datos')
@@ -140,9 +159,27 @@ export default function GestionDispositivosPage() {
     }
   }
 
+  const handleCerrarModal = () => {
+    setShowGenerarModal(false)
+    setNombreCodigo('')
+    setFechaExpiracion('')
+    setTipoSerial('general')
+    setOficinaSerial('')
+    setUsuariosAutorizados([])
+  }
+
   const handleGenerarCodigo = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!usuario) return
+
+    if (tipoSerial === 'oficina' && !oficinaSerial) {
+      alert('Debe especificar la oficina para este serial de oficina.')
+      return
+    }
+    if (tipoSerial === 'especial' && usuariosAutorizados.length === 0) {
+      alert('Debe seleccionar al menos un usuario autorizado para este serial especial.')
+      return
+    }
 
     setGenerando(true)
     try {
@@ -153,7 +190,10 @@ export default function GestionDispositivosPage() {
           tipo: 'generar_codigo',
           id: nombreCodigo.trim() || 'DEV_GEN',
           usuario_rol: usuario.rol,
-          fecha_expiracion: fechaExpiracion || undefined
+          fecha_expiracion: fechaExpiracion || undefined,
+          tipo_serial: tipoSerial,
+          oficina: tipoSerial === 'oficina' ? oficinaSerial : null,
+          usuarios_autorizados: tipoSerial === 'especial' ? usuariosAutorizados : []
         })
       })
 
@@ -165,9 +205,7 @@ export default function GestionDispositivosPage() {
       }
 
       alert(`Código generado exitosamente: ${formatearCodigo(data.codigo)}`)
-      setShowGenerarModal(false)
-      setNombreCodigo('')
-      setFechaExpiracion('')
+      handleCerrarModal()
       setTabActivo('codigos')
       cargarDatos()
     } catch (error) {
@@ -335,12 +373,24 @@ export default function GestionDispositivosPage() {
                           </div>
                         </div>
 
-                        <div className="mt-4 pt-4 border-t border-slate-50 flex items-center justify-between">
+                        <div className="mt-4 pt-4 border-t border-slate-50 flex items-center justify-between gap-2">
                           <div className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 ${dispositivo.activo ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-400'
                             }`}>
                             {dispositivo.activo ? <ShieldCheck className="h-2.5 w-2.5" /> : <ShieldAlert className="h-2.5 w-2.5" />}
                             {dispositivo.activo ? 'ACCESO VÁLIDO' : 'DEBAJA'}
                           </div>
+
+                          {dispositivo.codigo_tipo && dispositivo.codigo_tipo !== 'general' && (
+                            <span className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${
+                              dispositivo.codigo_tipo === 'oficina' 
+                                ? 'bg-blue-50 text-blue-700 border border-blue-100' 
+                                : 'bg-purple-50 text-purple-700 border border-purple-100'
+                            }`}>
+                              {dispositivo.codigo_tipo === 'oficina' 
+                                ? `Oficina: ${dispositivo.codigo_oficina || '---'}` 
+                                : 'Especial'}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -359,6 +409,7 @@ export default function GestionDispositivosPage() {
                     <tr className="bg-slate-50/50 text-left border-b border-slate-100">
                       <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Código</th>
                       <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Identificador</th>
+                      <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Tipo / Restricción</th>
                       <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Estado</th>
                       <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Creación / Expiración</th>
                       <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Control</th>
@@ -366,7 +417,7 @@ export default function GestionDispositivosPage() {
                   </thead>
                   <tbody className="divide-y divide-slate-50">
                     {codigos.length === 0 ? (
-                      <tr><td colSpan={5} className="px-8 py-12 text-center text-slate-400 uppercase font-black text-[10px] tracking-widest italic">No existen códigos pendientes de uso</td></tr>
+                      <tr><td colSpan={6} className="px-8 py-12 text-center text-slate-400 uppercase font-black text-[10px] tracking-widest italic">No existen códigos pendientes de uso</td></tr>
                     ) : (
                       codigos.map((codigo) => {
                         const estado = obtenerEstadoCodigo(codigo)
@@ -379,6 +430,41 @@ export default function GestionDispositivosPage() {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <span className="text-xs font-bold text-slate-600 uppercase">{codigo.nombre || '---'}</span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              {(!codigo.tipo || codigo.tipo === 'general') && (
+                                <span className="px-2.5 py-1 text-[9px] font-black uppercase tracking-widest rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-100">
+                                  General
+                                </span>
+                              )}
+                              {codigo.tipo === 'oficina' && (
+                                <div className="flex flex-col gap-0.5">
+                                  <span className="px-2.5 py-1 text-[9px] font-black uppercase tracking-widest rounded-lg bg-blue-50 text-blue-700 border border-blue-100 w-fit">
+                                    Oficina
+                                  </span>
+                                  <span className="text-[10px] font-bold text-slate-500 uppercase ml-1">
+                                    {codigo.oficina || 'No definida'}
+                                  </span>
+                                </div>
+                              )}
+                              {codigo.tipo === 'especial' && (
+                                <div className="flex flex-col gap-0.5">
+                                  <span 
+                                    className="px-2.5 py-1 text-[9px] font-black uppercase tracking-widest rounded-lg bg-purple-50 text-purple-700 border border-purple-100 w-fit cursor-help"
+                                    title={Array.isArray(codigo.usuarios_autorizados_nombres) ? codigo.usuarios_autorizados_nombres.join(', ') : 'Ninguno'}
+                                  >
+                                    Especial ({Array.isArray(codigo.usuarios_autorizados_ids) ? codigo.usuarios_autorizados_ids.length : 0})
+                                  </span>
+                                  <span 
+                                    className="text-[9px] font-bold text-slate-400 truncate max-w-[150px] block ml-1"
+                                    title={Array.isArray(codigo.usuarios_autorizados_nombres) ? codigo.usuarios_autorizados_nombres.join(', ') : 'Ninguno'}
+                                  >
+                                    {Array.isArray(codigo.usuarios_autorizados_nombres) && codigo.usuarios_autorizados_nombres.length > 0 
+                                      ? codigo.usuarios_autorizados_nombres.join(', ') 
+                                      : 'Nadie asignado'}
+                                  </span>
+                                </div>
+                              )}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <span className={`px-2.5 py-1 text-[10px] font-black uppercase tracking-widest rounded-lg flex items-center w-fit gap-1.5 ${estado.className.includes('bg-green') ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' :
@@ -420,24 +506,21 @@ export default function GestionDispositivosPage() {
               </div>
             </div>
           )}
-        </div>
-      </div>
-
-      {/* Modal de Generación de Código */}
+            {/* Modal de Generación de Código */}
       {showGenerarModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 animate-in fade-in duration-300">
           <div
             className="absolute inset-0 bg-[#002147]/45 backdrop-blur-sm"
-            onClick={() => setShowGenerarModal(false)}
+            onClick={handleCerrarModal}
           ></div>
           <div className="bg-white rounded-[32px] shadow-2xl p-6 md:p-8 border border-slate-200/60 w-full max-w-[420px] relative z-10 animate-in zoom-in-95 duration-300">
             <button
-              onClick={() => setShowGenerarModal(false)}
+              onClick={handleCerrarModal}
               className="absolute top-4 right-4 p-2 hover:bg-slate-50 rounded-full text-slate-400 hover:text-[#002147] transition-all"
             >
               <X className="h-4 w-4" />
             </button>
-
+ 
             <div className="text-center mb-6">
               <div className="inline-flex p-3 bg-slate-50 rounded-2xl mb-4 border border-slate-100">
                 <Key className="h-6 w-6 text-[#002147]" />
@@ -449,7 +532,7 @@ export default function GestionDispositivosPage() {
                 Cree un nuevo serial de autorización para computadoras de la red.
               </p>
             </div>
-
+ 
             <form onSubmit={handleGenerarCodigo} className="space-y-4">
               <div className="space-y-1.5">
                 <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">
@@ -464,6 +547,90 @@ export default function GestionDispositivosPage() {
                 />
               </div>
 
+              <div className="space-y-1.5">
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                  Tipo de Serial
+                </label>
+                <select
+                  value={tipoSerial}
+                  onChange={(e) => setTipoSerial(e.target.value as any)}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-medium text-[#002147] focus:bg-white focus:border-blue-200 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all cursor-pointer"
+                >
+                  <option value="general">General (Acceso libre a cualquier cuenta)</option>
+                  <option value="oficina">De Oficina (Solo para usuarios de una dependencia)</option>
+                  <option value="especial">Especial (Solo para usuarios seleccionados)</option>
+                </select>
+              </div>
+
+              {tipoSerial === 'oficina' && (
+                <div className="space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                    Seleccione la Oficina / Dependencia
+                  </label>
+                  <select
+                    value={oficinaSerial}
+                    onChange={(e) => setOficinaSerial(e.target.value)}
+                    required
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-medium text-[#002147] focus:bg-white focus:border-blue-200 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all cursor-pointer"
+                  >
+                    <option value="">-- Seleccione una Oficina --</option>
+                    <option value="Asunción">Asunción</option>
+                    <option value="Ciudad del Este">Ciudad del Este</option>
+                    <option value="Encarnación">Encarnación</option>
+                    <option value="Salto del Guairá">Salto del Guairá</option>
+                    <option value="Pedro Juan Caballero">Pedro Juan Caballero</option>
+                    <option value="Villa Hayes">Villa Hayes</option>
+                    <option value="Coronel Oviedo">Coronel Oviedo</option>
+                    <option value="San Lorenzo">San Lorenzo</option>
+                    <option value="Luque">Luque</option>
+                    <option value="Caaguazú">Caaguazú</option>
+                    <option value="Concepción">Concepción</option>
+                    <option value="Filadelfia">Filadelfia</option>
+                    <option value="Pilar">Pilar</option>
+                    <option value="Villarrica">Villarrica</option>
+                    <option value="Paraguarí">Paraguarí</option>
+                    <option value="Caacupé">Caacupé</option>
+                    <option value="San Juan Bautista">San Juan Bautista</option>
+                  </select>
+                </div>
+              )}
+
+              {tipoSerial === 'especial' && (
+                <div className="space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                    Seleccione los Usuarios Autorizados
+                  </label>
+                  <div className="max-h-[160px] overflow-y-auto border border-slate-100 rounded-xl p-3 bg-slate-50/50 space-y-2 no-scrollbar">
+                    {listaUsuarios.length === 0 ? (
+                      <p className="text-[10px] text-slate-400 italic">No hay usuarios cargados...</p>
+                    ) : (
+                      listaUsuarios.map((usr) => (
+                        <label key={usr.id} className="flex items-center gap-2.5 cursor-pointer group">
+                          <input
+                            type="checkbox"
+                            checked={usuariosAutorizados.includes(usr.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setUsuariosAutorizados([...usuariosAutorizados, usr.id])
+                              } else {
+                                setUsuariosAutorizados(usuariosAutorizados.filter((id) => id !== usr.id))
+                              }
+                            }}
+                            className="h-4 w-4 rounded border-slate-200 text-[#002147] focus:ring-blue-500 cursor-pointer"
+                          />
+                          <span className="text-[10px] font-bold text-slate-600 group-hover:text-[#002147] uppercase transition-colors">
+                            {usr.grado} {usr.nombre} {usr.apellido} ({usr.usuario})
+                          </span>
+                        </label>
+                      ))
+                    )}
+                  </div>
+                  <span className="text-[9px] text-slate-400 font-medium ml-1">
+                    Seleccionados: {usuariosAutorizados.length} usuario(s).
+                  </span>
+                </div>
+              )}
+ 
               <div className="space-y-1.5">
                 <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">
                   Fecha de Expiración
@@ -485,11 +652,11 @@ export default function GestionDispositivosPage() {
                   El código dejará de ser válido después de esta fecha.
                 </span>
               </div>
-
+ 
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => setShowGenerarModal(false)}
+                  onClick={handleCerrarModal}
                   className="flex-1 py-3 px-4 bg-slate-100 text-slate-600 rounded-xl font-black text-[10px] uppercase tracking-wider hover:bg-slate-200 transition-all text-center"
                 >
                   Cancelar
@@ -506,6 +673,8 @@ export default function GestionDispositivosPage() {
           </div>
         </div>
       )}
+        </div>
+      </div>
     </MainLayout>
   )
 }

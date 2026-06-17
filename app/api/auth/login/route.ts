@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verificarCredenciales } from '@/lib/auth'
+import { verificarCredenciales, verificarRestriccionesDispositivo } from '@/lib/auth'
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,6 +19,32 @@ export async function POST(request: NextRequest) {
         { error: 'Credenciales inválidas' },
         { status: 401 }
       )
+    }
+
+    // Verificar restricciones de dispositivo
+    const fingerprint = request.cookies.get('device_fingerprint')?.value
+    if (fingerprint) {
+      const restriccion = await verificarRestriccionesDispositivo(
+        fingerprint,
+        usuarioValidado.id,
+        usuarioValidado.oficina,
+        usuarioValidado.rol
+      )
+
+      if (!restriccion.valido) {
+        return NextResponse.json(
+          { error: restriccion.mensaje || 'Dispositivo no autorizado para este usuario.' },
+          { status: 403 }
+        )
+      }
+    } else {
+      // Bloquear login si no tiene fingerprint y no es developer
+      if (usuarioValidado.rol !== 'developer') {
+        return NextResponse.json(
+          { error: 'Este terminal no está autorizado. Ingrese el código de activación primero.' },
+          { status: 403 }
+        )
+      }
     }
 
     // Crear respuesta con el usuario
