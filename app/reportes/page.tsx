@@ -836,54 +836,30 @@ export default function ReportesPage() {
               <p className="text-slate-500 font-medium text-sm ml-1">Analice el comportamiento de las denuncias y el desempeño institucional.</p>
             </div>
 
-            <div className="bg-white p-1.5 rounded-2xl shadow-sm border border-slate-200 w-full md:w-auto flex flex-col gap-1.5">
-              {/* Hilera 1 */}
-              <div className="flex w-full items-center justify-center gap-1.5 overflow-x-auto no-scrollbar">
-                {[
-                  { id: 'diario', label: 'Diario', icon: CalendarDays },
-                  { id: 'mensual', label: 'Mensual', icon: TrendingUp },
-                  { id: 'danos', label: 'Daños', icon: DollarSign }
-                ].map((tab) => {
-                  const Icon = tab.icon
-                  return (
-                    <button
-                      key={tab.id}
-                      onClick={() => setActiveTab(tab.id as Tab)}
-                      className={`flex-1 md:flex-none px-6 py-2.5 text-xs font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2 whitespace-nowrap ${activeTab === tab.id
-                        ? 'bg-[#002147] text-white shadow-lg shadow-blue-900/20'
-                        : 'text-slate-400 hover:text-[#002147] hover:bg-slate-50'
-                        }`}
-                    >
-                      <Icon className="w-3.5 h-3.5" />
-                      {tab.label}
-                    </button>
-                  )
-                })}
-              </div>
-
-              {/* Hilera 2 */}
-              <div className="flex w-full items-center justify-center gap-1.5 overflow-x-auto no-scrollbar">
-                {[
-                  { id: 'bancos', label: 'Bancos', icon: Briefcase },
-                  { id: 'objetos_perdidos', label: 'Objetos Perdidos', icon: FileSearch },
-                  { id: 'departamentos', label: 'Departamentos', icon: Building2 }
-                ].map((tab) => {
-                  const Icon = tab.icon
-                  return (
-                    <button
-                      key={tab.id}
-                      onClick={() => setActiveTab(tab.id as Tab)}
-                      className={`flex-1 md:flex-none px-6 py-2.5 text-xs font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2 whitespace-nowrap ${activeTab === tab.id
-                        ? 'bg-[#002147] text-white shadow-lg shadow-blue-900/20'
-                        : 'text-slate-400 hover:text-[#002147] hover:bg-slate-50'
-                        }`}
-                    >
-                      <Icon className="w-3.5 h-3.5" />
-                      {tab.label}
-                    </button>
-                  )
-                })}
-              </div>
+            <div className="bg-white p-1.5 rounded-2xl shadow-sm border border-slate-200 w-full md:w-[600px] grid grid-cols-2 md:grid-cols-3 gap-1.5">
+              {[
+                { id: 'diario', label: 'Diario', icon: CalendarDays },
+                { id: 'mensual', label: 'Mensual', icon: TrendingUp },
+                { id: 'danos', label: 'Daños', icon: DollarSign },
+                { id: 'bancos', label: 'Bancos', icon: Briefcase },
+                { id: 'objetos_perdidos', label: 'Objetos Perdidos', icon: FileSearch },
+                { id: 'departamentos', label: 'Departamentos', icon: Building2 }
+              ].map((tab) => {
+                const Icon = tab.icon
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id as Tab)}
+                    className={`px-4 py-2.5 text-xs font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2 whitespace-nowrap ${activeTab === tab.id
+                      ? 'bg-[#002147] text-white shadow-lg shadow-blue-900/20'
+                      : 'text-slate-400 hover:text-[#002147] hover:bg-slate-50'
+                      }`}
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                    {tab.label}
+                  </button>
+                )
+              })}
             </div>
           </div>
 
