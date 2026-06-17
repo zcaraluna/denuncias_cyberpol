@@ -16,7 +16,9 @@ import {
   Globe,
   Ban,
   Fingerprint,
-  Plus
+  Plus,
+  X,
+  Calendar
 } from 'lucide-react'
 
 interface Usuario {
@@ -67,11 +69,17 @@ export default function GestionDispositivosPage() {
   const [loading, setLoading] = useState(true)
   const [tabActivo, setTabActivo] = useState<'dispositivos' | 'codigos'>('dispositivos')
 
+  // Estados para Modal de Generación
+  const [showGenerarModal, setShowGenerarModal] = useState(false)
+  const [nombreCodigo, setNombreCodigo] = useState('')
+  const [fechaExpiracion, setFechaExpiracion] = useState('')
+  const [generando, setGenerando] = useState(false)
+
   useEffect(() => {
     if (usuario) {
-      // Solo superadmin puede acceder a esta página
-      if (usuario.rol !== 'superadmin') {
-        router.push('/dashboard')
+      // Solo superadmin y developer pueden acceder a esta página
+      if (usuario.rol !== 'superadmin' && usuario.rol !== 'developer') {
+        router.push('/inicio')
         return
       }
       cargarDatos()
@@ -97,7 +105,7 @@ export default function GestionDispositivosPage() {
   }
 
   useEffect(() => {
-    if (usuario && usuario.rol === 'superadmin') {
+    if (usuario && (usuario.rol === 'superadmin' || usuario.rol === 'developer')) {
       cargarDatos()
     }
   }, [usuario])
@@ -132,18 +140,20 @@ export default function GestionDispositivosPage() {
     }
   }
 
-  const handleGenerarCodigo = async () => {
+  const handleGenerarCodigo = async (e: React.FormEvent) => {
+    e.preventDefault()
     if (!usuario) return
-    const nombre = prompt('Ingrese un nombre o etiqueta para este código (opcional):') || 'ADMIN_GEN'
 
+    setGenerando(true)
     try {
       const response = await fetch('/api/dispositivos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           tipo: 'generar_codigo',
-          id: nombre,
-          usuario_rol: usuario.rol
+          id: nombreCodigo.trim() || 'DEV_GEN',
+          usuario_rol: usuario.rol,
+          fecha_expiracion: fechaExpiracion || undefined
         })
       })
 
@@ -155,11 +165,16 @@ export default function GestionDispositivosPage() {
       }
 
       alert(`Código generado exitosamente: ${formatearCodigo(data.codigo)}`)
+      setShowGenerarModal(false)
+      setNombreCodigo('')
+      setFechaExpiracion('')
       setTabActivo('codigos')
       cargarDatos()
     } catch (error) {
       console.error('Error:', error)
       alert('Error al generar código')
+    } finally {
+      setGenerando(false)
     }
   }
 
@@ -226,9 +241,9 @@ export default function GestionDispositivosPage() {
                 </div>
               </div>
 
-              {(usuario?.usuario === 'garv' || usuario?.rol === 'superadmin') && (
+              {usuario?.rol === 'developer' && (
                 <button
-                  onClick={handleGenerarCodigo}
+                  onClick={() => setShowGenerarModal(true)}
                   className="flex items-center gap-2 px-6 py-3 bg-[#002147] text-white rounded-2xl hover:bg-[#003366] transition-all shadow-lg shadow-blue-900/10 font-black text-sm"
                 >
                   <Plus className="h-4 w-4" />
@@ -407,6 +422,90 @@ export default function GestionDispositivosPage() {
           )}
         </div>
       </div>
+
+      {/* Modal de Generación de Código */}
+      {showGenerarModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 animate-in fade-in duration-300">
+          <div
+            className="absolute inset-0 bg-[#002147]/45 backdrop-blur-sm"
+            onClick={() => setShowGenerarModal(false)}
+          ></div>
+          <div className="bg-white rounded-[32px] shadow-2xl p-6 md:p-8 border border-slate-200/60 w-full max-w-[420px] relative z-10 animate-in zoom-in-95 duration-300">
+            <button
+              onClick={() => setShowGenerarModal(false)}
+              className="absolute top-4 right-4 p-2 hover:bg-slate-50 rounded-full text-slate-400 hover:text-[#002147] transition-all"
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            <div className="text-center mb-6">
+              <div className="inline-flex p-3 bg-slate-50 rounded-2xl mb-4 border border-slate-100">
+                <Key className="h-6 w-6 text-[#002147]" />
+              </div>
+              <h2 className="text-lg font-black text-[#002147] uppercase tracking-wider">
+                Generar Código de Activación
+              </h2>
+              <p className="text-xs text-slate-400 mt-1 font-medium">
+                Cree un nuevo serial de autorización para computadoras de la red.
+              </p>
+            </div>
+
+            <form onSubmit={handleGenerarCodigo} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                  Identificador / Nombre (Opcional)
+                </label>
+                <input
+                  type="text"
+                  value={nombreCodigo}
+                  onChange={(e) => setNombreCodigo(e.target.value)}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-medium text-[#002147] placeholder:text-slate-300 focus:bg-white focus:border-blue-200 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all"
+                  placeholder="Ej: PC_OFICINA_CENTRAL"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                  Fecha de Expiración
+                </label>
+                <div className="relative group">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-[#002147] transition-colors">
+                    <Calendar className="h-4 w-4" />
+                  </div>
+                  <input
+                    type="date"
+                    required
+                    min={new Date().toISOString().split('T')[0]}
+                    value={fechaExpiracion}
+                    onChange={(e) => setFechaExpiracion(e.target.value)}
+                    className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-medium text-[#002147] focus:bg-white focus:border-blue-200 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all"
+                  />
+                </div>
+                <span className="text-[9px] text-slate-400 font-medium ml-1">
+                  El código dejará de ser válido después de esta fecha.
+                </span>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowGenerarModal(false)}
+                  className="flex-1 py-3 px-4 bg-slate-100 text-slate-600 rounded-xl font-black text-[10px] uppercase tracking-wider hover:bg-slate-200 transition-all text-center"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={generando}
+                  className="flex-1 bg-[#002147] text-white py-3 px-4 rounded-xl font-black text-[10px] uppercase tracking-wider hover:bg-[#003366] active:scale-[0.99] transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-blue-900/10"
+                >
+                  {generando ? 'GENERANDO...' : 'GENERAR'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </MainLayout>
   )
 }

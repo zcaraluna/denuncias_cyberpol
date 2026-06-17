@@ -368,7 +368,7 @@ export async function verificarDispositivoAutorizado(
  * Genera un código de activación nuevo
  */
 export async function generarCodigoActivacion(
-  diasExpiracion: number = 30,
+  expiraEnOrDias: number | Date = 30,
   nombre?: string
 ): Promise<string> {
   try {
@@ -376,8 +376,13 @@ export async function generarCodigoActivacion(
     // Generar código aleatorio seguro de 32 caracteres
     const codigo = crypto.randomBytes(16).toString('hex').toUpperCase();
 
-    const fechaExpiracion = new Date();
-    fechaExpiracion.setDate(fechaExpiracion.getDate() + diasExpiracion);
+    let fechaExpiracion: Date;
+    if (expiraEnOrDias instanceof Date) {
+      fechaExpiracion = expiraEnOrDias;
+    } else {
+      fechaExpiracion = new Date();
+      fechaExpiracion.setDate(fechaExpiracion.getDate() + (expiraEnOrDias as number));
+    }
 
     await queryWithRetry(
       'INSERT INTO codigos_activacion (codigo, expira_en, nombre) VALUES ($1, $2, $3)',

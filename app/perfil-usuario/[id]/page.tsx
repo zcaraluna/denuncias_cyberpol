@@ -62,6 +62,20 @@ interface Usuario {
     activo: boolean
 }
 
+const PREGUNTAS_PREDEFINIDAS = [
+    "¿Cuál es tu número de credencial?",
+    "¿Cuál fue el modelo de tu primer automóvil (o motocicleta)?",
+    "¿Cuál fue el primer país extranjero que visitaste?",
+    "¿Cuál es tu comida favorita?",
+    "¿Cuál fue la primera marca de teléfono celular que tuviste?",
+    "¿Cuántos hermanos/as tienes?",
+    "¿Cuál es tu banda o artista musical favorito?",
+    "¿Cuál es tu color favorito?",
+    "¿Cuál es tu número favorito?",
+    "¿Cuál es el nombre de tu primera mascota?",
+    "¿Cuál es el nombre de tu mascota actual?"
+]
+
 export default function PerfilUsuarioPage({ params }: { params: Promise<{ id: string }> }) {
     const router = useRouter()
     const { usuario: usuarioAuth, loading: authLoading } = useAuth()
@@ -73,8 +87,19 @@ export default function PerfilUsuarioPage({ params }: { params: Promise<{ id: st
     const [usuarioId, setUsuarioId] = useState<string>('')
     const [paginaActual, setPaginaActual] = useState(1)
     const [paginaActualTomadas, setPaginaActualTomadas] = useState(1)
-    const [pestañaActiva, setPestañaActiva] = useState<'consultadas' | 'tomadas'>('consultadas')
+    const [pestañaActiva, setPestañaActiva] = useState<'consultadas' | 'tomadas' | 'preguntas'>('consultadas')
     const itemsPorPagina = 10
+
+    // Estados para preguntas de seguridad
+    const [yaConfiguradas, setYaConfiguradas] = useState(false)
+    const [guardandoPreguntas, setGuardandoPreguntas] = useState(false)
+    const [preguntasConfig, setPreguntasConfig] = useState<{ pregunta: string; respuesta: string }[]>([
+        { pregunta: '', respuesta: '' },
+        { pregunta: '', respuesta: '' },
+        { pregunta: '', respuesta: '' },
+        { pregunta: '', respuesta: '' },
+        { pregunta: '', respuesta: '' },
+    ])
 
     useEffect(() => {
         const loadParams = async () => {
@@ -84,16 +109,36 @@ export default function PerfilUsuarioPage({ params }: { params: Promise<{ id: st
         loadParams()
     }, [params])
 
+    const esPropioPerfil = usuarioAuth?.id === usuario?.id
+
     useEffect(() => {
-        if (usuarioAuth) {
+        if (usuarioAuth && usuarioId) {
             setUsuarioActivo(usuarioAuth)
 
-            if (usuarioAuth.rol !== 'superadmin' && usuarioAuth.rol !== 'admin' && usuarioAuth.rol !== 'supervisor') {
-                router.push('/dashboard')
+            const selfView = usuarioAuth.id.toString() === usuarioId
+            if (!selfView && 
+                usuarioAuth.rol !== 'superadmin' && 
+                usuarioAuth.rol !== 'admin' && 
+                usuarioAuth.rol !== 'supervisor' &&
+                usuarioAuth.rol !== 'developer') {
+                router.push('/inicio')
                 return
             }
         }
-    }, [usuarioAuth, router])
+    }, [usuarioAuth, usuarioId, router])
+
+    useEffect(() => {
+        if (esPropioPerfil) {
+            fetch('/api/usuarios/preguntas-seguridad')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.configuradas) {
+                        setYaConfiguradas(true)
+                    }
+                })
+                .catch(err => console.error('Error fetching preguntas config status:', err))
+        }
+    }, [esPropioPerfil])
 
     useEffect(() => {
         if (!usuarioId || !usuarioActivo) return
@@ -127,6 +172,50 @@ export default function PerfilUsuarioPage({ params }: { params: Promise<{ id: st
 
         cargarDatos()
     }, [usuarioId, usuarioActivo])
+
+    const handleGuardarPreguntas = async (e: React.FormEvent) => {
+        e.preventDefault()
+
+        const seleccionadas = preguntasConfig.map(p => p.pregunta)
+        if (seleccionadas.some(p => !p)) {
+            alert('Por favor, selecciona las 5 preguntas de seguridad.')
+            return
+        }
+
+        const unicas = new Set(seleccionadas)
+        if (unicas.size !== 5) {
+            alert('No puedes elegir la misma pregunta más de una vez.')
+            return
+        }
+
+        if (preguntasConfig.some(p => !p.respuesta.trim())) {
+            alert('Por favor, responde a todas las preguntas de seguridad.')
+            return
+        }
+
+        setGuardandoPreguntas(true)
+        try {
+            const res = await fetch('/api/usuarios/preguntas-seguridad', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ preguntas: preguntasConfig })
+            })
+
+            const data = await res.json()
+            if (!res.ok) {
+                alert(data.error || 'Error al guardar preguntas de seguridad')
+                return
+            }
+
+            alert('Preguntas de seguridad guardadas exitosamente')
+            setYaConfiguradas(true)
+        } catch (error) {
+            console.error('Error guardando preguntas de seguridad:', error)
+            alert('Error al guardar preguntas de seguridad')
+        } finally {
+            setGuardandoPreguntas(false)
+        }
+    }
 
     const formatearFecha = (fecha: string) => {
         const date = new Date(fecha)
@@ -240,6 +329,15 @@ export default function PerfilUsuarioPage({ params }: { params: Promise<{ id: st
                         >
                             Tomadas ({denunciasTomadas.length})
                         </button>
+                        {esPropioPerfil && (
+                            <button
+                                onClick={() => { setPestañaActiva('preguntas'); }}
+                                className={`flex items-center gap-2.5 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${pestañaActiva === 'preguntas' ? 'bg-white text-[#002147] shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                                    }`}
+                            >
+                                Preguntas de Seguridad
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -313,7 +411,7 @@ export default function PerfilUsuarioPage({ params }: { params: Promise<{ id: st
                                 </div>
                             </div>
                         )
-                    ) : (
+                    ) : pestañaActiva === 'tomadas' ? (
                         denunciasTomadas.length === 0 ? (
                             <div className="bg-white rounded-[32px] border border-slate-200/60 p-16 text-center shadow-sm">
                                 <p className="text-slate-400 font-black uppercase tracking-widest text-sm italic">Este funcionario no ha tomado denuncias aún</p>
@@ -388,6 +486,92 @@ export default function PerfilUsuarioPage({ params }: { params: Promise<{ id: st
                                 </div>
                             </div>
                         )
+                    ) : (
+                        <div className="bg-white rounded-[32px] border border-slate-200/60 p-6 md:p-8 shadow-sm max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-300">
+                            <div className="text-center mb-6">
+                                <div className="inline-flex p-3 bg-slate-50 rounded-2xl mb-4 border border-slate-100">
+                                    <Shield className="h-6 w-6 text-[#002147]" />
+                                </div>
+                                <h2 className="text-lg font-black text-[#002147] uppercase tracking-wider">
+                                    Configurar Preguntas de Seguridad
+                                </h2>
+                                <p className="text-xs text-slate-400 mt-1 font-medium">
+                                    Seleccione exactamente 5 preguntas diferentes y responda cada una para habilitar la recuperación de contraseña autónoma.
+                                </p>
+                            </div>
+
+                            {yaConfiguradas && (
+                                <div className="mb-6 bg-emerald-50 border border-emerald-100 rounded-2xl p-4 flex items-start gap-3">
+                                    <div className="p-2 bg-white rounded-xl text-emerald-600 shadow-sm shrink-0">
+                                        <Shield className="h-4 w-4" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xs font-black text-emerald-800 uppercase tracking-wide">Configuración Existente Detectada</h3>
+                                        <p className="text-[10px] text-emerald-600 mt-0.5 font-medium leading-relaxed">
+                                            Ya has configurado tus preguntas de seguridad anteriormente. Si vuelves a guardarlas ahora, la configuración anterior será reemplazada por completo.
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
+                            <form onSubmit={handleGuardarPreguntas} className="space-y-6">
+                                {preguntasConfig.map((item, idx) => (
+                                    <div key={idx} className="p-5 bg-slate-50 border border-slate-100 rounded-2xl space-y-3">
+                                        <div className="space-y-1">
+                                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                                                Pregunta de Seguridad #{idx + 1}
+                                            </label>
+                                            <select
+                                                value={item.pregunta}
+                                                onChange={(e) => {
+                                                    const newPreguntas = [...preguntasConfig]
+                                                    newPreguntas[idx].pregunta = e.target.value
+                                                    setPreguntasConfig(newPreguntas)
+                                                }}
+                                                required
+                                                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-[#002147] outline-none transition-all focus:border-blue-200 focus:ring-4 focus:ring-blue-500/5"
+                                            >
+                                                <option value="">-- Seleccione una pregunta --</option>
+                                                {PREGUNTAS_PREDEFINIDAS.map((pregunta, pIdx) => {
+                                                    const isSelectedElsewhere = preguntasConfig.some((p, otherIdx) => p.pregunta === pregunta && otherIdx !== idx)
+                                                    return (
+                                                        <option key={pIdx} value={pregunta} disabled={isSelectedElsewhere}>
+                                                            {pregunta}
+                                                        </option>
+                                                    )
+                                                })}
+                                            </select>
+                                        </div>
+
+                                        <div className="space-y-1">
+                                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                                                Respuesta #{idx + 1}
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={item.respuesta}
+                                                onChange={(e) => {
+                                                    const newPreguntas = [...preguntasConfig]
+                                                    newPreguntas[idx].respuesta = e.target.value
+                                                    setPreguntasConfig(newPreguntas)
+                                                }}
+                                                required
+                                                placeholder="Ingrese su respuesta secreta"
+                                                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-medium text-[#002147] placeholder:text-slate-300 outline-none transition-all focus:border-blue-200 focus:ring-4 focus:ring-blue-500/5"
+                                            />
+                                        </div>
+                                    </div>
+                                ))}
+
+                                <button
+                                    type="submit"
+                                    disabled={guardandoPreguntas}
+                                    className="w-full bg-[#002147] text-white py-4 px-4 rounded-xl font-black text-[10px] uppercase tracking-[0.15em] hover:bg-[#003366] active:scale-[0.99] transition-all disabled:opacity-50 shadow-lg shadow-blue-900/10 flex items-center justify-center gap-2 mt-4"
+                                >
+                                    {guardandoPreguntas ? 'GUARDANDO...' : 'GUARDAR CONFIGURACIÓN'}
+                                </button>
+                            </form>
+                        </div>
                     )}
 
                     {((pestañaActiva === 'consultadas' && totalPaginasConsultadas > 1) || (pestañaActiva === 'tomadas' && totalPaginasTomadas > 1)) && (

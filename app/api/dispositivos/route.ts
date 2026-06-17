@@ -8,10 +8,10 @@ export async function GET(request: NextRequest) {
     const usuarioId = request.nextUrl.searchParams.get('usuario_id');
     const usuarioRol = request.nextUrl.searchParams.get('usuario_rol');
 
-    // Verificar que sea superadmin
-    if (!usuarioRol || usuarioRol !== 'superadmin') {
+    // Verificar que sea superadmin o developer
+    if (!usuarioRol || (usuarioRol !== 'superadmin' && usuarioRol !== 'developer')) {
       return NextResponse.json(
-        { error: 'No autorizado. Solo superadmin puede acceder.' },
+        { error: 'No autorizado. Solo superadmin y developer pueden acceder.' },
         { status: 403 }
       );
     }
@@ -53,12 +53,12 @@ export async function GET(request: NextRequest) {
 // POST: Desactivar dispositivo o código
 export async function POST(request: NextRequest) {
   try {
-    const { tipo, id, usuario_rol } = await request.json();
+    const { tipo, id, usuario_rol, fecha_expiracion } = await request.json();
 
-    // Verificar que sea superadmin
-    if (!usuario_rol || usuario_rol !== 'superadmin') {
+    // Verificar que sea superadmin o developer
+    if (!usuario_rol || (usuario_rol !== 'superadmin' && usuario_rol !== 'developer')) {
       return NextResponse.json(
-        { error: 'No autorizado. Solo superadmin puede acceder.' },
+        { error: 'No autorizado.' },
         { status: 403 }
       );
     }
@@ -78,8 +78,20 @@ export async function POST(request: NextRequest) {
     } else if (tipo === 'codigo') {
       resultado = await desactivarCodigoActivacion(id);
     } else if (tipo === 'generar_codigo') {
-      // id actúa como el nombre opcional
-      const nuevoCodigo = await generarCodigoActivacion(30, id || 'ADMIN_GEN');
+      // Exclusivo para developer
+      if (usuario_rol !== 'developer') {
+        return NextResponse.json(
+          { error: 'No autorizado. Solo el rol developer puede generar nuevos códigos de activación.' },
+          { status: 403 }
+        );
+      }
+
+      let expiraDate: Date | number = 30;
+      if (fecha_expiracion) {
+        expiraDate = new Date(fecha_expiracion + 'T23:59:59');
+      }
+
+      const nuevoCodigo = await generarCodigoActivacion(expiraDate, id || 'DEV_GEN');
       resultado = !!nuevoCodigo;
       data_adicional = { codigo: nuevoCodigo };
     } else {
@@ -98,7 +110,7 @@ export async function POST(request: NextRequest) {
       );
     }
   } catch (error) {
-    console.error('Error desactivando:', error);
+    console.error('Error procesando acción sobre dispositivos:', error);
     return NextResponse.json(
       { error: 'Error del servidor' },
       { status: 500 }

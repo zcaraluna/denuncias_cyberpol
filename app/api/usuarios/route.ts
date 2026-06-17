@@ -62,8 +62,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Sesión inválida' }, { status: 401 })
     }
 
-    // Solo superadmin y admin pueden crear usuarios
-    if (creador.rol !== 'superadmin' && creador.rol !== 'admin') {
+    // Solo developer, superadmin y admin pueden crear usuarios
+    if (creador.rol !== 'developer' && creador.rol !== 'superadmin' && creador.rol !== 'admin') {
       return NextResponse.json({ error: 'Acción no autorizada' }, { status: 403 })
     }
 
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validar rol
-    if (!['superadmin', 'admin', 'operador', 'supervisor'].includes(rol)) {
+    if (!['superadmin', 'admin', 'operador', 'supervisor', 'developer'].includes(rol)) {
       return NextResponse.json(
         { error: 'Rol inválido' },
         { status: 400 }

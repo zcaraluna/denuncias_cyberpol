@@ -16,8 +16,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Sesión inválida' }, { status: 401 })
     }
 
-    // Restricción estricta: Solo superadmin puede visualizar estos logs
-    if (usuario.rol !== 'superadmin') {
+    // Restricción estricta: Solo superadmin y developer pueden visualizar estos logs
+    if (usuario.rol !== 'superadmin' && usuario.rol !== 'developer') {
       return NextResponse.json({ error: 'Acción no autorizada' }, { status: 403 })
     }
 

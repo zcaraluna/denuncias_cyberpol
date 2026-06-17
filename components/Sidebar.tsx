@@ -63,9 +63,9 @@ const navItems = [
 ]
 
 const adminItems = [
-    { href: '/gestion-usuarios', label: 'Usuarios', icon: Users, roles: ['admin', 'superadmin', 'supervisor'] },
-    { href: '/log-visitas', label: 'Auditoría', icon: History, roles: ['admin', 'superadmin', 'supervisor'] },
-    { href: '/gestion-dispositivos', label: 'Dispositivos', icon: ShieldCheck, roles: ['superadmin'] },
+    { href: '/gestion-usuarios', label: 'Usuarios', icon: Users, roles: ['admin', 'superadmin', 'supervisor', 'developer'] },
+    { href: '/log-visitas', label: 'Auditoría', icon: History, roles: ['admin', 'superadmin', 'supervisor', 'developer'] },
+    { href: '/gestion-dispositivos', label: 'Dispositivos', icon: ShieldCheck, roles: ['superadmin', 'developer'] },
 ]
 
 export function Sidebar() {
@@ -118,7 +118,7 @@ export function Sidebar() {
                     </div>
 
                     {/* Admin Items Section */}
-                    {(usuario.rol === 'admin' || usuario.rol === 'superadmin' || usuario.rol === 'supervisor') && (
+                    {(usuario.rol === 'admin' || usuario.rol === 'superadmin' || usuario.rol === 'supervisor' || usuario.rol === 'developer') && (
                         <div className="pt-2">
                             <span className="mb-3 block px-3 text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em]">
                                 Administración
@@ -187,7 +187,7 @@ export function MobileBottomNav() {
 
     if (!usuario || !isLoaded) return null
 
-    const esAdmin = usuario.rol === 'admin' || usuario.rol === 'superadmin' || usuario.rol === 'supervisor'
+    const esAdmin = usuario.rol === 'admin' || usuario.rol === 'superadmin' || usuario.rol === 'supervisor' || usuario.rol === 'developer'
     const numColumnas = esAdmin ? 5 : 4
 
     return (

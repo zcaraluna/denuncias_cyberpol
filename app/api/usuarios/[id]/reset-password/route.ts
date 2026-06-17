@@ -3,6 +3,7 @@ import pool from '@/lib/db'
 import bcrypt from 'bcryptjs'
 
 const ROLE_WEIGHTS: Record<string, number> = {
+  developer: 5,
   superadmin: 4,
   admin: 3,
   supervisor: 2,

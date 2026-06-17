@@ -71,6 +71,9 @@ export default function InicioPage() {
   const [isManualModalOpen, setIsManualModalOpen] = useState(false)
   const [activeModal, setActiveModal] = useState<'new' | 'old' | null>(null)
 
+  // Recordatorio de preguntas de seguridad
+  const [showPreguntasReminder, setShowPreguntasReminder] = useState(false)
+
   const fetchRates = async () => {
     setLoading(true)
     try {
@@ -99,6 +102,21 @@ export default function InicioPage() {
       if (!hasSeen) {
         setActiveModal('new')
       }
+
+      // Verificar si tiene configuradas las preguntas de seguridad
+      const checkPreguntas = async () => {
+        try {
+          const res = await fetch('/api/usuarios/preguntas-seguridad')
+          const data = await res.json()
+          const omitidoSesion = sessionStorage.getItem('preguntas_omitidas')
+          if (res.ok && !data.configuradas && omitidoSesion !== 'true') {
+            setShowPreguntasReminder(true)
+          }
+        } catch (err) {
+          console.error('Error al verificar preguntas de seguridad:', err)
+        }
+      }
+      checkPreguntas()
     }
   }, [usuario, authLoading, router])
 
@@ -306,6 +324,71 @@ export default function InicioPage() {
             }
           ]}
         />
+      )}
+
+      {/* Modal de Recordatorio de Preguntas de Seguridad */}
+      {showPreguntasReminder && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-[#002147]/45 backdrop-blur-sm transition-opacity"
+            onClick={() => {
+              sessionStorage.setItem('preguntas_omitidas', 'true')
+              setShowPreguntasReminder(false)
+            }}
+          />
+
+          {/* Modal Card */}
+          <div className="relative bg-white rounded-[2.5rem] shadow-2xl border border-slate-100 w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-300">
+            {/* Header decoration */}
+            <div className="bg-[#002147] px-8 py-8 text-white relative">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full -mr-6 -mt-6 blur-md" />
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/20 shrink-0">
+                  <ShieldCheck className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <span className="text-[9px] font-black uppercase tracking-[0.2em] text-blue-200 block mb-0.5">
+                    Recomendación de Seguridad
+                  </span>
+                  <h2 className="text-xl font-extrabold tracking-tight">
+                    Recuperación de Contraseña
+                  </h2>
+                </div>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="p-8">
+              <p className="text-xs text-slate-500 leading-relaxed mb-6 font-medium">
+                Detectamos que aún no has configurado tus <strong className="font-bold text-[#002147]">preguntas de seguridad</strong>. 
+                Es altamente recomendable configurarlas para que puedas recuperar de forma autónoma el acceso a tu cuenta en caso de olvidar tu contraseña.
+              </p>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    sessionStorage.setItem('preguntas_omitidas', 'true')
+                    setShowPreguntasReminder(false)
+                  }}
+                  className="flex-1 py-3.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-2xl font-black text-[10px] uppercase tracking-wider transition-all text-center active:scale-95"
+                >
+                  Omitir por esta vez
+                </button>
+                <button
+                  onClick={() => {
+                    sessionStorage.setItem('preguntas_omitidas', 'true')
+                    setShowPreguntasReminder(false)
+                    router.push(`/perfil-usuario/${usuario.id}`)
+                  }}
+                  className="flex-1 bg-[#002147] hover:bg-blue-900 text-white py-3.5 px-4 rounded-2xl font-black text-[10px] uppercase tracking-wider transition-all shadow-md shadow-blue-950/10 text-center active:scale-95"
+                >
+                  Configurar ahora
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </MainLayout>
   )

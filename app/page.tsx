@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import Link from 'next/link'
 import { Shield, Lock, User, Eye, EyeOff, Loader2, Phone, Globe, X } from 'lucide-react'
 
 export default function LoginPage() {
@@ -115,6 +116,15 @@ export default function LoginPage() {
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
+            </div>
+
+            <div className="flex justify-end pr-1">
+              <Link
+                href="/recuperar-password"
+                className="text-[10px] font-bold text-slate-400 hover:text-[#002147] uppercase tracking-wider transition-colors"
+              >
+                ¿Olvidó su contraseña?
+              </Link>
             </div>
 
             {error && (

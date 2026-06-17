@@ -84,8 +84,8 @@ export async function PUT(
       return NextResponse.json({ error: 'Sesión inválida' }, { status: 401 })
     }
 
-    // Solo superadmin y admin pueden editar usuarios a través de esta ruta general
-    if (realizador.rol !== 'superadmin' && realizador.rol !== 'admin') {
+    // Solo developer, superadmin y admin pueden editar usuarios a través de esta ruta general
+    if (realizador.rol !== 'developer' && realizador.rol !== 'superadmin' && realizador.rol !== 'admin') {
       return NextResponse.json({ error: 'Acción no autorizada' }, { status: 403 })
     }
 
@@ -93,7 +93,7 @@ export async function PUT(
     const { nombre, apellido, grado, oficina, rol, activo, contraseña } = body
 
     // Validar rol si se proporciona
-    if (rol && !['superadmin', 'admin', 'operador', 'supervisor'].includes(rol)) {
+    if (rol && !['superadmin', 'admin', 'operador', 'supervisor', 'developer'].includes(rol)) {
       return NextResponse.json(
         { error: 'Rol inválido' },
         { status: 400 }
@@ -168,8 +168,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Sesión inválida' }, { status: 401 })
     }
 
-    // Solo superadmin y admin pueden eliminar usuarios
-    if (realizador.rol !== 'superadmin' && realizador.rol !== 'admin') {
+    // Solo developer, superadmin y admin pueden eliminar usuarios
+    if (realizador.rol !== 'developer' && realizador.rol !== 'superadmin' && realizador.rol !== 'admin') {
       return NextResponse.json({ error: 'Acción no autorizada' }, { status: 403 })
     }
 
