@@ -269,13 +269,14 @@ export default function PerfilUsuarioPage({ params }: { params: Promise<{ id: st
                                     </div>
                                     <div>
                                         <div className="flex items-center justify-center md:justify-start gap-3 mb-1.5 md:mb-1">
-                                            <span className={`px-2 py-0.5 md:px-2.5 md:py-1 text-[9px] md:text-[10px] font-black uppercase tracking-widest rounded-lg border ${usuario.rol === 'superadmin' ? 'bg-red-50 text-red-600 border-red-100' :
-                                                usuario.rol === 'admin' ? 'bg-orange-50 text-orange-600 border-orange-100' :
-                                                    usuario.rol === 'supervisor' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                                                        'bg-blue-50 text-blue-600 border-blue-100'
-                                                }`}>
-                                                {usuario.rol}
-                                            </span>
+                                            <span className={`px-2 py-0.5 md:px-2.5 md:py-1 text-[9px] md:text-[10px] font-black uppercase tracking-widest rounded-lg border ${usuario.rol === 'developer' ? 'bg-purple-50 text-purple-600 border-purple-100' :
+                                                usuario.rol === 'superadmin' ? 'bg-red-50 text-red-600 border-red-100' :
+                                                    usuario.rol === 'admin' ? 'bg-orange-50 text-orange-600 border-orange-100' :
+                                                        usuario.rol === 'supervisor' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                                                            'bg-blue-50 text-blue-600 border-blue-100'
+                                                    }`}>
+                                                    {usuario.rol}
+                                                </span>
                                             {usuario.activo ? (
                                                 <span className="flex items-center gap-1.5 text-[9px] md:text-[10px] font-black text-emerald-600 uppercase tracking-widest">
                                                     <Activity className="h-2.5 md:h-3 md:w-3" /> Activo

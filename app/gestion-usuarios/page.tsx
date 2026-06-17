@@ -75,7 +75,8 @@ const roles = [
   { value: 'operador', label: 'Operador', color: 'blue' },
   { value: 'supervisor', label: 'Supervisor', color: 'green' },
   { value: 'admin', label: 'Admin', color: 'orange' },
-  { value: 'superadmin', label: 'Superadmin', color: 'red' }
+  { value: 'superadmin', label: 'Superadmin', color: 'red' },
+  { value: 'developer', label: 'Developer', color: 'purple' }
 ]
 
 export default function GestionUsuariosPage() {
@@ -316,7 +317,7 @@ export default function GestionUsuariosPage() {
   }
 
   const esSupervisor = usuario?.rol === 'supervisor'
-  const esAdmin = usuario?.rol === 'admin' || usuario?.rol === 'superadmin'
+  const esAdmin = usuario?.rol === 'admin' || usuario?.rol === 'superadmin' || usuario?.rol === 'developer'
 
   if (loading) {
     return (
@@ -392,7 +393,9 @@ export default function GestionUsuariosPage() {
                   {/* Barra lateral decorativa del rol */}
                   <div
                     className={`absolute left-0 top-0 bottom-0 w-1.5 ${
-                      user.rol === 'superadmin'
+                      user.rol === 'developer'
+                        ? 'bg-purple-500'
+                        : user.rol === 'superadmin'
                         ? 'bg-red-500'
                         : user.rol === 'admin'
                         ? 'bg-orange-500'
@@ -423,7 +426,9 @@ export default function GestionUsuariosPage() {
                       {/* Badge de Rol */}
                       <span
                         className={`px-2 py-0.5 rounded-lg border text-[8px] font-black uppercase tracking-widest flex items-center gap-1 shrink-0 ${
-                          user.rol === 'superadmin'
+                          user.rol === 'developer'
+                            ? 'bg-purple-50 text-purple-700 border-purple-100'
+                            : user.rol === 'superadmin'
                             ? 'bg-red-50 text-red-700 border-red-100'
                             : user.rol === 'admin'
                             ? 'bg-orange-50 text-orange-700 border-orange-100'
