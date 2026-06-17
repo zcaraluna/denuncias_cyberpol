@@ -31,6 +31,7 @@ interface UsuarioCompleto {
   oficina: string
   rol: string
   activo: boolean
+  preguntas_configuradas?: boolean
 }
 
 interface UsuarioAuth {
@@ -457,6 +458,20 @@ export default function GestionUsuariosPage() {
                           {user.oficina}
                         </span>
                       </div>
+                      {usuario?.rol === 'developer' && (
+                        <div className="flex items-center justify-between mt-2.5 pt-2.5 border-t border-slate-100/60">
+                          <span className="text-slate-400 font-bold uppercase tracking-widest">Preguntas Seguridad</span>
+                          <span
+                            className={`px-2 py-0.5 rounded-lg border text-[8px] font-black uppercase tracking-widest ${
+                              user.preguntas_configuradas
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+                                : 'bg-red-50 text-red-700 border-red-100'
+                            }`}
+                          >
+                            {user.preguntas_configuradas ? 'Configuradas' : 'Pendientes'}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
 

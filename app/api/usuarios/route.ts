@@ -24,7 +24,11 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    let query = 'SELECT id, usuario, nombre, apellido, grado, oficina, rol, activo, creado_en FROM usuarios'
+    let query = `
+      SELECT id, usuario, nombre, apellido, grado, oficina, rol, activo, creado_en,
+        (SELECT COUNT(*) FROM preguntas_seguridad_usuarios WHERE usuario_id = usuarios.id) >= 5 AS preguntas_configuradas
+      FROM usuarios
+    `
     const queryParams: any[] = []
 
     if (oficinaFilter) {
