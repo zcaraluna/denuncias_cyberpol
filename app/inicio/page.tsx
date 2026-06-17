@@ -15,11 +15,27 @@ import {
   FileText,
   Smartphone,
   ShieldCheck,
+  Shield,
+  Loader2,
   Search,
   Book
 } from 'lucide-react'
 
 const API_KEY = 'c26434662f9a1a4869628002'
+
+const PREGUNTAS_PREDEFINIDAS = [
+  "¿Cuál es tu número de credencial?",
+  "¿Cuál fue el modelo de tu primer automóvil (o motocicleta)?",
+  "¿Cuál fue el primer país extranjero que visitaste?",
+  "¿Cuál es tu comida favorita?",
+  "¿Cuál fue la primera marca de teléfono celular que tuviste?",
+  "¿Cuántos hermanos/as tienes?",
+  "¿Cuál es tu banda o artista musical favorito?",
+  "¿Cuál es tu color favorito?",
+  "¿Cuál es tu número favorito?",
+  "¿Cuál es el nombre de tu primera mascota?",
+  "¿Cuál es el nombre de tu mascota actual?"
+]
 
 interface Manual {
   id: string
@@ -73,6 +89,17 @@ export default function InicioPage() {
 
   // Recordatorio de preguntas de seguridad
   const [showPreguntasReminder, setShowPreguntasReminder] = useState(false)
+  const [showWizardModal, setShowWizardModal] = useState(false)
+  const [wizardStep, setWizardStep] = useState(1)
+  const [wizardPreguntas, setWizardPreguntas] = useState<{ pregunta: string, respuesta: string }[]>([
+    { pregunta: '', respuesta: '' },
+    { pregunta: '', respuesta: '' },
+    { pregunta: '', respuesta: '' },
+    { pregunta: '', respuesta: '' },
+    { pregunta: '', respuesta: '' },
+  ])
+  const [guardandoWizard, setGuardandoWizard] = useState(false)
+  const [wizardError, setWizardError] = useState('')
 
   const fetchRates = async () => {
     setLoading(true)
@@ -87,6 +114,59 @@ export default function InicioPage() {
       console.error('Error fetching rates:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleWizardSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setWizardError('')
+
+    const currentIdx = wizardStep - 1
+    const currentQ = wizardPreguntas[currentIdx]
+
+    if (!currentQ.pregunta) {
+      setWizardError('Debe seleccionar una pregunta.')
+      return
+    }
+
+    if (!currentQ.respuesta.trim()) {
+      setWizardError('Debe responder a la pregunta.')
+      return
+    }
+
+    if (wizardStep < 5) {
+      setWizardStep(prev => prev + 1)
+      return
+    }
+
+    setGuardandoWizard(true)
+    try {
+      const res = await fetch('/api/usuarios/preguntas-seguridad', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ preguntas: wizardPreguntas })
+      })
+
+      const data = await res.json()
+      if (!res.ok) {
+        setWizardError(data.error || 'Error al guardar preguntas de seguridad.')
+        return
+      }
+
+      alert('¡Preguntas de seguridad configuradas exitosamente!')
+      setShowWizardModal(false)
+      setWizardPreguntas([
+        { pregunta: '', respuesta: '' },
+        { pregunta: '', respuesta: '' },
+        { pregunta: '', respuesta: '' },
+        { pregunta: '', respuesta: '' },
+        { pregunta: '', respuesta: '' },
+      ])
+    } catch (err) {
+      console.error('Error guardando preguntas en el wizard:', err)
+      setWizardError('Error de conexión con el servidor')
+    } finally {
+      setGuardandoWizard(false)
     }
   }
 
@@ -377,9 +457,9 @@ export default function InicioPage() {
                 </button>
                 <button
                   onClick={() => {
-                    sessionStorage.setItem('preguntas_omitidas', 'true')
                     setShowPreguntasReminder(false)
-                    router.push(`/perfil-usuario/${usuario.id}`)
+                    setShowWizardModal(true)
+                    setWizardStep(1)
                   }}
                   className="flex-1 bg-[#002147] hover:bg-blue-900 text-white py-3.5 px-4 rounded-2xl font-black text-[10px] uppercase tracking-wider transition-all shadow-md shadow-blue-950/10 text-center active:scale-95"
                 >
@@ -387,6 +467,132 @@ export default function InicioPage() {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Asistente (Wizard) de Preguntas de Seguridad */}
+      {showWizardModal && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 animate-in fade-in duration-300">
+          <div
+            className="absolute inset-0 bg-[#002147]/45 backdrop-blur-sm"
+            onClick={() => {
+              if (confirm("¿Desea cancelar la configuración de seguridad? Se guardará el recordatorio para el próximo inicio de sesión.")) {
+                setShowWizardModal(false)
+                sessionStorage.setItem('preguntas_omitidas', 'true')
+              }
+            }}
+          />
+          <div className="bg-white rounded-[2.5rem] shadow-2xl p-8 border border-slate-200/60 w-full max-w-md relative z-10 animate-in zoom-in-95 duration-300">
+            <button
+              type="button"
+              onClick={() => {
+                if (confirm("¿Desea cancelar la configuración de seguridad? Se guardará el recordatorio para el próximo inicio de sesión.")) {
+                  setShowWizardModal(false)
+                  sessionStorage.setItem('preguntas_omitidas', 'true')
+                }
+              }}
+              className="absolute top-4 right-4 p-2 hover:bg-slate-50 rounded-full text-slate-400 hover:text-[#002147] transition-all"
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            <div className="text-center mb-6">
+              <div className="inline-flex p-3 bg-slate-50/50 rounded-2xl mb-4 border border-slate-100 animate-pulse">
+                <Shield className="h-6 w-6 text-[#002147]" />
+              </div>
+              <h2 className="text-lg font-black text-[#002147] uppercase tracking-wider">
+                Pregunta de Seguridad {wizardStep} de 5
+              </h2>
+              {/* Progress Bar */}
+              <div className="w-full bg-slate-100 h-1.5 rounded-full mt-3 overflow-hidden">
+                <div 
+                  className="bg-[#002147] h-full rounded-full transition-all duration-300"
+                  style={{ width: `${(wizardStep / 5) * 100}%` }}
+                />
+              </div>
+            </div>
+
+            <form onSubmit={handleWizardSubmit} className="space-y-5">
+              <div className="space-y-1.5">
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                  Seleccione la Pregunta #{wizardStep}
+                </label>
+                <select
+                  required
+                  value={wizardPreguntas[wizardStep - 1].pregunta}
+                  onChange={(e) => {
+                    const newP = [...wizardPreguntas]
+                    newP[wizardStep - 1].pregunta = e.target.value
+                    setWizardPreguntas(newP)
+                  }}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold text-[#002147] outline-none focus:bg-white focus:border-blue-200 focus:ring-4 focus:ring-blue-500/5 transition-all"
+                >
+                  <option value="">-- Elija una pregunta --</option>
+                  {PREGUNTAS_PREDEFINIDAS.map((pregunta, idx) => {
+                    const isSelectedElsewhere = wizardPreguntas.some((p, otherIdx) => p.pregunta === pregunta && otherIdx !== (wizardStep - 1))
+                    return (
+                      <option key={idx} value={pregunta} disabled={isSelectedElsewhere}>
+                        {pregunta}
+                      </option>
+                    )
+                  })}
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                  Su Respuesta
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={wizardPreguntas[wizardStep - 1].respuesta}
+                  onChange={(e) => {
+                    const newP = [...wizardPreguntas]
+                    newP[wizardStep - 1].respuesta = e.target.value
+                    setWizardPreguntas(newP)
+                  }}
+                  placeholder="Escriba su respuesta secreta"
+                  className="w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-medium text-[#002147] placeholder:text-slate-300 focus:bg-white focus:border-blue-200 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all"
+                />
+              </div>
+
+              {wizardError && (
+                <div className="bg-red-50 text-red-600 px-4 py-2.5 rounded-xl text-[9px] font-bold uppercase tracking-wider text-center border border-red-100 animate-in fade-in slide-in-from-top-1">
+                  {wizardError}
+                </div>
+              )}
+
+              <div className="flex gap-3 pt-2">
+                {wizardStep > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setWizardError('')
+                      setWizardStep(prev => prev - 1)
+                    }}
+                    className="flex-1 py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-black text-[10px] uppercase tracking-wider transition-all text-center active:scale-95"
+                  >
+                    Atrás
+                  </button>
+                )}
+                <button
+                  type="submit"
+                  disabled={guardandoWizard}
+                  className="flex-1 bg-[#002147] hover:bg-blue-900 text-white py-3 px-4 rounded-xl font-black text-[10px] uppercase tracking-wider transition-all shadow-lg shadow-blue-900/10 flex items-center justify-center gap-2 active:scale-95"
+                >
+                  {guardandoWizard ? (
+                    <>
+                      <Loader2 className="h-3 w-3 animate-spin text-white/50" />
+                      GUARDANDO...
+                    </>
+                  ) : (
+                    wizardStep === 5 ? 'FINALIZAR' : 'SIGUIENTE'
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
