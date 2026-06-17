@@ -7,6 +7,29 @@ const fetchImageAsBuffer = async (url: string): Promise<Uint8Array> => {
     return new Uint8Array(arrayBuffer);
 };
 
+const ALIASES_DEPARTAMENTOS: Record<string, string> = {
+    "Departamento Especializado Contra el Lavado de Dinero y Financiamiento del Terrorismo": "Lavado de Dinero",
+    "Departamento Especializado Contra la Violación de los Derechos Intelectuales": "DECVDI",
+    "Departamento Especializado en la Investigación del Cybercrímen y los Hechos Punibles Informáticos": "Cybercrímen",
+    "Departamento Especializado Contra los Hechos Punibles Financieros": "H.P. Financieros",
+    "Departamento Especializado Contra los Hechos Punibles Económicos": "H.P. Económicos",
+    "Departamento Especializado Contra la Falsificación de Documentos y Abuso de Documentos de Identidad": "DECFDADI",
+    "Departamento Especializado en el Control y Fiscalización de Empresas de Seguridad Privada y afines": "DECFESPA",
+    "Departamento Especializado en Seguridad Bancaria": "Seguridad Bancaria",
+    "Subunidad de Administración y Finanzas (SUAF)": "SUAF"
+};
+
+const obtenerTextoConAlias = (valor: any): string => {
+    if (valor === undefined || valor === null || String(valor).trim() === '') {
+        return '-------';
+    }
+    const valorStr = String(valor).trim();
+    if (ALIASES_DEPARTAMENTOS[valorStr]) {
+        return ALIASES_DEPARTAMENTOS[valorStr];
+    }
+    return valorStr;
+};
+
 export interface DocxMetadata {
     numeroNota: string;
     destinatarioGrado: string;
@@ -83,7 +106,7 @@ export const exportToDocx = async (
             ...data.map(item => new TableRow({
                 children: columns.map(col => {
                     const value = item[col.key];
-                    const text = (value === undefined || value === null || String(value).trim() === '') ? '-------' : String(value);
+                    const text = obtenerTextoConAlias(value);
 
                     return new TableCell({
                         width: col.width ? { size: col.width, type: WidthType.PERCENTAGE } : undefined,

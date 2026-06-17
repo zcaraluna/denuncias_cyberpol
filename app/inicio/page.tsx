@@ -85,7 +85,7 @@ export default function InicioPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedManual, setSelectedManual] = useState<Manual | null>(null)
   const [isManualModalOpen, setIsManualModalOpen] = useState(false)
-  const [activeModal, setActiveModal] = useState<'new' | 'old' | null>(null)
+  const [activeModal, setActiveModal] = useState<'new' | null>(null)
 
   // Recordatorio de preguntas de seguridad
   const [showPreguntasReminder, setShowPreguntasReminder] = useState(false)
@@ -201,10 +201,6 @@ export default function InicioPage() {
   }, [usuario, authLoading, router])
 
   const handleCloseNewModal = () => {
-    setActiveModal('old')
-  }
-
-  const handleCloseOldModal = () => {
     sessionStorage.setItem('hasSeenUpdateModal', 'true')
     setActiveModal(null)
     checkPreguntas()
@@ -362,46 +358,21 @@ export default function InicioPage() {
               ),
               bgClass: "bg-blue-50",
               borderClass: "border-blue-100"
-            }
-          ]}
-        />
-      )}
-
-      {/* Modal de Actualización - Anterior (v1.5.522) */}
-      {activeModal === 'old' && (
-        <UpdateModal
-          version="v1.5.522"
-          onClose={handleCloseOldModal}
-          features={[
-            {
-              icon: (
-                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                </svg>
-              ),
-              title: "Archivos Adjuntos Integrados",
-              description: (
-                <>
-                  Los archivos que se adjuntan a una denuncia ahora <strong className="font-extrabold text-[#002147]">salen incorporados directamente en el PDF</strong>, por lo que ya no es necesario imprimirlos por separado.
-                </>
-              ),
-              bgClass: "bg-blue-50",
-              borderClass: "border-blue-100"
             },
             {
               icon: (
-                <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
               ),
-              title: "Sugerencia de Remisión",
+              title: "Preguntas de Seguridad (Recuperación de Clave)",
               description: (
                 <>
-                  Al finalizar una denuncia y antes de imprimir, el sistema <strong className="font-extrabold text-[#002147]">solicitará una sugerencia de dependencia</strong> a la cual correspondería remitir la denuncia (pudiendo omitirse este paso si no se desea realizar).
+                  Ahora puedes configurar <strong className="font-extrabold text-[#002147]">preguntas de seguridad</strong> para poder recuperar de forma autónoma el acceso a tu cuenta en caso de olvidar tu contraseña.
                 </>
               ),
-              bgClass: "bg-amber-50",
-              borderClass: "border-amber-100"
+              bgClass: "bg-emerald-50",
+              borderClass: "border-emerald-100"
             }
           ]}
         />
