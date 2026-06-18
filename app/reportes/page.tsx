@@ -237,6 +237,7 @@ export default function ReportesPage() {
   const [mesDepto, setMesDepto] = useState(String(new Date().getMonth() + 1))
   const [añoDepto, setAñoDepto] = useState(String(new Date().getFullYear()))
   const [oficinaDepto, setOficinaDepto] = useState('')
+  const [oficinasActivas, setOficinasActivas] = useState<string[]>([])
 
   useEffect(() => {
     if (!authLoading) {
@@ -475,10 +476,26 @@ export default function ReportesPage() {
     }
   }
 
+  const cargarOficinasActivas = async () => {
+    try {
+      const response = await fetch('/api/reportes/departamentos?obtener_oficinas=true')
+      if (response.ok) {
+        const data = await response.json()
+        setOficinasActivas(data)
+      }
+    } catch (e) {
+      console.error('Error al cargar oficinas activas:', e)
+    }
+  }
+
   const handleBuscarDepartamentos = async () => {
     setError(null)
     setCargando(true)
     setDatosDepartamentos([])
+
+    if (oficinasActivas.length === 0) {
+      cargarOficinasActivas()
+    }
 
     try {
       const params = new URLSearchParams()
@@ -515,6 +532,7 @@ export default function ReportesPage() {
     if (activeTab === 'objetos_perdidos' && datosObjetos.length === 0 && !cargandoObjetos) {
       handleBuscarObjetos()
     } else if (activeTab === 'departamentos' && datosDepartamentos.length === 0 && !cargando) {
+      cargarOficinasActivas()
       handleBuscarDepartamentos()
     }
   }, [activeTab])
@@ -1028,23 +1046,11 @@ export default function ReportesPage() {
                       className="block w-full px-4 py-2.5 bg-slate-50 border border-slate-200 text-[#002147] text-xs font-bold rounded-xl focus:ring-4 focus:ring-blue-50 focus:border-blue-200 transition-all outline-none cursor-pointer"
                     >
                       <option value="">Todas</option>
-                      <option value="Asunción">Asunción</option>
-                      <option value="Ciudad del Este">Ciudad del Este</option>
-                      <option value="Encarnación">Encarnación</option>
-                      <option value="Salto del Guairá">Salto del Guairá</option>
-                      <option value="Pedro Juan Caballero">Pedro Juan Caballero</option>
-                      <option value="Villa Hayes">Villa Hayes</option>
-                      <option value="Coronel Oviedo">Coronel Oviedo</option>
-                      <option value="San Lorenzo">San Lorenzo</option>
-                      <option value="Luque">Luque</option>
-                      <option value="Caaguazú">Caaguazú</option>
-                      <option value="Concepción">Concepción</option>
-                      <option value="Filadelfia">Filadelfia</option>
-                      <option value="Pilar">Pilar</option>
-                      <option value="Villarrica">Villarrica</option>
-                      <option value="Paraguarí">Paraguarí</option>
-                      <option value="Caacupé">Caacupé</option>
-                      <option value="San Juan Bautista">San Juan Bautista</option>
+                      {oficinasActivas.map((oficina) => (
+                        <option key={oficina} value={oficina}>
+                          {oficina}
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>

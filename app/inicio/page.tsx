@@ -338,10 +338,10 @@ export default function InicioPage() {
         />
       )}
 
-      {/* Modal de Actualización - Novedades (v1.5.548) */}
+      {/* Modal de Actualización - Novedades (v1.5.549) */}
       {activeModal === 'new' && (
         <UpdateModal
-          version="v1.5.548"
+          version="v1.5.549"
           onClose={handleCloseNewModal}
           features={[
             {

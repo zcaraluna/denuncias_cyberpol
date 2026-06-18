@@ -4,6 +4,17 @@ import pool from '@/lib/db'
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
+
+    if (searchParams.get('obtener_oficinas') === 'true') {
+      const result = await pool.query(
+        `SELECT DISTINCT oficina 
+         FROM denuncias 
+         WHERE oficina IS NOT NULL AND oficina != '' AND estado = 'completada'
+         ORDER BY oficina`
+      )
+      return NextResponse.json(result.rows.map(r => r.oficina))
+    }
+
     const periodo = searchParams.get('periodo') || 'mensual'
     const fecha = searchParams.get('fecha') || new Date().toISOString().split('T')[0]
     const mes = searchParams.get('mes') || String(new Date().getMonth() + 1)

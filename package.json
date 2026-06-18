@@ -1,6 +1,6 @@
 {
   "name": "cyberpol-denuncias",
-  "version": "1.5.548",
+  "version": "1.5.549",
   "private": true,
   "scripts": {
     "dev": "next dev",
