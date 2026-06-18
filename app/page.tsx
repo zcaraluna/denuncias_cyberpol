@@ -226,7 +226,7 @@ export default function LoginPage() {
             </div>
 
             <p className="text-[8px] text-center text-slate-400 font-bold uppercase tracking-widest opacity-50">
-              SIDE System v1.5.549 © {new Date().getFullYear()}
+              SIDE System v1.5.550 © {new Date().getFullYear()}
             </p>
           </div>
         </div>
