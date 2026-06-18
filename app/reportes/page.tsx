@@ -134,6 +134,15 @@ const SortIcon = ({ field, currentField, direction }: { field: SortField, curren
   )
 }
 
+function obtenerFechaHoyParaguay(): string {
+  const ahora = new Date()
+  const pyTime = new Date(ahora.getTime() - (3 * 3600000))
+  const year = pyTime.getUTCFullYear()
+  const month = String(pyTime.getUTCMonth() + 1).padStart(2, '0')
+  const day = String(pyTime.getUTCDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 export default function ReportesPage() {
   const router = useRouter()
   const { usuario, loading: authLoading, logout } = useAuth()
@@ -189,14 +198,7 @@ export default function ReportesPage() {
   const [mostrarGeneral, setMostrarGeneral] = useState(true)
 
   // Estado para reporte diario
-  const [fecha, setFecha] = useState(() => {
-    const ahora = new Date()
-    const pyTime = new Date(ahora.getTime() - (3 * 3600000))
-    const year = pyTime.getUTCFullYear()
-    const month = String(pyTime.getUTCMonth() + 1).padStart(2, '0')
-    const day = String(pyTime.getUTCDate()).padStart(2, '0')
-    return `${year}-${month}-${day}`
-  })
+  const [fecha, setFecha] = useState(() => obtenerFechaHoyParaguay())
   const [fechaFin, setFechaFin] = useState('')
   const [horaInicio, setHoraInicio] = useState('07:00')
   const [horaFin, setHoraFin] = useState('07:00')
@@ -231,7 +233,7 @@ export default function ReportesPage() {
   // Estados para reporte por departamentos
   const [datosDepartamentos, setDatosDepartamentos] = useState<{ departamento: string; cantidad: number }[]>([])
   const [periodoDepto, setPeriodoDepto] = useState<'diario' | 'semanal' | 'mensual' | 'anual' | 'historico'>('mensual')
-  const [fechaDepto, setFechaDepto] = useState(() => new Date().toISOString().split('T')[0])
+  const [fechaDepto, setFechaDepto] = useState(() => obtenerFechaHoyParaguay())
   const [mesDepto, setMesDepto] = useState(String(new Date().getMonth() + 1))
   const [añoDepto, setAñoDepto] = useState(String(new Date().getFullYear()))
   const [oficinaDepto, setOficinaDepto] = useState('')
@@ -540,7 +542,7 @@ export default function ReportesPage() {
       setStatsObjetos(null)
     } else if (activeTab === 'departamentos') {
       setPeriodoDepto('mensual')
-      setFechaDepto(new Date().toISOString().split('T')[0])
+      setFechaDepto(obtenerFechaHoyParaguay())
       setMesDepto(String(new Date().getMonth() + 1))
       setAñoDepto(String(new Date().getFullYear()))
       setOficinaDepto('')
