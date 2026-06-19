@@ -338,41 +338,41 @@ export default function InicioPage() {
         />
       )}
 
-      {/* Modal de Actualización - Novedades (v1.5.550) */}
+      {/* Modal de Actualización - Novedades (v1.5.551) */}
       {activeModal === 'new' && (
         <UpdateModal
-          version="v1.5.550"
+          version="v1.5.551"
           onClose={handleCloseNewModal}
           features={[
             {
               icon: (
-                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                 </svg>
               ),
-              title: "Exportación a Word Completa",
+              title: "Nuevos Objetos Extraviados",
               description: (
                 <>
-                  Al exportar el reporte diario a Word, la columna <strong className="font-extrabold text-[#002147]">Dpto. a Cargo</strong> ahora se completa de manera automática con la dependencia sugerida, evitando celdas vacías en el documento.
+                  Ahora es posible registrar de forma detallada <strong className="font-extrabold text-[#002147]">Facturas</strong> (individuales o talonarios), <strong className="font-extrabold text-[#002147]">CDA</strong> (Certificados de Depósito de Ahorro) y <strong className="font-extrabold text-[#002147]">Cédulas Verdes</strong> de vehículos, incluyendo todos sus datos específicos y validaciones.
                 </>
               ),
-              bgClass: "bg-blue-50",
-              borderClass: "border-blue-100"
+              bgClass: "bg-indigo-50",
+              borderClass: "border-indigo-100"
             },
             {
               icon: (
-                <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                <svg className="w-5 h-5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
               ),
-              title: "Preguntas de Seguridad (Recuperación de Clave)",
+              title: "Visualización e Impresión PDF",
               description: (
                 <>
-                  Ahora puedes configurar <strong className="font-extrabold text-[#002147]">preguntas de seguridad</strong> para poder recuperar de forma autónoma el acceso a tu cuenta en caso de olvidar tu contraseña.
+                  Se integró el formateo automático de los campos de Facturas, CDAs y Cédulas Verdes en la <strong className="font-extrabold text-[#002147]">vista de detalles</strong> de la denuncia y en la generación de las <strong className="font-extrabold text-[#002147]">actas PDF</strong> oficiales.
                 </>
               ),
-              bgClass: "bg-emerald-50",
-              borderClass: "border-emerald-100"
+              bgClass: "bg-rose-50",
+              borderClass: "border-rose-100"
             }
           ]}
         />

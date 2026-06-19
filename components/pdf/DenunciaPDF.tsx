@@ -328,6 +328,25 @@ const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 
                                                 ` | REGISTRADO A NOMBRE DE: ${obj.registradoNombre === 'recurrente' ? 'DENUNCIANTE' : `${obj.nombreTercero.toUpperCase()} (DOC N° ${obj.documentoTercero})`}`
                                             )}
                                             {obj.tipo === 'otro_objeto' && `DESCRIPCIÓN: ${obj.descripcion.toUpperCase()}`}
+                                            {obj.tipo === 'factura' && (
+                                                `TIMBRADO: ${obj.timbrado} | TIPO: ${obj.facturaTipo === 'talonario' ? 'TALONARIO EN BLANCO' : 'FACTURA INDIVIDUAL'} | ` +
+                                                `EMISOR: ${obj.razonSocialEmisor.toUpperCase()} (RUC: ${obj.rucEmisor})` +
+                                                (obj.facturaTipo === 'individual' ? ` | NÚMERO: ${obj.numero} | RUC/C.I. ADQUIRENTE: ${obj.rucAdquirente ? obj.rucAdquirente.toUpperCase() : 'NO ESPECIFICADO'} | ADQUIRENTE: ${obj.razonSocialAdquirente ? obj.razonSocialAdquirente.toUpperCase() : 'NO ESPECIFICADO'}${obj.monto ? ` | IMPORTE: ${obj.monto} ${obj.moneda}` : ''}${obj.fechaEmision ? ` | FECHA EMISIÓN: ${formatearFechaPDF(obj.fechaEmision)}` : ''}` : ` | RANGO: ${obj.rangoDesde} AL ${obj.rangoHasta}`)
+                                            )}
+                                            {obj.tipo === 'cda' && (
+                                                `CERTIFICADO N°: ${obj.numero} | ENTIDAD EMISORA: ${(obj.banco === 'OTRO' ? obj.otroBanco : obj.banco).toUpperCase()} | ` +
+                                                `TITULAR: ${obj.titular.toUpperCase()} (DOC N° ${obj.documentoTitular}) | MONTO NOMINAL: ${obj.monto} ${obj.moneda}` +
+                                                (obj.tasaInteres ? ` | TASA: ${obj.tasaInteres}` : '') +
+                                                ` | FECHA EMISIÓN: ${formatearFechaPDF(obj.fechaEmision)} | FECHA VENCIMIENTO: ${formatearFechaPDF(obj.fechaVencimiento)} | ENDOSABLE: ${obj.endosable.toUpperCase()}`
+                                            )}
+                                            {obj.tipo === 'cedula_verde' && (
+                                                `N° CONTROL: ${obj.numeroControl.toUpperCase()} | MATRÍCULA/CHAPA: ${obj.caracteristicas.toUpperCase()} | ` +
+                                                `MARCA: ${obj.marca.toUpperCase()} | MODELO: ${obj.modelo.toUpperCase()} | CARROCERÍA: ${obj.carroceria.toUpperCase()}` +
+                                                (obj.año ? ` | AÑO: ${obj.año}` : '') +
+                                                (obj.color ? ` | COLOR: ${obj.color.toUpperCase()}` : '') +
+                                                (obj.chasis ? ` | CHASIS N°: ${obj.chasis.toUpperCase()}` : '') +
+                                                ` | REGISTRADO A NOMBRE DE: ${obj.registradoNombre === 'recurrente' ? 'DENUNCIANTE' : `${obj.nombreTercero.toUpperCase()} (DOC N° ${obj.documentoTercero})`}`
+                                            )}
                                         </Text>
                                     </View>
                                 </View>

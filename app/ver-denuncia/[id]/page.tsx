@@ -671,6 +671,67 @@ export default function VerDenunciaPage({ params }: { params: Promise<{ id: stri
                                       </>
                                     )}
                                     {obj.tipo === 'otro_objeto' && `Descripción: ${obj.descripcion}`}
+                                    {obj.tipo === 'factura' && (
+                                      <>
+                                        Timbrado N°: {obj.timbrado} | Tipo: {obj.facturaTipo === 'talonario' ? 'Talonario en Blanco' : 'Individual'}
+                                        <br />
+                                        Emisor: {obj.razonSocialEmisor.toUpperCase()} (RUC: {obj.rucEmisor})
+                                        {obj.facturaTipo === 'individual' && (
+                                          <>
+                                            <br />
+                                            Factura N°: {obj.numero} | RUC/C.I. Adquirente: {obj.rucAdquirente || 'No especificado'} | Adquirente: {obj.razonSocialAdquirente || 'No especificado'}
+                                            {obj.monto && ` | Importe: ${obj.monto} ${obj.moneda}`}
+                                            {obj.fechaEmision && ` | Fecha Emisión: ${(() => {
+                                              const f = obj.fechaEmision;
+                                              if (f && f.includes('-')) {
+                                                const p = f.split('-');
+                                                return `${p[2]}/${p[1]}/${p[0]}`;
+                                              }
+                                              return f;
+                                            })()}`}
+                                          </>
+                                        )}
+                                        {obj.facturaTipo === 'talonario' && (
+                                          <>
+                                            <br />
+                                            Rango: {obj.rangoDesde} al {obj.rangoHasta}
+                                          </>
+                                        )}
+                                      </>
+                                    )}
+                                    {obj.tipo === 'cda' && (
+                                      <>
+                                        CDA N°: {obj.numero} | Entidad Emisora: {(obj.banco === 'OTRO' ? obj.otroBanco : obj.banco).toUpperCase()} | Endosable: {obj.endosable}
+                                        <br />
+                                        Titular: {obj.titular.toUpperCase()} (Doc N° {obj.documentoTitular}) | Monto Nominal: {obj.monto} {obj.moneda}
+                                        <br />
+                                        Fecha Emisión: {(() => {
+                                          const f = obj.fechaEmision;
+                                          if (f && f.includes('-')) {
+                                            const p = f.split('-');
+                                            return `${p[2]}/${p[1]}/${p[0]}`;
+                                          }
+                                          return f;
+                                        })()} | Fecha Vencimiento: {(() => {
+                                          const f = obj.fechaVencimiento;
+                                          if (f && f.includes('-')) {
+                                            const p = f.split('-');
+                                            return `${p[2]}/${p[1]}/${p[0]}`;
+                                          }
+                                          return f;
+                                        })()}
+                                        {obj.tasaInteres && ` | Tasa Interés: ${obj.tasaInteres}`}
+                                      </>
+                                    )}
+                                    {obj.tipo === 'cedula_verde' && (
+                                      <>
+                                        Cédula Verde Control N°: {obj.numeroControl.toUpperCase()} | Chapa N°: {obj.caracteristicas.toUpperCase()} | Carrocería: {obj.carroceria.toUpperCase()}
+                                        <br />
+                                        Vehículo: {obj.marca.toUpperCase()} {obj.modelo.toUpperCase()} {obj.año ? `| Año: ${obj.año}` : ''} {obj.color ? `| Color: ${obj.color.toUpperCase()}` : ''} {obj.chasis ? `| Chasis N°: ${obj.chasis.toUpperCase()}` : ''}
+                                        <br />
+                                        Registrado a nombre de: {obj.registradoNombre === 'recurrente' ? 'Denunciante/Recurrente' : `${obj.nombreTercero.toUpperCase()} (Doc N° ${obj.documentoTercero})`}
+                                      </>
+                                    )}
                                   </td>
                                 </tr>
                               ))

@@ -543,6 +543,101 @@ export default function NuevaDenunciaPage() {
         }
       }
     }
+    if (nuevoObjetoTipo === 'factura') {
+      if (!nuevoObjetoCampos.timbrado?.trim()) {
+        alert('Debe ingresar el número de timbrado.')
+        return
+      }
+      if (!nuevoObjetoCampos.razonSocialEmisor?.trim()) {
+        alert('Debe ingresar la razón social del emisor.')
+        return
+      }
+      if (!nuevoObjetoCampos.rucEmisor?.trim()) {
+        alert('Debe ingresar el RUC del emisor.')
+        return
+      }
+      if (nuevoObjetoCampos.facturaTipo === 'individual') {
+        if (!nuevoObjetoCampos.numero?.trim()) {
+          alert('Debe ingresar el número de factura.')
+          return
+        }
+      } else if (nuevoObjetoCampos.facturaTipo === 'talonario') {
+        if (!nuevoObjetoCampos.rangoDesde?.trim()) {
+          alert('Debe ingresar el inicio del rango de facturas.')
+          return
+        }
+        if (!nuevoObjetoCampos.rangoHasta?.trim()) {
+          alert('Debe ingresar el fin del rango de facturas.')
+          return
+        }
+      }
+    }
+    if (nuevoObjetoTipo === 'cda') {
+      if (!nuevoObjetoCampos.banco) {
+        alert('Debe seleccionar la entidad emisora.')
+        return
+      }
+      if (nuevoObjetoCampos.banco === 'OTRO' && !nuevoObjetoCampos.otroBanco?.trim()) {
+        alert('Debe especificar la entidad emisora.')
+        return
+      }
+      if (!nuevoObjetoCampos.numero?.trim()) {
+        alert('Debe ingresar el número del CDA.')
+        return
+      }
+      if (!nuevoObjetoCampos.titular?.trim()) {
+        alert('Debe ingresar el nombre del titular.')
+        return
+      }
+      if (!nuevoObjetoCampos.documentoTitular?.trim()) {
+        alert('Debe ingresar el documento del titular.')
+        return
+      }
+      if (!nuevoObjetoCampos.monto?.trim()) {
+        alert('Debe ingresar el monto nominal.')
+        return
+      }
+      if (!nuevoObjetoCampos.fechaEmision) {
+        alert('Debe ingresar la fecha de emisión del CDA.')
+        return
+      }
+      if (!nuevoObjetoCampos.fechaVencimiento) {
+        alert('Debe ingresar la fecha de vencimiento del CDA.')
+        return
+      }
+    }
+    if (nuevoObjetoTipo === 'cedula_verde') {
+      if (!nuevoObjetoCampos.numeroControl?.trim()) {
+        alert('Debe ingresar el número de control de la cédula verde.')
+        return
+      }
+      if (!nuevoObjetoCampos.caracteristicas?.trim()) {
+        alert('Debe ingresar la chapa / matrícula del vehículo.')
+        return
+      }
+      if (!nuevoObjetoCampos.marca?.trim()) {
+        alert('Debe ingresar la marca del vehículo.')
+        return
+      }
+      if (!nuevoObjetoCampos.modelo?.trim()) {
+        alert('Debe ingresar el modelo del vehículo.')
+        return
+      }
+      if (!nuevoObjetoCampos.carroceria) {
+        alert('Debe seleccionar el tipo de carrocería / vehículo.')
+        return
+      }
+      if (nuevoObjetoCampos.registradoNombre === 'tercero') {
+        if (!nuevoObjetoCampos.nombreTercero?.trim()) {
+          alert('Debe ingresar el nombre del propietario.')
+          return
+        }
+        if (!nuevoObjetoCampos.documentoTercero?.trim()) {
+          alert('Debe ingresar el documento del propietario.')
+          return
+        }
+      }
+    }
     if (nuevoObjetoTipo === 'otro_objeto') {
       if (!nuevoObjetoCampos.descripcion?.trim()) {
         alert('Debe ingresar la descripción detallada.')
@@ -561,7 +656,10 @@ export default function NuevaDenunciaPage() {
         nuevoObjetoTipo === 'tarjeta_credito' ? 'Tarjeta de Crédito' :
         nuevoObjetoTipo === 'celular' ? 'Celular / Teléfono Móvil' :
         nuevoObjetoTipo === 'contrato' ? 'Contrato / Documento Privado' :
-        nuevoObjetoTipo === 'chapa_vehiculo' ? 'Chapa de vehículo' : 'Otros Objetos / Documentos',
+        nuevoObjetoTipo === 'chapa_vehiculo' ? 'Chapa de vehículo' :
+        nuevoObjetoTipo === 'factura' ? 'Factura' :
+        nuevoObjetoTipo === 'cda' ? 'CDA (Certificado de Depósito de Ahorro)' :
+        nuevoObjetoTipo === 'cedula_verde' ? 'Cédula Verde (RUA)' : 'Otros Objetos / Documentos',
       ...nuevoObjetoCampos
     }
 
@@ -4206,6 +4304,9 @@ export default function NuevaDenunciaPage() {
                         { value: 'celular', label: 'Celular / Teléfono Móvil' },
                         { value: 'contrato', label: 'Contrato / Documento Privado' },
                         { value: 'chapa_vehiculo', label: 'Chapa de vehículo' },
+                        { value: 'factura', label: 'Factura' },
+                        { value: 'cda', label: 'CDA (Certificado de Depósito de Ahorro)' },
+                        { value: 'cedula_verde', label: 'Cédula Verde (RUA)' },
                         { value: 'otro_objeto', label: 'Otros Objetos / Documentos' }
                       ]}
                       value={[
@@ -4218,6 +4319,9 @@ export default function NuevaDenunciaPage() {
                         { value: 'celular', label: 'Celular / Teléfono Móvil' },
                         { value: 'contrato', label: 'Contrato / Documento Privado' },
                         { value: 'chapa_vehiculo', label: 'Chapa de vehículo' },
+                        { value: 'factura', label: 'Factura' },
+                        { value: 'cda', label: 'CDA (Certificado de Depósito de Ahorro)' },
+                        { value: 'cedula_verde', label: 'Cédula Verde (RUA)' },
                         { value: 'otro_objeto', label: 'Otros Objetos / Documentos' }
                       ].find(opt => opt.value === nuevoObjetoTipo) || null}
                       onChange={(option) => {
@@ -4237,6 +4341,48 @@ export default function NuevaDenunciaPage() {
                             chasis: '',
                             nombreTercero: '',
                             documentoTercero: ''
+                          })
+                        } else if (val === 'factura') {
+                          setNuevoObjetoCampos({
+                            facturaTipo: 'individual',
+                            timbrado: '',
+                            numero: '',
+                            rangoDesde: '',
+                            rangoHasta: '',
+                            razonSocialEmisor: '',
+                            rucEmisor: '',
+                            razonSocialAdquirente: '',
+                            rucAdquirente: '',
+                            fechaEmision: '',
+                            monto: '',
+                            moneda: 'PYG'
+                          })
+                        } else if (val === 'cda') {
+                          setNuevoObjetoCampos({
+                            banco: '',
+                            otroBanco: '',
+                            numero: '',
+                            titular: '',
+                            documentoTitular: '',
+                            monto: '',
+                            moneda: 'PYG',
+                            fechaEmision: '',
+                            fechaVencimiento: '',
+                            endosable: 'No'
+                          })
+                        } else if (val === 'cedula_verde') {
+                          setNuevoObjetoCampos({
+                            numeroControl: '',
+                            caracteristicas: '',
+                            registradoNombre: 'recurrente',
+                            nombreTercero: '',
+                            documentoTercero: '',
+                            marca: '',
+                            modelo: '',
+                            año: '',
+                            color: '',
+                            chasis: '',
+                            carroceria: 'Automóvil'
                           })
                         } else {
                           setNuevoObjetoCampos({ estado: 'En Blanco', moneda: 'PYG', firmado: 'Sí' })
@@ -4876,6 +5022,568 @@ export default function NuevaDenunciaPage() {
                     </div>
                   )}
 
+                  {nuevoObjetoTipo === 'factura' && (
+                    <div className="space-y-4">
+                      {/* Tipo de Factura (Radio buttons) */}
+                      <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                          Tipo de Factura *
+                        </label>
+                        <div className="flex gap-4 items-center min-h-[42px] border border-gray-300 rounded-lg px-4 bg-white font-sans">
+                          <label className="flex items-center gap-2 text-sm text-gray-700 font-medium cursor-pointer">
+                            <input
+                              type="radio"
+                              name="facturaTipo"
+                              value="individual"
+                              checked={nuevoObjetoCampos.facturaTipo === 'individual'}
+                              onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, facturaTipo: e.target.value })}
+                              className="w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                            />
+                            Factura Individual
+                          </label>
+                          <label className="flex items-center gap-2 text-sm text-gray-700 font-medium cursor-pointer">
+                            <input
+                              type="radio"
+                              name="facturaTipo"
+                              value="talonario"
+                              checked={nuevoObjetoCampos.facturaTipo === 'talonario'}
+                              onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, facturaTipo: e.target.value })}
+                              className="w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                            />
+                            Talonario en Blanco
+                          </label>
+                        </div>
+                      </div>
+
+                      {/* Timbrado, RUC Emisor y Razón Social Emisor */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                            Número de Timbrado *
+                          </label>
+                          <input
+                            type="text"
+                            maxLength={8}
+                            value={nuevoObjetoCampos.timbrado || ''}
+                            onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, timbrado: e.target.value.replace(/\D/g, '') })}
+                            placeholder="Ej: 12345678"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                            RUC del Emisor *
+                          </label>
+                          <input
+                            type="text"
+                            value={nuevoObjetoCampos.rucEmisor || ''}
+                            onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, rucEmisor: e.target.value.toUpperCase() })}
+                            placeholder="Ej: 80012345-6"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm uppercase"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                            Razón Social Emisor *
+                          </label>
+                          <input
+                            type="text"
+                            value={nuevoObjetoCampos.razonSocialEmisor || ''}
+                            onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, razonSocialEmisor: e.target.value.toUpperCase() })}
+                            placeholder="Ej: DISTRIBUIDORA S.A."
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm uppercase"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Si es individual: Número, Razón Social Adquirente, RUC Adquirente, Importe, Moneda */}
+                      {nuevoObjetoCampos.facturaTipo === 'individual' && (
+                        <div className="space-y-4 border-t border-slate-200 pt-4 mt-2">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                                Número de Factura *
+                              </label>
+                              <input
+                                type="text"
+                                value={nuevoObjetoCampos.numero || ''}
+                                onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, numero: e.target.value })}
+                                placeholder="Ej: 001-001-0000123"
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                                RUC / C.I. Adquirente
+                              </label>
+                              <input
+                                type="text"
+                                value={nuevoObjetoCampos.rucAdquirente || ''}
+                                onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, rucAdquirente: e.target.value.toUpperCase() })}
+                                placeholder="Ej: 1234567"
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm uppercase"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                                Razón Social Adquirente
+                              </label>
+                              <input
+                                type="text"
+                                value={nuevoObjetoCampos.razonSocialAdquirente || ''}
+                                onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, razonSocialAdquirente: e.target.value.toUpperCase() })}
+                                placeholder="Ej: JUAN PÉREZ"
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm uppercase"
+                              />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                                Importe / Monto
+                              </label>
+                              <input
+                                type="text"
+                                value={nuevoObjetoCampos.monto || ''}
+                                onChange={(e) => {
+                                  const clean = e.target.value.replace(/\D/g, '');
+                                  const formatted = clean.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                                  setNuevoObjetoCampos({ ...nuevoObjetoCampos, monto: formatted });
+                                }}
+                                placeholder="Ej: 500.000"
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                                Moneda
+                              </label>
+                              <Select
+                                options={[
+                                  { value: 'PYG', label: 'Guaraníes (PYG)' },
+                                  { value: 'USD', label: 'Dólares (USD)' },
+                                  { value: 'EUR', label: 'Euros (EUR)' },
+                                  { value: 'BRL', label: 'Reales (BRL)' },
+                                  { value: 'ARS', label: 'Pesos Argentinos (ARS)' }
+                                ]}
+                                value={[
+                                  { value: 'PYG', label: 'Guaraníes (PYG)' },
+                                  { value: 'USD', label: 'Dólares (USD)' },
+                                  { value: 'EUR', label: 'Euros (EUR)' },
+                                  { value: 'BRL', label: 'Reales (BRL)' },
+                                  { value: 'ARS', label: 'Pesos Argentinos (ARS)' }
+                                ].find(opt => opt.value === (nuevoObjetoCampos.moneda || 'PYG')) || null}
+                                onChange={(option) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, moneda: option?.value || 'PYG' })}
+                                isSearchable={false}
+                                className="text-sm"
+                                styles={reactSelectCustomStyles}
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                                Fecha Emisión
+                              </label>
+                              <input
+                                type="date"
+                                value={nuevoObjetoCampos.fechaEmision || ''}
+                                onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, fechaEmision: e.target.value })}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Si es talonario: Rango Desde y Hasta */}
+                      {nuevoObjetoCampos.facturaTipo === 'talonario' && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-slate-200 pt-4 mt-2">
+                          <div>
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                              Rango de Factura Desde *
+                            </label>
+                            <input
+                              type="text"
+                              value={nuevoObjetoCampos.rangoDesde || ''}
+                              onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, rangoDesde: e.target.value })}
+                              placeholder="Ej: 001-001-0000001"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                              Rango de Factura Hasta *
+                            </label>
+                            <input
+                              type="text"
+                              value={nuevoObjetoCampos.rangoHasta || ''}
+                              onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, rangoHasta: e.target.value })}
+                              placeholder="Ej: 001-001-0000050"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {nuevoObjetoTipo === 'cda' && (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                            Entidad Emisora *
+                          </label>
+                          <Select
+                            options={bancos.filter(b => b !== 'NO APLICA').map(b => ({ value: b, label: b }))}
+                            value={bancos.filter(b => b !== 'NO APLICA').map(b => ({ value: b, label: b })).find(opt => opt.value === nuevoObjetoCampos.banco) || null}
+                            onChange={(option) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, banco: option?.value || '' })}
+                            placeholder="-- Seleccionar Banco --"
+                            isSearchable
+                            className="text-sm"
+                            styles={reactSelectCustomStyles}
+                          />
+                          {nuevoObjetoCampos.banco === 'OTRO' && (
+                            <input
+                              type="text"
+                              value={nuevoObjetoCampos.otroBanco || ''}
+                              onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, otroBanco: e.target.value.toUpperCase() })}
+                              placeholder="Especificar banco/entidad"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm uppercase mt-2"
+                            />
+                          )}
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                            Número de Certificado / Registro *
+                          </label>
+                          <input
+                            type="text"
+                            value={nuevoObjetoCampos.numero || ''}
+                            onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, numero: e.target.value })}
+                            placeholder="Ej: CDA-123456"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                            ¿Es Transferible / Endosable? *
+                          </label>
+                          <Select
+                            options={[
+                              { value: 'Sí', label: 'Sí' },
+                              { value: 'No', label: 'No' }
+                            ]}
+                            value={[
+                              { value: 'Sí', label: 'Sí' },
+                              { value: 'No', label: 'No' }
+                            ].find(opt => opt.value === (nuevoObjetoCampos.endosable || 'No')) || null}
+                            onChange={(option) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, endosable: option?.value || 'No' })}
+                            isSearchable={false}
+                            className="text-sm"
+                            styles={reactSelectCustomStyles}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-slate-200 pt-4 mt-2">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                            Nombre del Titular *
+                          </label>
+                          <input
+                            type="text"
+                            value={nuevoObjetoCampos.titular || ''}
+                            onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, titular: e.target.value.toUpperCase() })}
+                            placeholder="Ej: JUAN PÉREZ"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm uppercase"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                            Documento del Titular (C.I. / RUC) *
+                          </label>
+                          <input
+                            type="text"
+                            value={nuevoObjetoCampos.documentoTitular || ''}
+                            onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, documentoTitular: e.target.value.toUpperCase() })}
+                            placeholder="Ej: 1234567"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm uppercase"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div className="col-span-1 md:col-span-2">
+                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                            Monto Nominal *
+                          </label>
+                          <input
+                            type="text"
+                            value={nuevoObjetoCampos.monto || ''}
+                            onChange={(e) => {
+                              const clean = e.target.value.replace(/\D/g, '');
+                              const formatted = clean.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                              setNuevoObjetoCampos({ ...nuevoObjetoCampos, monto: formatted });
+                            }}
+                            placeholder="Ej: 100.000.000"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                            Moneda *
+                          </label>
+                          <Select
+                            options={[
+                              { value: 'PYG', label: 'Guaraníes (PYG)' },
+                              { value: 'USD', label: 'Dólares (USD)' },
+                              { value: 'EUR', label: 'Euros (EUR)' },
+                              { value: 'BRL', label: 'Reales (BRL)' },
+                              { value: 'ARS', label: 'Pesos Argentinos (ARS)' }
+                            ]}
+                            value={[
+                              { value: 'PYG', label: 'Guaraníes (PYG)' },
+                              { value: 'USD', label: 'Dólares (USD)' },
+                              { value: 'EUR', label: 'Euros (EUR)' },
+                              { value: 'BRL', label: 'Reales (BRL)' },
+                              { value: 'ARS', label: 'Pesos Argentinos (ARS)' }
+                            ].find(opt => opt.value === (nuevoObjetoCampos.moneda || 'PYG')) || null}
+                            onChange={(option) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, moneda: option?.value || 'PYG' })}
+                            isSearchable={false}
+                            className="text-sm"
+                            styles={reactSelectCustomStyles}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                            Tasa Interés (Opcional)
+                          </label>
+                          <input
+                            type="text"
+                            value={nuevoObjetoCampos.tasaInteres || ''}
+                            onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, tasaInteres: e.target.value })}
+                            placeholder="Ej: 6.5%"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                            Fecha Emisión *
+                          </label>
+                          <input
+                            type="date"
+                            value={nuevoObjetoCampos.fechaEmision || ''}
+                            onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, fechaEmision: e.target.value })}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                            Fecha Vencimiento *
+                          </label>
+                          <input
+                            type="date"
+                            value={nuevoObjetoCampos.fechaVencimiento || ''}
+                            onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, fechaVencimiento: e.target.value })}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {nuevoObjetoTipo === 'cedula_verde' && (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                            Número de Control Cédula *
+                          </label>
+                          <input
+                            type="text"
+                            value={nuevoObjetoCampos.numeroControl || ''}
+                            onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, numeroControl: e.target.value.toUpperCase() })}
+                            placeholder="Ej: A1234567"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm uppercase"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                            Matrícula / Chapa *
+                          </label>
+                          <input
+                            type="text"
+                            value={nuevoObjetoCampos.caracteristicas || ''}
+                            onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, caracteristicas: e.target.value.toUpperCase() })}
+                            placeholder="Ej: ABC123"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm uppercase"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                            Carrocería / Vehículo *
+                          </label>
+                          <Select
+                            options={[
+                              { value: 'Automóvil', label: 'Automóvil' },
+                              { value: 'Motocicleta', label: 'Motocicleta' },
+                              { value: 'Camioneta', label: 'Camioneta' },
+                              { value: 'Camión', label: 'Camión' },
+                              { value: 'Ómnibus', label: 'Ómnibus' },
+                              { value: 'Remolque', label: 'Remolque' },
+                              { value: 'Maquinaria Agrícola', label: 'Maquinaria Agrícola' },
+                              { value: 'Otro', label: 'Otro' }
+                            ]}
+                            value={[
+                              { value: 'Automóvil', label: 'Automóvil' },
+                              { value: 'Motocicleta', label: 'Motocicleta' },
+                              { value: 'Camioneta', label: 'Camioneta' },
+                              { value: 'Camión', label: 'Camión' },
+                              { value: 'Ómnibus', label: 'Ómnibus' },
+                              { value: 'Remolque', label: 'Remolque' },
+                              { value: 'Maquinaria Agrícola', label: 'Maquinaria Agrícola' },
+                              { value: 'Otro', label: 'Otro' }
+                            ].find(opt => opt.value === (nuevoObjetoCampos.carroceria || 'Automóvil')) || null}
+                            onChange={(option) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, carroceria: option?.value || 'Automóvil' })}
+                            isSearchable={false}
+                            className="text-sm"
+                            styles={reactSelectCustomStyles}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-slate-200 pt-4 mt-2">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                            Marca Vehículo *
+                          </label>
+                          <input
+                            type="text"
+                            value={nuevoObjetoCampos.marca || ''}
+                            onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, marca: e.target.value.toUpperCase() })}
+                            placeholder="Ej: TOYOTA"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm uppercase"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                            Modelo Vehículo *
+                          </label>
+                          <input
+                            type="text"
+                            value={nuevoObjetoCampos.modelo || ''}
+                            onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, modelo: e.target.value.toUpperCase() })}
+                            placeholder="Ej: COROLLA"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm uppercase"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                              Año
+                            </label>
+                            <input
+                              type="text"
+                              maxLength={4}
+                              value={nuevoObjetoCampos.año || ''}
+                              onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, año: e.target.value.replace(/\D/g, '') })}
+                              placeholder="Ej: 2015"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                              Color
+                            </label>
+                            <input
+                              type="text"
+                              value={nuevoObjetoCampos.color || ''}
+                              onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, color: e.target.value.toUpperCase() })}
+                              placeholder="Ej: GRIS"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm uppercase"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                            N° de Chasis / VIN
+                          </label>
+                          <input
+                            type="text"
+                            value={nuevoObjetoCampos.chasis || ''}
+                            onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, chasis: e.target.value.toUpperCase() })}
+                            placeholder="Ej: 9HN3298AHSJDU321"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm uppercase"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                            Registrado a nombre de *
+                          </label>
+                          <div className="flex gap-4 items-center min-h-[42px] border border-gray-300 rounded-lg px-4 bg-white font-sans">
+                            <label className="flex items-center gap-2 text-sm text-gray-700 font-medium cursor-pointer">
+                              <input
+                                type="radio"
+                                name="registradoNombre"
+                                value="recurrente"
+                                checked={nuevoObjetoCampos.registradoNombre === 'recurrente'}
+                                onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, registradoNombre: e.target.value })}
+                                className="w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                              />
+                              Del recurrente
+                            </label>
+                            <label className="flex items-center gap-2 text-sm text-gray-700 font-medium cursor-pointer">
+                              <input
+                                type="radio"
+                                name="registradoNombre"
+                                value="tercero"
+                                checked={nuevoObjetoCampos.registradoNombre === 'tercero'}
+                                onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, registradoNombre: e.target.value })}
+                                className="w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                              />
+                              De un tercero / Otro
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+
+                      {nuevoObjetoCampos.registradoNombre === 'tercero' && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-white p-3 rounded-lg border border-slate-200">
+                          <div>
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                              Nombre del Propietario *
+                            </label>
+                            <input
+                              type="text"
+                              value={nuevoObjetoCampos.nombreTercero || ''}
+                              onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, nombreTercero: e.target.value.toUpperCase() })}
+                              placeholder="Ej: MARÍA GÓMEZ"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm uppercase"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                              N° Documento del Propietario *
+                            </label>
+                            <input
+                              type="text"
+                              value={nuevoObjetoCampos.documentoTercero || ''}
+                              onChange={(e) => setNuevoObjetoCampos({ ...nuevoObjetoCampos, documentoTercero: e.target.value.toUpperCase() })}
+                              placeholder="Ej: 9876543"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#002147] text-sm uppercase"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {nuevoObjetoTipo === 'otro_objeto' && (
                     <div>
                       <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
@@ -4948,6 +5656,15 @@ export default function NuevaDenunciaPage() {
                               )}
                               {obj.tipo === 'otro_objeto' && (
                                 `Objeto: ${obj.descripcion}`
+                              )}
+                              {obj.tipo === 'factura' && (
+                                `Factura | Timbrado N° ${obj.timbrado} | Tipo: ${obj.facturaTipo === 'talonario' ? 'Talonario en Blanco' : 'Individual'} | Emisor: ${obj.razonSocialEmisor} (RUC: ${obj.rucEmisor})${obj.facturaTipo === 'individual' ? ` | N°: ${obj.numero} | Monto: ${obj.monto} ${obj.moneda}` : ` | Rango: ${obj.rangoDesde} al ${obj.rangoHasta}`}`
+                              )}
+                              {obj.tipo === 'cda' && (
+                                `CDA N° ${obj.numero} | Entidad: ${obj.banco === 'OTRO' ? obj.otroBanco : obj.banco} | Titular: ${obj.titular} (Doc: ${obj.documentoTitular}) | Monto: ${obj.monto} ${obj.moneda} | Venc.: ${formatearFechaDDMMAAAA(obj.fechaVencimiento)}`
+                              )}
+                              {obj.tipo === 'cedula_verde' && (
+                                `Cédula Verde Control N° ${obj.numeroControl} | Chapa N° ${obj.caracteristicas} | Vehículo: ${obj.marca} ${obj.modelo} (${obj.carroceria})${obj.chasis ? ` | Chasis: ${obj.chasis}` : ''} | Reg. a nombre de: ${obj.registradoNombre === 'recurrente' ? 'Denunciante' : `${obj.nombreTercero} (${obj.documentoTercero})`}`
                               )}
                             </div>
                           </div>
