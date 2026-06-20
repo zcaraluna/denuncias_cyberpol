@@ -93,7 +93,7 @@ export async function PUT(
     const { nombre, apellido, grado, oficina, rol, activo, contraseña } = body
 
     // Validar rol si se proporciona
-    if (rol && !['superadmin', 'admin', 'operador', 'supervisor', 'developer'].includes(rol)) {
+    if (rol && !['superadmin', 'admin', 'operador', 'supervisor', 'developer', 'visor'].includes(rol)) {
       return NextResponse.json(
         { error: 'Rol inválido' },
         { status: 400 }

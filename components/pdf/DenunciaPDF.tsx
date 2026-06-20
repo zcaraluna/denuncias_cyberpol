@@ -284,76 +284,7 @@ const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 
                 {/* Segundo Párrafo - Hecho, Fecha y Lugar */}
                 {generarSegundoParrafo(denuncia as any, styles)}
 
-                {/* Tabla de Objetos Extraviados */}
-                {denuncia.tipo_denuncia === 'EXTRAVÍO DE OBJETOS Y/O DOCUMENTOS' && listaObjetos.length > 0 && (
-                    <View style={{ marginTop: 10, marginBottom: 10 }}>
-                        <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#002147', marginBottom: 4 }}>
-                            OBJETOS Y/O DOCUMENTOS DECLARADOS COMO EXTRAVIADOS:
-                        </Text>
-                        <View style={styles.table}>
-                            {/* Header */}
-                            <View style={styles.tableRow}>
-                                <View style={[styles.tableColHeader, { width: '30%' }]}>
-                                    <Text style={styles.tableCellHeader}>TIPO</Text>
-                                </View>
-                                <View style={[styles.tableColHeader, { width: '70%' }]}>
-                                    <Text style={styles.tableCellHeader}>DETALLES</Text>
-                                </View>
-                            </View>
-                            {/* Rows */}
-                            {listaObjetos.map((obj: any, idx: number) => (
-                                <View key={idx} style={styles.tableRow}>
-                                    <View style={[styles.tableCol, { width: '30%' }]}>
-                                        <Text style={styles.tableCell}>{obj.tipo_label.toUpperCase()}</Text>
-                                    </View>
-                                    <View style={[styles.tableCol, { width: '70%' }]}>
-                                        <Text style={styles.tableCell}>
-                                            {obj.tipo === 'cedula' && `NÚMERO DE CÉDULA: ${obj.numero}`}
-                                            {obj.tipo === 'documento_origen' && `NÚMERO: ${obj.numero} (ORIGEN: ${obj.nacionalidad.toUpperCase()})`}
-                                            {obj.tipo === 'pasaporte' && `NÚMERO: ${obj.numero} (NACIONALIDAD: ${obj.nacionalidad.toUpperCase()})`}
-                                            {obj.tipo === 'tarjeta_debito' && `ENTIDAD: ${(obj.banco === 'OTRO' ? obj.otroBanco : obj.banco).toUpperCase()} | MARCA: ${obj.marca.toUpperCase()} | TERM.: **** **** **** ${obj.ultimos4}`}
-                                            {obj.tipo === 'tarjeta_credito' && `ENTIDAD: ${(obj.banco === 'OTRO' ? obj.otroBanco : obj.banco).toUpperCase()} | MARCA: ${obj.marca.toUpperCase()} | TERM.: **** **** **** ${obj.ultimos4}`}
-                                            {obj.tipo === 'cheque' && (
-                                                `ENTIDAD: ${(obj.banco === 'OTRO' ? obj.otroBanco : obj.banco).toUpperCase()} | CTA. CTE. N°: ${obj.cuenta} | CHEQUE N°: ${obj.numero} | ESTADO: ${obj.estado.toUpperCase()}` + 
-                                                (obj.estado === 'Completado' ? ` | IMPORTE: ${obj.monto} ${obj.moneda} | BENEFICIARIO: ${obj.beneficiario.toUpperCase()} | FECHA EMISIÓN: ${formatearFechaPDF(obj.fechaEmision)} | FIRMADO: ${obj.firmado.toUpperCase()}` : '')
-                                            )}
-                                            {obj.tipo === 'celular' && `MARCA/MODELO: ${obj.marca.toUpperCase()} | N° DE LÍNEA: ${obj.numero}${obj.imei ? ` | IMEI: ${obj.imei}` : ''}`}
-                                            {obj.tipo === 'contrato' && `DOCUMENTO: ${obj.descripcion.toUpperCase()} | PARTES: ${obj.partes.toUpperCase()}${obj.fechaDocumento ? ` | FECHA DOC.: ${formatearFechaPDF(obj.fechaDocumento)}` : ''}`}
-                                            {obj.tipo === 'chapa_vehiculo' && (
-                                                `NÚMERO DE CHAPA: ${obj.caracteristicas.toUpperCase()} (${obj.tipoChapa.toUpperCase()} - ${obj.origenChapa === 'nacional' ? 'NACIONAL PARAGUAY' : `MERCOSUR ${obj.paisMercosur.toUpperCase()}`}) | ` +
-                                                `MARCA: ${obj.marca.toUpperCase()} | MODELO: ${obj.modelo.toUpperCase()}` +
-                                                (obj.año ? ` | AÑO: ${obj.año}` : '') +
-                                                (obj.color ? ` | COLOR: ${obj.color.toUpperCase()}` : '') +
-                                                (obj.chasis ? ` | CHASIS N°: ${obj.chasis.toUpperCase()}` : '') +
-                                                ` | REGISTRADO A NOMBRE DE: ${obj.registradoNombre === 'recurrente' ? 'DENUNCIANTE' : `${obj.nombreTercero.toUpperCase()} (DOC N° ${obj.documentoTercero})`}`
-                                            )}
-                                            {obj.tipo === 'otro_objeto' && `DESCRIPCIÓN: ${obj.descripcion.toUpperCase()}`}
-                                            {obj.tipo === 'factura' && (
-                                                `TIMBRADO: ${obj.timbrado} | TIPO: ${obj.facturaTipo === 'talonario' ? 'TALONARIO EN BLANCO' : 'FACTURA INDIVIDUAL'} | ` +
-                                                `EMISOR: ${obj.razonSocialEmisor.toUpperCase()} (RUC: ${obj.rucEmisor})` +
-                                                (obj.facturaTipo === 'individual' ? ` | NÚMERO: ${obj.numero} | RUC/C.I. ADQUIRENTE: ${obj.rucAdquirente ? obj.rucAdquirente.toUpperCase() : 'NO ESPECIFICADO'} | ADQUIRENTE: ${obj.razonSocialAdquirente ? obj.razonSocialAdquirente.toUpperCase() : 'NO ESPECIFICADO'}${obj.monto ? ` | IMPORTE: ${obj.monto} ${obj.moneda}` : ''}${obj.fechaEmision ? ` | FECHA EMISIÓN: ${formatearFechaPDF(obj.fechaEmision)}` : ''}` : ` | RANGO: ${obj.rangoDesde} AL ${obj.rangoHasta}`)
-                                            )}
-                                            {obj.tipo === 'cda' && (
-                                                `CERTIFICADO N°: ${obj.numero} | ENTIDAD EMISORA: ${(obj.banco === 'OTRO' ? obj.otroBanco : obj.banco).toUpperCase()} | ` +
-                                                `TITULAR: ${obj.titular.toUpperCase()} (DOC N° ${obj.documentoTitular}) | MONTO NOMINAL: ${obj.monto} ${obj.moneda}` +
-                                                (obj.tasaInteres ? ` | TASA: ${obj.tasaInteres}` : '') +
-                                                ` | FECHA EMISIÓN: ${formatearFechaPDF(obj.fechaEmision)} | FECHA VENCIMIENTO: ${formatearFechaPDF(obj.fechaVencimiento)} | ENDOSABLE: ${obj.endosable.toUpperCase()}`
-                                            )}
-                                            {obj.tipo === 'cedula_verde' && (
-                                                `N° CONTROL: ${obj.numeroControl.toUpperCase()} | MATRÍCULA/CHAPA: ${obj.caracteristicas.toUpperCase()} | ` +
-                                                `MARCA: ${obj.marca.toUpperCase()} | MODELO: ${obj.modelo.toUpperCase()} | CARROCERÍA: ${obj.carroceria.toUpperCase()}` +
-                                                (obj.año ? ` | AÑO: ${obj.año}` : '') +
-                                                (obj.color ? ` | COLOR: ${obj.color.toUpperCase()}` : '') +
-                                                (obj.chasis ? ` | CHASIS N°: ${obj.chasis.toUpperCase()}` : '') +
-                                                ` | REGISTRADO A NOMBRE DE: ${obj.registradoNombre === 'recurrente' ? 'DENUNCIANTE' : `${obj.nombreTercero.toUpperCase()} (DOC N° ${obj.documentoTercero})`}`
-                                            )}
-                                        </Text>
-                                    </View>
-                                </View>
-                            ))}
-                        </View>
-                    </View>
-                )}
+
 
                 {/* Tercer Párrafo - Relato */}
                 <TercerParrafo

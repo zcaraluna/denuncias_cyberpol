@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validar rol
-    if (!['superadmin', 'admin', 'operador', 'supervisor', 'developer'].includes(rol)) {
+    if (!['superadmin', 'admin', 'operador', 'supervisor', 'developer', 'visor'].includes(rol)) {
       return NextResponse.json(
         { error: 'Rol inválido' },
         { status: 400 }

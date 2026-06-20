@@ -793,6 +793,12 @@ export default function NuevaDenunciaPage() {
     }
   }
 
+  useEffect(() => {
+    if (usuario && usuario.rol === 'visor') {
+      router.push('/inicio')
+    }
+  }, [usuario, router])
+
   // Capturar fecha y hora cuando se carga la página (inicio de creación de denuncia)
   // Esto solo se ejecuta para denuncias nuevas, no para borradores cargados
   useEffect(() => {

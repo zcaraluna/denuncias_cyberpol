@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
 
     // Consultar las preguntas del usuario
     const result = await pool.query(
-      `SELECT p.pregunta 
+      `SELECT p.pregunta, u.rol 
        FROM preguntas_seguridad_usuarios p
        JOIN usuarios u ON p.usuario_id = u.id
        WHERE LOWER(u.usuario) = $1 AND u.activo = TRUE`,
@@ -22,8 +22,8 @@ export async function GET(request: NextRequest) {
     )
 
     // Por seguridad, si el usuario no existe o no tiene las 5 preguntas configuradas,
-    // se devuelve un mensaje de error genérico idéntico en ambos casos.
-    if (result.rows.length < 5) {
+    // o es del rol 'visor', se devuelve un mensaje de error genérico idéntico en todos los casos.
+    if (result.rows.length < 5 || result.rows[0].rol === 'visor') {
       return NextResponse.json(
         { error: 'El usuario no cuenta con preguntas de seguridad configuradas o no está activo.' },
         { status: 404 }

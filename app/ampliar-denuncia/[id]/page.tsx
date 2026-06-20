@@ -41,6 +41,12 @@ export default function AmpliarDenunciaPage({ params }: { params: Promise<{ id: 
   }, [params])
 
   useEffect(() => {
+    if (usuario && usuario.rol === 'visor') {
+      router.push('/inicio')
+    }
+  }, [usuario, router])
+
+  useEffect(() => {
     if (denunciaId && usuario) {
       cargarDenuncia()
     }

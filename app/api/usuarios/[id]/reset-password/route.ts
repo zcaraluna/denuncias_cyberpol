@@ -7,7 +7,8 @@ const ROLE_WEIGHTS: Record<string, number> = {
   superadmin: 4,
   admin: 3,
   supervisor: 2,
-  operador: 1
+  operador: 1,
+  visor: 1
 }
 
 export async function POST(

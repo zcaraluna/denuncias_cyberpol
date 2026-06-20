@@ -96,7 +96,14 @@ export function Sidebar() {
                 <nav className="flex-1 space-y-7">
                     {/* General Items */}
                     <div className="space-y-1">
-                        {navItems.map((item) => {
+                        {navItems
+                            .filter(item => {
+                                if (usuario.rol === 'visor') {
+                                    return ['/inicio', '/denuncias', '/reportes'].includes(item.href)
+                                }
+                                return true
+                            })
+                            .map((item) => {
                             const Icon = item.icon
                             const isActive = pathname === item.href
                             return (

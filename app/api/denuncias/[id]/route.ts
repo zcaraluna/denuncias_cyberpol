@@ -39,6 +39,21 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const usuarioSesionCookie = request.cookies.get('usuario_sesion')?.value
+    if (usuarioSesionCookie) {
+      try {
+        const usr = JSON.parse(decodeURIComponent(usuarioSesionCookie))
+        if (usr.rol === 'visor') {
+          return NextResponse.json(
+            { error: 'Acción no autorizada para el rol de visor' },
+            { status: 403 }
+          )
+        }
+      } catch (e) {
+        console.error('[PATCH Remitir] Error parseando sesión:', e)
+      }
+    }
+
     const { id: idStr } = await params
     const id = parseInt(idStr)
     const body = await request.json()

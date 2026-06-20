@@ -247,7 +247,7 @@ export async function POST(request: NextRequest) {
     }
 
     const usuarioResult = await client.query(
-      'SELECT nombre, apellido, grado, oficina FROM usuarios WHERE id = $1',
+      'SELECT nombre, apellido, grado, oficina, rol FROM usuarios WHERE id = $1',
       [usuarioId]
     )
 
@@ -256,6 +256,15 @@ export async function POST(request: NextRequest) {
     }
 
     const usuario = usuarioResult.rows[0]
+
+    if (usuario.rol === 'visor') {
+      await client.query('ROLLBACK')
+      client.release()
+      return NextResponse.json(
+        { error: 'Acción no autorizada para el rol de visor' },
+        { status: 403 }
+      )
+    }
 
     // Validar que el usuario no haya creado una denuncia completada en el último minuto
     // Usamos creado_en que es el timestamp exacto de cuando se insertó el registro

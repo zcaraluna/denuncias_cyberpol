@@ -273,7 +273,8 @@ export default function PerfilUsuarioPage({ params }: { params: Promise<{ id: st
                                                 usuario.rol === 'superadmin' ? 'bg-red-50 text-red-600 border-red-100' :
                                                     usuario.rol === 'admin' ? 'bg-orange-50 text-orange-600 border-orange-100' :
                                                         usuario.rol === 'supervisor' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                                                            'bg-blue-50 text-blue-600 border-blue-100'
+                                                            usuario.rol === 'visor' ? 'bg-teal-50 text-teal-600 border-teal-100' :
+                                                                'bg-blue-50 text-blue-600 border-blue-100'
                                                     }`}>
                                                     {usuario.rol}
                                                 </span>
@@ -330,7 +331,7 @@ export default function PerfilUsuarioPage({ params }: { params: Promise<{ id: st
                         >
                             Tomadas ({denunciasTomadas.length})
                         </button>
-                        {esPropioPerfil && (
+                        {esPropioPerfil && usuario.rol !== 'visor' && (
                             <button
                                 onClick={() => { setPestañaActiva('preguntas'); }}
                                 className={`flex items-center gap-2.5 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${pestañaActiva === 'preguntas' ? 'bg-white text-[#002147] shadow-sm' : 'text-slate-500 hover:text-slate-700'

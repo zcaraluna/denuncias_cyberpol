@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
     rol VARCHAR(50) DEFAULT 'operador',
     activo BOOLEAN DEFAULT true,
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT check_rol CHECK (rol IN ('superadmin', 'admin', 'operador', 'supervisor'))
+    CONSTRAINT check_rol CHECK (rol IN ('superadmin', 'admin', 'operador', 'supervisor', 'visor', 'developer'))
 );
 
 -- Tabla de denunciantes

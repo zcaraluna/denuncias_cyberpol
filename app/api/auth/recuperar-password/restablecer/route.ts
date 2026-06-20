@@ -31,14 +31,14 @@ export async function POST(request: NextRequest) {
 
     // 1. Obtener las respuestas almacenadas y el ID del usuario
     const result = await pool.query(
-      `SELECT p.pregunta, p.respuesta_hash, u.id, u.nombre, u.apellido, u.grado, u.oficina
+      `SELECT p.pregunta, p.respuesta_hash, u.id, u.nombre, u.apellido, u.grado, u.oficina, u.rol
        FROM preguntas_seguridad_usuarios p
        JOIN usuarios u ON p.usuario_id = u.id
        WHERE LOWER(u.usuario) = $1 AND u.activo = TRUE`,
       [normalizedUser]
     )
 
-    if (result.rows.length < 5) {
+    if (result.rows.length < 5 || result.rows[0].rol === 'visor') {
       return NextResponse.json(
         { error: 'El usuario no tiene configuradas preguntas de seguridad o no está activo.' },
         { status: 404 }

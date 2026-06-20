@@ -7,6 +7,32 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { denuncia_id, relato, usuario_id, operador_grado, operador_nombre, operador_apellido } = body
 
+    // Verificar si el usuario actual es un visor
+    const usuarioSesionCookie = request.cookies.get('usuario_sesion')?.value
+    if (usuarioSesionCookie) {
+      try {
+        const usr = JSON.parse(decodeURIComponent(usuarioSesionCookie))
+        if (usr.rol === 'visor') {
+          return NextResponse.json(
+            { error: 'Acción no autorizada para el rol de visor' },
+            { status: 403 }
+          )
+        }
+      } catch (e) {
+        console.error('[POST Ampliación] Error parseando sesión:', e)
+      }
+    }
+
+    if (usuario_id) {
+      const userResult = await pool.query('SELECT rol FROM usuarios WHERE id = $1', [usuario_id])
+      if (userResult.rows.length > 0 && userResult.rows[0].rol === 'visor') {
+        return NextResponse.json(
+          { error: 'Acción no autorizada para el rol de visor' },
+          { status: 403 }
+        )
+      }
+    }
+
     // Validar campos requeridos
     if (!denuncia_id || !relato || !operador_grado || !operador_nombre || !operador_apellido) {
       return NextResponse.json(

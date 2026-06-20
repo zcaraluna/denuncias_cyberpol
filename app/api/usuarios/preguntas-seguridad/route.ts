@@ -21,11 +21,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
     }
 
-    let usuario: { id: number }
+    let usuario: { id: number; rol: string }
     try {
       usuario = JSON.parse(decodeURIComponent(usuarioCookie))
     } catch (e) {
       return NextResponse.json({ error: 'Sesión inválida' }, { status: 401 })
+    }
+
+    if (usuario.rol === 'visor') {
+      return NextResponse.json({ error: 'Acción no autorizada para el rol de visor' }, { status: 403 })
     }
 
     const result = await pool.query(
@@ -53,11 +57,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
     }
 
-    let usuario: { id: number }
+    let usuario: { id: number; rol: string }
     try {
       usuario = JSON.parse(decodeURIComponent(usuarioCookie))
     } catch (e) {
       return NextResponse.json({ error: 'Sesión inválida' }, { status: 401 })
+    }
+
+    if (usuario.rol === 'visor') {
+      return NextResponse.json({ error: 'Acción no autorizada para el rol de visor' }, { status: 403 })
     }
 
     const body = await request.json()

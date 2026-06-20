@@ -48,7 +48,8 @@ const ROLE_WEIGHTS: Record<string, number> = {
   superadmin: 4,
   admin: 3,
   supervisor: 2,
-  operador: 1
+  operador: 1,
+  visor: 1
 }
 
 const grados = [
@@ -75,6 +76,7 @@ const oficinas = ACTIVE_OFFICES
 const roles = [
   { value: 'operador', label: 'Operador', color: 'blue' },
   { value: 'supervisor', label: 'Supervisor', color: 'green' },
+  { value: 'visor', label: 'Visor', color: 'teal' },
   { value: 'admin', label: 'Admin', color: 'orange' },
   { value: 'superadmin', label: 'Superadmin', color: 'red' },
   { value: 'developer', label: 'Developer', color: 'purple' }
@@ -402,6 +404,8 @@ export default function GestionUsuariosPage() {
                         ? 'bg-orange-500'
                         : user.rol === 'supervisor'
                         ? 'bg-emerald-500'
+                        : user.rol === 'visor'
+                        ? 'bg-teal-500'
                         : 'bg-blue-500'
                     }`}
                   />
@@ -435,6 +439,8 @@ export default function GestionUsuariosPage() {
                             ? 'bg-orange-50 text-orange-700 border-orange-100'
                             : user.rol === 'supervisor'
                             ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+                            : user.rol === 'visor'
+                            ? 'bg-teal-50 text-teal-700 border-teal-100'
                             : 'bg-blue-50 text-blue-700 border-blue-100'
                         }`}
                       >
