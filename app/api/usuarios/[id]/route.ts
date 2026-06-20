@@ -29,7 +29,7 @@ export async function GET(
     }
 
     const result = await pool.query(
-      'SELECT id, usuario, nombre, apellido, grado, oficina, rol, activo FROM usuarios WHERE id = $1',
+      'SELECT id, usuario, nombre, apellido, grado, oficina, rol, activo, tipo_cuenta FROM usuarios WHERE id = $1',
       [id]
     )
 
@@ -90,7 +90,7 @@ export async function PUT(
     }
 
     const body = await request.json()
-    const { nombre, apellido, grado, oficina, rol, activo, contraseña } = body
+    const { nombre, apellido, grado, oficina, rol, activo, contraseña, tipo_cuenta } = body
 
     // Validar rol si se proporciona
     if (rol && !['superadmin', 'admin', 'operador', 'supervisor', 'developer', 'visor'].includes(rol)) {
@@ -100,12 +100,31 @@ export async function PUT(
       )
     }
 
-    // Consultar el rol actual del usuario a editar
-    const targetCheck = await pool.query('SELECT rol FROM usuarios WHERE id = $1', [id])
+    // Consultar el rol y tipo actual del usuario a editar
+    const targetCheck = await pool.query('SELECT rol, tipo_cuenta FROM usuarios WHERE id = $1', [id])
     if (targetCheck.rows.length === 0) {
       return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 })
     }
     const currentRol = targetCheck.rows[0].rol
+    const currentType = targetCheck.rows[0].tipo_cuenta || 'personal'
+    const accountType = tipo_cuenta || currentType
+
+    // Validar campos requeridos según el tipo de cuenta
+    if (accountType === 'personal') {
+      if (!nombre || !apellido || !grado) {
+        return NextResponse.json(
+          { error: 'Para cuentas personales, el nombre, apellido y grado son obligatorios' },
+          { status: 400 }
+        )
+      }
+    } else {
+      if (!nombre) {
+        return NextResponse.json(
+          { error: 'Para cuentas de oficina, el nombre de la oficina es obligatorio' },
+          { status: 400 }
+        )
+      }
+    }
 
     // Si el usuario objetivo es developer, o si se intenta cambiar el rol a developer,
     // el realizador obligatoriamente debe ser developer
@@ -124,20 +143,20 @@ export async function PUT(
       const hashedPassword = await bcrypt.hash(contraseña, 10)
       query = `
         UPDATE usuarios 
-        SET nombre = $1, apellido = $2, grado = $3, oficina = $4, rol = $5, activo = $6, contraseña = $7, debe_cambiar_contraseña = TRUE
-        WHERE id = $8
-        RETURNING id, usuario, nombre, apellido, grado, oficina, rol, activo
+        SET nombre = $1, apellido = $2, grado = $3, oficina = $4, rol = $5, activo = $6, contraseña = $7, debe_cambiar_contraseña = TRUE, tipo_cuenta = $8
+        WHERE id = $9
+        RETURNING id, usuario, nombre, apellido, grado, oficina, rol, activo, tipo_cuenta
       `
-      values = [nombre, apellido, grado, oficina, rol, activo, hashedPassword, id]
+      values = [nombre || null, apellido || null, grado || null, oficina, rol, activo, hashedPassword, accountType, id]
     } else {
       // Si no se proporciona contraseña, no actualizarla
       query = `
         UPDATE usuarios 
-        SET nombre = $1, apellido = $2, grado = $3, oficina = $4, rol = $5, activo = $6
-        WHERE id = $7
-        RETURNING id, usuario, nombre, apellido, grado, oficina, rol, activo
+        SET nombre = $1, apellido = $2, grado = $3, oficina = $4, rol = $5, activo = $6, tipo_cuenta = $7
+        WHERE id = $8
+        RETURNING id, usuario, nombre, apellido, grado, oficina, rol, activo, tipo_cuenta
       `
-      values = [nombre, apellido, grado, oficina, rol, activo, id]
+      values = [nombre || null, apellido || null, grado || null, oficina, rol, activo, accountType, id]
     }
 
     const result = await pool.query(query, values)

@@ -32,6 +32,7 @@ interface UsuarioCompleto {
   rol: string
   activo: boolean
   preguntas_configuradas?: boolean
+  tipo_cuenta?: string
 }
 
 interface UsuarioAuth {
@@ -107,7 +108,8 @@ export default function GestionUsuariosPage() {
     apellido: '',
     grado: '',
     oficina: '',
-    rol: 'operador'
+    rol: 'operador',
+    tipo_cuenta: 'personal'
   })
 
   // Estados para formulario de edición
@@ -118,7 +120,8 @@ export default function GestionUsuariosPage() {
     oficina: '',
     rol: 'operador',
     activo: true,
-    contraseña: ''
+    contraseña: '',
+    tipo_cuenta: 'personal'
   })
 
   useEffect(() => {
@@ -178,7 +181,8 @@ export default function GestionUsuariosPage() {
         apellido: '',
         grado: '',
         oficina: '',
-        rol: 'operador'
+        rol: 'operador',
+        tipo_cuenta: 'personal'
       })
       cargarUsuarios()
     } catch (error) {
@@ -190,13 +194,14 @@ export default function GestionUsuariosPage() {
   const handleAbrirEditar = (user: UsuarioCompleto) => {
     setUsuarioEditando(user)
     setEditUsuario({
-      nombre: user.nombre,
-      apellido: user.apellido,
-      grado: user.grado,
+      nombre: user.nombre || '',
+      apellido: user.apellido || '',
+      grado: user.grado || '',
       oficina: user.oficina,
       rol: user.rol,
       activo: user.activo,
-      contraseña: ''
+      contraseña: '',
+      tipo_cuenta: user.tipo_cuenta || 'personal'
     })
     setMostrarModalEditar(true)
   }
@@ -287,7 +292,10 @@ export default function GestionUsuariosPage() {
         return
       }
 
-      alert(`Contraseña de ${usuarioResetClave.nombre} ${usuarioResetClave.apellido} restablecida exitosamente a: ${nuevaClaveTemporal}`)
+      const nombreMostrar = usuarioResetClave.tipo_cuenta === 'oficina'
+        ? usuarioResetClave.nombre
+        : `${usuarioResetClave.nombre} ${usuarioResetClave.apellido || ''}`.trim()
+      alert(`Contraseña de ${nombreMostrar} restablecida exitosamente a: ${nuevaClaveTemporal}`)
       setMostrarModalResetClave(false)
     } catch (error) {
       console.error('Error:', error)
@@ -416,11 +424,11 @@ export default function GestionUsuariosPage() {
                       {/* Avatar y Funcionario */}
                       <div className="flex items-center gap-3.5">
                         <div className="h-12 w-12 bg-slate-50 rounded-2xl flex items-center justify-center text-[#002147] font-black text-sm border border-slate-200 shadow-inner group-hover:bg-slate-100 transition-colors">
-                          {user.nombre?.[0] || '?'}{user.apellido?.[0] || ''}
+                          {(user.nombre?.[0] || '') + (user.tipo_cuenta !== 'oficina' && user.apellido?.[0] ? user.apellido[0] : '') || '?'}
                         </div>
                         <div>
                           <h3 className="text-sm font-black text-[#002147] leading-tight">
-                            {user.nombre} {user.apellido}
+                            {user.nombre}{user.tipo_cuenta !== 'oficina' && user.apellido ? ` ${user.apellido}` : ''}
                           </h3>
                           <p className="text-[10px] font-mono text-slate-400 tracking-tight mt-0.5">
                             {user.usuario}
@@ -428,35 +436,48 @@ export default function GestionUsuariosPage() {
                         </div>
                       </div>
 
-                      {/* Badge de Rol */}
-                      <span
-                        className={`px-2 py-0.5 rounded-lg border text-[8px] font-black uppercase tracking-widest flex items-center gap-1 shrink-0 ${
-                          user.rol === 'developer'
-                            ? 'bg-purple-50 text-purple-700 border-purple-100'
-                            : user.rol === 'superadmin'
-                            ? 'bg-red-50 text-red-700 border-red-100'
-                            : user.rol === 'admin'
-                            ? 'bg-orange-50 text-orange-700 border-orange-100'
-                            : user.rol === 'supervisor'
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
-                            : user.rol === 'visor'
-                            ? 'bg-teal-50 text-teal-700 border-teal-100'
-                            : 'bg-blue-50 text-blue-700 border-blue-100'
-                        }`}
-                      >
-                        <Shield className="h-2.5 w-2.5" />
-                        {roles.find((r) => r.value === user.rol)?.label}
-                      </span>
+                      {/* Badges de Rol y Tipo de Cuenta */}
+                      <div className="flex flex-col items-end gap-1.5 shrink-0">
+                        <span
+                          className={`px-2 py-0.5 rounded-lg border text-[8px] font-black uppercase tracking-widest flex items-center gap-1 ${
+                            user.rol === 'developer'
+                              ? 'bg-purple-50 text-purple-700 border-purple-100'
+                              : user.rol === 'superadmin'
+                              ? 'bg-red-50 text-red-700 border-red-100'
+                              : user.rol === 'admin'
+                              ? 'bg-orange-50 text-orange-700 border-orange-100'
+                              : user.rol === 'supervisor'
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+                              : user.rol === 'visor'
+                              ? 'bg-teal-50 text-teal-700 border-teal-100'
+                              : 'bg-blue-50 text-blue-700 border-blue-100'
+                          }`}
+                        >
+                          <Shield className="h-2.5 w-2.5" />
+                          {roles.find((r) => r.value === user.rol)?.label}
+                        </span>
+                        <span
+                          className={`px-1.5 py-0.5 rounded-md border text-[7px] font-black uppercase tracking-wider ${
+                            user.tipo_cuenta === 'oficina'
+                              ? 'bg-slate-100 text-slate-600 border-slate-200'
+                              : 'bg-indigo-50 text-indigo-600 border-indigo-100'
+                          }`}
+                        >
+                          {user.tipo_cuenta === 'oficina' ? 'Oficina' : 'Personal'}
+                        </span>
+                      </div>
                     </div>
 
                     {/* Información */}
                     <div className="space-y-2.5 py-4 border-t border-b border-slate-100 text-[11px]">
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-400 font-bold uppercase tracking-widest">Rango</span>
-                        <span className="font-bold text-slate-700 uppercase italic">
-                          {user.grado}
-                        </span>
-                      </div>
+                      {user.tipo_cuenta !== 'oficina' && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-400 font-bold uppercase tracking-widest">Rango</span>
+                          <span className="font-bold text-slate-700 uppercase italic">
+                            {user.grado}
+                          </span>
+                        </div>
+                      )}
                       <div className="flex items-center justify-between">
                         <span className="text-slate-400 font-bold uppercase tracking-widest">Base / Oficina</span>
                         <span className="font-bold text-slate-700 flex items-center gap-1.5 uppercase">
@@ -596,55 +617,96 @@ export default function GestionUsuariosPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
+                    Tipo de Cuenta
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setNuevoUsuario({ ...nuevoUsuario, tipo_cuenta: 'personal' })}
+                      className={`px-4 py-3 rounded-2xl text-xs font-black uppercase tracking-widest border transition-all ${
+                        nuevoUsuario.tipo_cuenta === 'personal'
+                          ? 'bg-[#002147] text-white border-[#002147] shadow-md shadow-blue-900/10'
+                          : 'bg-slate-50 text-slate-400 border-slate-200 hover:border-slate-350 hover:text-slate-500'
+                      }`}
+                    >
+                      Personal
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setNuevoUsuario({ 
+                        ...nuevoUsuario, 
+                        tipo_cuenta: 'oficina',
+                        apellido: '',
+                        grado: ''
+                      })}
+                      className={`px-4 py-3 rounded-2xl text-xs font-black uppercase tracking-widest border transition-all ${
+                        nuevoUsuario.tipo_cuenta === 'oficina'
+                          ? 'bg-[#002147] text-white border-[#002147] shadow-md shadow-blue-900/10'
+                          : 'bg-slate-50 text-slate-400 border-slate-200 hover:border-slate-350 hover:text-slate-500'
+                      }`}
+                    >
+                      Oficina / Compartida
+                    </button>
+                  </div>
+                </div>
+
+                <div className={nuevoUsuario.tipo_cuenta === 'oficina' ? 'grid grid-cols-1' : 'grid grid-cols-2 gap-4'}>
                   <div>
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
-                      Nombres
+                      {nuevoUsuario.tipo_cuenta === 'oficina' ? 'Nombre de Oficina / Cuenta' : 'Nombres'}
                     </label>
                     <input
                       type="text"
                       value={nuevoUsuario.nombre}
                       onChange={(e) => setNuevoUsuario({ ...nuevoUsuario, nombre: e.target.value })}
                       className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none font-bold text-[#002147]"
+                      placeholder={nuevoUsuario.tipo_cuenta === 'oficina' ? 'ej: Guardia de Prevención' : 'ej: Juan'}
                       required
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
-                      Apellidos
-                    </label>
-                    <input
-                      type="text"
-                      value={nuevoUsuario.apellido}
-                      onChange={(e) => setNuevoUsuario({ ...nuevoUsuario, apellido: e.target.value })}
-                      className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none font-bold text-[#002147]"
-                      required
-                    />
-                  </div>
+                  {nuevoUsuario.tipo_cuenta !== 'oficina' && (
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
+                        Apellidos
+                      </label>
+                      <input
+                        type="text"
+                        value={nuevoUsuario.apellido}
+                        onChange={(e) => setNuevoUsuario({ ...nuevoUsuario, apellido: e.target.value })}
+                        className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none font-bold text-[#002147]"
+                        placeholder="ej: Pérez"
+                        required={nuevoUsuario.tipo_cuenta !== 'oficina'}
+                      />
+                    </div>
+                  )}
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
-                      Grado
-                    </label>
-                    <select
-                      value={nuevoUsuario.grado}
-                      onChange={(e) => setNuevoUsuario({ ...nuevoUsuario, grado: e.target.value })}
-                      className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none font-bold text-[#002147] appearance-none cursor-pointer"
-                      required
-                    >
-                      <option value="">Seleccione...</option>
-                      {grados.map((grado) => (
-                        <option key={grado} value={grado}>
-                          {grado}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                <div className={nuevoUsuario.tipo_cuenta === 'oficina' ? 'grid grid-cols-1' : 'grid grid-cols-2 gap-4'}>
+                  {nuevoUsuario.tipo_cuenta !== 'oficina' && (
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
+                        Grado
+                      </label>
+                      <select
+                        value={nuevoUsuario.grado}
+                        onChange={(e) => setNuevoUsuario({ ...nuevoUsuario, grado: e.target.value })}
+                        className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none font-bold text-[#002147] appearance-none cursor-pointer"
+                        required={nuevoUsuario.tipo_cuenta !== 'oficina'}
+                      >
+                        <option value="">Seleccione...</option>
+                        {grados.map((grado) => (
+                          <option key={grado} value={grado}>
+                            {grado}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
 
-                  <div>
+                  <div className={nuevoUsuario.tipo_cuenta === 'oficina' ? 'w-full' : ''}>
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
                       Oficina
                     </label>
@@ -747,10 +809,45 @@ export default function GestionUsuariosPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
+                    Tipo de Cuenta
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setEditUsuario({ ...editUsuario, tipo_cuenta: 'personal' })}
+                      className={`px-4 py-3 rounded-2xl text-xs font-black uppercase tracking-widest border transition-all ${
+                        editUsuario.tipo_cuenta === 'personal'
+                          ? 'bg-[#002147] text-white border-[#002147] shadow-md shadow-blue-900/10'
+                          : 'bg-slate-50 text-slate-400 border-slate-200 hover:border-slate-350 hover:text-slate-500'
+                      }`}
+                    >
+                      Personal
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditUsuario({ 
+                        ...editUsuario, 
+                        tipo_cuenta: 'oficina',
+                        apellido: '',
+                        grado: ''
+                      })}
+                      className={`px-4 py-3 rounded-2xl text-xs font-black uppercase tracking-widest border transition-all ${
+                        editUsuario.tipo_cuenta === 'oficina'
+                          ? 'bg-[#002147] text-white border-[#002147] shadow-md shadow-blue-900/10'
+                          : 'bg-slate-50 text-slate-400 border-slate-200 hover:border-slate-350 hover:text-slate-500'
+                      }`}
+                    >
+                      Oficina / Compartida
+                    </button>
+                  </div>
+                </div>
+
+                <div className={editUsuario.tipo_cuenta === 'oficina' ? 'grid grid-cols-1' : 'grid grid-cols-2 gap-4'}>
                   <div>
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
-                      Nombres
+                      {editUsuario.tipo_cuenta === 'oficina' ? 'Nombre de Oficina / Cuenta' : 'Nombres'}
                     </label>
                     <input
                       type="text"
@@ -761,40 +858,44 @@ export default function GestionUsuariosPage() {
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
-                      Apellidos
-                    </label>
-                    <input
-                      type="text"
-                      value={editUsuario.apellido}
-                      onChange={(e) => setEditUsuario({ ...editUsuario, apellido: e.target.value })}
-                      className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none font-bold text-[#002147]"
-                      required
-                    />
-                  </div>
+                  {editUsuario.tipo_cuenta !== 'oficina' && (
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
+                        Apellidos
+                      </label>
+                      <input
+                        type="text"
+                        value={editUsuario.apellido}
+                        onChange={(e) => setEditUsuario({ ...editUsuario, apellido: e.target.value })}
+                        className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none font-bold text-[#002147]"
+                        required={editUsuario.tipo_cuenta !== 'oficina'}
+                      />
+                    </div>
+                  )}
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
-                      Grado
-                    </label>
-                    <select
-                      value={editUsuario.grado}
-                      onChange={(e) => setEditUsuario({ ...editUsuario, grado: e.target.value })}
-                      className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none font-bold text-[#002147] appearance-none cursor-pointer"
-                      required
-                    >
-                      {grados.map((grado) => (
-                        <option key={grado} value={grado}>
-                          {grado}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                <div className={editUsuario.tipo_cuenta === 'oficina' ? 'grid grid-cols-1' : 'grid grid-cols-2 gap-4'}>
+                  {editUsuario.tipo_cuenta !== 'oficina' && (
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
+                        Grado
+                      </label>
+                      <select
+                        value={editUsuario.grado}
+                        onChange={(e) => setEditUsuario({ ...editUsuario, grado: e.target.value })}
+                        className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none font-bold text-[#002147] appearance-none cursor-pointer"
+                        required={editUsuario.tipo_cuenta !== 'oficina'}
+                      >
+                        {grados.map((grado) => (
+                          <option key={grado} value={grado}>
+                            {grado}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
 
-                  <div>
+                  <div className={editUsuario.tipo_cuenta === 'oficina' ? 'w-full' : ''}>
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
                       Oficina
                     </label>
@@ -893,9 +994,13 @@ export default function GestionUsuariosPage() {
 
               <div className="space-y-5">
                 <div className="p-4.5 bg-slate-50 rounded-2xl border border-slate-150 text-[11px] space-y-1.5">
-                  <p className="text-slate-400 font-bold uppercase tracking-widest">Funcionario</p>
+                  <p className="text-slate-400 font-bold uppercase tracking-widest">
+                    {usuarioResetClave.tipo_cuenta === 'oficina' ? 'Oficina / Cuenta' : 'Funcionario'}
+                  </p>
                   <p className="text-sm font-black text-[#002147] uppercase leading-tight">
-                    {usuarioResetClave.grado} {usuarioResetClave.nombre} {usuarioResetClave.apellido}
+                    {usuarioResetClave.tipo_cuenta === 'oficina'
+                      ? usuarioResetClave.nombre
+                      : `${usuarioResetClave.grado || ''} ${usuarioResetClave.nombre} ${usuarioResetClave.apellido || ''}`.trim()}
                   </p>
                   <p className="text-[10px] font-bold text-slate-500 uppercase">
                     Base: {usuarioResetClave.oficina}

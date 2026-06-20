@@ -3,13 +3,14 @@ CREATE TABLE IF NOT EXISTS usuarios (
     id SERIAL PRIMARY KEY,
     usuario VARCHAR(100) UNIQUE NOT NULL,
     contraseña VARCHAR(255) NOT NULL,
-    nombre VARCHAR(100) NOT NULL,
-    apellido VARCHAR(100) NOT NULL,
-    grado VARCHAR(50) NOT NULL,
+    nombre VARCHAR(100),
+    apellido VARCHAR(100),
+    grado VARCHAR(50),
     oficina VARCHAR(100) NOT NULL,
     rol VARCHAR(50) DEFAULT 'operador',
     activo BOOLEAN DEFAULT true,
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    tipo_cuenta VARCHAR(50) DEFAULT 'personal',
     CONSTRAINT check_rol CHECK (rol IN ('superadmin', 'admin', 'operador', 'supervisor', 'visor', 'developer'))
 );
 

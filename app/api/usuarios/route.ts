@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     }
 
     let query = `
-      SELECT id, usuario, nombre, apellido, grado, oficina, rol, activo, creado_en,
+      SELECT id, usuario, nombre, apellido, grado, oficina, rol, activo, creado_en, tipo_cuenta,
         (SELECT COUNT(*) FROM preguntas_seguridad_usuarios WHERE usuario_id = usuarios.id) >= 5 AS preguntas_configuradas
       FROM usuarios
     `
@@ -72,14 +72,32 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { usuario, contraseña, nombre, apellido, grado, oficina, rol } = body
+    const { usuario, contraseña, nombre, apellido, grado, oficina, rol, tipo_cuenta } = body
+
+    const accountType = tipo_cuenta || 'personal'
 
     // Validar campos requeridos
-    if (!usuario || !contraseña || !nombre || !apellido || !grado || !oficina || !rol) {
+    if (!usuario || !contraseña || !oficina || !rol) {
       return NextResponse.json(
-        { error: 'Todos los campos son requeridos' },
+        { error: 'Campos usuario, contraseña, oficina y rol son obligatorios' },
         { status: 400 }
       )
+    }
+
+    if (accountType === 'personal') {
+      if (!nombre || !apellido || !grado) {
+        return NextResponse.json(
+          { error: 'Para cuentas personales, el nombre, apellido y grado son obligatorios' },
+          { status: 400 }
+        )
+      }
+    } else {
+      if (!nombre) {
+        return NextResponse.json(
+          { error: 'Para cuentas de oficina, el nombre de la oficina es obligatorio' },
+          { status: 400 }
+        )
+      }
     }
 
     // Validar rol
@@ -103,10 +121,10 @@ export async function POST(request: NextRequest) {
 
     // Insertar usuario (debe_cambiar_contraseña se establece automáticamente a TRUE por defecto)
     const result = await pool.query(
-      `INSERT INTO usuarios (usuario, contraseña, nombre, apellido, grado, oficina, rol, debe_cambiar_contraseña)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE)
-       RETURNING id, usuario, nombre, apellido, grado, oficina, rol, activo`,
-      [usuario, hashedPassword, nombre, apellido, grado, oficina, rol]
+      `INSERT INTO usuarios (usuario, contraseña, nombre, apellido, grado, oficina, rol, debe_cambiar_contraseña, tipo_cuenta)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE, $8)
+       RETURNING id, usuario, nombre, apellido, grado, oficina, rol, activo, tipo_cuenta`,
+      [usuario, hashedPassword, nombre || null, apellido || null, grado || null, oficina, rol, accountType]
     )
 
     return NextResponse.json({

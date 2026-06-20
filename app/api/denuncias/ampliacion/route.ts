@@ -23,22 +23,35 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    let accountType = 'personal'
     if (usuario_id) {
-      const userResult = await pool.query('SELECT rol FROM usuarios WHERE id = $1', [usuario_id])
-      if (userResult.rows.length > 0 && userResult.rows[0].rol === 'visor') {
-        return NextResponse.json(
-          { error: 'Acción no autorizada para el rol de visor' },
-          { status: 403 }
-        )
+      const userResult = await pool.query('SELECT rol, tipo_cuenta FROM usuarios WHERE id = $1', [usuario_id])
+      if (userResult.rows.length > 0) {
+        if (userResult.rows[0].rol === 'visor') {
+          return NextResponse.json(
+            { error: 'Acción no autorizada para el rol de visor' },
+            { status: 403 }
+          )
+        }
+        accountType = userResult.rows[0].tipo_cuenta || 'personal'
       }
     }
 
     // Validar campos requeridos
-    if (!denuncia_id || !relato || !operador_grado || !operador_nombre || !operador_apellido) {
+    if (!denuncia_id || !relato || !operador_nombre) {
       return NextResponse.json(
-        { error: 'Faltan campos requeridos' },
+        { error: 'Faltan campos requeridos (denuncia_id, relato, operador_nombre)' },
         { status: 400 }
       )
+    }
+
+    if (accountType === 'personal') {
+      if (!operador_grado || !operador_apellido) {
+        return NextResponse.json(
+          { error: 'Faltan campos requeridos para cuenta personal (operador_grado, operador_apellido)' },
+          { status: 400 }
+        )
+      }
     }
 
     // Verificar que la denuncia existe y está completada
@@ -84,9 +97,9 @@ export async function POST(request: NextRequest) {
         fecha_ampliacion,
         hora_ampliacion,
         usuario_id || null,
-        operador_grado,
+        operador_grado || '',
         operador_nombre,
-        operador_apellido
+        operador_apellido || ''
       ]
     )
 

@@ -151,6 +151,7 @@ export default function ReportesPage() {
   const [editingRowId, setEditingRowId] = useState<number | null>(null)
 
   const esEditableRemision = (row: ReporteRow) => {
+    if (usuario?.rol === 'visor') return false
     if (!row.creado_en) return false
     const creadoEnMs = new Date(row.creado_en).getTime()
     const transcurrido = Date.now() - creadoEnMs
