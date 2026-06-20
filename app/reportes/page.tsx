@@ -580,7 +580,7 @@ export default function ReportesPage() {
     const data = datosDiarioOrdenados.map(d => ({
       ...d,
       denuncia: `${d.numero_denuncia}/${d.año}`,
-      tipo_hecho: d.tipo_especifico || d.shp
+      tipo_hecho: (d.tipo_especifico || d.shp || '').toUpperCase()
     }));
 
     const columns = [
@@ -707,7 +707,7 @@ export default function ReportesPage() {
       .map(d => ({
         ...d,
         denuncia: `${d.numero_denuncia}/${d.año}`,
-        tipo_hecho: d.tipo_especifico || d.shp,
+        tipo_hecho: (d.tipo_especifico || d.shp || '').toUpperCase(),
         entidad_afectada: d.entidad_reportada || '-'
       }));
 
@@ -727,7 +727,11 @@ export default function ReportesPage() {
       { header: 'Tipo de Hecho', key: 'tipo', width: 40 },
       { header: 'Total', key: 'total', width: 15 }
     ];
-    const data = mostrarGeneral ? datosMensuales?.resumen_general : datosMensuales?.resumen_especifico;
+    const rawData = mostrarGeneral ? datosMensuales?.resumen_general : datosMensuales?.resumen_especifico;
+    const data = rawData?.map(t => ({
+      ...t,
+      tipo: (t.tipo || '').toUpperCase()
+    }));
     exportToExcel(data || [], 'Resumen_por_Tipos', columns);
   };
 
@@ -763,7 +767,7 @@ export default function ReportesPage() {
   const handleExportRecurrenteExcel = (rec: Recurrente) => {
     const data = rec.numeros_denuncia.map((num, i) => ({
       numero: num,
-      tipo: rec.tipos[i] || 'SIN ESPECIFICAR',
+      tipo: (rec.tipos[i] || 'SIN ESPECIFICAR').toUpperCase(),
       fecha: rec.fechas[i] || '-',
       oficial: rec.oficiales ? rec.oficiales[i] : '-'
     }));
@@ -1258,13 +1262,15 @@ export default function ReportesPage() {
                   >
                     <Download className="w-4 h-4" />
                   </button>
-                  <button
-                    onClick={handleExportDailyDocx}
-                    title="Exportar a Word"
-                    className="p-2 bg-white border border-slate-200 rounded-xl text-blue-600 hover:bg-blue-50 shadow-sm transition-all"
-                  >
-                    <FileText className="w-4 h-4" />
-                  </button>
+                  {usuario?.rol !== 'visor' && (
+                    <button
+                      onClick={handleExportDailyDocx}
+                      title="Exportar a Word"
+                      className="p-2 bg-white border border-slate-200 rounded-xl text-blue-600 hover:bg-blue-50 shadow-sm transition-all"
+                    >
+                      <FileText className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               </div>
               {/* Tabla para Escritorio */}

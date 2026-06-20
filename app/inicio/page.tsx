@@ -47,16 +47,15 @@ interface Manual {
   color: string
 }
 
-const MANUALS_DATA: Manual[] = [
-  {
-    id: 'exportar-word',
-    title: 'Exportar a Word (Reporte Diario)',
-    description: 'Instrucciones para generar la Nota de Elevación y el reporte diario en formato .docx.',
-    category: 'REPORTE',
-    icon: FileText,
-    color: 'bg-indigo-50 text-indigo-600',
-    content: `Para exportar el reporte diario a Word:
-    
+const GUIA_WORD: Manual = {
+  id: 'exportar-word',
+  title: 'Exportar a Word (Reporte Diario)',
+  description: 'Instrucciones para generar la Nota de Elevación y el reporte diario en formato .docx.',
+  category: 'REPORTE',
+  icon: FileText,
+  color: 'bg-indigo-50 text-indigo-600',
+  content: `Para exportar el reporte diario a Word:
+  
 1. Ingrese a la sección **Reportes**.
 2. Seleccione la pestaña **Diario**.
 3. Elija la **Fecha** del reporte y las horas de inicio/fin (de 07:00 a 07:00 suele ser lo habitual).
@@ -65,8 +64,23 @@ const MANUALS_DATA: Manual[] = [
 6. Presione el botón azul con el **Icono de Word** (Descargar).
 7. Complete los datos solicitados (Nro. de Nota, Destinatario y Remitente).
 8. Presione **Generar Reporte** para descargar el archivo.`
-  }
-]
+}
+
+const GUIA_VISOR: Manual = {
+  id: 'funciones-visor',
+  title: 'Funciones del Rol Visor',
+  description: 'Descripción de los permisos y capacidades de consulta global del rol Visor.',
+  category: 'SEGURIDAD / ACCESO',
+  icon: Shield,
+  color: 'bg-teal-50 text-teal-600',
+  content: `El rol de **Visor** está diseñado para realizar tareas de consulta y supervisión global:
+
+1. **Búsqueda Global de Denuncias:** Acceso a visualizar la totalidad de las denuncias del sistema en la sección **Consultar**, sin restricción por oficina regional.
+2. **Acceso a Reportes y Estadísticas:** Visualización de gráficos de rendimiento y reportes diarios en la sección **Reportes**.
+3. **Restricción de Creación/Edición:** El rol **no permite** registrar nuevas denuncias ni ampliaciones.
+4. **Restricción de Remisión:** No está habilitado para sugerir o modificar departamentos de remisión para las denuncias.
+5. **Seguridad y Contraseña:** Por seguridad de cuentas genéricas, no gestiona preguntas de seguridad de forma autónoma. El restablecimiento de contraseña debe ser realizado por un administrador o supervisor de guardia.`
+}
 
 interface CurrencyData {
   code: string
@@ -306,7 +320,7 @@ export default function InicioPage() {
               </div>
             </div>
             <div className="grid grid-cols-1 gap-4">
-              {MANUALS_DATA.map((manual) => (
+              {((usuario?.rol === 'visor' ? [GUIA_VISOR] : [GUIA_WORD, GUIA_VISOR]) as Manual[]).map((manual) => (
                 <ManualCard
                   key={manual.id}
                   manual={manual}

@@ -131,6 +131,7 @@ export default function BuscadorRelatoPage() {
             await exportToExcel(
                 data.resultados.map((res: any) => ({
                     ...res,
+                    tipo_hecho: (res.tipo_hecho || '').toUpperCase(),
                     fecha_denuncia: formatearFechaSinTimezone(res.fecha_denuncia)
                 })),
                 `busqueda_relato_${new Date().toISOString().split('T')[0]}`,

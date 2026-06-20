@@ -16,7 +16,17 @@ export async function POST(request: NextRequest) {
         let paramIndex = 1
 
         if (termino && termino.trim() !== '') {
-            baseQuery += ` AND d.relato ILIKE $${paramIndex}`
+            baseQuery += ` AND (
+                d.relato ILIKE $${paramIndex} OR
+                den.nombres ILIKE $${paramIndex} OR
+                den.cedula ILIKE $${paramIndex} OR
+                d.tipo_denuncia ILIKE $${paramIndex} OR
+                d.entidad_reportada ILIKE $${paramIndex} OR
+                d.oficina ILIKE $${paramIndex} OR
+                d.orden::text ILIKE $${paramIndex} OR
+                d.operador_nombre ILIKE $${paramIndex} OR
+                d.operador_apellido ILIKE $${paramIndex}
+            )`
             values.push(`%${termino.trim()}%`)
             paramIndex++
         }
