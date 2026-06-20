@@ -204,12 +204,21 @@ export default function InicioPage() {
     if (usuario) {
       fetchRates()
 
-      // Mostrar modal de actualizaciones una vez por sesión
-      const hasSeen = sessionStorage.getItem('hasSeenUpdateModal')
-      if (!hasSeen) {
-        setActiveModal('new')
+      if (usuario.rol === 'visor') {
+        const hasSeenVisor = sessionStorage.getItem('hasSeenVisorModal')
+        if (!hasSeenVisor) {
+          setSelectedManual(GUIA_VISOR)
+          setIsManualModalOpen(true)
+          sessionStorage.setItem('hasSeenVisorModal', 'true')
+        }
       } else {
-        checkPreguntas()
+        // Mostrar modal de actualizaciones una vez por sesión
+        const hasSeen = sessionStorage.getItem('hasSeenUpdateModal')
+        if (!hasSeen) {
+          setActiveModal('new')
+        } else {
+          checkPreguntas()
+        }
       }
     }
   }, [usuario, authLoading, router])
@@ -771,7 +780,7 @@ function ManualModal({ manual, onClose }: { manual: Manual, onClose: () => void 
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-[#002147]/40 backdrop-blur-md transition-opacity" onClick={onClose} />
-      <div className="relative bg-white rounded-[3rem] shadow-2xl border border-white/20 w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-500">
+      <div className="relative bg-white rounded-[3rem] shadow-2xl border border-white/20 w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-500">
         <div className="p-8 md:p-10">
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-4">

@@ -372,13 +372,15 @@ export default function VerDenunciaPage({ params }: { params: Promise<{ id: stri
                 )}
                 {denuncia.estado === 'completada' && (
                   <>
-                    <Link
-                      href={`/ampliar-denuncia/${denunciaId}`}
-                      className="hidden md:flex items-center gap-2 px-6 py-3 bg-indigo-50 text-indigo-700 rounded-xl hover:bg-indigo-100 border border-indigo-100 transition-all font-bold text-sm"
-                    >
-                      <Plus className="h-4 w-4 text-indigo-500" />
-                      AMPLIAR DENUNCIA
-                    </Link>
+                    {usuario?.rol !== 'visor' && (
+                      <Link
+                        href={`/ampliar-denuncia/${denunciaId}`}
+                        className="hidden md:flex items-center gap-2 px-6 py-3 bg-indigo-50 text-indigo-700 rounded-xl hover:bg-indigo-100 border border-indigo-100 transition-all font-bold text-sm"
+                      >
+                        <Plus className="h-4 w-4 text-indigo-500" />
+                        AMPLIAR DENUNCIA
+                      </Link>
+                    )}
                     <button
                       onClick={descargarPDF}
                       className="hidden md:flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-all shadow-md shadow-emerald-900/10 font-bold text-sm"
