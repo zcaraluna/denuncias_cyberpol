@@ -1326,7 +1326,6 @@ export default function ReportesPage() {
                         <div className="flex items-center gap-2">ENTIDAD REPORTADA <SortIcon field="entidad_reportada" currentField={sortField} direction={sortDirection} /></div>
                       </th>
                       <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 min-w-[280px]">DEPARTAMENTO SUGERIDO</th>
-                      <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">ACCIONES</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
@@ -1399,20 +1398,6 @@ export default function ReportesPage() {
                                 </button>
                               )}
                             </div>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {row.id && (
-                            <a
-                              href={`/api/denuncias/pdf/${row.id}?tipo=oficio&usuario_id=${usuario?.id}&es_copia=true`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              title="Descargar Acta"
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-100 text-emerald-700 text-[9px] font-black uppercase tracking-widest rounded-lg hover:bg-emerald-100 transition-all"
-                            >
-                              <Download className="w-3 h-3" />
-                              Descargar Acta
-                            </a>
                           )}
                         </td>
                       </tr>
@@ -1497,20 +1482,6 @@ export default function ReportesPage() {
                         </div>
                       )}
                     </div>
-                    {/* Botón Descargar Acta (móvil) */}
-                    {row.id && (
-                      <div className="pt-2 border-t border-slate-50">
-                        <a
-                          href={`/api/denuncias/pdf/${row.id}?tipo=oficio&usuario_id=${usuario?.id}&es_copia=true`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-50 border border-emerald-100 text-emerald-700 text-[9px] font-black uppercase tracking-widest rounded-lg hover:bg-emerald-100 transition-all w-full justify-center"
-                        >
-                          <Download className="w-3 h-3" />
-                          Descargar Acta
-                        </a>
-                      </div>
-                    )}
                   </div>
                 ))}
               </div>
