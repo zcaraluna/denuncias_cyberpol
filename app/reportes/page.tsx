@@ -1073,97 +1073,103 @@ export default function ReportesPage() {
                   </div>
                 </div>
               ) : activeTab === 'diario' ? (
-                <div className={`flex-1 w-full lg:w-auto grid grid-cols-1 ${usuario?.rol === 'visor' ? 'md:grid-cols-6' : 'md:grid-cols-5'} gap-4 text-left`}>
-                  {/* Fecha Desde */}
-                  <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Fecha Desde</label>
-                    <div className="relative group">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Calendar className="h-3.5 w-3.5 text-slate-400 group-hover:text-[#002147] transition-colors" />
-                      </div>
-                      <input
-                        type="date"
-                        value={fecha}
-                        onChange={(e) => setFecha(e.target.value)}
-                        className="block w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 text-[#002147] text-xs font-bold rounded-xl focus:ring-4 focus:ring-blue-50 focus:border-blue-200 transition-all outline-none cursor-pointer"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Hora Inicio */}
-                  <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Hora Inicio</label>
-                    <input
-                      type="time"
-                      value={horaInicio}
-                      onChange={(e) => setHoraInicio(e.target.value)}
-                      className="block w-full px-3 py-2.5 bg-slate-50 border border-slate-200 text-[#002147] text-xs font-bold rounded-xl focus:ring-4 focus:ring-blue-50 focus:border-blue-200 transition-all outline-none cursor-pointer"
-                    />
-                  </div>
-
-                  {/* Fecha Hasta */}
-                  <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Fecha Hasta</label>
-                    <div className="relative group">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Calendar className="h-3.5 w-3.5 text-slate-400 group-hover:text-[#002147] transition-colors" />
-                      </div>
-                      <input
-                        type="date"
-                        value={fechaFin}
-                        onChange={(e) => setFechaFin(e.target.value)}
-                        className="block w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 text-[#002147] text-xs font-bold rounded-xl focus:ring-4 focus:ring-blue-50 focus:border-blue-200 transition-all outline-none cursor-pointer"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Hora Fin */}
-                  <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Hora Fin</label>
-                    <input
-                      type="time"
-                      value={horaFin}
-                      onChange={(e) => setHoraFin(e.target.value)}
-                      className="block w-full px-3 py-2.5 bg-slate-50 border border-slate-200 text-[#002147] text-xs font-bold rounded-xl focus:ring-4 focus:ring-blue-50 focus:border-blue-200 transition-all outline-none cursor-pointer"
-                    />
-                  </div>
-
-                  {/* Tipo de Denuncia */}
-                  <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Tipo de Denuncia</label>
-                    <select
-                      value={tipoDenuncia}
-                      onChange={(e) => setTipoDenuncia(e.target.value)}
-                      className="block w-full px-4 py-2.5 bg-slate-50 border border-slate-200 text-[#002147] text-xs font-bold rounded-xl focus:ring-4 focus:ring-blue-50 focus:border-blue-200 transition-all outline-none cursor-pointer"
-                    >
-                      <option value="">Todos los tipos</option>
-                      {tiposDisponibles.map((tipo) => (
-                        <option key={tipo} value={tipo}>
-                          {tipo}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Filtro de Destino (Solo Visor) */}
-                  {usuario?.rol === 'visor' && (
+                <div className="flex-1 w-full lg:w-auto flex flex-col gap-4 text-left">
+                  {/* Hilera 1: Fechas y Horas */}
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    {/* Fecha Desde */}
                     <div>
-                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Destino</label>
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Fecha Desde</label>
+                      <div className="relative group">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <Calendar className="h-3.5 w-3.5 text-slate-400 group-hover:text-[#002147] transition-colors" />
+                        </div>
+                        <input
+                          type="date"
+                          value={fecha}
+                          onChange={(e) => setFecha(e.target.value)}
+                          className="block w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 text-[#002147] text-xs font-bold rounded-xl focus:ring-4 focus:ring-blue-50 focus:border-blue-200 transition-all outline-none cursor-pointer"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Hora Inicio */}
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Hora Inicio</label>
+                      <input
+                        type="time"
+                        value={horaInicio}
+                        onChange={(e) => setHoraInicio(e.target.value)}
+                        className="block w-full px-3 py-2.5 bg-slate-50 border border-slate-200 text-[#002147] text-xs font-bold rounded-xl focus:ring-4 focus:ring-blue-50 focus:border-blue-200 transition-all outline-none cursor-pointer"
+                      />
+                    </div>
+
+                    {/* Fecha Hasta */}
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Fecha Hasta</label>
+                      <div className="relative group">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <Calendar className="h-3.5 w-3.5 text-slate-400 group-hover:text-[#002147] transition-colors" />
+                        </div>
+                        <input
+                          type="date"
+                          value={fechaFin}
+                          onChange={(e) => setFechaFin(e.target.value)}
+                          className="block w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 text-[#002147] text-xs font-bold rounded-xl focus:ring-4 focus:ring-blue-50 focus:border-blue-200 transition-all outline-none cursor-pointer"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Hora Fin */}
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Hora Fin</label>
+                      <input
+                        type="time"
+                        value={horaFin}
+                        onChange={(e) => setHoraFin(e.target.value)}
+                        className="block w-full px-3 py-2.5 bg-slate-50 border border-slate-200 text-[#002147] text-xs font-bold rounded-xl focus:ring-4 focus:ring-blue-50 focus:border-blue-200 transition-all outline-none cursor-pointer"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Hilera 2: Tipo de Denuncia y Destino */}
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    {/* Tipo de Denuncia */}
+                    <div className="md:col-span-2">
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Tipo de Denuncia</label>
                       <select
-                        value={filtroDestino}
-                        onChange={(e) => setFiltroDestino(e.target.value)}
+                        value={tipoDenuncia}
+                        onChange={(e) => setTipoDenuncia(e.target.value)}
                         className="block w-full px-4 py-2.5 bg-slate-50 border border-slate-200 text-[#002147] text-xs font-bold rounded-xl focus:ring-4 focus:ring-blue-50 focus:border-blue-200 transition-all outline-none cursor-pointer"
                       >
-                        <option value="">Todos los destinos</option>
-                        <option value="__ninguno__">No sugerido</option>
-                        {DEPARTAMENTOS_REMISION.map((depto) => (
-                          <option key={depto} value={depto}>
-                            {depto}
+                        <option value="">Todos los tipos</option>
+                        {tiposDisponibles.map((tipo) => (
+                          <option key={tipo} value={tipo}>
+                            {tipo}
                           </option>
                         ))}
                       </select>
                     </div>
-                  )}
+
+                    {/* Filtro de Destino (Solo Visor) */}
+                    {usuario?.rol === 'visor' && (
+                      <div className="md:col-span-2">
+                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Destino</label>
+                        <select
+                          value={filtroDestino}
+                          onChange={(e) => setFiltroDestino(e.target.value)}
+                          className="block w-full px-4 py-2.5 bg-slate-50 border border-slate-200 text-[#002147] text-xs font-bold rounded-xl focus:ring-4 focus:ring-blue-50 focus:border-blue-200 transition-all outline-none cursor-pointer"
+                        >
+                          <option value="">Todos los destinos</option>
+                          <option value="__ninguno__">No sugerido</option>
+                          {DEPARTAMENTOS_REMISION.map((depto) => (
+                            <option key={depto} value={depto}>
+                              {depto}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  </div>
                 </div>
               ) : (
                 <div className="flex flex-1 w-full gap-4">
