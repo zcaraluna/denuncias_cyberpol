@@ -1073,7 +1073,7 @@ export default function ReportesPage() {
                   </div>
                 </div>
               ) : activeTab === 'diario' ? (
-                <div className="flex-1 w-full lg:w-auto grid grid-cols-1 md:grid-cols-5 gap-4 text-left">
+                <div className={`flex-1 w-full lg:w-auto grid grid-cols-1 ${usuario?.rol === 'visor' ? 'md:grid-cols-6' : 'md:grid-cols-5'} gap-4 text-left`}>
                   {/* Fecha Desde */}
                   <div>
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Fecha Desde</label>
@@ -1144,6 +1144,26 @@ export default function ReportesPage() {
                       ))}
                     </select>
                   </div>
+
+                  {/* Filtro de Destino (Solo Visor) */}
+                  {usuario?.rol === 'visor' && (
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Destino</label>
+                      <select
+                        value={filtroDestino}
+                        onChange={(e) => setFiltroDestino(e.target.value)}
+                        className="block w-full px-4 py-2.5 bg-slate-50 border border-slate-200 text-[#002147] text-xs font-bold rounded-xl focus:ring-4 focus:ring-blue-50 focus:border-blue-200 transition-all outline-none cursor-pointer"
+                      >
+                        <option value="">Todos los destinos</option>
+                        <option value="__ninguno__">No sugerido</option>
+                        {DEPARTAMENTOS_REMISION.map((depto) => (
+                          <option key={depto} value={depto}>
+                            {depto}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="flex flex-1 w-full gap-4">
@@ -1170,23 +1190,6 @@ export default function ReportesPage() {
                 </div>
               )}
 
-              {/* Filtro Destino — solo en Diario y solo para visor, aparece debajo del panel principal */}
-              {activeTab === 'diario' && usuario?.rol === 'visor' && datosDiario.length > 0 && (
-                <div className="w-full lg:w-64">
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Destino (Depto. Sugerido)</label>
-                  <select
-                    value={filtroDestino}
-                    onChange={(e) => setFiltroDestino(e.target.value)}
-                    className="block w-full px-4 py-2.5 bg-slate-50 border border-slate-200 text-[#002147] text-xs font-bold rounded-xl focus:ring-4 focus:ring-blue-50 focus:border-blue-200 transition-all outline-none cursor-pointer"
-                  >
-                    <option value="">Todos los destinos</option>
-                    <option value="__ninguno__">Sin sugerencia</option>
-                    {DEPARTAMENTOS_REMISION.map(d => (
-                      <option key={d} value={d}>{d}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
 
               <div className="flex items-center gap-3 w-full lg:w-auto">
                 <button
@@ -1512,6 +1515,7 @@ export default function ReportesPage() {
                 ))}
               </div>
             </div>
+          )}
 
           {/* Resultados Mensual */}
           {activeTab === 'mensual' && datosMensuales && (

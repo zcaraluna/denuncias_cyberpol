@@ -263,7 +263,7 @@ export default function VerDenunciaPage({ params }: { params: Promise<{ id: stri
   }
 
   const descargarActaOriginal = () => {
-    if (!usuario || usuario.usuario !== 'garv') return
+    if (!usuario || (usuario.usuario !== 'garv' && usuario.rol !== 'visor')) return
     window.open(`/api/denuncias/pdf/${denunciaId}?tipo=oficio&usuario_id=${usuario.id}&forzar_original=true`, '_blank')
   }
 
@@ -381,14 +381,16 @@ export default function VerDenunciaPage({ params }: { params: Promise<{ id: stri
                         AMPLIAR DENUNCIA
                       </Link>
                     )}
-                    <button
-                      onClick={descargarPDF}
-                      className="hidden md:flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-all shadow-md shadow-emerald-900/10 font-bold text-sm"
-                    >
-                      <Download className="h-4 w-4" />
-                      VER PDF
-                    </button>
-                    {usuario.usuario === 'garv' && (
+                    {usuario?.rol !== 'visor' && (
+                      <button
+                        onClick={descargarPDF}
+                        className="hidden md:flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-all shadow-md shadow-emerald-900/10 font-bold text-sm"
+                      >
+                        <Download className="h-4 w-4" />
+                        VER PDF
+                      </button>
+                    )}
+                    {(usuario.usuario === 'garv' || usuario.rol === 'visor') && (
                       <button
                         onClick={descargarActaOriginal}
                         className="flex items-center gap-2 px-4 md:px-6 py-2.5 md:py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-all shadow-md shadow-red-900/10 font-bold text-sm"
