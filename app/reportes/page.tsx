@@ -207,6 +207,7 @@ export default function ReportesPage() {
   const [datosDiario, setDatosDiario] = useState<ReporteRow[]>([])
   const [tiposDisponibles, setTiposDisponibles] = useState<string[]>([])
   const [filtrosTiposDiario, setFiltrosTiposDiario] = useState<string[]>([])
+  const [filtroDestino, setFiltroDestino] = useState<string>('')
   const [sortField, setSortField] = useState<SortField>('numero_denuncia')
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
 
@@ -370,9 +371,20 @@ export default function ReportesPage() {
   }
 
   const datosDiarioOrdenados = useMemo(() => {
-    const sorted = datosDiario.length > 0
+    let filtered = datosDiario.length > 0
       ? datosDiario.filter(d => filtrosTiposDiario.includes(rowKey(d)))
       : []
+
+    // Filtro por destino (departamento sugerido) — solo para visor
+    if (filtroDestino) {
+      filtered = filtered.filter(d =>
+        filtroDestino === '__ninguno__'
+          ? !d.dependencia_remitida
+          : d.dependencia_remitida === filtroDestino
+      )
+    }
+
+    const sorted = filtered
 
     sorted.sort((a, b) => {
       let comparison = 0
@@ -392,7 +404,7 @@ export default function ReportesPage() {
       return sortDirection === 'asc' ? comparison : -comparison
     })
     return sorted
-  }, [datosDiario, sortField, sortDirection, filtrosTiposDiario])
+  }, [datosDiario, sortField, sortDirection, filtrosTiposDiario, filtroDestino])
 
   const datosDanosOrdenados = useMemo(() => {
     const sorted = datosDanos.length > 0
@@ -549,6 +561,7 @@ export default function ReportesPage() {
       setHoraInicio('07:00')
       setHoraFin('07:00')
       setTipoDenuncia('')
+      setFiltroDestino('')
       setDatosDiario([])
       setTiposDisponibles([])
       setFiltrosTiposDiario([])
@@ -1157,6 +1170,24 @@ export default function ReportesPage() {
                 </div>
               )}
 
+              {/* Filtro Destino — solo en Diario y solo para visor, aparece debajo del panel principal */}
+              {activeTab === 'diario' && usuario?.rol === 'visor' && datosDiario.length > 0 && (
+                <div className="w-full lg:w-64">
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Destino (Depto. Sugerido)</label>
+                  <select
+                    value={filtroDestino}
+                    onChange={(e) => setFiltroDestino(e.target.value)}
+                    className="block w-full px-4 py-2.5 bg-slate-50 border border-slate-200 text-[#002147] text-xs font-bold rounded-xl focus:ring-4 focus:ring-blue-50 focus:border-blue-200 transition-all outline-none cursor-pointer"
+                  >
+                    <option value="">Todos los destinos</option>
+                    <option value="__ninguno__">Sin sugerencia</option>
+                    {DEPARTAMENTOS_REMISION.map(d => (
+                      <option key={d} value={d}>{d}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               <div className="flex items-center gap-3 w-full lg:w-auto">
                 <button
                   onClick={
@@ -1292,6 +1323,7 @@ export default function ReportesPage() {
                         <div className="flex items-center gap-2">ENTIDAD REPORTADA <SortIcon field="entidad_reportada" currentField={sortField} direction={sortDirection} /></div>
                       </th>
                       <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 min-w-[280px]">DEPARTAMENTO SUGERIDO</th>
+                      <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">ACCIONES</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
@@ -1364,6 +1396,20 @@ export default function ReportesPage() {
                                 </button>
                               )}
                             </div>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {row.id && (
+                            <a
+                              href={`/api/denuncias/pdf/${row.id}?tipo=oficio&usuario_id=${usuario?.id}&es_copia=true`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title="Descargar Acta"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-100 text-emerald-700 text-[9px] font-black uppercase tracking-widest rounded-lg hover:bg-emerald-100 transition-all"
+                            >
+                              <Download className="w-3 h-3" />
+                              Descargar Acta
+                            </a>
                           )}
                         </td>
                       </tr>
@@ -1448,11 +1494,24 @@ export default function ReportesPage() {
                         </div>
                       )}
                     </div>
+                    {/* Botón Descargar Acta (móvil) */}
+                    {row.id && (
+                      <div className="pt-2 border-t border-slate-50">
+                        <a
+                          href={`/api/denuncias/pdf/${row.id}?tipo=oficio&usuario_id=${usuario?.id}&es_copia=true`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-50 border border-emerald-100 text-emerald-700 text-[9px] font-black uppercase tracking-widest rounded-lg hover:bg-emerald-100 transition-all w-full justify-center"
+                        >
+                          <Download className="w-3 h-3" />
+                          Descargar Acta
+                        </a>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
             </div>
-          )}
 
           {/* Resultados Mensual */}
           {activeTab === 'mensual' && datosMensuales && (
