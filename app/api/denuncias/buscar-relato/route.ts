@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
                 den.nombres ILIKE $${paramIndex} OR
                 den.cedula ILIKE $${paramIndex} OR
                 d.tipo_denuncia ILIKE $${paramIndex} OR
-                d.entidad_reportada ILIKE $${paramIndex} OR
+                d.entidad_bancaria_vulnerada ILIKE $${paramIndex} OR
                 d.oficina ILIKE $${paramIndex} OR
                 d.orden::text ILIKE $${paramIndex} OR
                 d.operador_nombre ILIKE $${paramIndex} OR
