@@ -281,6 +281,19 @@ export async function POST(request: NextRequest) {
     const gradoEjecucion = denuncia?.gradoEjecucion ?? null
 
     if (borradorIdParam) {
+      // Evitar que una denuncia completada vuelva al estado de borrador
+      const checkDenuncia = await client.query(
+        'SELECT estado FROM denuncias WHERE id = $1',
+        [borradorIdParam]
+      )
+      if (checkDenuncia.rows.length > 0 && checkDenuncia.rows[0].estado === 'completada') {
+        await client.query('ROLLBACK')
+        return NextResponse.json(
+          { error: 'No se puede modificar ni guardar como borrador una denuncia que ya ha sido completada.' },
+          { status: 400 }
+        )
+      }
+
       await client.query(
         `UPDATE denuncias SET
           denunciante_id = $1,

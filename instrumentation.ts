@@ -13,10 +13,13 @@ export async function register() {
 
         // Seleccionar borradores expirados (más de 24 horas desde su creación)
         // IMPORTANTE: solo toca registros con estado = 'borrador', jamás 'completada'
+        // Adicionalmente se verifica que la orden sea negativa o nula (nunca mayor a 0)
+        // para garantizar que no se borren denuncias que alguna vez fueron completadas
         const expiradosResult = await client.query(
           `SELECT id, denunciante_id
            FROM denuncias
            WHERE estado = 'borrador'
+             AND (orden IS NULL OR orden < 1)
              AND creado_en < NOW() - INTERVAL '24 hours'`
         )
 
