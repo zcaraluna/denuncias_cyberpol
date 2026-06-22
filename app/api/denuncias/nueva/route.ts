@@ -234,7 +234,7 @@ export async function POST(request: NextRequest) {
     await client.query('BEGIN')
 
     const body = await request.json()
-    const { borradorId, denuncia, autor, descripcionFisica, usuarioId } = body
+    let { borradorId, denuncia, autor, descripcionFisica, usuarioId } = body
     const coleccionDenunciantes = construirColeccionDenunciantes(body)
 
     const principalEntrada = coleccionDenunciantes.find((item) => item.rol === 'principal')
@@ -362,6 +362,30 @@ export async function POST(request: NextRequest) {
 
     let denunciaId = borradorId ?? null
     let numeroOrden = 0
+
+    if (borradorId) {
+      // Verificar si el borrador ya fue completado o si existe (Idempotencia)
+      const borradorExistente = await client.query(
+        'SELECT estado, orden, hash FROM denuncias WHERE id = $1',
+        [borradorId]
+      )
+
+      if (borradorExistente.rows.length === 0) {
+        // Si el borrador no existe (ej: borrado por el cron), lo tratamos como una inserción nueva
+        borradorId = null
+        denunciaId = null
+      } else if (borradorExistente.rows[0].estado === 'completada') {
+        const row = borradorExistente.rows[0]
+        await client.query('COMMIT')
+        client.release()
+        return NextResponse.json({
+          success: true,
+          id: borradorId,
+          hash: row.hash,
+          orden: row.orden
+        })
+      }
+    }
 
     if (borradorId) {
       const año = fechaActual.split('-')[0]
