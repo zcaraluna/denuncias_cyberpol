@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
       queryParams.push(oficinaFilter)
     }
 
-    query += ` ORDER BY d.fecha_denuncia DESC, d.hora_denuncia DESC`
+    query += ` ORDER BY d.orden DESC, d.fecha_denuncia DESC, d.hora_denuncia DESC`
 
     const result = await pool.query(query, queryParams)
     return NextResponse.json(result.rows)

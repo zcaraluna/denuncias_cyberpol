@@ -23,7 +23,7 @@ export async function GET(
       FROM denuncias d
       LEFT JOIN denunciantes den ON d.denunciante_id = den.id
       WHERE den.cedula = $1 AND d.estado = 'completada'
-      ORDER BY d.fecha_denuncia DESC, d.hora_denuncia DESC`,
+      ORDER BY d.orden DESC, d.fecha_denuncia DESC, d.hora_denuncia DESC`,
       [cedula]
     )
 

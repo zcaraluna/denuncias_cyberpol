@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
       WHERE d.tipo_denuncia = 'EXTRAVÍO DE OBJETOS Y/O DOCUMENTOS'
         AND d.estado = 'completada'
         AND d.objetos_extraviados IS NOT NULL
-      ORDER BY d.fecha_denuncia DESC, d.hora_denuncia DESC;
+      ORDER BY d.orden DESC, d.fecha_denuncia DESC, d.hora_denuncia DESC;
     `
     const result = await pool.query(dbQuery)
     

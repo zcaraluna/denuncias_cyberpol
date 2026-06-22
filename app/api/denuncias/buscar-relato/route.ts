@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
                 d.monto_dano,
                 d.moneda
             ${baseQuery}
-            ORDER BY d.fecha_denuncia DESC, d.hora_denuncia DESC
+            ORDER BY d.orden DESC, d.fecha_denuncia DESC, d.hora_denuncia DESC
             LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
         `
         values.push(limite, offset)
