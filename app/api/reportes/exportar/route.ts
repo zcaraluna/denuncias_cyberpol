@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
       FROM denuncias d
       LEFT JOIN denunciantes den ON d.denunciante_id = den.id
       ${whereClause}
-      ORDER BY d.fecha_denuncia DESC, d.hora_denuncia DESC`,
+      ORDER BY d.orden ASC`,
       valores
     )
 

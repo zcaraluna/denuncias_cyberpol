@@ -61,6 +61,7 @@ export async function GET(request: NextRequest) {
           d.remitido_por,
           d.remitido_en,
           d.orden::text as numero_denuncia,
+          d.orden as orden,
           EXTRACT(YEAR FROM d.fecha_denuncia)::integer as año,
           d.fecha_denuncia,
           d.hora_denuncia,
@@ -87,6 +88,7 @@ export async function GET(request: NextRequest) {
           d.remitido_por,
           d.remitido_en,
           'AMP-' || a.numero_ampliacion || '-' || d.orden as numero_denuncia,
+          d.orden as orden,
           EXTRACT(YEAR FROM a.fecha_ampliacion)::integer as año,
           a.fecha_ampliacion as fecha_denuncia,
           a.hora_ampliacion as hora_denuncia,
@@ -111,7 +113,7 @@ export async function GET(request: NextRequest) {
       SELECT * FROM denuncias_query
       UNION ALL
       SELECT * FROM ampliaciones_query
-      ORDER BY fecha_denuncia ASC, hora_denuncia ASC
+      ORDER BY orden ASC, creado_en ASC
     `;
 
     const result = await pool.query(query, valores)
