@@ -8,6 +8,7 @@ import DateRangePicker from '@/components/DateRangePicker'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { formatearFechaSinTimezone } from '@/lib/utils/fecha'
 import { MainLayout } from '@/components/MainLayout'
+import { ACTIVE_OFFICES } from '@/lib/data/oficinas'
 import {
   Search,
   FileText,
@@ -35,6 +36,7 @@ interface Denuncia {
   tipo_hecho: string
   hash_denuncia: string
   estado: string
+  oficina?: string
 }
 
 export default function DenunciasPage() {
@@ -56,6 +58,7 @@ export default function DenunciasPage() {
   const [filtroTipoTemp, setFiltroTipoTemp] = useState('')
   const [filtroFechaDesdeTemp, setFiltroFechaDesdeTemp] = useState('')
   const [filtroFechaHastaTemp, setFiltroFechaHastaTemp] = useState('')
+  const [filtroOficinaTemp, setFiltroOficinaTemp] = useState('')
 
   // Estados aplicados para filtros
   const [filtroNombre, setFiltroNombre] = useState('')
@@ -64,6 +67,7 @@ export default function DenunciasPage() {
   const [filtroTipo, setFiltroTipo] = useState('')
   const [filtroFechaDesde, setFiltroFechaDesde] = useState('')
   const [filtroFechaHasta, setFiltroFechaHasta] = useState('')
+  const [filtroOficina, setFiltroOficina] = useState('')
 
   const [paginaActual, setPaginaActual] = useState(1)
   const itemsPorPagina = 10
@@ -101,6 +105,7 @@ export default function DenunciasPage() {
     setFiltroTipoTemp(filtroTipo)
     setFiltroFechaDesdeTemp(filtroFechaDesde)
     setFiltroFechaHastaTemp(filtroFechaHasta)
+    setFiltroOficinaTemp(filtroOficina)
   }, [])
 
   const buscarPorHash = async () => {
@@ -165,6 +170,13 @@ export default function DenunciasPage() {
     ]
   }, [tiposDisponibles])
 
+  const opcionesOficinas = useMemo(() => {
+    return [
+      { value: '', label: 'TODAS LAS OFICINAS' },
+      ...ACTIVE_OFFICES.map(oficina => ({ value: oficina, label: oficina.toUpperCase() }))
+    ]
+  }, [])
+
   const denunciasFiltradas = useMemo(() => {
     return denuncias.filter(denuncia => {
       const nombreMatch = !filtroNombre ||
@@ -175,6 +187,8 @@ export default function DenunciasPage() {
         denuncia.hash_denuncia?.toLowerCase().includes(filtroHash.toLowerCase())
       const tipoMatch = !filtroTipo ||
         denuncia.tipo_hecho?.toUpperCase() === filtroTipo
+      const oficinaMatch = !filtroOficina ||
+        denuncia.oficina?.toLowerCase() === filtroOficina.toLowerCase()
 
       let fechaMatch = true
       if (filtroFechaDesde || filtroFechaHasta) {
@@ -191,9 +205,9 @@ export default function DenunciasPage() {
         }
       }
 
-      return nombreMatch && cedulaMatch && hashMatch && tipoMatch && fechaMatch
+      return nombreMatch && cedulaMatch && hashMatch && tipoMatch && oficinaMatch && fechaMatch
     })
-  }, [denuncias, filtroNombre, filtroCedula, filtroHash, filtroTipo, filtroFechaDesde, filtroFechaHasta])
+  }, [denuncias, filtroNombre, filtroCedula, filtroHash, filtroTipo, filtroOficina, filtroFechaDesde, filtroFechaHasta])
 
   const totalPaginas = Math.ceil(denunciasFiltradas.length / itemsPorPagina)
   const indiceInicio = (paginaActual - 1) * itemsPorPagina
@@ -202,13 +216,14 @@ export default function DenunciasPage() {
 
   useEffect(() => {
     setPaginaActual(1)
-  }, [filtroNombre, filtroCedula, filtroTipo, filtroFechaDesde, filtroFechaHasta])
+  }, [filtroNombre, filtroCedula, filtroTipo, filtroOficina, filtroFechaDesde, filtroFechaHasta])
 
   const aplicarFiltros = () => {
     setFiltroNombre(filtroNombreTemp)
     setFiltroCedula(filtroCedulaTemp)
     setFiltroHash(filtroHashTemp)
     setFiltroTipo(filtroTipoTemp)
+    setFiltroOficina(filtroOficinaTemp)
     setFiltroFechaDesde(filtroFechaDesdeTemp)
     setFiltroFechaHasta(filtroFechaHastaTemp)
     setPaginaActual(1)
@@ -219,12 +234,14 @@ export default function DenunciasPage() {
     setFiltroCedulaTemp('')
     setFiltroHashTemp('')
     setFiltroTipoTemp('')
-    setFiltroFechaDesdeTemp('')
-    setFiltroFechaHastaTemp('')
+    setFiltroOficinaTemp('')
     setFiltroNombre('')
     setFiltroCedula('')
     setFiltroHash('')
     setFiltroTipo('')
+    setFiltroOficina('')
+    setFiltroFechaDesdeTemp('')
+    setFiltroFechaHastaTemp('')
     setFiltroFechaDesde('')
     setFiltroFechaHasta('')
     setPaginaActual(1)
@@ -312,7 +329,7 @@ export default function DenunciasPage() {
                   <h2 className="text-[10px] font-black text-[#002147] uppercase tracking-widest">Filtros de Búsqueda</h2>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                <div className={`grid grid-cols-1 sm:grid-cols-2 ${usuario.rol === 'developer' ? 'lg:grid-cols-6' : 'lg:grid-cols-5'} gap-4`}>
                   {/* Filtro Nombre */}
                   <div className="hidden md:flex flex-col justify-end space-y-1.5">
                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-1">
@@ -415,6 +432,65 @@ export default function DenunciasPage() {
                     </div>
                   </div>
 
+                  {/* Filtro Oficina (Solo Developer) */}
+                  {usuario.rol === 'developer' && (
+                    <div className="hidden md:flex flex-col justify-end space-y-1.5">
+                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-1">
+                        <AlertCircle className="w-2.5 h-2.5" /> Oficina
+                      </label>
+                      <div className="h-[34px]">
+                        <Select
+                          options={opcionesOficinas}
+                          value={opcionesOficinas.find(opcion => opcion.value === filtroOficinaTemp)}
+                          onChange={(option) => setFiltroOficinaTemp(option?.value || '')}
+                          isSearchable
+                          placeholder="Seleccionar..."
+                          className="text-xs font-bold"
+                          classNamePrefix="react-select"
+                          styles={{
+                            control: (base, state) => ({
+                              ...base,
+                              background: '#f8fafc',
+                              borderRadius: '0.5rem',
+                              minHeight: '34px',
+                              height: '34px',
+                              borderColor: state.isFocused ? '#002147' : '#e2e8f0',
+                              boxShadow: state.isFocused ? '0 0 0 2px rgba(0, 33, 71, 0.1)' : 'none',
+                              '&:hover': { borderColor: '#002147' }
+                            }),
+                            valueContainer: (base) => ({ ...base, padding: '0 8px', height: '34px', display: 'flex', alignItems: 'center' }),
+                            indicatorsContainer: (base) => ({ ...base, height: '32px' }),
+                            menu: (base) => ({
+                              ...base,
+                              borderRadius: '0.5rem',
+                              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                              zIndex: 50
+                            }),
+                            option: (base, state) => ({
+                              ...base,
+                              fontSize: '10px',
+                              fontWeight: '700',
+                              padding: '8px 12px',
+                              textTransform: 'uppercase',
+                              backgroundColor: state.isSelected ? '#002147' : state.isFocused ? '#f1f5f9' : 'white',
+                              color: state.isSelected ? 'white' : '#002147'
+                            }),
+                            singleValue: (base) => ({
+                              ...base,
+                              textTransform: 'uppercase',
+                              color: '#002147'
+                            }),
+                            placeholder: (base) => ({
+                              ...base,
+                              textTransform: 'none',
+                              fontWeight: '500'
+                            })
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
                   {/* Filtro Fecha */}
                   <div className="hidden md:flex flex-col justify-end space-y-1.5">
                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-1">
@@ -481,7 +557,12 @@ export default function DenunciasPage() {
                             className="group hover:bg-blue-50/30 transition-all duration-200 cursor-pointer"
                           >
                             <td className="px-4 py-3.5 whitespace-nowrap">
-                              <span className="text-xs font-black text-[#002147]">#{denuncia.numero_orden}</span>
+                              <div className="flex flex-col">
+                                <span className="text-xs font-black text-[#002147]">#{denuncia.numero_orden}</span>
+                                {usuario.rol === 'developer' && denuncia.oficina && (
+                                  <span className="text-[9px] font-black text-blue-600 uppercase tracking-tight mt-0.5">{denuncia.oficina}</span>
+                                )}
+                              </div>
                             </td>
                             <td className="px-4 py-3.5">
                               <div className="flex flex-col">

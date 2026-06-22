@@ -30,6 +30,7 @@ export async function GET(request: NextRequest) {
         d.tipo_denuncia as tipo_hecho,
         d.hash as hash_denuncia,
         d.estado,
+        d.oficina,
         den.nombres as nombre_denunciante,
         den.cedula as cedula_denunciante
       FROM denuncias d
