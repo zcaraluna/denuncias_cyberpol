@@ -329,7 +329,7 @@ export default function DenunciasPage() {
                   <h2 className="text-[10px] font-black text-[#002147] uppercase tracking-widest">Filtros de Búsqueda</h2>
                 </div>
 
-                <div className={`grid grid-cols-1 sm:grid-cols-2 ${usuario.rol === 'developer' ? 'lg:grid-cols-6' : 'lg:grid-cols-5'} gap-4`}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {/* Filtro Nombre */}
                   <div className="hidden md:flex flex-col justify-end space-y-1.5">
                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-1">
