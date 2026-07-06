@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/lib/db'
 import { getFechaHoraParaguay } from '@/lib/utils/timezone'
+import { leerSesion } from '@/lib/sesion'
 
 export async function POST(request: NextRequest) {
   try {
@@ -8,19 +9,12 @@ export async function POST(request: NextRequest) {
     const { denuncia_id, relato, usuario_id, operador_grado, operador_nombre, operador_apellido } = body
 
     // Verificar si el usuario actual es un visor
-    const usuarioSesionCookie = request.cookies.get('usuario_sesion')?.value
-    if (usuarioSesionCookie) {
-      try {
-        const usr = JSON.parse(decodeURIComponent(usuarioSesionCookie))
-        if (usr.rol === 'visor') {
-          return NextResponse.json(
-            { error: 'Acción no autorizada para el rol de visor' },
-            { status: 403 }
-          )
-        }
-      } catch (e) {
-        console.error('[POST Ampliación] Error parseando sesión:', e)
-      }
+    const usr = leerSesion(request)
+    if (usr && usr.rol === 'visor') {
+      return NextResponse.json(
+        { error: 'Acción no autorizada para el rol de visor' },
+        { status: 403 }
+      )
     }
 
     let accountType = 'personal'

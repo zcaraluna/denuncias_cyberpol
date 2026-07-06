@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/lib/db'
 import bcrypt from 'bcryptjs'
+import { leerSesion } from '@/lib/sesion'
 
 const ROLE_WEIGHTS: Record<string, number> = {
   developer: 5,
@@ -21,17 +22,10 @@ export async function POST(
       return NextResponse.json({ error: 'ID de usuario inválido' }, { status: 400 })
     }
 
-    // 1. Obtener la sesión del usuario realizador (desde la cookie)
-    const usuarioCookie = request.cookies.get('usuario_sesion')?.value
-    if (!usuarioCookie) {
+    // 1. Obtener la sesión del usuario realizador (desde la cookie firmada)
+    const realizador = leerSesion(request)
+    if (!realizador) {
       return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-    }
-
-    let realizador: { id: number; rol: string; oficina: string; usuario: string; grado: string; nombre: string; apellido: string }
-    try {
-      realizador = JSON.parse(decodeURIComponent(usuarioCookie))
-    } catch (e) {
-      return NextResponse.json({ error: 'Sesión inválida' }, { status: 401 })
     }
 
     const realizadorRol = realizador.rol

@@ -1,22 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/lib/db'
+import { leerSesion } from '@/lib/sesion'
 
 export async function GET(request: NextRequest) {
   try {
     // 1. Obtener la sesión del usuario para aplicar filtrado regional
-    const usuarioCookie = request.cookies.get('usuario_sesion')?.value
+    const usuario = leerSesion(request)
     let oficinaFilter: string | null = null
 
-    if (usuarioCookie) {
-      try {
-        const usuario = JSON.parse(decodeURIComponent(usuarioCookie))
-        if (usuario.rol === 'supervisor') {
-          oficinaFilter = usuario.oficina
-        } else if (usuario.rol === 'operador') {
-          return NextResponse.json({ error: 'Acción no autorizada' }, { status: 403 })
-        }
-      } catch (e) {
-        // Ignorar errores de parseo
+    if (usuario) {
+      if (usuario.rol === 'supervisor') {
+        oficinaFilter = usuario.oficina
+      } else if (usuario.rol === 'operador') {
+        return NextResponse.json({ error: 'Acción no autorizada' }, { status: 403 })
       }
     }
 

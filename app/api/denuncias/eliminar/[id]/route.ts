@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/lib/db'
+import { leerSesion } from '@/lib/sesion'
 
 export async function DELETE(
   request: NextRequest,
@@ -28,16 +29,8 @@ export async function DELETE(
 
     const denuncia = denunciaResult.rows[0]
 
-    // Obtener el usuario autenticado desde la cookie de sesión
-    const usuarioCookie = request.cookies.get('usuario_sesion')?.value
-    let usuarioLogueado = null
-    if (usuarioCookie) {
-      try {
-        usuarioLogueado = JSON.parse(decodeURIComponent(usuarioCookie))
-      } catch (e) {
-        console.error('Error al decodificar cookie de sesion:', e)
-      }
-    }
+    // Obtener el usuario autenticado desde la cookie de sesión firmada
+    const usuarioLogueado = leerSesion(request)
 
     // Solo permitir eliminar borradores, a menos que el usuario sea "garv"
     if (denuncia.estado !== 'borrador') {

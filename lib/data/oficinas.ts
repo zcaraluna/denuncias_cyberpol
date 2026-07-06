@@ -74,6 +74,30 @@ export const ACTIVE_OFFICES = [
   'Pedro Juan Caballero',
 ]
 
+// Nombre canónico (tal como aparece en ACTIVE_OFFICES) para cada oficina configurada.
+const OFFICE_DISPLAY: Record<keyof typeof OFFICE_CONFIG, string> = {
+  ASUNCION: 'Asunción',
+  CIUDAD_DEL_ESTE: 'Ciudad del Este',
+  ENCARNACION: 'Encarnación',
+  LOMA_PYTA: 'Loma Pytã',
+  PEDRO_JUAN_CABALLERO: 'Pedro Juan Caballero',
+}
+
+/**
+ * Devuelve el nombre canónico de una oficina (el valor exacto de ACTIVE_OFFICES),
+ * tolerando variantes de acentos, mayúsculas y espacios. Si la oficina no coincide
+ * con ninguna conocida, se preserva el valor original recortado (no se fuerza a
+ * una oficina por defecto para no reasignar denuncias de forma silenciosa).
+ *
+ * Es crítico usar esta función al escribir el campo `oficina` de una denuncia y al
+ * calcular su número de orden, ya que la numeración y el índice único dependen de
+ * una coincidencia EXACTA del string.
+ */
+export function canonicalizarOficina(oficina: string): string {
+  const key = OFFICE_ALIASES[normalizeOffice(oficina)]
+  return key ? OFFICE_DISPLAY[key] : (oficina || '').trim()
+}
+
 export function getOfficeHashCode(oficina: string): string {
   const key = OFFICE_ALIASES[normalizeOffice(oficina)] ?? 'ASUNCION'
   return OFFICE_CONFIG[key].hashCode

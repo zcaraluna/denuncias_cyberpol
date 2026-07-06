@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/lib/db'
 import { randomBytes } from 'crypto'
-import { getOfficeHashCode } from '@/lib/data/oficinas'
+import { getOfficeHashCode, canonicalizarOficina } from '@/lib/data/oficinas'
 
 type RolDenunciante = 'principal' | 'co-denunciante' | 'abogado'
 
@@ -391,7 +391,7 @@ export async function POST(request: NextRequest) {
           denuncia?.longitud ?? null,
           numeroOrdenBorrador,
           usuarioId,
-          usuario.oficina,
+          canonicalizarOficina(usuario.oficina),
           usuario.grado,
           usuario.nombre,
           usuario.apellido,

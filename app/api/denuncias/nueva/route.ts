@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/lib/db'
 import { randomBytes } from 'crypto'
-import { getOfficeHashCode } from '@/lib/data/oficinas'
+import { getOfficeHashCode, canonicalizarOficina } from '@/lib/data/oficinas'
 
 type RolDenunciante = 'principal' | 'co-denunciante' | 'abogado'
 
@@ -256,6 +256,10 @@ export async function POST(request: NextRequest) {
     }
 
     const usuario = usuarioResult.rows[0]
+    // Canonicalizar la oficina para garantizar consistencia en la numeración de
+    // orden (índice único por oficina+año) y evitar secuencias divergentes por
+    // variantes de acentos/mayúsculas/espacios en el campo del usuario.
+    const oficinaCanonica = canonicalizarOficina(usuario.oficina)
 
     if (usuario.rol === 'visor') {
       await client.query('ROLLBACK')
@@ -358,7 +362,7 @@ export async function POST(request: NextRequest) {
     const objetosExtraviados = denuncia?.objetosExtraviados ?? null
     const gradoEjecucion = denuncia?.gradoEjecucion ?? null
 
-    const hash = generarHash(usuario.oficina)
+    const hash = generarHash(oficinaCanonica)
 
     let denunciaId = borradorId ?? null
     let numeroOrden = 0
@@ -389,11 +393,17 @@ export async function POST(request: NextRequest) {
 
     if (borradorId) {
       const año = fechaActual.split('-')[0]
-      const oficina = usuario.oficina
+      const oficina = oficinaCanonica
+      // Serializar la asignación del número de orden para esta oficina y año.
+      // Un advisory lock de transacción evita la condición de carrera incluso
+      // cuando la oficina todavía no tiene denuncias (caso de un nodo recién
+      // abierto, como Ciudad del Este), donde el FOR UPDATE de abajo no bloquearía
+      // ninguna fila existente y dos operadores simultáneos obtendrían el mismo orden.
+      await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`denuncia_orden_${oficina}_${año}`])
       // Bloquear las filas del año actual para evitar condiciones de carrera
       // Luego buscar el primer número de orden disponible (reutilizar si hay huecos)
       await client.query(
-        `SELECT orden FROM denuncias 
+        `SELECT orden FROM denuncias
          WHERE EXTRACT(YEAR FROM fecha_denuncia) = $1 AND orden >= 1 AND oficina = $2
          FOR UPDATE`,
         [año, oficina]
@@ -443,8 +453,9 @@ export async function POST(request: NextRequest) {
           bancos_relacionados = $25,
           entidad_bancaria_vulnerada = $26,
           objetos_extraviados = $27,
-          grado_ejecucion = $28
-        WHERE id = $29`,
+          grado_ejecucion = $28,
+          oficina = $29
+        WHERE id = $30`,
         [
           principalId,
           fechaActual,
@@ -474,17 +485,24 @@ export async function POST(request: NextRequest) {
           entidadBancariaVulnerada,
           objetosExtraviados ? JSON.stringify(objetosExtraviados) : null,
           gradoEjecucion,
+          oficinaCanonica,
           borradorId
         ]
       )
       denunciaId = borradorId
     } else {
       const año = fechaActual.split('-')[0]
-      const oficina = usuario.oficina
+      const oficina = oficinaCanonica
+      // Serializar la asignación del número de orden para esta oficina y año.
+      // Un advisory lock de transacción evita la condición de carrera incluso
+      // cuando la oficina todavía no tiene denuncias (caso de un nodo recién
+      // abierto, como Ciudad del Este), donde el FOR UPDATE de abajo no bloquearía
+      // ninguna fila existente y dos operadores simultáneos obtendrían el mismo orden.
+      await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`denuncia_orden_${oficina}_${año}`])
       // Bloquear las filas del año actual para evitar condiciones de carrera
       // Luego buscar el primer número de orden disponible (reutilizar si hay huecos)
       await client.query(
-        `SELECT orden FROM denuncias 
+        `SELECT orden FROM denuncias
          WHERE EXTRACT(YEAR FROM fecha_denuncia) = $1 AND orden >= 1 AND oficina = $2
          FOR UPDATE`,
         [año, oficina]
@@ -545,7 +563,7 @@ export async function POST(request: NextRequest) {
           longitud,
           numeroOrden,
           usuarioId,
-          usuario.oficina,
+          oficinaCanonica,
           usuario.grado || '',
           usuario.nombre || '',
           usuario.apellido || '',
@@ -646,6 +664,21 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     await client.query('ROLLBACK')
     console.error('Error creando denuncia:', error)
+
+    // Conflicto de numeración/hash concurrente (violación de índice único).
+    // Con el advisory lock esto debería ser extremadamente raro, pero si ocurre
+    // devolvemos un 409 reintentable en lugar de un 500 genérico, para que el
+    // frontend pueda reintentar sin perder la carga del operador.
+    if (error && typeof error === 'object' && (error as any).code === '23505') {
+      return NextResponse.json(
+        {
+          error: 'Conflicto de numeración por concurrencia. Por favor, reintente el registro.',
+          code: 'CONFLICTO_ORDEN'
+        },
+        { status: 409 }
+      )
+    }
+
     return NextResponse.json(
       {
         error: 'Error al crear la denuncia',

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import pool from '@/lib/db'
+import { firmarSesion, COOKIE_SESION, opcionesCookieSesion } from '@/lib/sesion'
 
 export async function POST(request: NextRequest) {
   try {
@@ -105,15 +106,8 @@ export async function POST(request: NextRequest) {
       usuario: usuarioActualizado,
     })
 
-    // Actualizar la cookie con el usuario actualizado (sin debe_cambiar_contraseña)
-    const usuarioJson = encodeURIComponent(JSON.stringify(usuarioActualizado))
-    response.cookies.set('usuario_sesion', usuarioJson, {
-      httpOnly: false,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60, // 7 días
-      path: '/',
-    })
+    // Actualizar la cookie de sesión firmada con el usuario actualizado
+    response.cookies.set(COOKIE_SESION, firmarSesion(usuarioActualizado), opcionesCookieSesion())
 
     return response
   } catch (error) {

@@ -9,6 +9,7 @@ import fs from 'fs';
 import path from 'path';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { s3Client, bucketName } from '@/lib/s3';
+import { leerSesion } from '@/lib/sesion';
 
 // Función para descargar un adjunto de forma segura
 async function descargarRecurso(url: string): Promise<Buffer | null> {
@@ -91,16 +92,8 @@ export async function GET(
         const esCopiaManual = searchParams.get('es_copia') === 'true';
         const forzarOriginal = searchParams.get('forzar_original') === 'true';
 
-        // 1. Obtener el usuario actual de la cookie de sesión
-        const usuarioSesionCookie = request.cookies.get('usuario_sesion')?.value;
-        let operadorActual = null;
-        if (usuarioSesionCookie) {
-            try {
-                operadorActual = JSON.parse(decodeURIComponent(usuarioSesionCookie));
-            } catch (e) {
-                console.error('[PDF] Error parseando sesión:', e);
-            }
-        }
+        // 1. Obtener el usuario actual de la cookie de sesión firmada
+        const operadorActual = leerSesion(request);
 
         // 2. Incrementar contador de impresiones y obtener valor previo
         const updateResult = await pool.query(

@@ -1,36 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verificarCredenciales } from '@/lib/auth'
+import { leerSesion, firmarSesion, verificarValorSesion, COOKIE_SESION, opcionesCookieSesion } from '@/lib/sesion'
 
 /**
- * GET: Verifica la sesión actual del usuario desde la cookie
+ * GET: Verifica la sesión actual del usuario desde la cookie firmada.
  */
 export async function GET(request: NextRequest) {
   try {
-    // Obtener la información del usuario de la cookie
-    const usuarioCookie = request.cookies.get('usuario_sesion')?.value
-    
-    if (!usuarioCookie) {
-      return NextResponse.json(
-        { autenticado: false, usuario: null },
-        { status: 200 }
-      )
-    }
+    const usuario = leerSesion(request)
 
-    try {
-      const usuario = JSON.parse(decodeURIComponent(usuarioCookie))
-      return NextResponse.json({
-        autenticado: true,
-        usuario: usuario,
-      })
-    } catch (error) {
-      // Cookie inválida, limpiarla
+    if (!usuario) {
+      // Cookie ausente, manipulada o en formato antiguo (sin firma): no autenticado.
       const response = NextResponse.json(
         { autenticado: false, usuario: null },
         { status: 200 }
       )
-      response.cookies.delete('usuario_sesion')
+      // Limpiar cualquier cookie inválida/antigua para evitar reintentos.
+      response.cookies.delete(COOKIE_SESION)
       return response
     }
+
+    return NextResponse.json({
+      autenticado: true,
+      usuario,
+    })
   } catch (error) {
     console.error('Error verificando sesión:', error)
     return NextResponse.json(
@@ -41,37 +33,35 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * POST: Restaura la cookie desde los datos del usuario (útil cuando sessionStorage tiene datos pero la cookie se perdió)
+ * POST: Refresca la cookie de sesión SOLO si ya existe una cookie firmada válida.
+ *
+ * A diferencia de la versión anterior, NO reconstruye la sesión a partir de los
+ * datos que envía el cliente (eso permitía suplantar identidad y escalar
+ * privilegios enviando un rol arbitrario). Si no hay una sesión firmada válida,
+ * el usuario debe volver a iniciar sesión.
  */
 export async function POST(request: NextRequest) {
   try {
-    const { usuario } = await request.json()
-    
-    if (!usuario || !usuario.id) {
+    const usuario = verificarValorSesion(request.cookies.get(COOKIE_SESION)?.value)
+
+    if (!usuario) {
       return NextResponse.json(
-        { error: 'Datos de usuario requeridos' },
-        { status: 400 }
+        { error: 'Sesión no válida. Debe iniciar sesión nuevamente.' },
+        { status: 401 }
       )
     }
 
-    // Establecer cookie con la información del usuario
-    const usuarioJson = encodeURIComponent(JSON.stringify(usuario))
     const response = NextResponse.json({
       success: true,
-      mensaje: 'Cookie restaurada correctamente',
+      mensaje: 'Sesión refrescada correctamente',
     })
-    
-    response.cookies.set('usuario_sesion', usuarioJson, {
-      httpOnly: false,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60, // 7 días
-      path: '/',
-    })
-    
+
+    // Re-firmar con la misma identidad verificada (renueva la expiración).
+    response.cookies.set(COOKIE_SESION, firmarSesion(usuario), opcionesCookieSesion())
+
     return response
   } catch (error) {
-    console.error('Error restaurando cookie:', error)
+    console.error('Error refrescando sesión:', error)
     return NextResponse.json(
       { error: 'Error del servidor' },
       { status: 500 }
@@ -80,7 +70,7 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * DELETE: Cierra la sesión del usuario
+ * DELETE: Cierra la sesión del usuario.
  */
 export async function DELETE(request: NextRequest) {
   try {
@@ -88,10 +78,9 @@ export async function DELETE(request: NextRequest) {
       success: true,
       mensaje: 'Sesión cerrada correctamente',
     })
-    
-    // Eliminar la cookie de sesión
-    response.cookies.delete('usuario_sesion')
-    
+
+    response.cookies.delete(COOKIE_SESION)
+
     return response
   } catch (error) {
     console.error('Error cerrando sesión:', error)
@@ -101,4 +90,3 @@ export async function DELETE(request: NextRequest) {
     )
   }
 }
-

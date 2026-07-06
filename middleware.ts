@@ -8,7 +8,8 @@ import type { NextRequest } from 'next/server';
  * La validación real contra la base de datos se hace en las rutas API protegidas.
  * 
  * Nota: Este middleware corre en Edge Runtime, por lo que no puede acceder directamente
- * a la base de datos. La validación completaaaaaaaaaa se hace en las rutas API.
+ * a la base de datos. La validación completa (contra la BD) se hace en las rutas API;
+ * aquí solo se comprueba la presencia y el formato del fingerprint.
  */
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -37,11 +38,15 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Obtener el fingerprint de la cookie
+  // Obtener el fingerprint de la cookie. El fingerprint real es un SHA-256
+  // (64 caracteres hexadecimales); cualquier otro valor se considera inválido
+  // para descartar cookies manipuladas o basura antes de servir la página.
+  // La validación fuerte contra la base de datos se realiza en las rutas API.
   const fingerprint = request.cookies.get('device_fingerprint')?.value;
+  const fingerprintValido = typeof fingerprint === 'string' && /^[a-f0-9]{64}$/i.test(fingerprint);
 
-  // Si no tiene fingerprint, redirigir a /autenticar
-  if (!fingerprint) {
+  // Si no tiene un fingerprint válido, redirigir a /autenticar
+  if (!fingerprintValido) {
     // Solo redirigir si no está ya en /autenticar
     if (pathname !== '/autenticar') {
       const url = request.nextUrl.clone();

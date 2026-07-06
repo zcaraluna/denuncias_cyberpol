@@ -1,26 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/lib/db'
 import bcrypt from 'bcryptjs'
+import { canonicalizarOficina } from '@/lib/data/oficinas'
+import { leerSesion } from '@/lib/sesion'
 
 // GET: Obtener lista de usuarios (filtrado regional y enmascaramiento para supervisores)
 export async function GET(request: NextRequest) {
   try {
     // 1. Obtener la sesión del usuario para aplicar filtrado regional y enmascaramiento
-    const usuarioCookie = request.cookies.get('usuario_sesion')?.value
+    const usuario = leerSesion(request)
     let oficinaFilter: string | null = null
     let esSupervisor = false
 
-    if (usuarioCookie) {
-      try {
-        const usuario = JSON.parse(decodeURIComponent(usuarioCookie))
-        if (usuario.rol === 'supervisor') {
-          oficinaFilter = usuario.oficina
-          esSupervisor = true
-        } else if (usuario.rol === 'operador') {
-          return NextResponse.json({ error: 'Acción no autorizada' }, { status: 403 })
-        }
-      } catch (e) {
-        // Ignorar
+    if (usuario) {
+      if (usuario.rol === 'supervisor') {
+        oficinaFilter = usuario.oficina
+        esSupervisor = true
+      } else if (usuario.rol === 'operador') {
+        return NextResponse.json({ error: 'Acción no autorizada' }, { status: 403 })
       }
     }
 
@@ -54,16 +51,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Verificar sesión del creador
-    const usuarioCookie = request.cookies.get('usuario_sesion')?.value
-    if (!usuarioCookie) {
+    const creador = leerSesion(request)
+    if (!creador) {
       return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-    }
-
-    let creador: { rol: string }
-    try {
-      creador = JSON.parse(decodeURIComponent(usuarioCookie))
-    } catch (e) {
-      return NextResponse.json({ error: 'Sesión inválida' }, { status: 401 })
     }
 
     // Solo developer, superadmin y admin pueden crear usuarios
@@ -72,7 +62,11 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { usuario, contraseña, nombre, apellido, grado, oficina, rol, tipo_cuenta } = body
+    const { usuario, contraseña, nombre, apellido, grado, oficina: oficinaRaw, rol, tipo_cuenta } = body
+
+    // Canonicalizar la oficina para que coincida exactamente con la numeración de
+    // denuncias y el índice único por oficina+año.
+    const oficina = oficinaRaw ? canonicalizarOficina(oficinaRaw) : oficinaRaw
 
     const accountType = tipo_cuenta || 'personal'
 

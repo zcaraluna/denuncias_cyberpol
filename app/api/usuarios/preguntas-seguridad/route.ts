@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/lib/db'
 import bcrypt from 'bcryptjs'
+import { leerSesion } from '@/lib/sesion'
 
 // Normalizar texto: minúsculas, sin acentos y sin espacios en blanco
 function normalizarRespuesta(texto: string): string {
@@ -16,16 +17,9 @@ function normalizarRespuesta(texto: string): string {
 // GET: Verificar si el usuario logueado ya configuró sus 5 preguntas
 export async function GET(request: NextRequest) {
   try {
-    const usuarioCookie = request.cookies.get('usuario_sesion')?.value
-    if (!usuarioCookie) {
+    const usuario = leerSesion(request)
+    if (!usuario) {
       return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-    }
-
-    let usuario: { id: number; rol: string }
-    try {
-      usuario = JSON.parse(decodeURIComponent(usuarioCookie))
-    } catch (e) {
-      return NextResponse.json({ error: 'Sesión inválida' }, { status: 401 })
     }
 
     if (usuario.rol === 'visor') {
@@ -52,16 +46,9 @@ export async function GET(request: NextRequest) {
 // POST: Guardar las 5 preguntas y respuestas de seguridad
 export async function POST(request: NextRequest) {
   try {
-    const usuarioCookie = request.cookies.get('usuario_sesion')?.value
-    if (!usuarioCookie) {
+    const usuario = leerSesion(request)
+    if (!usuario) {
       return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-    }
-
-    let usuario: { id: number; rol: string }
-    try {
-      usuario = JSON.parse(decodeURIComponent(usuarioCookie))
-    } catch (e) {
-      return NextResponse.json({ error: 'Sesión inválida' }, { status: 401 })
     }
 
     if (usuario.rol === 'visor') {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/lib/db'
+import { leerSesion } from '@/lib/sesion'
 
 export async function GET(
   request: NextRequest,
@@ -39,19 +40,12 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const usuarioSesionCookie = request.cookies.get('usuario_sesion')?.value
-    if (usuarioSesionCookie) {
-      try {
-        const usr = JSON.parse(decodeURIComponent(usuarioSesionCookie))
-        if (usr.rol === 'visor') {
-          return NextResponse.json(
-            { error: 'Acción no autorizada para el rol de visor' },
-            { status: 403 }
-          )
-        }
-      } catch (e) {
-        console.error('[PATCH Remitir] Error parseando sesión:', e)
-      }
+    const usr = leerSesion(request)
+    if (usr && usr.rol === 'visor') {
+      return NextResponse.json(
+        { error: 'Acción no autorizada para el rol de visor' },
+        { status: 403 }
+      )
     }
 
     const { id: idStr } = await params
@@ -86,14 +80,9 @@ export async function PATCH(
     // 2. Identificar al operador actual
     let operadorNombre = remitido_por
     if (!operadorNombre) {
-      const usuarioSesionCookie = request.cookies.get('usuario_sesion')?.value
-      if (usuarioSesionCookie) {
-        try {
-          const usr = JSON.parse(decodeURIComponent(usuarioSesionCookie))
-          operadorNombre = `${usr.grado || ''} ${usr.nombre || ''} ${usr.apellido || ''}`.trim()
-        } catch (e) {
-          console.error('[PATCH Remitir] Error parseando sesión:', e)
-        }
+      const usr = leerSesion(request)
+      if (usr) {
+        operadorNombre = `${usr.grado || ''} ${usr.nombre || ''} ${usr.apellido || ''}`.trim()
       }
     }
 

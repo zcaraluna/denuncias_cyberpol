@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verificarCredenciales, verificarRestriccionesDispositivo } from '@/lib/auth'
+import { firmarSesion, COOKIE_SESION, opcionesCookieSesion } from '@/lib/sesion'
 
 export async function POST(request: NextRequest) {
   try {
@@ -54,16 +55,10 @@ export async function POST(request: NextRequest) {
       debe_cambiar_contraseña: usuarioValidado.debe_cambiar_contraseña ?? false,
     })
 
-    // Establecer cookie con la información del usuario (válida por 7 días)
-    // Usar encodeURIComponent para manejar caracteres especiales
-    const usuarioJson = encodeURIComponent(JSON.stringify(usuarioValidado))
-    response.cookies.set('usuario_sesion', usuarioJson, {
-      httpOnly: false, // Permitir acceso desde JS para compatibilidad con sessionStorage
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax', // Cambiado de 'strict' a 'lax' para mejor compatibilidad
-      maxAge: 7 * 24 * 60 * 60, // 7 días
-      path: '/',
-    })
+    // Establecer cookie de sesión FIRMADA (HMAC) para impedir manipulación del
+    // rol/oficina desde el cliente. Es httpOnly: el cliente usa sessionStorage
+    // (que recibe `usuario` en el cuerpo de la respuesta), no la cookie.
+    response.cookies.set(COOKIE_SESION, firmarSesion(usuarioValidado), opcionesCookieSesion())
 
     return response
   } catch (error) {

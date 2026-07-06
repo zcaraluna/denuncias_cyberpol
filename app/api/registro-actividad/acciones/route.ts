@@ -1,19 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/lib/db'
+import { leerSesion } from '@/lib/sesion'
 
 export async function GET(request: NextRequest) {
   try {
     // 1. Verificar sesión del usuario
-    const usuarioCookie = request.cookies.get('usuario_sesion')?.value
-    if (!usuarioCookie) {
+    const usuario = leerSesion(request)
+    if (!usuario) {
       return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-    }
-
-    let usuario: { rol: string }
-    try {
-      usuario = JSON.parse(decodeURIComponent(usuarioCookie))
-    } catch (e) {
-      return NextResponse.json({ error: 'Sesión inválida' }, { status: 401 })
     }
 
     // Restricción estricta: Solo superadmin y developer pueden visualizar estos logs

@@ -17,6 +17,13 @@ NEXTAUTH_URL=http://localhost:3000
 # IMPORTANTE: Cambiar en producción por un valor seguro y único
 NEXTAUTH_SECRET=secret-temporal-para-desarrollo-cambiar-en-produccion
 
+# Secret para firmar la cookie de sesión de usuario (HMAC-SHA256).
+# Generar con: openssl rand -base64 32
+# IMPORTANTE: definir un valor propio y estable en producción. Si se cambia este
+# valor, TODAS las sesiones activas quedan invalidadas y los usuarios deben volver
+# a iniciar sesión. Si no se define, el sistema usa DATABASE_URL como respaldo.
+SESSION_SECRET=secret-de-sesion-cambiar-en-produccion
+
 # URL base para verificación pública de denuncias (usado en QR codes)
 # En producción, usar la URL pública del dominio
 NEXT_PUBLIC_URL_BASE=https://tu-dominio.com
@@ -50,6 +57,12 @@ PORT=6368
 - **Descripción**: Secret para firmar tokens de sesión
 - **Generar**: `openssl rand -base64 32`
 - **Importante**: Cambiar en producción
+
+### SESSION_SECRET (Recomendado)
+- **Descripción**: Secret con el que se firma (HMAC-SHA256) la cookie de sesión `usuario_sesion`, para impedir que el cliente altere su rol u oficina.
+- **Generar**: `openssl rand -base64 32`
+- **Respaldo**: Si no se define, se deriva de `DATABASE_URL` (funciona, pero se recomienda un valor propio y explícito).
+- **Importante**: Debe ser **estable**. Cambiarlo invalida todas las sesiones activas y obliga a re-iniciar sesión.
 
 ### NEXT_PUBLIC_URL_BASE (Recomendado)
 - **Descripción**: URL pública para verificación de denuncias (usado en QR codes)

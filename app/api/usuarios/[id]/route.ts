@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/lib/db'
 import bcrypt from 'bcryptjs'
+import { canonicalizarOficina } from '@/lib/data/oficinas'
+import { leerSesion } from '@/lib/sesion'
 
 // GET: Obtener un usuario específico (con filtrado regional y enmascaramiento para supervisores)
 export async function GET(
@@ -12,16 +14,9 @@ export async function GET(
     const id = parseInt(idStr)
 
     // 1. Obtener la sesión del usuario para aplicar filtrado regional y enmascaramiento
-    const usuarioCookie = request.cookies.get('usuario_sesion')?.value
-    if (!usuarioCookie) {
+    const solicitante = leerSesion(request)
+    if (!solicitante) {
       return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-    }
-
-    let solicitante: { id: number; rol: string; oficina: string }
-    try {
-      solicitante = JSON.parse(decodeURIComponent(usuarioCookie))
-    } catch (e) {
-      return NextResponse.json({ error: 'Sesión inválida' }, { status: 401 })
     }
 
     if (solicitante.rol === 'operador') {
@@ -72,16 +67,9 @@ export async function PUT(
     const id = parseInt(idStr)
 
     // Verificar sesión y rol
-    const usuarioCookie = request.cookies.get('usuario_sesion')?.value
-    if (!usuarioCookie) {
+    const realizador = leerSesion(request)
+    if (!realizador) {
       return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-    }
-
-    let realizador: { rol: string }
-    try {
-      realizador = JSON.parse(decodeURIComponent(usuarioCookie))
-    } catch (e) {
-      return NextResponse.json({ error: 'Sesión inválida' }, { status: 401 })
     }
 
     // Solo developer, superadmin y admin pueden editar usuarios a través de esta ruta general
@@ -90,7 +78,10 @@ export async function PUT(
     }
 
     const body = await request.json()
-    const { nombre, apellido, grado, oficina, rol, activo, contraseña, tipo_cuenta } = body
+    const { nombre, apellido, grado, oficina: oficinaRaw, rol, activo, contraseña, tipo_cuenta } = body
+
+    // Canonicalizar la oficina para mantener consistencia con la numeración de denuncias.
+    const oficina = oficinaRaw ? canonicalizarOficina(oficinaRaw) : oficinaRaw
 
     // Validar rol si se proporciona
     if (rol && !['superadmin', 'admin', 'operador', 'supervisor', 'developer', 'visor'].includes(rol)) {
@@ -191,16 +182,9 @@ export async function DELETE(
     const id = parseInt(idStr)
 
     // Verificar sesión y rol
-    const usuarioCookie = request.cookies.get('usuario_sesion')?.value
-    if (!usuarioCookie) {
+    const realizador = leerSesion(request)
+    if (!realizador) {
       return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-    }
-
-    let realizador: { id: number; rol: string }
-    try {
-      realizador = JSON.parse(decodeURIComponent(usuarioCookie))
-    } catch (e) {
-      return NextResponse.json({ error: 'Sesión inválida' }, { status: 401 })
     }
 
     // Solo developer, superadmin y admin pueden eliminar usuarios

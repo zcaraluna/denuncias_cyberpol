@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/lib/db'
+import { leerSesion } from '@/lib/sesion'
 
 /**
  * GET: Genera y descarga un backup de la base de datos PostgreSQL
@@ -8,13 +9,11 @@ import pool from '@/lib/db'
 export async function GET(request: NextRequest) {
     try {
         // 1. Verificar sesión del usuario
-        const usuarioCookie = request.cookies.get('usuario_sesion')?.value
+        const usuario = leerSesion(request)
 
-        if (!usuarioCookie) {
+        if (!usuario) {
             return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
         }
-
-        const usuario = JSON.parse(decodeURIComponent(usuarioCookie))
 
         // 2. Restringir solo a 'garv'
         if (usuario.usuario !== 'garv') {

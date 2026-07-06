@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/lib/db'
+import { leerSesion } from '@/lib/sesion'
 
 export async function GET(
   request: NextRequest,
@@ -9,16 +10,9 @@ export async function GET(
     const usuarioId = parseInt((await params).id)
 
     // Verificar sesión y rol
-    const usuarioCookie = request.cookies.get('usuario_sesion')?.value
-    if (!usuarioCookie) {
+    const solicitante = leerSesion(request)
+    if (!solicitante) {
       return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-    }
-
-    let solicitante: { rol: string }
-    try {
-      solicitante = JSON.parse(decodeURIComponent(usuarioCookie))
-    } catch (e) {
-      return NextResponse.json({ error: 'Sesión inválida' }, { status: 401 })
     }
 
     // Operadores no pueden ver registros de consultas de otros usuarios

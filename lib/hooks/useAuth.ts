@@ -55,23 +55,21 @@ export function useAuth() {
         .then(res => res.json())
         .then(data => {
           if (data.autenticado && data.usuario) {
-            // Cookie válida, actualizar sessionStorage
+            // Cookie firmada válida, actualizar sessionStorage
             sessionStorage.setItem('usuario', JSON.stringify(data.usuario))
             setUsuario(data.usuario)
           } else {
-            // No hay cookie, intentar restaurarla
-            fetch('/api/auth/sesion', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              credentials: 'include',
-              body: JSON.stringify({ usuario: usuarioSession }),
-            }).catch(() => {
-              // Ignorar errores, sessionStorage es suficiente
-            })
+            // La cookie de sesión firmada no es válida (perdida, expirada o de un
+            // formato anterior). Por seguridad ya NO se reconstruye la sesión a
+            // partir de datos del cliente: se cierra la sesión local y se exige
+            // un nuevo inicio de sesión.
+            sessionStorage.removeItem('usuario')
+            setUsuario(null)
+            router.push('/')
           }
         })
         .catch(() => {
-          // Ignorar errores de red, sessionStorage es suficiente
+          // Ignorar errores de red transitorios: sessionStorage mantiene la UI.
         })
       
       return
