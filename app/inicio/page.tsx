@@ -99,7 +99,6 @@ export default function InicioPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedManual, setSelectedManual] = useState<Manual | null>(null)
   const [isManualModalOpen, setIsManualModalOpen] = useState(false)
-  const [activeModal, setActiveModal] = useState<'new' | null>(null)
 
   // Recordatorio de preguntas de seguridad
   const [showPreguntasReminder, setShowPreguntasReminder] = useState(false)
@@ -212,22 +211,11 @@ export default function InicioPage() {
           sessionStorage.setItem('hasSeenVisorModal', 'true')
         }
       } else {
-        // Mostrar modal de actualizaciones una vez por sesión
-        const hasSeen = sessionStorage.getItem('hasSeenUpdateModal')
-        if (!hasSeen) {
-          setActiveModal('new')
-        } else {
-          checkPreguntas()
-        }
+        // El modal de novedades fue retirado; continuar con la verificación de preguntas.
+        checkPreguntas()
       }
     }
   }, [usuario, authLoading, router])
-
-  const handleCloseNewModal = () => {
-    sessionStorage.setItem('hasSeenUpdateModal', 'true')
-    setActiveModal(null)
-    checkPreguntas()
-  }
 
   if (authLoading) {
     return (
@@ -358,46 +346,6 @@ export default function InicioPage() {
         <ManualModal
           manual={selectedManual}
           onClose={() => setIsManualModalOpen(false)}
-        />
-      )}
-
-      {/* Modal de Actualización - Novedades (v1.5.551) */}
-      {activeModal === 'new' && (
-        <UpdateModal
-          version="v1.5.551"
-          onClose={handleCloseNewModal}
-          features={[
-            {
-              icon: (
-                <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                </svg>
-              ),
-              title: "Nuevos Objetos Extraviados",
-              description: (
-                <>
-                  Ahora es posible registrar de forma detallada <strong className="font-extrabold text-[#002147]">Facturas</strong> (individuales o talonarios), <strong className="font-extrabold text-[#002147]">CDA</strong> (Certificados de Depósito de Ahorro) y <strong className="font-extrabold text-[#002147]">Cédulas Verdes</strong> de vehículos, incluyendo todos sus datos específicos y validaciones.
-                </>
-              ),
-              bgClass: "bg-indigo-50",
-              borderClass: "border-indigo-100"
-            },
-            {
-              icon: (
-                <svg className="w-5 h-5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              ),
-              title: "Visualización e Impresión PDF",
-              description: (
-                <>
-                  Se integró el formateo automático de los campos de Facturas, CDAs y Cédulas Verdes en la <strong className="font-extrabold text-[#002147]">vista de detalles</strong> de la denuncia y en la generación de las <strong className="font-extrabold text-[#002147]">actas PDF</strong> oficiales.
-                </>
-              ),
-              bgClass: "bg-rose-50",
-              borderClass: "border-rose-100"
-            }
-          ]}
         />
       )}
 
@@ -592,102 +540,6 @@ export default function InicioPage() {
         </div>
       )}
     </MainLayout>
-  )
-}
-
-interface Feature {
-  icon: React.ReactNode
-  title: string
-  description: React.ReactNode
-  bgClass: string
-  borderClass: string
-}
-
-function UpdateModal({
-  version,
-  features,
-  onClose
-}: {
-  version: string
-  features: Feature[]
-  onClose: () => void
-}) {
-  const [segundos, setSegundos] = useState(5)
-
-  useEffect(() => {
-    setSegundos(5)
-  }, [version])
-
-  useEffect(() => {
-    if (segundos <= 0) return
-    const timer = setInterval(() => {
-      setSegundos((prev) => prev - 1)
-    }, 1000)
-    return () => clearInterval(timer)
-  }, [segundos])
-
-  return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-[#002147]/45 backdrop-blur-sm transition-opacity"
-        onClick={segundos === 0 ? onClose : undefined}
-      />
-
-      {/* Modal Card */}
-      <div className="relative bg-white rounded-[2.5rem] shadow-2xl border border-slate-100 w-full max-w-xl overflow-hidden animate-in fade-in zoom-in duration-300">
-        {/* Header decoration */}
-        <div className="bg-[#002147] px-10 py-10 text-white relative">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-8 -mt-8 blur-lg" />
-          <div className="flex items-center gap-5">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/20 shrink-0">
-              <ShieldCheck className="h-7 w-7 text-white" />
-            </div>
-            <div>
-              <span className="text-[10px] font-black uppercase tracking-[0.25em] text-blue-200 block mb-0.5">
-                Nueva Actualización ({version})
-              </span>
-              <h2 className="text-2xl font-extrabold tracking-tight">
-                SIDE Sistema de Denuncias
-              </h2>
-            </div>
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="p-10">
-          <p className="text-sm text-slate-500 leading-relaxed mb-8 font-semibold">
-            Se ha implementado una nueva versión del sistema con herramientas avanzadas para optimizar la carga de actas y proteger tu trabajo.
-          </p>
-
-          <div className="space-y-6">
-            {features.map((feature, idx) => (
-              <div key={idx} className="flex gap-5">
-                <div className={`flex-shrink-0 flex h-11 w-11 items-center justify-center rounded-2xl ${feature.bgClass} border ${feature.borderClass}`}>
-                  {feature.icon}
-                </div>
-                <div>
-                  <h4 className="text-sm font-black text-[#002147] uppercase tracking-wide mb-1.5">
-                    {feature.title}
-                  </h4>
-                  <p className="text-xs text-slate-400 leading-relaxed font-medium">
-                    {feature.description}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <button
-            onClick={onClose}
-            disabled={segundos > 0}
-            className="w-full bg-[#002147] text-white py-4 px-4 rounded-2xl font-black text-[11px] uppercase tracking-[0.15em] hover:bg-blue-900 active:scale-[0.98] transition-all shadow-md shadow-blue-950/10 mt-10 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#002147]"
-          >
-            {segundos > 0 ? `Entendido, Continuar (${segundos}s)` : 'Entendido, Continuar'}
-          </button>
-        </div>
-      </div>
-    </div>
   )
 }
 
