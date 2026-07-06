@@ -18,6 +18,7 @@ import {
     BarChart3,
     LogOut,
     Activity,
+    Hash,
     User as UserIcon
 } from 'lucide-react'
 
@@ -67,6 +68,7 @@ const adminItems = [
     { href: '/gestion-usuarios', label: 'Usuarios', icon: Users, roles: ['admin', 'superadmin', 'supervisor', 'developer'] },
     { href: '/log-visitas', label: 'Auditoría', icon: History, roles: ['admin', 'superadmin', 'supervisor', 'developer'] },
     { href: '/gestion-dispositivos', label: 'Dispositivos', icon: ShieldCheck, roles: ['superadmin', 'developer'] },
+    { href: '/numeracion', label: 'Numeración', icon: Hash, roles: ['superadmin', 'developer'] },
     { href: '/monitoreo', label: 'Monitoreo', icon: Activity, roles: ['developer'] },
 ]
 

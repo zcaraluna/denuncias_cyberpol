@@ -236,11 +236,17 @@ Los tres puntos con mayor impacto directo sobre la liberación del nodo:
 
 ### Checklist operativo de lanzamiento del nodo CDE (#3)
 
+- [ ] **Configurar la numeración base de CDE ANTES de habilitar usuarios.** Aplicar
+      la migración **025** y, desde el panel **Numeración** (`/numeracion`), cargar el
+      último número de acta tomado en papel para (Ciudad del Este, año en curso). La
+      primera denuncia del sistema arrancará en ese número + 1, evitando duplicar
+      la numeración. Sin esto, la primera denuncia sería 1/AAAA y colisionaría con
+      el papel.
 - [ ] Crear los usuarios de CDE con oficina exactamente **"Ciudad del Este"** (el
       alta ya canoniza el valor).
 - [ ] Generar los **códigos de activación** de las terminales de CDE. Para
       restringirlas a la oficina, usar serial tipo **"oficina" = "Ciudad del Este"**.
-- [ ] Verificar que las migraciones (especialmente la **015**) estén aplicadas en
-      producción (usar el script del #6).
+- [ ] Verificar que las migraciones (especialmente la **015** y la **025**) estén
+      aplicadas en producción (usar el script del #6).
 - [ ] Confirmar `SESSION_SECRET` configurado y coordinar el re-login posterior al
       deploy.

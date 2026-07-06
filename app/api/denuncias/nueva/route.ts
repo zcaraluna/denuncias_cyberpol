@@ -43,6 +43,31 @@ function generarHash(oficina: string): string {
   return `${hashBase}${idOficina}${año.toString().padStart(2, '0')}`
 }
 
+/**
+ * Obtiene el número de arranque (offset) configurado para una oficina y año.
+ * Devuelve `ultimo_orden_previo`: cuántas actas ya existían fuera del sistema, de
+ * modo que la primera denuncia cargada reciba ese valor + 1 (evita duplicar la
+ * numeración de una oficina que se incorpora a mitad de año, como Ciudad del Este).
+ *
+ * Usa un SAVEPOINT para que, si la tabla aún no existe (migración 025 no aplicada)
+ * o hay cualquier error, se asuma base 0 sin abortar la transacción en curso.
+ */
+async function obtenerBaseNumeracion(client: any, oficina: string, anio: number): Promise<number> {
+  try {
+    await client.query('SAVEPOINT sp_base_numeracion')
+    const res = await client.query(
+      'SELECT ultimo_orden_previo FROM numeracion_base WHERE oficina = $1 AND anio = $2',
+      [oficina, anio]
+    )
+    await client.query('RELEASE SAVEPOINT sp_base_numeracion')
+    const base = Number(res.rows[0]?.ultimo_orden_previo)
+    return Number.isFinite(base) && base > 0 ? base : 0
+  } catch (error) {
+    await client.query('ROLLBACK TO SAVEPOINT sp_base_numeracion').catch(() => {})
+    return 0
+  }
+}
+
 const normalizarTexto = (valor: any, opciones: { upper?: boolean; fallback?: string | null } = {}) => {
   if (valor === undefined || valor === null) return opciones.fallback ?? null
   const texto = String(valor).trim()
@@ -364,6 +389,10 @@ export async function POST(request: NextRequest) {
 
     const hash = generarHash(oficinaCanonica)
 
+    // Offset de numeración configurado para esta oficina y año (0 si no hay).
+    const añoNumerico = parseInt(fechaActual.split('-')[0], 10)
+    const baseNumeracion = await obtenerBaseNumeracion(client, oficinaCanonica, añoNumerico)
+
     let denunciaId = borradorId ?? null
     let numeroOrden = 0
 
@@ -412,14 +441,14 @@ export async function POST(request: NextRequest) {
       const ordenResult = await client.query(
         `SELECT COALESCE(
           (SELECT MIN(n.orden_numero)
-           FROM generate_series(1, COALESCE((SELECT MAX(orden) FROM denuncias WHERE EXTRACT(YEAR FROM fecha_denuncia) = $1 AND orden >= 1 AND oficina = $2), 0) + 1) AS n(orden_numero)
+           FROM generate_series($3 + 1, GREATEST($3, COALESCE((SELECT MAX(orden) FROM denuncias WHERE EXTRACT(YEAR FROM fecha_denuncia) = $1 AND orden >= 1 AND oficina = $2), 0)) + 1) AS n(orden_numero)
            WHERE n.orden_numero NOT IN (
-             SELECT orden FROM denuncias 
+             SELECT orden FROM denuncias
              WHERE EXTRACT(YEAR FROM fecha_denuncia) = $1 AND orden >= 1 AND oficina = $2
            )),
-          COALESCE((SELECT MAX(orden) FROM denuncias WHERE EXTRACT(YEAR FROM fecha_denuncia) = $1 AND orden >= 1 AND oficina = $2), 0) + 1
+          GREATEST($3, COALESCE((SELECT MAX(orden) FROM denuncias WHERE EXTRACT(YEAR FROM fecha_denuncia) = $1 AND orden >= 1 AND oficina = $2), 0)) + 1
         ) as orden`,
-        [año, oficina]
+        [año, oficina, baseNumeracion]
       )
       numeroOrden = ordenResult.rows[0].orden
 
@@ -511,14 +540,14 @@ export async function POST(request: NextRequest) {
       const ordenResult = await client.query(
         `SELECT COALESCE(
           (SELECT MIN(n.orden_numero)
-           FROM generate_series(1, COALESCE((SELECT MAX(orden) FROM denuncias WHERE EXTRACT(YEAR FROM fecha_denuncia) = $1 AND orden >= 1 AND oficina = $2), 0) + 1) AS n(orden_numero)
+           FROM generate_series($3 + 1, GREATEST($3, COALESCE((SELECT MAX(orden) FROM denuncias WHERE EXTRACT(YEAR FROM fecha_denuncia) = $1 AND orden >= 1 AND oficina = $2), 0)) + 1) AS n(orden_numero)
            WHERE n.orden_numero NOT IN (
-             SELECT orden FROM denuncias 
+             SELECT orden FROM denuncias
              WHERE EXTRACT(YEAR FROM fecha_denuncia) = $1 AND orden >= 1 AND oficina = $2
            )),
-          COALESCE((SELECT MAX(orden) FROM denuncias WHERE EXTRACT(YEAR FROM fecha_denuncia) = $1 AND orden >= 1 AND oficina = $2), 0) + 1
+          GREATEST($3, COALESCE((SELECT MAX(orden) FROM denuncias WHERE EXTRACT(YEAR FROM fecha_denuncia) = $1 AND orden >= 1 AND oficina = $2), 0)) + 1
         ) as orden`,
-        [año, oficina]
+        [año, oficina, baseNumeracion]
       )
       numeroOrden = ordenResult.rows[0].orden
 

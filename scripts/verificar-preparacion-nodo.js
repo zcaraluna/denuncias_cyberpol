@@ -114,6 +114,36 @@ async function verificarNodoCDE() {
   }
 }
 
+async function verificarNumeracionBase() {
+  console.log('\n[6] Offset de numeración por oficina y año (numeracion_base)')
+  let res
+  try {
+    res = await pool.query(
+      `SELECT oficina, anio, ultimo_orden_previo, nota
+       FROM numeracion_base ORDER BY anio DESC, oficina ASC`
+    )
+  } catch (e) {
+    if (e && e.code === '42P01') {
+      warn('La tabla numeracion_base no existe todavía. Aplicar la migración 025 antes de configurar offsets.')
+      return
+    }
+    throw e
+  }
+  if (res.rows.length === 0) {
+    console.log('  ℹ Ninguna oficina tiene offset configurado (todas arrancan desde 1).')
+  } else {
+    res.rows.forEach(r => {
+      console.log(`  ℹ ${r.oficina} / ${r.anio}: previas ${r.ultimo_orden_previo} → próxima #${r.ultimo_orden_previo + 1}${r.nota ? ` (${r.nota})` : ''}`)
+    })
+  }
+  // Advertir si CDE ya tiene denuncias en el sistema pero no tiene offset para el año en curso.
+  const anio = new Date().getFullYear()
+  const tieneCDE = res.rows.some(r => r.oficina === 'Ciudad del Este' && r.anio === anio)
+  if (!tieneCDE) {
+    warn(`Ciudad del Este no tiene offset configurado para ${anio}. Si ya tomó actas en papel este año, configurarlo antes de habilitar usuarios.`)
+  }
+}
+
 async function verificarBackdoorsResiduales() {
   console.log('\n[5] Dispositivos residuales de backdoors (DEMOSTRACION / BARB)')
   const res = await pool.query(
@@ -146,6 +176,7 @@ async function main() {
     await verificarDuplicadosOrden()
     await verificarVariantesOficina()
     await verificarNodoCDE()
+    await verificarNumeracionBase()
     await verificarBackdoorsResiduales()
 
     console.log('\n============================================================')
