@@ -731,12 +731,16 @@ export default function NuevaDenunciaPage() {
       : paso === 2
         ? (tipoFormulario === 'extravio' ? 'Objetos Perdidos' : 'Supuesto Autor')
         : 'Detalles'
+  const denunciantesNombres = denunciantes
+    .map((d) => (d.nombres || '').trim())
+    .filter((n) => n !== '')
   useReportarPresencia({
     activo: !!usuario && usuario.rol !== 'visor',
     paso,
     pasoLabel: pasoLabelPresencia,
     tipoFormulario,
     borradorId,
+    denunciantes: denunciantesNombres,
     horaInicio: fechaHoraInicioDenuncia?.hora ?? null,
     fechaInicio: fechaHoraInicioDenuncia?.fecha ?? null,
   })

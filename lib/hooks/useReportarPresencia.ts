@@ -9,6 +9,8 @@ interface ReportarPresenciaArgs {
   pasoLabel: string
   tipoFormulario?: string | null
   borradorId?: number | null
+  /** Nombres de los denunciantes cargados hasta el momento. */
+  denunciantes?: string[]
   horaInicio?: string | null
   fechaInicio?: string | null
 }
@@ -30,12 +32,16 @@ export function useReportarPresencia({
   pasoLabel,
   tipoFormulario = null,
   borradorId = null,
+  denunciantes = [],
   horaInicio = null,
   fechaInicio = null,
 }: ReportarPresenciaArgs) {
+  // Clave estable de los denunciantes para detectar cambios sin recrear el array.
+  const denunciantesKey = denunciantes.join('|')
+
   // Mantener los últimos valores accesibles para el intervalo sin recrearlo.
-  const datosRef = useRef({ paso, pasoLabel, tipoFormulario, borradorId, horaInicio, fechaInicio })
-  datosRef.current = { paso, pasoLabel, tipoFormulario, borradorId, horaInicio, fechaInicio }
+  const datosRef = useRef({ paso, pasoLabel, tipoFormulario, borradorId, denunciantes, horaInicio, fechaInicio })
+  datosRef.current = { paso, pasoLabel, tipoFormulario, borradorId, denunciantes, horaInicio, fechaInicio }
 
   const enviarHeartbeat = () => {
     fetch('/api/presencia', {
@@ -59,12 +65,12 @@ export function useReportarPresencia({
     fetch('/api/presencia', { method: 'DELETE', credentials: 'include', keepalive: true }).catch(() => {})
   }
 
-  // Heartbeat inmediato al activarse y en cada cambio de paso.
+  // Heartbeat inmediato al activarse, al cambiar de paso o al cambiar los denunciantes.
   useEffect(() => {
     if (!activo) return
     enviarHeartbeat()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activo, paso])
+  }, [activo, paso, denunciantesKey])
 
   // Intervalo de heartbeat + baja al desmontar / cerrar pestaña.
   useEffect(() => {

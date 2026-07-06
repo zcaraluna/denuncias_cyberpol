@@ -25,6 +25,8 @@ export interface PresenciaOperador {
   pasoLabel: string
   tipoFormulario: string | null
   borradorId: number | null
+  /** Nombres de los denunciantes que el operador ha cargado hasta el momento. */
+  denunciantes: string[]
   /** Hora de la denuncia capturada al iniciar (HH:MM). */
   horaInicio: string | null
   /** Fecha de la denuncia capturada al iniciar (formato libre del cliente). */
@@ -101,6 +103,7 @@ export interface ActualizarPresenciaInput {
   pasoLabel: string
   tipoFormulario?: string | null
   borradorId?: number | null
+  denunciantes?: string[]
   horaInicio?: string | null
   fechaInicio?: string | null
 }
@@ -123,6 +126,7 @@ export function actualizarPresencia(input: ActualizarPresenciaInput): void {
     pasoLabel: input.pasoLabel,
     tipoFormulario: input.tipoFormulario ?? null,
     borradorId: input.borradorId ?? null,
+    denunciantes: Array.isArray(input.denunciantes) ? input.denunciantes : (previa?.denunciantes ?? []),
     horaInicio: input.horaInicio ?? previa?.horaInicio ?? null,
     fechaInicio: input.fechaInicio ?? previa?.fechaInicio ?? null,
     inicioEn: previa?.inicioEn ?? ahora,

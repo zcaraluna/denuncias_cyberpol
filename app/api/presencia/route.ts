@@ -24,6 +24,14 @@ export async function POST(request: NextRequest) {
   }
 
   const paso = Number(body?.paso)
+  // Sanear la lista de denunciantes: solo strings, máximo 10, truncados a 120 chars.
+  const denunciantes = Array.isArray(body?.denunciantes)
+    ? body.denunciantes
+        .filter((x: any) => typeof x === 'string' && x.trim() !== '')
+        .slice(0, 10)
+        .map((s: string) => s.trim().slice(0, 120))
+    : []
+
   actualizarPresencia({
     usuarioId: usuario.id,
     usuario: usuario.usuario,
@@ -35,6 +43,7 @@ export async function POST(request: NextRequest) {
     pasoLabel: typeof body?.pasoLabel === 'string' ? body.pasoLabel : '',
     tipoFormulario: typeof body?.tipoFormulario === 'string' ? body.tipoFormulario : null,
     borradorId: typeof body?.borradorId === 'number' ? body.borradorId : null,
+    denunciantes,
     horaInicio: typeof body?.horaInicio === 'string' ? body.horaInicio : null,
     fechaInicio: typeof body?.fechaInicio === 'string' ? body.fechaInicio : null,
   })
