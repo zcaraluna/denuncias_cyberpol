@@ -10,14 +10,25 @@
  * Requiere DATABASE_URL (o POSTGRES_URL) en el entorno / .env.
  */
 
-require('dotenv').config()
+const fs = require('fs')
+const path = require('path')
+// Cargar variables desde .env.local (o .env) igual que el resto de los scripts.
+const envLocal = path.join(__dirname, '../.env.local')
+if (fs.existsSync(envLocal)) {
+  require('dotenv').config({ path: envLocal })
+} else {
+  require('dotenv').config()
+}
 const { Pool } = require('pg')
 
-const connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL || ''
+// Alinear el manejo de SSL con lib/db.ts (la conexión que usa la app).
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
+let connectionString = (process.env.DATABASE_URL || process.env.POSTGRES_URL || '').replace('sslmode=require', 'sslmode=disable')
 const isLocal = connectionString.includes('localhost') || connectionString.includes('127.0.0.1')
+const isSSLDisabled = connectionString.includes('sslmode=disable')
 const pool = new Pool({
-  connectionString: connectionString.replace('sslmode=require', 'sslmode=disable'),
-  ssl: isLocal ? false : { rejectUnauthorized: false },
+  connectionString,
+  ssl: (isLocal || isSSLDisabled) ? false : { rejectUnauthorized: false },
   max: 1,
 })
 
