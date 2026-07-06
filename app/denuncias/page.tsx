@@ -50,6 +50,8 @@ export default function DenunciasPage() {
   const [error, setError] = useState<string | null>(null)
   const [denunciasPorCedula, setDenunciasPorCedula] = useState<Denuncia[]>([])
   const [mostrarResultadosCedula, setMostrarResultadosCedula] = useState(false)
+  // Solo developer: incluir denuncias en estado borrador en el listado
+  const [verBorradores, setVerBorradores] = useState(false)
 
   // Estados temporales para filtros
   const [filtroNombreTemp, setFiltroNombreTemp] = useState('')
@@ -76,7 +78,10 @@ export default function DenunciasPage() {
     if (!usuario) return
 
     try {
-      const response = await fetch('/api/denuncias/todas')
+      // Solo el developer puede solicitar los borradores.
+      const incluir = verBorradores && usuario.rol === 'developer'
+      const url = incluir ? '/api/denuncias/todas?incluirBorradores=1' : '/api/denuncias/todas'
+      const response = await fetch(url)
       if (!response.ok) throw new Error('Error al cargar denuncias')
 
       const data = await response.json()
@@ -96,7 +101,7 @@ export default function DenunciasPage() {
         setLoading(false)
       }
     }
-  }, [usuario])
+  }, [usuario, verBorradores])
 
   useEffect(() => {
     setFiltroNombreTemp(filtroNombre)
@@ -510,7 +515,18 @@ export default function DenunciasPage() {
                   </div>
                 </div>
 
-                <div className="mt-4 flex justify-end gap-2 pt-3 border-t border-slate-50 md:mt-4">
+                <div className="mt-4 flex items-center justify-end gap-2 pt-3 border-t border-slate-50 md:mt-4">
+                  {usuario.rol === 'developer' && (
+                    <label className="mr-auto flex items-center gap-2 cursor-pointer select-none" title="Incluir denuncias en estado borrador">
+                      <input
+                        type="checkbox"
+                        checked={verBorradores}
+                        onChange={(e) => setVerBorradores(e.target.checked)}
+                        className="w-4 h-4 rounded border-slate-300 text-[#002147] focus:ring-[#002147] cursor-pointer"
+                      />
+                      <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Ver borradores</span>
+                    </label>
+                  )}
                   <button
                     onClick={limpiarFiltros}
                     className="hidden md:block px-4 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest border border-slate-200 rounded-lg hover:bg-slate-50 transition-all"
@@ -558,7 +574,11 @@ export default function DenunciasPage() {
                           >
                             <td className="px-4 py-3.5 whitespace-nowrap">
                               <div className="flex flex-col">
-                                <span className="text-xs font-black text-[#002147]">#{denuncia.numero_orden}</span>
+                                {denuncia.estado === 'borrador' ? (
+                                  <span className="inline-block w-fit text-[8px] font-black text-amber-700 bg-amber-100 uppercase tracking-widest px-1.5 py-0.5 rounded">Borrador</span>
+                                ) : (
+                                  <span className="text-xs font-black text-[#002147]">#{denuncia.numero_orden}</span>
+                                )}
                                 {usuario.rol === 'developer' && denuncia.oficina && (
                                   <span className="text-[9px] font-black text-blue-600 uppercase tracking-tight mt-0.5">{denuncia.oficina}</span>
                                 )}

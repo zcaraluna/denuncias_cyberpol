@@ -16,8 +16,16 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Solo el rol developer puede incluir denuncias en estado borrador.
+    const { searchParams } = new URL(request.url)
+    const incluirBorradores = searchParams.get('incluirBorradores') === '1' && usuario?.rol === 'developer'
+
+    const filtroEstado = incluirBorradores
+      ? `d.estado IN ('completada', 'borrador')`
+      : `d.estado = 'completada'`
+
     let query = `
-      SELECT 
+      SELECT
         d.id,
         d.denunciante_id,
         d.orden as numero_orden,
@@ -31,7 +39,7 @@ export async function GET(request: NextRequest) {
         den.cedula as cedula_denunciante
       FROM denuncias d
       LEFT JOIN denunciantes den ON d.denunciante_id = den.id
-      WHERE d.estado = 'completada'
+      WHERE ${filtroEstado}
     `
     const queryParams: any[] = []
     if (oficinaFilter) {
@@ -39,7 +47,8 @@ export async function GET(request: NextRequest) {
       queryParams.push(oficinaFilter)
     }
 
-    query += ` ORDER BY d.orden DESC, d.fecha_denuncia DESC, d.hora_denuncia DESC`
+    // Completadas primero ('completada' > 'borrador'); dentro, por número de orden desc.
+    query += ` ORDER BY d.estado DESC, d.orden DESC, d.fecha_denuncia DESC, d.hora_denuncia DESC`
 
     const result = await pool.query(query, queryParams)
     return NextResponse.json(result.rows)
