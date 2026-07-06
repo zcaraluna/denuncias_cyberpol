@@ -10,6 +10,7 @@ import Select from 'react-select'
 import { departamentosParaguay } from '@/lib/data/departamentos'
 import { obtenerBarriosPorCiudad } from '@/lib/data/barrios'
 import { useAuth } from '@/lib/hooks/useAuth'
+import { useReportarPresencia } from '@/lib/hooks/useReportarPresencia'
 import { obtenerHechosPuniblesEspecificos } from '@/lib/data/hechos-punibles'
 import { MainLayout } from '@/components/MainLayout'
 import { MiniHeader } from '@/components/MiniHeader'
@@ -722,6 +723,23 @@ export default function NuevaDenunciaPage() {
   const [modoPruebas, setModoPruebas] = useState(false)
   // Capturar fecha y hora cuando se inicia la creación de la denuncia (no al finalizar)
   const [fechaHoraInicioDenuncia, setFechaHoraInicioDenuncia] = useState<{ fecha: string; hora: string } | null>(null)
+
+  // Reportar presencia en tiempo real (para el monitoreo del desarrollador).
+  const pasoLabelPresencia =
+    paso === 1
+      ? 'Denunciante'
+      : paso === 2
+        ? (tipoFormulario === 'extravio' ? 'Objetos Perdidos' : 'Supuesto Autor')
+        : 'Detalles'
+  useReportarPresencia({
+    activo: !!usuario && usuario.rol !== 'visor',
+    paso,
+    pasoLabel: pasoLabelPresencia,
+    tipoFormulario,
+    borradorId,
+    horaInicio: fechaHoraInicioDenuncia?.hora ?? null,
+    fechaInicio: fechaHoraInicioDenuncia?.fecha ?? null,
+  })
 
   // Hora del último guardado de borrador (para mostrar al lado del Relato de los Hechos)
   const [ultimoGuardadoHora, setUltimoGuardadoHora] = useState<string | null>(null)
