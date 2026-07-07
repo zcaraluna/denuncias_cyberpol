@@ -1,9 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/lib/db'
 import { obtenerCapitulo } from '@/lib/data/hechos-punibles'
+import { leerSesion } from '@/lib/sesion'
 
 export async function GET(request: NextRequest) {
     try {
+        const usuario = leerSesion(request)
+        if (!usuario) {
+            return NextResponse.json(
+                { error: 'No autorizado' },
+                { status: 401 }
+            )
+        }
+
         const { searchParams } = new URL(request.url)
         const mes = searchParams.get('mes')
         const año = searchParams.get('año')
@@ -18,13 +27,24 @@ export async function GET(request: NextRequest) {
         const primerDia = `${año}-${mes.padStart(2, '0')}-01`
         const ultimoDia = new Date(parseInt(año), parseInt(mes), 0).toISOString().split('T')[0]
 
+        const rolesRestringidos = ['operador', 'supervisor', 'visor']
+        const esRestringido = rolesRestringidos.includes(usuario.rol)
+
+        const queryParams = [primerDia, ultimoDia]
+        if (esRestringido) {
+            queryParams.push(usuario.oficina)
+        }
+        const oficinaFilter = esRestringido ? ' AND d.oficina = $3' : ''
+        const oficinaFilterNoAlias = esRestringido ? ' AND oficina = $3' : ''
+
         // Obtener todas las denuncias del mes para procesar en memoria los tipos y evolución diaria
         const denunciasResult = await pool.query(
             `SELECT d.tipo_denuncia, d.orden, EXTRACT(YEAR FROM d.fecha_denuncia)::integer as año, d.denunciante_id, TO_CHAR(d.fecha_denuncia, 'YYYY-MM-DD') as fecha, d.monto_dano, d.moneda
        FROM denuncias d
        WHERE d.fecha_denuncia BETWEEN $1::DATE AND $2::DATE
-         AND d.estado = 'completada'`,
-            [primerDia, ultimoDia]
+         AND d.estado = 'completada'
+         ${oficinaFilter}`,
+            queryParams
         )
 
         const denuncias = denunciasResult.rows
@@ -98,10 +118,11 @@ export async function GET(request: NextRequest) {
       JOIN denunciantes den ON d.denunciante_id = den.id
       WHERE d.fecha_denuncia BETWEEN $1::DATE AND $2::DATE
         AND d.estado = 'completada'
+        ${oficinaFilter}
       GROUP BY den.nombres, den.cedula
       HAVING COUNT(d.id) > 1
       ORDER BY cantidad DESC, den.nombres ASC`,
-            [primerDia, ultimoDia]
+            queryParams
         )
 
         // 3. Top 5 Operadores del mes
@@ -116,10 +137,11 @@ export async function GET(request: NextRequest) {
              FROM denuncias
              WHERE fecha_denuncia BETWEEN $1::DATE AND $2::DATE
                AND estado = 'completada'
+               ${oficinaFilterNoAlias}
              GROUP BY operador
              ORDER BY total DESC
              LIMIT 5`,
-            [primerDia, ultimoDia]
+            queryParams
         )
 
         // 4. Detalle de Denuncias con Daños para la pestaña de Daños
@@ -144,8 +166,9 @@ export async function GET(request: NextRequest) {
             WHERE d.fecha_denuncia BETWEEN $1::DATE AND $2::DATE
                 AND d.estado = 'completada'
                 AND d.monto_dano > 0
+                ${oficinaFilter}
             ORDER BY d.fecha_denuncia ASC, d.hora_denuncia ASC`,
-            [primerDia, ultimoDia]
+            queryParams
         )
 
         // 5. Bancos/entidades más afectados en el período
@@ -159,9 +182,10 @@ export async function GET(request: NextRequest) {
                 AND estado = 'completada'
                 AND entidad_bancaria_vulnerada IS NOT NULL
                 AND TRIM(entidad_bancaria_vulnerada) <> ''
+                ${oficinaFilterNoAlias}
             GROUP BY TRIM(entidad_bancaria_vulnerada)
             ORDER BY cantidad DESC, monto_total DESC`,
-            [primerDia, ultimoDia]
+            queryParams
         )
 
         return NextResponse.json({

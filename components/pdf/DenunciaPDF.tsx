@@ -230,6 +230,7 @@ const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 
 
     const año = getYear(denuncia.fecha_denuncia);
     const analisis = analizarParticipantes(denuncia as any);
+    const esCiudadDelEste = denuncia.oficina && denuncia.oficina.toLowerCase().trim() === 'ciudad del este';
 
     // Formatear nombre del operador para las firmas
     const operadorFirmante = {
@@ -270,6 +271,13 @@ const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 
                 <Text style={styles.legalNotice}>
                     LA PRESENTE ACTA SE REALIZA CONFORME A LOS SIGUIENTES: ARTÍCULO 284. "DENUNCIA", ARTÍCULO 285. "FORMA Y CONTENIDO", ARTÍCULO 289. "DENUNCIA ANTE LA POLICÍA" DE LA LEY 1286/98 "CODIGO PROCESAL PENAL".
                 </Text>
+
+                {/* Aviso de Prueba para Ciudad del Este - Inicio */}
+                {esCiudadDelEste && (
+                    <Text style={[styles.legalNotice, { color: '#dc2626', fontWeight: 'bold', textAlign: 'center', fontSize: 10, marginBottom: 15 }]}>
+                        *** LAS DENUNCIAS REALIZADAS SON A MODO DE PRUEBA DEL SISTEMA, SIN VALOR LEGAL ***
+                    </Text>
+                )}
 
                 {/* Aviso de Duplicado (Opcional) */}
                 {denuncia.is_duplicate && (
@@ -315,11 +323,19 @@ const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 
                     operadorOriginalId={denuncia.usuario_id}
                     firmas={denuncia.firmas}
                 />
+
+                {/* Aviso de Prueba para Ciudad del Este - Fin (Primera Página) */}
+                {esCiudadDelEste && (
+                    <Text style={[styles.legalNotice, { color: '#dc2626', fontWeight: 'bold', textAlign: 'center', fontSize: 10, marginTop: 15 }]}>
+                        *** LAS DENUNCIAS REALIZADAS SON A MODO DE PRUEBA DEL SISTEMA, SIN VALOR LEGAL ***
+                    </Text>
+                )}
             </Page >
             {/* Páginas adicionales para adjuntos */}
             {denuncia.adjuntos_urls && denuncia.adjuntos_urls.length > 0 && denuncia.adjuntos_urls.map((url: string, index: number) => {
                 const isImage = /\.(jpg|jpeg|png|webp|gif)$/i.test(url);
                 if (!isImage) return null;
+                const esUltimoAdjunto = index === denuncia.adjuntos_urls.length - 1;
 
                 return (
                     <Page key={`adjunto-${index}`} size={[612, 936]} style={[styles.page, { paddingBottom: 30 }]}>
@@ -342,6 +358,12 @@ const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 
                             {/* Espacio en blanco para que pdf-lib dibuje la imagen directamente encima */}
                             <View style={{ height: 600 }} />
                         </View>
+                        {/* Aviso de Prueba para Ciudad del Este - Fin de Adjuntos (si es el último) */}
+                        {esCiudadDelEste && esUltimoAdjunto && (
+                            <Text style={[styles.legalNotice, { color: '#dc2626', fontWeight: 'bold', textAlign: 'center', fontSize: 10, marginTop: 15 }]}>
+                                *** LAS DENUNCIAS REALIZADAS SON A MODO DE PRUEBA DEL SISTEMA, SIN VALOR LEGAL ***
+                            </Text>
+                        )}
                     </Page>
                 );
             })}

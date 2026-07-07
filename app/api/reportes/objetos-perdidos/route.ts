@@ -1,15 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/lib/db'
+import { leerSesion } from '@/lib/sesion'
 
 export async function GET(request: NextRequest) {
   try {
+    const usuario = leerSesion(request)
+    if (!usuario) {
+      return NextResponse.json(
+        { error: 'No autorizado' },
+        { status: 401 }
+      )
+    }
+
     const { searchParams } = new URL(request.url)
     const query = searchParams.get('query')?.toLowerCase().trim() || ''
     const tipo = searchParams.get('tipo') || ''
     const fechaInicio = searchParams.get('fechaInicio') || ''
     const fechaFin = searchParams.get('fechaFin') || ''
 
-    const dbQuery = `
+    const rolesRestringidos = ['operador', 'supervisor', 'visor']
+    const esRestringido = rolesRestringidos.includes(usuario.rol)
+
+    let dbQuery = `
       SELECT 
         d.id,
         d.orden as numero_denuncia,
@@ -30,9 +42,15 @@ export async function GET(request: NextRequest) {
       WHERE d.tipo_denuncia = 'EXTRAVÍO DE OBJETOS Y/O DOCUMENTOS'
         AND d.estado = 'completada'
         AND d.objetos_extraviados IS NOT NULL
-      ORDER BY d.orden DESC, d.fecha_denuncia DESC, d.hora_denuncia DESC;
     `
-    const result = await pool.query(dbQuery)
+    const queryParams: any[] = []
+    if (esRestringido) {
+      dbQuery += ` AND d.oficina = $1`
+      queryParams.push(usuario.oficina)
+    }
+    dbQuery += ` ORDER BY d.orden DESC, d.fecha_denuncia DESC, d.hora_denuncia DESC;`
+
+    const result = await pool.query(dbQuery, queryParams)
     
     const todosObjetos: any[] = []
     const rawDenuncias = result.rows

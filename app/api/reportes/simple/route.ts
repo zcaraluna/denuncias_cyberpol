@@ -1,9 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/lib/db'
 import { obtenerCapitulo } from '@/lib/data/hechos-punibles'
+import { leerSesion } from '@/lib/sesion'
 
 export async function GET(request: NextRequest) {
   try {
+    const usuario = leerSesion(request)
+    if (!usuario) {
+      return NextResponse.json(
+        { error: 'No autorizado' },
+        { status: 401 }
+      )
+    }
+
     const { searchParams } = new URL(request.url)
     const fecha = searchParams.get('fecha')
     const fechaFin = searchParams.get('fechaFin')
@@ -33,6 +42,9 @@ export async function GET(request: NextRequest) {
     const fechaHastaCalculada = fechaFin || fecha;
     const intervalFin = fechaFin ? "0 days" : "1 day";
 
+    const rolesRestringidos = ['operador', 'supervisor', 'visor']
+    const esRestringido = rolesRestringidos.includes(usuario.rol)
+
     // Construir condiciones WHERE usando timestamps para respetar el rango manual
     const condiciones: string[] = [
       "(d.fecha_denuncia + d.hora_denuncia::TIME) >= $1::TIMESTAMP",
@@ -42,10 +54,20 @@ export async function GET(request: NextRequest) {
     const valores: any[] = [`${fecha} ${horaInicio}:00`, fechaHastaCalculada, `${horaFin}:00`]
 
     let paramIndex = 4
+    let tipoDenunciaParam = ''
+    let oficinaParam = ''
 
     if (tipoDenuncia) {
       condiciones.push(`d.tipo_denuncia = $${paramIndex}`)
       valores.push(tipoDenuncia)
+      tipoDenunciaParam = `AND d.tipo_denuncia = $${paramIndex}`
+      paramIndex++
+    }
+
+    if (esRestringido) {
+      condiciones.push(`d.oficina = $${paramIndex}`)
+      valores.push(usuario.oficina)
+      oficinaParam = `AND d.oficina = $${paramIndex}`
       paramIndex++
     }
 
@@ -108,7 +130,8 @@ export async function GET(request: NextRequest) {
         LEFT JOIN denunciantes den ON d.denunciante_id = den.id
         WHERE (a.fecha_ampliacion + a.hora_ampliacion::TIME) >= $1::TIMESTAMP
           AND (a.fecha_ampliacion + a.hora_ampliacion::TIME) < ($2::DATE + INTERVAL '${intervalFin}' + $3::TIME)
-          ${tipoDenuncia ? "AND d.tipo_denuncia = $4" : ""}
+          ${tipoDenunciaParam}
+          ${oficinaParam}
       )
       SELECT * FROM denuncias_query
       UNION ALL

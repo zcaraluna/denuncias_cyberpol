@@ -248,6 +248,12 @@ export default function ReportesPage() {
   }, [authLoading])
 
   useEffect(() => {
+    if (usuario && ['operador', 'supervisor', 'visor'].includes(usuario.rol)) {
+      setOficinaDepto(usuario.oficina)
+    }
+  }, [usuario])
+
+  useEffect(() => {
     if (!fecha || activeTab !== 'diario') {
       setTiposDisponibles([])
       setTipoDenuncia('')
@@ -1061,9 +1067,12 @@ export default function ReportesPage() {
                     <select
                       value={oficinaDepto}
                       onChange={(e) => setOficinaDepto(e.target.value)}
-                      className="block w-full px-4 py-2.5 bg-slate-50 border border-slate-200 text-[#002147] text-xs font-bold rounded-xl focus:ring-4 focus:ring-blue-50 focus:border-blue-200 transition-all outline-none cursor-pointer"
+                      disabled={!!(usuario && ['operador', 'supervisor', 'visor'].includes(usuario.rol))}
+                      className="block w-full px-4 py-2.5 bg-slate-50 border border-slate-200 text-[#002147] text-xs font-bold rounded-xl focus:ring-4 focus:ring-blue-50 focus:border-blue-200 transition-all outline-none cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
                     >
-                      <option value="">Todas</option>
+                      {!usuario || !['operador', 'supervisor', 'visor'].includes(usuario.rol) ? (
+                        <option value="">Todas</option>
+                      ) : null}
                       {oficinasActivas.map((oficina) => (
                         <option key={oficina} value={oficina}>
                           {oficina}

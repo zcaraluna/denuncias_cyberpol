@@ -1,11 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/lib/db'
+import { leerSesion } from '@/lib/sesion'
 
 export async function GET(request: NextRequest) {
   try {
+    const usuario = leerSesion(request)
+    if (!usuario) {
+      return NextResponse.json(
+        { error: 'No autorizado' },
+        { status: 401 }
+      )
+    }
+
     const { searchParams } = new URL(request.url)
 
+    const rolesRestringidos = ['operador', 'supervisor', 'visor']
+    const esRestringido = rolesRestringidos.includes(usuario.rol)
+
     if (searchParams.get('obtener_oficinas') === 'true') {
+      if (esRestringido) {
+        return NextResponse.json([usuario.oficina])
+      }
       const result = await pool.query(
         `SELECT DISTINCT oficina 
          FROM denuncias 
@@ -59,9 +74,14 @@ export async function GET(request: NextRequest) {
       valores.push(start, end)
     }
 
-    if (oficina) {
+    let oficinaFiltro = oficina
+    if (esRestringido) {
+      oficinaFiltro = usuario.oficina
+    }
+
+    if (oficinaFiltro) {
       condiciones.push(`d.oficina = $${valores.length + 1}`)
-      valores.push(oficina)
+      valores.push(oficinaFiltro)
     }
 
     const whereClause = `WHERE ${condiciones.join(' AND ')}`
