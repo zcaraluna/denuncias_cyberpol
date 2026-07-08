@@ -241,3 +241,22 @@ select option {
   font-style: normal;
   color: #9ca3af;
 }
+
+/* Estilos de barra de desplazamiento (scrollbar) personalizados */
+.scrollbar-thin {
+  scrollbar-width: thin;
+}
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.scrollbar-thumb-slate-200 {
+  scrollbar-color: #e2e8f0 transparent;
+}
+.scrollbar-thumb-slate-200::-webkit-scrollbar-thumb {
+  background-color: #e2e8f0;
+  border-radius: 9999px;
+}
+.scrollbar-track-transparent::-webkit-scrollbar-track {
+  background-color: transparent;
+}

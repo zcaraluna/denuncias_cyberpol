@@ -97,7 +97,7 @@ export function Sidebar() {
                     </div>
                 </div>
 
-                <nav className="flex-1 space-y-7">
+                <nav className="flex-1 space-y-7 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
                     {/* General Items */}
                     <div className="space-y-1">
                         {navItems
