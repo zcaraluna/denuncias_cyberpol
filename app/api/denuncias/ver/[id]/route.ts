@@ -122,6 +122,8 @@ export async function GET(
       archivo_denuncia_url: denuncia.archivo_denuncia_url,
       adjuntos_urls: denuncia.adjuntos_urls,
       objetos_extraviados: denuncia.objetos_extraviados,
+      creado_en: denuncia.creado_en,
+      usuario_id: denuncia.usuario_id,
       supuestos_autores: autoresResult.rows,
       denunciantes_involucrados: involucradosResult.rows
     }

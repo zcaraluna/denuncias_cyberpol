@@ -97,6 +97,8 @@ interface DenunciaCompleta {
   archivo_denuncia_url: string | null
   adjuntos_urls: string[] | null
   objetos_extraviados: string | null
+  creado_en?: string
+  usuario_id?: number
 }
 
 interface Usuario {
@@ -183,6 +185,56 @@ export default function VerDenunciaPage({ params }: { params: Promise<{ id: stri
   const [denunciaId, setDenunciaId] = useState<string>('')
   const [mostrarModalEliminar, setMostrarModalEliminar] = useState(false)
   const [eliminando, setEliminando] = useState(false)
+  const [segundosRestantes, setSegundosRestantes] = useState<number | null>(null)
+
+  useEffect(() => {
+    if (!denuncia || denuncia.estado !== 'completada' || !denuncia.creado_en) return
+
+    // Comprobar si el usuario actual es el creador o un admin/superadmin/developer
+    const esCreador = denuncia.usuario_id === usuario?.id
+    const esAdmin = ['admin', 'superadmin', 'developer'].includes(usuario?.rol || '')
+    const puedeEditarPorRol = (esCreador || esAdmin) && usuario?.rol !== 'visor'
+    if (!puedeEditarPorRol) return
+
+    const calcularRestante = () => {
+      const creadoEnMs = new Date(denuncia.creado_en || '').getTime()
+      const finGraceMs = creadoEnMs + 10 * 60 * 1000
+      const rest = Math.floor((finGraceMs - Date.now()) / 1000)
+      return rest > 0 ? rest : 0
+    }
+
+    const restInicial = calcularRestante()
+    if (restInicial <= 0) return
+
+    setSegundosRestantes(restInicial)
+
+    const interval = setInterval(() => {
+      const rest = calcularRestante()
+      setSegundosRestantes(rest)
+      if (rest <= 0) {
+        clearInterval(interval)
+      }
+    }, 1000)
+
+    return () => clearInterval(interval)
+  }, [denuncia, usuario])
+
+  const iniciarEdicionCompletada = () => {
+    if (segundosRestantes === 0) {
+      alert('El período de gracia para editar esta denuncia ha expirado.')
+      return
+    }
+    // Guardar en sessionStorage para que el asistente de nueva denuncia sepa que es una edición
+    sessionStorage.setItem('borradorId', denunciaId)
+    sessionStorage.setItem('esEdicionCompleta', 'true')
+    router.push('/nueva-denuncia')
+  }
+
+  const formatTime = (secs: number) => {
+    const minutes = Math.floor(secs / 60)
+    const seconds = secs % 60
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+  }
 
   useEffect(() => {
     const loadParams = async () => {
@@ -372,6 +424,15 @@ export default function VerDenunciaPage({ params }: { params: Promise<{ id: stri
                 )}
                 {denuncia.estado === 'completada' && (
                   <>
+                    {segundosRestantes !== null && segundosRestantes > 0 && (
+                      <button
+                        onClick={iniciarEdicionCompletada}
+                        className="flex items-center gap-2 px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl transition-all shadow-md shadow-amber-900/10 font-bold text-sm border border-amber-400 animate-pulse animate-duration-1000"
+                      >
+                        <Clock className="h-4 w-4" />
+                        EDITAR DENUNCIA ({formatTime(segundosRestantes)})
+                      </button>
+                    )}
                     {usuario?.rol !== 'visor' && (
                       <Link
                         href={`/ampliar-denuncia/${denunciaId}`}

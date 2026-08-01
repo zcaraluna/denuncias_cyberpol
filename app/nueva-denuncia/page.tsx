@@ -689,6 +689,7 @@ export default function NuevaDenunciaPage() {
   const [guardandoBorrador, setGuardandoBorrador] = useState(false)
   const [borradorId, setBorradorId] = useState<number | null>(null)
   const [mostrarModalBorrador, setMostrarModalBorrador] = useState(false)
+  const [esEdicionCompleta, setEsEdicionCompleta] = useState(false)
 
   // Estados para modal de error (No bloqueante)
   const [mostrarModalError, setMostrarModalError] = useState(false)
@@ -2375,10 +2376,13 @@ export default function NuevaDenunciaPage() {
       // Verificar si hay un borrador para continuar
       if (typeof window !== 'undefined') {
         const borradorId = sessionStorage.getItem('borradorId')
+        const edicionCompleta = sessionStorage.getItem('esEdicionCompleta') === 'true'
         if (borradorId) {
+          setEsEdicionCompleta(edicionCompleta)
           // Cargar el borrador (esto restaurará la fecha/hora original del borrador)
           cargarBorrador(parseInt(borradorId))
           sessionStorage.removeItem('borradorId')
+          sessionStorage.removeItem('esEdicionCompleta')
           // No capturar nueva fecha/hora ya que cargarBorrador restaurará la original
           return
         }
@@ -2966,8 +2970,11 @@ export default function NuevaDenunciaPage() {
         usuarioId: usuario.id,
       }
 
-      const response = await fetch('/api/denuncias/nueva', {
-        method: 'POST',
+      const url = esEdicionCompleta ? `/api/denuncias/${borradorId}` : '/api/denuncias/nueva'
+      const method = esEdicionCompleta ? 'PUT' : 'POST'
+
+      const response = await fetch(url, {
+        method: method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
@@ -2989,7 +2996,12 @@ export default function NuevaDenunciaPage() {
 
       const result = await response.json()
 
-      router.push(`/nueva-denuncia/confirmacion?id=${result.id}`)
+      if (esEdicionCompleta) {
+        toast.success('Denuncia editada con éxito')
+        router.push(`/ver-denuncia/${result.id}`)
+      } else {
+        router.push(`/nueva-denuncia/confirmacion?id=${result.id}`)
+      }
       // En caso de éxito, el componente se desmonta con la redirección, así que no necesitamos resetear
     } catch (error) {
       console.error('Error:', error)
@@ -3100,6 +3112,7 @@ export default function NuevaDenunciaPage() {
   const guardarBorradorSilencioso = useCallback(async (): Promise<boolean> => {
     // Guardias de concurrencia
     if (isSubmittingRef.current || isAutoguardandoRef.current) return false
+    if (esEdicionCompleta) return false
     if (paso < 3 || denunciantes.length === 0) return false
     if (!obtenerDenunciantePrincipal() || !usuario || !fechaHoraInicioDenuncia) return false
 
@@ -4280,17 +4293,21 @@ export default function NuevaDenunciaPage() {
               </div>
 
               <div className="mt-12 flex items-center justify-between border-t border-slate-100 pt-8">
-                <button
-                  type="button"
-                  onClick={guardarBorrador}
-                  disabled={guardandoBorrador}
-                  className="flex items-center space-x-2 px-6 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all font-bold text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-                  </svg>
-                  <span>{guardandoBorrador ? 'Guardando...' : 'Guardar Borrador'}</span>
-                </button>
+                {!esEdicionCompleta ? (
+                  <button
+                    type="button"
+                    onClick={guardarBorrador}
+                    disabled={guardandoBorrador}
+                    className="flex items-center space-x-2 px-6 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all font-bold text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                    </svg>
+                    <span>{guardandoBorrador ? 'Guardando...' : 'Guardar Borrador'}</span>
+                  </button>
+                ) : (
+                  <div />
+                )}
                 <button
                   type="submit"
                   className="flex items-center space-x-2 px-8 py-3 bg-[#002147] text-white rounded-xl hover:bg-[#003366] transition-all font-bold text-sm shadow-lg shadow-blue-900/20"
@@ -6506,17 +6523,19 @@ export default function NuevaDenunciaPage() {
 
               <div className="mt-12 flex items-center justify-between border-t border-slate-100 pt-8">
                 <div className="flex gap-4">
-                  <button
-                    type="button"
-                    onClick={guardarBorrador}
-                    disabled={guardandoBorrador}
-                    className="flex items-center space-x-2 px-6 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all font-bold text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-                    </svg>
-                    <span>{guardandoBorrador ? 'Guardando...' : 'Guardar Borrador'}</span>
-                  </button>
+                  {!esEdicionCompleta && (
+                    <button
+                      type="button"
+                      onClick={guardarBorrador}
+                      disabled={guardandoBorrador}
+                      className="flex items-center space-x-2 px-6 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all font-bold text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                      </svg>
+                      <span>{guardandoBorrador ? 'Guardando...' : 'Guardar Borrador'}</span>
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => irAlPaso(1)}
@@ -7584,17 +7603,19 @@ export default function NuevaDenunciaPage() {
 
               <div className="mt-12 flex items-center justify-between border-t border-slate-100 pt-8">
                 <div className="flex gap-4">
-                  <button
-                    type="button"
-                    onClick={guardarBorrador}
-                    disabled={guardandoBorrador || loading}
-                    className="flex items-center space-x-2 px-6 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all font-bold text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-                    </svg>
-                    <span>{guardandoBorrador ? 'Guardando...' : 'Guardar Borrador'}</span>
-                  </button>
+                  {!esEdicionCompleta && (
+                    <button
+                      type="button"
+                      onClick={guardarBorrador}
+                      disabled={guardandoBorrador || loading}
+                      className="flex items-center space-x-2 px-6 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all font-bold text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                      </svg>
+                      <span>{guardandoBorrador ? 'Guardando...' : 'Guardar Borrador'}</span>
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => irAlPaso(2)}
@@ -7764,7 +7785,7 @@ export default function NuevaDenunciaPage() {
                         Guardando...
                       </span>
                     ) : (
-                      'Confirmar y Finalizar'
+                      esEdicionCompleta ? 'Confirmar y Guardar Cambios' : 'Confirmar y Finalizar'
                     )}
                   </button>
                 </div>

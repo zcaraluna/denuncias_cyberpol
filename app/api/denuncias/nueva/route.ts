@@ -483,7 +483,8 @@ export async function POST(request: NextRequest) {
           entidad_bancaria_vulnerada = $26,
           objetos_extraviados = $27,
           grado_ejecucion = $28,
-          oficina = $29
+          oficina = $29,
+          creado_en = CURRENT_TIMESTAMP
         WHERE id = $30`,
         [
           principalId,
