@@ -6,6 +6,10 @@ interface ModalGuardiaBorradorProps {
   onCancelar: () => void
   guardando: boolean
   descartando: boolean
+  /** true cuando se está editando una denuncia YA COMPLETADA (periodo de gracia de 10 min),
+   *  no un borrador real. En ese caso no hay nada que "guardar como borrador" ni nada que
+   *  "eliminar": solo se descartan los cambios de esta edición en memoria. */
+  esEdicionCompleta?: boolean
 }
 
 export function ModalGuardiaBorrador({
@@ -14,6 +18,7 @@ export function ModalGuardiaBorrador({
   onCancelar,
   guardando,
   descartando,
+  esEdicionCompleta = false,
 }: ModalGuardiaBorradorProps) {
   const ocupado = guardando || descartando
 
@@ -30,10 +35,10 @@ export function ModalGuardiaBorrador({
             </div>
             <div>
               <h3 className="text-sm font-black text-white uppercase tracking-tight">
-                Borrador en progreso
+                {esEdicionCompleta ? 'Edición en progreso' : 'Borrador en progreso'}
               </h3>
               <p className="text-[10px] text-white/60 font-medium mt-0.5">
-                Tiene una denuncia sin completar
+                {esEdicionCompleta ? 'Tiene cambios sin guardar en esta denuncia' : 'Tiene una denuncia sin completar'}
               </p>
             </div>
           </div>
@@ -42,29 +47,32 @@ export function ModalGuardiaBorrador({
         {/* Body */}
         <div className="px-6 py-5">
           <p className="text-xs text-slate-500 leading-relaxed mb-5">
-            Si sale ahora, los cambios no guardados se perderán.
-            ¿Qué desea hacer con el borrador actual?
+            {esEdicionCompleta
+              ? 'Si sale ahora, los cambios de esta edición se perderán. La denuncia original permanecerá intacta, sin modificar.'
+              : 'Si sale ahora, los cambios no guardados se perderán. ¿Qué desea hacer con el borrador actual?'}
           </p>
 
           <div className="flex flex-col gap-2">
-            {/* Guardar y salir */}
-            <button
-              onClick={onGuardarYSalir}
-              disabled={ocupado}
-              className="w-full flex items-center gap-3 px-4 py-3 bg-[#002147] hover:bg-[#003366] text-white rounded-xl font-bold text-xs uppercase tracking-wider transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {guardando ? (
-                <svg className="w-4 h-4 animate-spin shrink-0" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
-              ) : (
-                <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-                </svg>
-              )}
-              {guardando ? 'Guardando...' : 'Guardar borrador y salir'}
-            </button>
+            {/* Guardar y salir — no aplica cuando se edita una denuncia ya completada */}
+            {!esEdicionCompleta && (
+              <button
+                onClick={onGuardarYSalir}
+                disabled={ocupado}
+                className="w-full flex items-center gap-3 px-4 py-3 bg-[#002147] hover:bg-[#003366] text-white rounded-xl font-bold text-xs uppercase tracking-wider transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {guardando ? (
+                  <svg className="w-4 h-4 animate-spin shrink-0" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                  </svg>
+                )}
+                {guardando ? 'Guardando...' : 'Guardar borrador y salir'}
+              </button>
+            )}
 
             {/* Descartar y salir */}
             <button
@@ -82,7 +90,11 @@ export function ModalGuardiaBorrador({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
               )}
-              {descartando ? 'Descartando...' : 'Descartar borrador y salir'}
+              {descartando
+                ? 'Saliendo...'
+                : esEdicionCompleta
+                  ? 'Salir sin guardar cambios'
+                  : 'Descartar borrador y salir'}
             </button>
 
             {/* Cancelar */}

@@ -230,7 +230,8 @@ const DenunciaPDFDocument: React.FC<DenunciaPDFProps> = ({ denuncia, pageSize = 
 
     const año = getYear(denuncia.fecha_denuncia);
     const analisis = analizarParticipantes(denuncia as any);
-    const esCiudadDelEste = denuncia.oficina && denuncia.oficina.toLowerCase().trim() === 'ciudad del este';
+    // Aviso de "modo de prueba" desactivado: el nodo de Ciudad del Este ya opera con validez legal.
+    const esCiudadDelEste = false;
 
     // Formatear nombre del operador para las firmas
     const operadorFirmante = {

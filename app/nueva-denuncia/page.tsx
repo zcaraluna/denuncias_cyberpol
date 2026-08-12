@@ -3187,6 +3187,18 @@ export default function NuevaDenunciaPage() {
 
   const handleGuardarYSalir = async () => {
     if (!pendingNavigation) return
+
+    // En edición de una denuncia ya completada no existe un "borrador" que guardar:
+    // solo se descartan los cambios de esta edición en memoria. La denuncia original
+    // (ya numerada y completada) no debe tocarse.
+    if (esEdicionCompleta) {
+      const destino = pendingNavigation
+      setPendingNavigation(null)
+      setHayBorradorActivo(false)
+      router.push(destino)
+      return
+    }
+
     setGuardandoParaSalir(true)
     const exito = await guardarBorradorSilencioso()
     setGuardandoParaSalir(false)
@@ -3203,6 +3215,19 @@ export default function NuevaDenunciaPage() {
 
   const handleDescartarYSalir = async () => {
     if (!pendingNavigation) return
+
+    // CRÍTICO: en edición de una denuncia completada, `borradorId` es el ID de la
+    // denuncia REAL, no de un borrador. Nunca debe llamarse a /api/denuncias/eliminar
+    // aquí: eso borraría permanentemente una denuncia ya completada. Solo se descartan
+    // los cambios de esta edición en memoria.
+    if (esEdicionCompleta) {
+      const destino = pendingNavigation
+      setPendingNavigation(null)
+      setHayBorradorActivo(false)
+      router.push(destino)
+      return
+    }
+
     setDescartandoBorrador(true)
     if (borradorId) {
       try {
@@ -3444,6 +3469,7 @@ export default function NuevaDenunciaPage() {
       {/* Modal de guardia de navegación — se muestra cuando el usuario intenta salir con un borrador activo */}
       {pendingNavigation && (
         <ModalGuardiaBorrador
+          esEdicionCompleta={esEdicionCompleta}
           onGuardarYSalir={handleGuardarYSalir}
           onDescartarYSalir={handleDescartarYSalir}
           onCancelar={handleCancelarNavegacion}
