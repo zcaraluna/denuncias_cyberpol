@@ -199,10 +199,17 @@ export async function PUT(
     const usarRango = Boolean(denuncia?.usarRango)
     const fechaHechoFin = usarRango ? (denuncia?.fechaHechoFin ?? null) : null
     const horaHechoFin = usarRango ? (denuncia?.horaHechoFin ?? null) : null
-    const lugarHecho = normalizarTexto(denuncia?.lugarHecho)
+    const lugarHechoNoAplica = Boolean(denuncia?.lugarHechoNoAplica)
+    // IMPORTANTE: cuando "lugar del hecho no aplica" está marcado, lugar_hecho debe
+    // guardarse como '' (string vacío) y NO como null. El constraint check_completada
+    // vigente en la base de datos exige lugar_hecho IS NOT NULL sin excepción (la
+    // variante con "OR lugar_hecho_no_aplica = TRUE" solo existe en lib/db/schema.sql,
+    // nunca se migró a producción), y normalizarTexto() convierte cualquier string
+    // vacío a null, lo que hacía fallar el UPDATE con "violates check constraint
+    // check_completada" en toda edición de una denuncia con este campo marcado.
+    const lugarHecho = lugarHechoNoAplica ? '' : normalizarTexto(denuncia?.lugarHecho)
     const latitud = denuncia?.latitud ?? null
     const longitud = denuncia?.longitud ?? null
-    const lugarHechoNoAplica = Boolean(denuncia?.lugarHechoNoAplica)
     const adjuntosUrls = denuncia?.adjuntosUrls ?? []
     const montoDano = denuncia?.montoDano ?? null
     const moneda = denuncia?.moneda ?? null
