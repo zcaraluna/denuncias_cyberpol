@@ -55,8 +55,8 @@ export async function PATCH(
 
     // 1. Verificar si es editable (dentro de las 24 horas)
     const result = await pool.query(
-      `SELECT creado_en, (creado_en >= NOW() - INTERVAL '24 hours') as es_editable 
-       FROM denuncias 
+      `SELECT creado_en, oficina, (creado_en >= NOW() - INTERVAL '24 hours') as es_editable
+       FROM denuncias
        WHERE id = $1`,
       [id]
     )
@@ -68,11 +68,21 @@ export async function PATCH(
       )
     }
 
-    const { es_editable } = result.rows[0]
+    const { es_editable, oficina } = result.rows[0]
 
     if (!es_editable) {
       return NextResponse.json(
         { error: 'No se puede editar la remisión después de transcurridas 24 horas desde el registro de la denuncia.' },
+        { status: 400 }
+      )
+    }
+
+    // La remisión a dependencias especializadas solo aplica a la oficina de Asunción.
+    // Las demás oficinas, por defecto, no remiten ninguna denuncia a ningún departamento.
+    const esAsuncion = oficina && oficina.toLowerCase().trim() === 'asunción'
+    if (dependencia_remitida && !esAsuncion) {
+      return NextResponse.json(
+        { error: 'La remisión a dependencias especializadas solo está habilitada para denuncias de la oficina de Asunción.' },
         { status: 400 }
       )
     }

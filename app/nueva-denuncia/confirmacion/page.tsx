@@ -191,7 +191,11 @@ function ConfirmacionPage() {
 
         setDenuncia(denunciaInfo)
 
-        if (!isSimulacion && !data.remitido_por) {
+        // La sugerencia de remisión a dependencias especializadas solo aplica a la
+        // oficina de Asunción. Las demás oficinas, por defecto, no remiten ninguna
+        // denuncia a ningún departamento, por lo que el modal se omite por completo.
+        const esAsuncion = data.oficina && data.oficina.toLowerCase().trim() === 'asunción'
+        if (!isSimulacion && !data.remitido_por && esAsuncion) {
           cargarDependencias()
           setMostrarModalRemision(true)
         }
