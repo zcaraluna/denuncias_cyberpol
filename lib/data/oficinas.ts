@@ -35,7 +35,7 @@ const OFFICE_CONFIG: Record<string, { hashCode: string; header: OficinaHeaderCon
     hashCode: 'EN',
     header: {
       sala: 'SALA DE DENUNCIAS - ENCARNACIÓN',
-      direccion: 'Próceres de Mayo c/ Rómulo Fernández, Barrio Buena Vista, Encarnación',
+      direccion: 'Próceres de Mayo c/ Rómulo Fernández, Barrio Buena Vista',
       telefono: '071 203 377',
       email: 'itapua@delitoseconomicos.gov.py',
     },
