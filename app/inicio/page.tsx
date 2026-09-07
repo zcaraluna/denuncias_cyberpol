@@ -298,7 +298,7 @@ export default function InicioPage() {
               {/* Internal Disclaimer */}
               <div className="px-4 py-2 bg-slate-50/50 border-t border-slate-100/50">
                 <p className="text-[7px] font-bold text-slate-400 uppercase tracking-widest text-center">
-                  Fuente: <a href="https://www.cambioschaco.com.py/" target="_blank" rel="noopener noreferrer" className="hover:text-[#002147] transition-colors underline decoration-slate-200 underline-offset-2">Cambios Chaco</a>
+                  Fuente: <a href="https://github.com/fawazahmed0/exchange-api" target="_blank" rel="noopener noreferrer" className="hover:text-[#002147] transition-colors underline decoration-slate-200 underline-offset-2">Free Currency API</a>
                 </p>
               </div>
             </div>
