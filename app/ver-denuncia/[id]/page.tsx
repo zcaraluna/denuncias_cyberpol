@@ -29,7 +29,8 @@ import {
   Paperclip,
   File,
   Image as ImageIcon,
-  ExternalLink
+  ExternalLink,
+  Unlock
 } from 'lucide-react'
 
 interface Ampliacion {
@@ -99,6 +100,8 @@ interface DenunciaCompleta {
   objetos_extraviados: string | null
   creado_en?: string
   usuario_id?: number
+  edicion_extra_otorgada_en?: string | null
+  edicion_extra_usada_en?: string | null
 }
 
 interface Usuario {
@@ -186,6 +189,14 @@ export default function VerDenunciaPage({ params }: { params: Promise<{ id: stri
   const [mostrarModalEliminar, setMostrarModalEliminar] = useState(false)
   const [eliminando, setEliminando] = useState(false)
   const [segundosRestantes, setSegundosRestantes] = useState<number | null>(null)
+  const [otorgandoEdicionExtra, setOtorgandoEdicionExtra] = useState(false)
+
+  // Edición extraordinaria de un solo uso: la habilita una cuenta developer
+  // (botón más abajo) y solo puede consumirla el operador que originalmente
+  // cargó la denuncia, sin límite de tiempo hasta que la use.
+  const esCreadorDenuncia = denuncia?.usuario_id === usuario?.id
+  const tieneEdicionExtraDisponible = Boolean(denuncia?.edicion_extra_otorgada_en) && !denuncia?.edicion_extra_usada_en
+  const puedeUsarEdicionExtra = esCreadorDenuncia && tieneEdicionExtraDisponible
 
   useEffect(() => {
     if (!denuncia || denuncia.estado !== 'completada' || !denuncia.creado_en) return
@@ -220,7 +231,8 @@ export default function VerDenunciaPage({ params }: { params: Promise<{ id: stri
   }, [denuncia, usuario])
 
   const iniciarEdicionCompletada = () => {
-    if (segundosRestantes === 0) {
+    const dentroDeGracia = segundosRestantes !== null && segundosRestantes > 0
+    if (!dentroDeGracia && !puedeUsarEdicionExtra) {
       alert('El período de gracia para editar esta denuncia ha expirado.')
       return
     }
@@ -228,6 +240,36 @@ export default function VerDenunciaPage({ params }: { params: Promise<{ id: stri
     sessionStorage.setItem('borradorId', denunciaId)
     sessionStorage.setItem('esEdicionCompleta', 'true')
     router.push('/nueva-denuncia')
+  }
+
+  const handleHabilitarEdicionExtra = async () => {
+    if (!denuncia) return
+    const confirmado = window.confirm(
+      `¿Habilitar una edición extraordinaria de un solo uso para la denuncia N° ${denuncia.orden}?\n\n` +
+      'Solo el operador que la cargó originalmente podrá usarla, una única vez, sin límite de tiempo hasta que la consuma.'
+    )
+    if (!confirmado) return
+
+    setOtorgandoEdicionExtra(true)
+    try {
+      const res = await fetch(`/api/denuncias/${denunciaId}/habilitar-edicion`, { method: 'POST' })
+      const data = await res.json()
+      if (res.ok) {
+        setDenuncia(prev => prev ? {
+          ...prev,
+          edicion_extra_otorgada_en: new Date().toISOString(),
+          edicion_extra_usada_en: null,
+        } : prev)
+        alert(`Edición extraordinaria habilitada para ${data.operador || 'el operador de la denuncia'}.`)
+      } else {
+        alert(data.error || 'No se pudo habilitar la edición extraordinaria.')
+      }
+    } catch (error) {
+      console.error('Error habilitando edición extraordinaria:', error)
+      alert('Error de red al habilitar la edición extraordinaria.')
+    } finally {
+      setOtorgandoEdicionExtra(false)
+    }
   }
 
   const formatTime = (secs: number) => {
@@ -431,6 +473,26 @@ export default function VerDenunciaPage({ params }: { params: Promise<{ id: stri
                       >
                         <Clock className="h-4 w-4" />
                         EDITAR DENUNCIA ({formatTime(segundosRestantes)})
+                      </button>
+                    )}
+                    {!(segundosRestantes !== null && segundosRestantes > 0) && puedeUsarEdicionExtra && (
+                      <button
+                        onClick={iniciarEdicionCompletada}
+                        className="flex items-center gap-2 px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl transition-all shadow-md shadow-amber-900/10 font-bold text-sm border border-amber-400 animate-pulse animate-duration-1000"
+                      >
+                        <Unlock className="h-4 w-4" />
+                        EDITAR DENUNCIA (EDICIÓN EXTRAORDINARIA)
+                      </button>
+                    )}
+                    {usuario?.rol === 'developer' && (
+                      <button
+                        onClick={handleHabilitarEdicionExtra}
+                        disabled={otorgandoEdicionExtra}
+                        title={tieneEdicionExtraDisponible ? 'Ya hay una edición extraordinaria habilitada, pendiente de uso por el operador.' : 'Habilitar una edición extraordinaria de un solo uso para el operador que cargó esta denuncia.'}
+                        className="hidden md:flex items-center gap-2 px-6 py-3 bg-slate-50 text-slate-500 rounded-xl hover:bg-slate-100 border border-slate-200 transition-all font-bold text-sm disabled:opacity-50"
+                      >
+                        <Shield className="h-4 w-4" />
+                        {tieneEdicionExtraDisponible ? 'EDICIÓN EXTRAORDINARIA HABILITADA (PENDIENTE)' : 'HABILITAR EDICIÓN EXTRAORDINARIA'}
                       </button>
                     )}
                     {usuario?.rol !== 'visor' && (

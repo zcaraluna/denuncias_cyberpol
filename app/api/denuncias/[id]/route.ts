@@ -147,8 +147,9 @@ export async function PUT(
 
     // 1. Obtener la denuncia actual y comprobar condiciones de gracia
     const checkRes = await client.query(
-      `SELECT creado_en, estado, orden, hash, usuario_id, oficina 
-       FROM denuncias 
+      `SELECT creado_en, estado, orden, hash, usuario_id, oficina,
+              edicion_extra_otorgada_en, edicion_extra_usada_en
+       FROM denuncias
        WHERE id = $1`,
       [id]
     )
@@ -170,12 +171,25 @@ export async function PUT(
       return NextResponse.json({ error: 'No tiene permisos para editar esta denuncia.' }, { status: 403 })
     }
 
-    // Comprobar período de gracia de 10 minutos
+    // Comprobar período de gracia de 10 minutos, o una edición extraordinaria
+    // de un solo uso habilitada por una cuenta developer (ver endpoint
+    // habilitar-edicion). Esa habilitación es de uso EXCLUSIVO del operador
+    // que originalmente cargó la denuncia, no de un admin/developer distinto.
     const creadoEnMs = new Date(dbDenuncia.creado_en).getTime()
     const transcurrido = Date.now() - creadoEnMs
-    if (transcurrido > 10 * 60 * 1000) {
-      return NextResponse.json({ error: 'El período de gracia de 10 minutos para editar esta denuncia ha expirado.' }, { status: 400 })
+    const dentroDeGracia = transcurrido <= 10 * 60 * 1000
+    const tieneEdicionExtraDisponible = Boolean(dbDenuncia.edicion_extra_otorgada_en) && !dbDenuncia.edicion_extra_usada_en
+    const puedeUsarEdicionExtra = tieneEdicionExtraDisponible && esCreador
+
+    if (!dentroDeGracia && !puedeUsarEdicionExtra) {
+      return NextResponse.json({
+        error: 'El período de gracia de 10 minutos para editar esta denuncia ha expirado. Si necesita corregirla, solicite a una cuenta developer que habilite una edición extraordinaria.'
+      }, { status: 400 })
     }
+
+    // Solo se consume la habilitación extraordinaria cuando efectivamente se
+    // usa para editar fuera del período de gracia normal.
+    const consumirEdicionExtra = !dentroDeGracia && puedeUsarEdicionExtra
 
     const body = await request.json()
     const { denuncia, autor, descripcionFisica } = body
@@ -249,8 +263,9 @@ export async function PUT(
         bancos_relacionados = $17,
         entidad_bancaria_vulnerada = $18,
         objetos_extraviados = $19,
-        grado_ejecucion = $20
-      WHERE id = $21`,
+        grado_ejecucion = $20,
+        edicion_extra_usada_en = CASE WHEN $21 THEN CURRENT_TIMESTAMP ELSE edicion_extra_usada_en END
+      WHERE id = $22`,
       [
         principalId,
         fechaHecho,
@@ -272,6 +287,7 @@ export async function PUT(
         entidadBancariaVulnerada,
         objetosExtraviados ? JSON.stringify(objetosExtraviados) : null,
         gradoEjecucion,
+        consumirEdicionExtra,
         id
       ]
     )
@@ -339,7 +355,9 @@ export async function PUT(
     )
 
     // 8. Log de Auditoría de Denuncias
-    const detalleAudit = `Denuncia N° ${dbDenuncia.orden}/${new Date(dbDenuncia.creado_en).getFullYear()} editada por ${usr.grado || ''} ${usr.nombre || ''} ${usr.apellido || ''} (ID: ${usr.id}) durante periodo de gracia de 10 min.`
+    const detalleAudit = consumirEdicionExtra
+      ? `Denuncia N° ${dbDenuncia.orden}/${new Date(dbDenuncia.creado_en).getFullYear()} editada por ${usr.grado || ''} ${usr.nombre || ''} ${usr.apellido || ''} (ID: ${usr.id}) usando la edición extraordinaria de un solo uso habilitada previamente. Habilitación consumida.`
+      : `Denuncia N° ${dbDenuncia.orden}/${new Date(dbDenuncia.creado_en).getFullYear()} editada por ${usr.grado || ''} ${usr.nombre || ''} ${usr.apellido || ''} (ID: ${usr.id}) durante periodo de gracia de 10 min.`
     await client.query(
       `INSERT INTO registro_auditoria_denuncias (denuncia_id, usuario_id, accion, detalle)
        VALUES ($1, $2, 'EDICION', $3)`,
