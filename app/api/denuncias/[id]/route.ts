@@ -202,6 +202,54 @@ export async function PUT(
 
     await client.query('BEGIN')
 
+    // 1.5 Capturar snapshot completo del estado ANTES de aplicar los cambios,
+    // para el historial de versiones (denuncias_versiones). Se arma con
+    // row_to_json para no tener que listar columna por columna (y no quedar
+    // desactualizado si se agregan campos nuevos a futuro).
+    const snapshotRes = await client.query(
+      `SELECT row_to_json(d) as denuncia,
+              COALESCE((
+                SELECT json_agg(row_to_json(inv))
+                FROM (
+                  SELECT di.rol, di.representa_denunciante_id, di.con_carta_poder,
+                         di.carta_poder_fecha, di.carta_poder_notario,
+                         den.*
+                  FROM denuncias_involucrados di
+                  JOIN denunciantes den ON di.denunciante_id = den.id
+                  WHERE di.denuncia_id = d.id
+                ) inv
+              ), '[]'::json) as involucrados,
+              COALESCE((
+                SELECT json_agg(row_to_json(sa))
+                FROM supuestos_autores sa
+                WHERE sa.denuncia_id = d.id
+              ), '[]'::json) as supuestos_autores
+       FROM denuncias d
+       WHERE d.id = $1`,
+      [id]
+    )
+    const snapshotPrevio = snapshotRes.rows[0]
+
+    const versionRes = await client.query(
+      `SELECT COALESCE(MAX(version_numero), 0) + 1 as siguiente FROM denuncias_versiones WHERE denuncia_id = $1`,
+      [id]
+    )
+    const siguienteVersion = versionRes.rows[0].siguiente
+    const editorNombreCompleto = `${usr.grado || ''} ${usr.nombre || ''} ${usr.apellido || ''}`.trim()
+
+    await client.query(
+      `INSERT INTO denuncias_versiones (denuncia_id, version_numero, snapshot, motivo, editado_por, editor_nombre)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [
+        id,
+        siguienteVersion,
+        JSON.stringify(snapshotPrevio),
+        consumirEdicionExtra ? 'EDICION_EXTRAORDINARIA' : 'EDICION_GRACIA',
+        usr.id,
+        editorNombreCompleto,
+      ]
+    )
+
     // 2. Upsert denunciantes e involucrados
     const mapaDenunciantes = new Map<string, number>()
     for (const entrada of coleccionDenunciantes) {

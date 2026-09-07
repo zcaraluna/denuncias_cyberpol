@@ -30,7 +30,8 @@ import {
   File,
   Image as ImageIcon,
   ExternalLink,
-  Unlock
+  Unlock,
+  History
 } from 'lucide-react'
 
 interface Ampliacion {
@@ -495,6 +496,13 @@ export default function VerDenunciaPage({ params }: { params: Promise<{ id: stri
                         {tieneEdicionExtraDisponible ? 'EDICIÓN EXTRAORDINARIA HABILITADA (PENDIENTE)' : 'HABILITAR EDICIÓN EXTRAORDINARIA'}
                       </button>
                     )}
+                    <Link
+                      href={`/ver-denuncia/${denunciaId}/versiones`}
+                      className="hidden md:flex items-center gap-2 px-6 py-3 bg-slate-50 text-slate-500 rounded-xl hover:bg-slate-100 border border-slate-200 transition-all font-bold text-sm"
+                    >
+                      <History className="h-4 w-4" />
+                      HISTORIAL DE VERSIONES
+                    </Link>
                     {usuario?.rol !== 'visor' && (
                       <Link
                         href={`/ampliar-denuncia/${denunciaId}`}
