@@ -21,8 +21,6 @@ import {
   Book
 } from 'lucide-react'
 
-const API_KEY = 'c26434662f9a1a4869628002'
-
 const PREGUNTAS_PREDEFINIDAS = [
   "¿Cuál es tu número de credencial?",
   "¿Cuál fue el modelo de tu primer automóvil (o motocicleta)?",
@@ -93,7 +91,7 @@ interface CurrencyData {
 export default function InicioPage() {
   const router = useRouter()
   const { usuario, loading: authLoading } = useAuth()
-  const [rates, setRates] = useState<Record<string, { compra: number, venta: number }>>({})
+  const [rates, setRates] = useState<Record<string, { valor: number }>>({})
   const [loading, setLoading] = useState(true)
   const [selectedCurrency, setSelectedCurrency] = useState<CurrencyData | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -237,10 +235,10 @@ export default function InicioPage() {
   const primerApellido = usuario.apellido ? usuario.apellido.split(' ')[0] : ''
 
   const currencies: CurrencyData[] = [
-    { code: 'USD', name: 'Dólar Americano', flag: '🇺🇸', rate: rates['USD']?.venta || 0, color: 'text-emerald-600 bg-emerald-50' },
-    { code: 'EUR', name: 'Euro', flag: '🇪🇺', rate: rates['EUR']?.venta || 0, color: 'text-blue-600 bg-blue-50' },
-    { code: 'BRL', name: 'Real Brasileño', flag: '🇧🇷', rate: rates['BRL']?.venta || 0, color: 'text-amber-600 bg-amber-50' },
-    { code: 'ARS', name: 'Peso Argentino', flag: '🇦🇷', rate: rates['ARS']?.venta || 0, color: 'text-sky-600 bg-sky-50' },
+    { code: 'USD', name: 'Dólar Americano', flag: '🇺🇸', rate: rates['USD']?.valor || 0, color: 'text-emerald-600 bg-emerald-50' },
+    { code: 'EUR', name: 'Euro', flag: '🇪🇺', rate: rates['EUR']?.valor || 0, color: 'text-blue-600 bg-blue-50' },
+    { code: 'BRL', name: 'Real Brasileño', flag: '🇧🇷', rate: rates['BRL']?.valor || 0, color: 'text-amber-600 bg-amber-50' },
+    { code: 'ARS', name: 'Peso Argentino', flag: '🇦🇷', rate: rates['ARS']?.valor || 0, color: 'text-sky-600 bg-sky-50' },
   ]
 
   return (
@@ -286,7 +284,6 @@ export default function InicioPage() {
                     <CurrencyListItem
                       currency={currency}
                       loading={loading}
-                      buyingValue={rates[currency.code]?.compra || 0}
                       onOpenConverter={() => {
                         setSelectedCurrency(currency)
                         setIsModalOpen(true)
@@ -335,7 +332,6 @@ export default function InicioPage() {
         {isModalOpen && selectedCurrency && (
           <CurrencyModal
             currency={selectedCurrency}
-            buyingValue={rates[selectedCurrency.code]?.compra || 0}
             onClose={() => setIsModalOpen(false)}
           />
         )}
@@ -546,17 +542,13 @@ export default function InicioPage() {
 function CurrencyListItem({
   currency,
   loading,
-  buyingValue,
   onOpenConverter
 }: {
   currency: CurrencyData,
   loading: boolean,
-  buyingValue: number,
   onOpenConverter: () => void
 }) {
-  const sellingRate = currency.rate
-  const buyingRate = buyingValue
-
+  const rate = currency.rate
 
   return (
     <div className="py-2 px-3 hover:bg-white/90 transition-all duration-300 flex items-center gap-4 group rounded-xl">
@@ -569,19 +561,12 @@ function CurrencyListItem({
         </div>
       </div>
 
-      {/* Center: Rates */}
+      {/* Center: Rate */}
       <div className="flex items-center gap-3 shrink-0">
-        <div className="flex flex-col items-end min-w-[45px]">
-          <span className="text-[6px] font-bold text-slate-300 uppercase tracking-tighter">Compra</span>
-          <span className="text-[11px] font-bold text-slate-400">
-            {loading ? '---' : buyingRate.toLocaleString('es-PY')}
-          </span>
-        </div>
-        <div className="h-4 w-px bg-slate-100" />
-        <div className="flex flex-col items-start min-w-[50px]">
-          <span className="text-[6px] font-black text-[#002147] uppercase tracking-tighter">Venta</span>
+        <div className="flex flex-col items-start min-w-[60px]">
+          <span className="text-[6px] font-black text-[#002147] uppercase tracking-tighter">Referencial</span>
           <span className="text-xs font-black text-[#002147] tracking-tight">
-            {loading ? '---' : sellingRate.toLocaleString('es-PY')}
+            {loading ? '---' : rate.toLocaleString('es-PY')}
           </span>
         </div>
       </div>
@@ -671,11 +656,9 @@ function ManualModal({ manual, onClose }: { manual: Manual, onClose: () => void 
 
 function CurrencyModal({
   currency,
-  buyingValue,
   onClose
 }: {
   currency: CurrencyData,
-  buyingValue: number,
   onClose: () => void
 }) {
   const [currencyAmount, setCurrencyAmount] = useState<string>('1')
@@ -744,15 +727,10 @@ function CurrencyModal({
             </button>
           </div>
 
-          {/* Rates Info */}
-          <div className="flex gap-4 p-4 bg-slate-50 rounded-3xl mb-8 border border-slate-100/50">
+          {/* Rate Info */}
+          <div className="flex p-4 bg-slate-50 rounded-3xl mb-8 border border-slate-100/50">
             <div className="flex-1">
-              <span className="block text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Compra</span>
-              <span className="text-lg font-black text-slate-400 tracking-tight">{buyingValue.toLocaleString('es-PY')}</span>
-            </div>
-            <div className="w-px bg-slate-200 my-1" />
-            <div className="flex-1 pl-2">
-              <span className="block text-[8px] font-black text-[#002147] uppercase tracking-widest mb-1">Venta</span>
+              <span className="block text-[8px] font-black text-[#002147] uppercase tracking-widest mb-1">Cotización de referencia</span>
               <span className="text-lg font-black text-[#002147] tracking-tight">{sellingRate.toLocaleString('es-PY')}</span>
             </div>
           </div>
@@ -789,7 +767,7 @@ function CurrencyModal({
         {/* Footer */}
         <div className="px-8 py-4 bg-slate-50 border-t border-slate-100">
           <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest text-center">
-            Cálculo basado en las fuentes de Cambios Chaco
+            Valor de referencia orientativo, no oficial
           </p>
         </div>
       </div>
